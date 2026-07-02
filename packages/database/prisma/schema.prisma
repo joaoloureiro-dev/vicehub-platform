@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SourceType {
+  manual
+  discord_bot
+  webhook
+  api
+  system
+  migration
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  username    String   @unique
+  password    String?
+
+  avatarUrl   String?
+  bio         String?
+
+  level       Int      @default(1)
+  xp          BigInt   @default(0)
+  reputation  Int      @default(0)
+
+  isVerified  Boolean  @default(false)
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  deleted_at  DateTime?
+  is_deleted  Boolean  @default(false)
+  version     Int      @default(1)
+
+  source      SourceType @default(api)
+  created_by  String?
+  updated_by  String?
+
+  memberships Membership[]
+  wallet      Wallet?
+}
+
+model Crew {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  tag         String   @unique
+  description String?
+
+  level       Int      @default(1)
+  xp          BigInt   @default(0)
+  influence   Int      @default(0)
+  prestige    Int      @default(0)
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  deleted_at  DateTime?
+  is_deleted  Boolean  @default(false)
+  version     Int      @default(1)
+
+  source      SourceType @default(api)
+  created_by  String?
+  updated_by  String?
+
+  memberships Membership[]
+  wallet      Wallet?
+}
+
+model Server {
+  id          String   @id @default(uuid())
+  name        String
+  region      String?
+  description String?
+
+  isOnline    Boolean @default(false)
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  deleted_at  DateTime?
+  is_deleted  Boolean  @default(false)
+  version     Int      @default(1)
+
+  source      SourceType @default(api)
+  created_by  String?
+  updated_by  String?
+
+  memberships Membership[]
+}
+
+enum MembershipType {
+  user
+  crew
+  server
+}
+
+model Membership {
+  id        String @id @default(uuid())
+
+  userId    String
+  crewId    String?
+  serverId  String?
+
+  type      MembershipType
+
+  role      String @default("member")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean @default(false)
+  version    Int @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  User   User?   @relation(fields: [userId], references: [id])
+  Crew   Crew?   @relation(fields: [crewId], references: [id])
+  Server Server? @relation(fields: [serverId], references: [id])
+
+  @@index([userId])
+  @@index([crewId])
+  @@index([serverId])
+  @@index([type])
+}
+
+model Wallet {
+  id        String @id @default(uuid())
+
+  userId    String? @unique
+  crewId    String? @unique
+
+  balance   BigInt @default(0)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean @default(false)
+  version    Int @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  User User? @relation(fields: [userId], references: [id])
+  Crew Crew? @relation(fields: [crewId], references: [id])
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id        String @id @default(uuid())
+
+  walletId  String
+
+  amount    BigInt
+  type      String
+  description String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean @default(false)
+  version    Int @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  Wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([type])
+}

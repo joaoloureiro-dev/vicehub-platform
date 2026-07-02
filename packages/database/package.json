@@ -1,0 +1,48 @@
+{
+    "name": "@vicehub/database",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Camada de persistência PostgreSQL e Prisma do ViceHub.",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "generated"
+    ],
+    "scripts": {
+        "build": "tsc --project tsconfig.build.json",
+        "typecheck": "tsc --project tsconfig.json --noEmit",
+        "db:generate": "prisma generate",
+        "db:validate": "prisma validate",
+        "db:format": "prisma format",
+        "db:migrate:dev": "prisma migrate dev",
+        "db:migrate:deploy": "prisma migrate deploy",
+        "db:migrate:status": "prisma migrate status",
+        "db:studio": "prisma studio",
+        "db:seed": "tsx seed/index.ts"
+    },
+    "engines": {
+        "node": ">=24.0.0",
+        "npm": ">=11.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "26.1.0",
+        "@types/pg": "8.20.0",
+        "prisma": "7.8.0",
+        "tsx": "4.22.4",
+        "typescript": "6.0.3"
+    },
+    "dependencies": {
+        "@prisma/adapter-pg": "7.8.0",
+        "@prisma/client": "7.8.0",
+        "dotenv": "17.4.2",
+        "pg": "8.22.0"
+    }
+}

@@ -1,0 +1,54 @@
+# Dependências
+node_modules/
+
+# Builds
+dist/
+build/
+coverage/
+.vite/
+.turbo/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Prisma
+packages/database/generated/
+packages/database/prisma/dev.db
+packages/database/prisma/dev.db-journal
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editores
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Testes
+.nyc_output/
+test-results/
+playwright-report/
+
+# Temporários
+tmp/
+temp/
+.cache/
+
+# Certificados e segredos
+*.pem
+*.key
+*.crt
+secrets/
