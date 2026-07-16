@@ -15,163 +15,463 @@ enum SourceType {
   migration
 }
 
-model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  username    String   @unique
-  password    String?
-
-  avatarUrl   String?
-  bio         String?
-
-  level       Int      @default(1)
-  xp          BigInt   @default(0)
-  reputation  Int      @default(0)
-
-  isVerified  Boolean  @default(false)
-
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  deleted_at  DateTime?
-  is_deleted  Boolean  @default(false)
-  version     Int      @default(1)
-
-  source      SourceType @default(api)
-  created_by  String?
-  updated_by  String?
-
-  memberships Membership[]
-  wallet      Wallet?
-}
-
-model Crew {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  tag         String   @unique
-  description String?
-
-  level       Int      @default(1)
-  xp          BigInt   @default(0)
-  influence   Int      @default(0)
-  prestige    Int      @default(0)
-
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  deleted_at  DateTime?
-  is_deleted  Boolean  @default(false)
-  version     Int      @default(1)
-
-  source      SourceType @default(api)
-  created_by  String?
-  updated_by  String?
-
-  memberships Membership[]
-  wallet      Wallet?
-}
-
-model Server {
-  id          String   @id @default(uuid())
-  name        String
-  region      String?
-  description String?
-
-  isOnline    Boolean @default(false)
-
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  deleted_at  DateTime?
-  is_deleted  Boolean  @default(false)
-  version     Int      @default(1)
-
-  source      SourceType @default(api)
-  created_by  String?
-  updated_by  String?
-
-  memberships Membership[]
-}
-
 enum MembershipType {
   user
   crew
   server
 }
 
-model Membership {
-  id        String @id @default(uuid())
+enum AuthProviderType {
+  local
+  discord
+  google
+  twitch
+}
 
-  userId    String
-  crewId    String?
-  serverId  String?
+enum AuthSessionStatus {
+  active
+  revoked
+  expired
+}
 
-  type      MembershipType
+enum RefreshTokenStatus {
+  active
+  rotated
+  revoked
+  expired
+}
 
-  role      String @default("member")
+enum RoleScope {
+  global
+  crew
+  server
+  marketplace
+}
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+enum PermissionScope {
+  global
+  auth
+  user
+  crew
+  server
+  marketplace
+  treasury
+  event
+  social
+  system
+}
+
+model User {
+  id String @id @default(uuid())
+
+  email    String @unique
+  username String @unique
+
+  avatarUrl String?
+  bio       String?
+
+  level      Int    @default(1)
+  xp         BigInt @default(0)
+  reputation Int    @default(0)
+
+  email_verified_at DateTime?
+  token_version     Int       @default(1)
+  last_login_at     DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
-  is_deleted Boolean @default(false)
-  version    Int @default(1)
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
 
   source     SourceType @default(api)
   created_by String?
   updated_by String?
 
-  User   User?   @relation(fields: [userId], references: [id])
-  Crew   Crew?   @relation(fields: [crewId], references: [id])
-  Server Server? @relation(fields: [serverId], references: [id])
+  memberships Membership[]
+  wallet      Wallet?
+
+  credentials   UserCredential?
+  authProviders UserAuthProvider[]
+  authSessions  AuthSession[]
+  userRoles     UserRole[]
+}
+
+model Crew {
+  id String @id @default(uuid())
+
+  name        String  @unique
+  tag         String  @unique
+  description String?
+
+  level     Int    @default(1)
+  xp        BigInt @default(0)
+  influence Int    @default(0)
+  prestige  Int    @default(0)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  memberships Membership[]
+  wallet      Wallet?
+
+  userRoles UserRole[]
+}
+
+model Server {
+  id String @id @default(uuid())
+
+  name        String
+  region      String?
+  description String?
+
+  isOnline Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  memberships Membership[]
+
+  userRoles UserRole[]
+}
+
+model Membership {
+  id String @id @default(uuid())
+
+  userId   String
+  crewId   String?
+  serverId String?
+
+  type MembershipType
+
+  role String @default("member")
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crew   Crew?   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([crewId])
   @@index([serverId])
   @@index([type])
+  @@index([userId, type])
+  @@index([is_deleted])
 }
 
 model Wallet {
-  id        String @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId    String? @unique
-  crewId    String? @unique
+  userId String? @unique
+  crewId String? @unique
 
-  balance   BigInt @default(0)
+  balance BigInt @default(0)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
-  is_deleted Boolean @default(false)
-  version    Int @default(1)
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
 
   source     SourceType @default(api)
   created_by String?
   updated_by String?
 
-  User User? @relation(fields: [userId], references: [id])
-  Crew Crew? @relation(fields: [crewId], references: [id])
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crew Crew? @relation(fields: [crewId], references: [id], onDelete: Cascade)
 
   transactions Transaction[]
+
+  @@index([userId])
+  @@index([crewId])
 }
 
 model Transaction {
-  id        String @id @default(uuid())
+  id String @id @default(uuid())
 
-  walletId  String
+  walletId String
 
-  amount    BigInt
-  type      String
+  amount      BigInt
+  type        String
   description String?
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
-  is_deleted Boolean @default(false)
-  version    Int @default(1)
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
 
   source     SourceType @default(api)
   created_by String?
   updated_by String?
 
-  Wallet Wallet @relation(fields: [walletId], references: [id])
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
 
   @@index([walletId])
   @@index([type])
+  @@index([walletId, created_at(sort: Desc)])
+}
+
+model UserCredential {
+  id String @id @default(uuid())
+
+  userId String @unique
+
+  password_hash String
+
+  password_updated_at DateTime @default(now())
+
+  failed_login_attempts Int       @default(0)
+  locked_until          DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([locked_until])
+  @@index([is_deleted])
+}
+
+model UserAuthProvider {
+  id String @id @default(uuid())
+
+  userId String
+
+  provider         AuthProviderType
+  provider_user_id String
+  provider_email   String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, provider_user_id])
+  @@index([userId])
+  @@index([provider])
+}
+
+model AuthSession {
+  id String @id @default(uuid())
+
+  userId String
+
+  status AuthSessionStatus @default(active)
+
+  ip_address         String?
+  user_agent         String?
+  device_fingerprint String?
+
+  expires_at DateTime
+
+  revoked_at   DateTime?
+  last_used_at DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([expires_at])
+  @@index([userId, status])
+}
+
+model RefreshToken {
+  id String @id @default(uuid())
+
+  sessionId String
+
+  token_hash String @unique
+
+  status RefreshTokenStatus @default(active)
+
+  expires_at DateTime
+
+  rotated_at DateTime?
+  revoked_at DateTime?
+  used_at    DateTime?
+
+  replaced_by_token_id String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  session AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([status])
+  @@index([expires_at])
+  @@index([sessionId, status])
+  @@index([is_deleted])
+}
+
+model Role {
+  id String @id @default(uuid())
+
+  name        String
+  slug        String
+  description String?
+
+  scope RoleScope @default(global)
+
+  is_system Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@unique([slug, scope])
+  @@index([scope])
+  @@index([is_deleted])
+}
+
+model Permission {
+  id String @id @default(uuid())
+
+  name        String
+  slug        String
+  description String?
+
+  scope PermissionScope @default(global)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  rolePermissions RolePermission[]
+
+  @@unique([slug, scope])
+  @@index([scope])
+  @@index([is_deleted])
+}
+
+model UserRole {
+  id String @id @default(uuid())
+
+  userId String
+  roleId String
+
+  crewId   String?
+  serverId String?
+
+  assigned_at DateTime  @default(now())
+  expires_at  DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  crew   Crew?   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([roleId])
+  @@index([crewId])
+  @@index([serverId])
+  @@index([expires_at])
+  @@index([is_deleted])
+}
+
+model RolePermission {
+  id String @id @default(uuid())
+
+  roleId       String
+  permissionId String
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
 }
