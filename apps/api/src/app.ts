@@ -9,6 +9,8 @@ import { env } from './config/env.js';
 import cookiePlugin from './plugins/cookie.plugin.js';
 import securityPlugin from './plugins/security.plugin.js';
 import healthRoutes from './routes/health/health.routes.js';
+import jwtPlugin from './plugins/jwt.plugin.js';
+
 
 type ViceHubFastifyInstance = FastifyInstance<
     Server,
@@ -89,10 +91,14 @@ export const buildApp = (): ViceHubFastifyInstance => {
     /**
      * A ordem dos plugins é intencional.
      *
-     * Segurança e cookies são registados antes das rotas que dependem deles.
+     * Segurança e infraestrutura são registadas
+     * antes das rotas que dependem delas.
      */
     void app.register(securityPlugin);
+
     void app.register(cookiePlugin);
+
+    void app.register(jwtPlugin);
 
     void app.register(healthRoutes, {
         prefix: '/api/v1/health',

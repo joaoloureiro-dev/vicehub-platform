@@ -27,6 +27,17 @@
     "db:studio": "npm run db:studio --workspace=@vicehub/database"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "9.0.10",
     "prettier": "3.9.1"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.2",
+    "@fastify/jwt": "10.2.0",
+    "argon2": "0.44.0"
+  },
+  "allowScripts": {
+    "argon2@0.44.0": true,
+    "@prisma/engines@7.8.0": true,
+    "esbuild@0.28.1": true
   }
 }
