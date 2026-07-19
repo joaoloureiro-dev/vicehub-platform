@@ -10,6 +10,7 @@ import cookiePlugin from './plugins/cookie.plugin.js';
 import securityPlugin from './plugins/security.plugin.js';
 import healthRoutes from './routes/health/health.routes.js';
 import jwtPlugin from './plugins/jwt.plugin.js';
+import prismaPlugin from './plugins/prisma.plugin.js';
 
 
 type ViceHubFastifyInstance = FastifyInstance<
@@ -99,6 +100,8 @@ export const buildApp = (): ViceHubFastifyInstance => {
     void app.register(cookiePlugin);
 
     void app.register(jwtPlugin);
+
+    void app.register(prismaPlugin);
 
     void app.register(healthRoutes, {
         prefix: '/api/v1/health',
