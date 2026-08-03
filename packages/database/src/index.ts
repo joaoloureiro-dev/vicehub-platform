@@ -18,3 +18,13 @@ export const prisma = new PrismaClient({
 });
 
 export type DatabaseClient = typeof prisma;
+
+export {
+    AuthProviderType,
+    AuthSessionStatus,
+    Prisma,
+    RefreshTokenStatus,
+    RoleScope,
+    PermissionScope,
+    SourceType,
+} from '@prisma/client';

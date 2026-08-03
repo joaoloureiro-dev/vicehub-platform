@@ -1,0 +1,377 @@
+import {
+    AuthProviderType,
+    AuthSessionStatus,
+    RefreshTokenStatus,
+    SourceType,
+    type DatabaseClient,
+} from '@vicehub/database';
+
+interface CreateLocalUserInput {
+    email: string;
+    username: string;
+    passwordHash: string;
+}
+
+interface CreateAuthSessionInput {
+    userId: string;
+    ipAddress?: string;
+    userAgent?: string;
+    deviceFingerprint?: string;
+    expiresAt: Date;
+}
+
+interface CreateRefreshTokenInput {
+    sessionId: string;
+    tokenHash: string;
+    expiresAt: Date;
+}
+
+interface RotateRefreshTokenInput {
+    currentRefreshTokenId: string;
+    replacementRefreshTokenId: string;
+}
+
+interface RevokeRefreshTokenInput {
+    refreshTokenId: string;
+    revokedAt: Date;
+}
+
+interface RevokeSessionInput {
+    sessionId: string;
+    revokedAt: Date;
+}
+
+/**
+ * Repositório da autenticação.
+ *
+ * Esta camada é a única responsável por falar com a base de dados
+ * dentro do módulo Auth.
+ *
+ * Não contém regras de negócio como validação de passwords,
+ * emissão de JWT ou rotação de tokens. Isso pertence ao AuthService.
+ */
+export class AuthRepository {
+    constructor(private readonly database: DatabaseClient) { }
+
+    /**
+     * Procura um utilizador pelo email.
+     *
+     * Inclui credenciais porque o login local precisa validar password.
+     */
+    findUserByEmail(email: string) {
+        return this.database.user.findFirst({
+            where: {
+                email,
+                is_deleted: false,
+            },
+            include: {
+                credentials: {
+                    where: {
+                        is_deleted: false,
+                    },
+                },
+            },
+        });
+    }
+
+    /**
+     * Procura um utilizador pelo ID.
+     *
+     * Usado em refresh token, validação de sessão
+     * e reconstrução de contexto autenticado.
+     */
+    findUserById(userId: string) {
+        return this.database.user.findFirst({
+            where: {
+                id: userId,
+                is_deleted: false,
+            },
+        });
+    }
+
+    /**
+     * Cria um utilizador local com credenciais.
+     *
+     * User e UserCredential são criados na mesma transação lógica Prisma,
+     * garantindo consistência entre identidade e credencial.
+     */
+    createLocalUser(input: CreateLocalUserInput) {
+        return this.database.user.create({
+            data: {
+                email: input.email,
+                username: input.username,
+                source: SourceType.api,
+                credentials: {
+                    create: {
+                        password_hash: input.passwordHash,
+                        source: SourceType.api,
+                    },
+                },
+                authProviders: {
+                    create: {
+                        provider: AuthProviderType.local,
+                        provider_user_id: input.email,
+                        provider_email: input.email,
+                        source: SourceType.api,
+                    },
+                },
+            },
+            include: {
+                credentials: true,
+            },
+        });
+    }
+
+    /**
+     * Atualiza metadados de login.
+     *
+     * Não altera password nem sessão.
+     */
+    updateLastLogin(userId: string, loggedInAt: Date) {
+        return this.database.user.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                last_login_at: loggedInAt,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Cria uma sessão autenticada.
+     *
+     * Cada login cria uma AuthSession própria,
+     * permitindo logout por dispositivo.
+     */
+    /**
+ * Cria uma sessão autenticada.
+ *
+ * Cada login cria uma AuthSession própria,
+ * permitindo logout por dispositivo.
+ */
+    createSession(input: CreateAuthSessionInput) {
+        return this.database.authSession.create({
+            data: {
+                userId: input.userId,
+                status: AuthSessionStatus.active,
+                ip_address: input.ipAddress ?? null,
+                user_agent: input.userAgent ?? null,
+                device_fingerprint: input.deviceFingerprint ?? null,
+                expires_at: input.expiresAt,
+                source: SourceType.api,
+            },
+        });
+    }
+
+    /**
+     * Procura uma sessão ativa.
+     */
+    findActiveSession(sessionId: string) {
+        return this.database.authSession.findFirst({
+            where: {
+                id: sessionId,
+                status: AuthSessionStatus.active,
+                is_deleted: false,
+                expires_at: {
+                    gt: new Date(),
+                },
+            },
+        });
+    }
+
+    /**
+     * Atualiza a última utilização da sessão.
+     */
+    touchSession(sessionId: string, usedAt: Date) {
+        return this.database.authSession.update({
+            where: {
+                id: sessionId,
+            },
+            data: {
+                last_used_at: usedAt,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Cria o registo persistente do refresh token.
+     *
+     * Apenas o hash é guardado.
+     */
+    createRefreshToken(input: CreateRefreshTokenInput) {
+        return this.database.refreshToken.create({
+            data: {
+                sessionId: input.sessionId,
+                token_hash: input.tokenHash,
+                status: RefreshTokenStatus.active,
+                expires_at: input.expiresAt,
+                source: SourceType.api,
+            },
+        });
+    }
+
+    /**
+     * Lista refresh tokens ativos de uma sessão.
+     *
+     * Isto será usado no refresh flow para encontrar o token
+     * cujo hash corresponde ao token recebido do cliente.
+     */
+    findActiveRefreshTokensBySession(sessionId: string) {
+        return this.database.refreshToken.findMany({
+            where: {
+                sessionId,
+                status: RefreshTokenStatus.active,
+                is_deleted: false,
+                expires_at: {
+                    gt: new Date(),
+                },
+            },
+            orderBy: {
+                created_at: 'desc',
+            },
+        });
+    }
+
+    /**
+     * Marca um refresh token como usado.
+     *
+     * Ajuda a detetar replay attack quando um token antigo
+     * volta a aparecer depois de ter sido rodado.
+     */
+    markRefreshTokenAsUsed(refreshTokenId: string, usedAt: Date) {
+        return this.database.refreshToken.update({
+            where: {
+                id: refreshTokenId,
+            },
+            data: {
+                used_at: usedAt,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Marca um refresh token como rodado.
+     */
+    rotateRefreshToken(input: RotateRefreshTokenInput) {
+        return this.database.refreshToken.update({
+            where: {
+                id: input.currentRefreshTokenId,
+            },
+            data: {
+                status: RefreshTokenStatus.rotated,
+                rotated_at: new Date(),
+                replaced_by_token_id: input.replacementRefreshTokenId,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Revoga um refresh token específico.
+     */
+    revokeRefreshToken(input: RevokeRefreshTokenInput) {
+        return this.database.refreshToken.update({
+            where: {
+                id: input.refreshTokenId,
+            },
+            data: {
+                status: RefreshTokenStatus.revoked,
+                revoked_at: input.revokedAt,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Revoga uma sessão específica.
+     */
+    revokeSession(input: RevokeSessionInput) {
+        return this.database.authSession.update({
+            where: {
+                id: input.sessionId,
+            },
+            data: {
+                status: AuthSessionStatus.revoked,
+                revoked_at: input.revokedAt,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Revoga todos os refresh tokens ativos de uma sessão.
+     */
+    revokeActiveRefreshTokensBySession(sessionId: string, revokedAt: Date) {
+        return this.database.refreshToken.updateMany({
+            where: {
+                sessionId,
+                status: RefreshTokenStatus.active,
+                is_deleted: false,
+            },
+            data: {
+                status: RefreshTokenStatus.revoked,
+                revoked_at: revokedAt,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Logout global.
+     *
+     * Incrementar token_version invalida todos os access tokens antigos.
+     */
+    incrementUserTokenVersion(userId: string) {
+        return this.database.user.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                token_version: {
+                    increment: 1,
+                },
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Revoga todas as sessões ativas de um utilizador.
+     */
+    revokeAllUserSessions(userId: string, revokedAt: Date) {
+        return this.database.authSession.updateMany({
+            where: {
+                userId,
+                status: AuthSessionStatus.active,
+                is_deleted: false,
+            },
+            data: {
+                status: AuthSessionStatus.revoked,
+                revoked_at: revokedAt,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+}
