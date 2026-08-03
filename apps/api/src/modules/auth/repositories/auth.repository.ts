@@ -218,6 +218,33 @@ export class AuthRepository {
     }
 
     /**
+ * Procura um refresh token ativo pelo ID.
+ *
+ * Usado no refresh flow.
+ * O token recebido pelo cliente contém o ID público
+ * e o segredo privado separado.
+ */
+    findActiveRefreshTokenById(refreshTokenId: string) {
+        return this.database.refreshToken.findFirst({
+            where: {
+                id: refreshTokenId,
+                status: RefreshTokenStatus.active,
+                is_deleted: false,
+                expires_at: {
+                    gt: new Date(),
+                },
+            },
+            include: {
+                session: {
+                    include: {
+                        user: true,
+                    },
+                },
+            },
+        });
+    }
+
+    /**
      * Lista refresh tokens ativos de uma sessão.
      *
      * Isto será usado no refresh flow para encontrar o token
