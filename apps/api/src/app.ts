@@ -6,12 +6,12 @@ import Fastify, {
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 
 import { env } from './config/env.js';
+import authModule from './modules/auth/auth.module.js';
 import cookiePlugin from './plugins/cookie.plugin.js';
-import securityPlugin from './plugins/security.plugin.js';
-import healthRoutes from './routes/health/health.routes.js';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import prismaPlugin from './plugins/prisma.plugin.js';
-
+import securityPlugin from './plugins/security.plugin.js';
+import healthRoutes from './routes/health/health.routes.js';
 
 type ViceHubFastifyInstance = FastifyInstance<
     Server,
@@ -92,20 +92,29 @@ export const buildApp = (): ViceHubFastifyInstance => {
     /**
      * A ordem dos plugins é intencional.
      *
-     * Segurança e infraestrutura são registadas
-     * antes das rotas que dependem delas.
+     * Primeiro infraestrutura,
+     * depois módulos da aplicação.
      */
+
+    // Segurança
     void app.register(securityPlugin);
 
+    // Cookies
     void app.register(cookiePlugin);
 
+    // JWT
     void app.register(jwtPlugin);
 
+    // Prisma
     void app.register(prismaPlugin);
 
+    // Health Check
     void app.register(healthRoutes, {
         prefix: '/api/v1/health',
     });
+
+    // Módulo de Autenticação
+    void app.register(authModule);
 
     return app;
 };
