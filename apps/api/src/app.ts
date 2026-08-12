@@ -6,11 +6,17 @@ import Fastify, {
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 
 import { env } from './config/env.js';
+
 import authModule from './modules/auth/auth.module.js';
-import cookiePlugin from './plugins/cookie.plugin.js';
-import jwtPlugin from './plugins/jwt.plugin.js';
-import prismaPlugin from './plugins/prisma.plugin.js';
-import securityPlugin from './plugins/security.plugin.js';
+
+import authenticatePlugin from './plugins/auth/authenticate.plugin.js';
+import cookiePlugin from './plugins/auth/cookie.plugin.js';
+import jwtPlugin from './plugins/auth/jwt.plugin.js';
+
+import prismaPlugin from './plugins/database/prisma.plugin.js';
+
+import securityPlugin from './plugins/http/security.plugin.js';
+
 import healthRoutes from './routes/health/health.routes.js';
 
 type ViceHubFastifyInstance = FastifyInstance<
@@ -87,16 +93,18 @@ const createFastifyOptions = (): ViceHubFastifyOptions => {
  * - arranque e encerramento controlados.
  */
 export const buildApp = (): ViceHubFastifyInstance => {
-    const app: ViceHubFastifyInstance = Fastify<Server>(createFastifyOptions());
+    const app: ViceHubFastifyInstance = Fastify<Server>(
+        createFastifyOptions(),
+    );
 
     /**
      * A ordem dos plugins é intencional.
      *
-     * Primeiro infraestrutura,
-     * depois módulos da aplicação.
+     * Primeiro registamos toda a infraestrutura,
+     * depois os módulos da aplicação.
      */
 
-    // Segurança
+    // Segurança HTTP
     void app.register(securityPlugin);
 
     // Cookies
@@ -104,6 +112,9 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // JWT
     void app.register(jwtPlugin);
+
+    // Middleware de autenticação
+    void app.register(authenticatePlugin);
 
     // Prisma
     void app.register(prismaPlugin);
@@ -113,7 +124,7 @@ export const buildApp = (): ViceHubFastifyInstance => {
         prefix: '/api/v1/health',
     });
 
-    // Módulo de Autenticação
+    // Módulo de autenticação
     void app.register(authModule);
 
     return app;

@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin';
 import fastifyJwt from '@fastify/jwt';
 
-import { env } from '../config/env.js';
+import { env } from '../../config/env.js';
 
 /**
  * Plugin responsável pela configuração JWT do ViceHub.

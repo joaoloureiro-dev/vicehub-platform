@@ -3,7 +3,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import fp from 'fastify-plugin';
 
-import { env } from '../config/env.js';
+import { env } from '../../config/env.js';
 
 /**
  * Regista as proteções HTTP globais da API.
