@@ -1,17 +1,22 @@
 import fp from 'fastify-plugin';
 import fastifyJwt from '@fastify/jwt';
+import type { FastifyPluginAsync } from 'fastify';
 
 import { env } from '../../config/env.js';
 
 /**
- * Plugin responsável pela configuração JWT do ViceHub.
+ * Plugin responsável pela configuração do JWT.
  *
- * Mantemos a configuração isolada para:
- * - evitar JWT espalhado pela aplicação;
- * - permitir testes;
- * - facilitar futuras alterações de estratégia.
+ * Responsabilidades:
+ * - registar @fastify/jwt;
+ * - configurar assinatura dos Access Tokens;
+ * - disponibilizar request.jwtVerify();
+ * - disponibilizar reply.jwtSign();
+ *
+ * Não contém qualquer lógica de autenticação.
+ * Toda a lógica permanece no AuthService.
  */
-export default fp(async (fastify) => {
+const jwtPlugin: FastifyPluginAsync = async (fastify) => {
     await fastify.register(fastifyJwt, {
         secret: env.JWT_ACCESS_SECRET,
 
@@ -19,4 +24,8 @@ export default fp(async (fastify) => {
             expiresIn: `${env.JWT_ACCESS_TOKEN_TTL_SECONDS}s`,
         },
     });
+};
+
+export default fp(jwtPlugin, {
+    name: 'jwt-plugin',
 });

@@ -9,6 +9,8 @@ if (!connectionString) {
     throw new Error('[ViceHub DB] DATABASE_URL não definida');
 }
 
+console.log('DATABASE_URL:', connectionString);
+
 const adapter = new PrismaPg({
     connectionString,
 });
