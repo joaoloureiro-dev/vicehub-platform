@@ -16,6 +16,7 @@ import jwtPlugin from './plugins/auth/jwt.plugin.js';
 import prismaPlugin from './plugins/database/prisma.plugin.js';
 
 import securityPlugin from './plugins/http/security.plugin.js';
+import errorHandlerPlugin from './plugins/http/error-handler.plugin.js';
 
 import healthRoutes from './routes/health/health.routes.js';
 
@@ -106,6 +107,8 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Segurança HTTP
     void app.register(securityPlugin);
+
+    void app.register(errorHandlerPlugin);
 
     // Cookies
     void app.register(cookiePlugin);

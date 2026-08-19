@@ -52,21 +52,18 @@ export class TokenService {
     /**
      * Separa o refresh token recebido pelo cliente.
      */
-    parseRefreshToken(token: string): ParsedRefreshToken | null {
-        const [refreshTokenId, secret, ...extraParts] = token.split('.');
-
-        if (
-            !refreshTokenId ||
-            !secret ||
-            extraParts.length > 0
-        ) {
+    parseRefreshToken(token: string | null | undefined): ParsedRefreshToken | null {
+        if (!token) {
             return null;
         }
 
-        return {
-            refreshTokenId,
-            secret,
-        };
+        const [refreshTokenId, secret, ...extraParts] = token.split('.');
+
+        if (!refreshTokenId || !secret || extraParts.length > 0) {
+            return null;
+        }
+
+        return { refreshTokenId, secret };
     }
 
     /**
