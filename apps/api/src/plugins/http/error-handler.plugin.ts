@@ -6,6 +6,7 @@ import {
     AuthError,
     type AuthErrorCode,
 } from '../../modules/auth/errors/auth.errors.js';
+import { AuthorizationError } from '../../modules/authorization/errors/authorization.errors.js';
 
 /**
  * Estado HTTP associado a cada erro de domínio da autenticação.
@@ -34,6 +35,7 @@ const httpErrorNames: Record<number, string> = {
     400: 'Bad Request',
     401: 'Unauthorized',
     404: 'Not Found',
+    403: 'Forbidden',
     409: 'Conflict',
     423: 'Locked',
 };
@@ -103,6 +105,27 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 code: error.code,
                 error: httpErrorNames[statusCode] ?? 'Error',
                 message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof AuthorizationError) {
+            /**
+             * 403 e não 401: o utilizador está identificado, apenas não
+             * tem autorização. Devolver 401 faria o cliente tentar
+             * autenticar-se de novo sem qualquer proveito.
+             */
+            request.log.warn(
+                { err: error, missing: error.missingPermissions },
+                'Pedido recusado por falta de permissões.',
+            );
+
+            reply.status(403).send({
+                statusCode: 403,
+                code: error.code,
+                error: 'Forbidden',
+                message: error.message,
+                missingPermissions: error.missingPermissions,
             });
             return;
         }

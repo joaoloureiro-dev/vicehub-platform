@@ -1,7 +1,8 @@
-import type { DatabaseClient } from '@vicehub/database';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { DatabaseClient, PermissionKey } from '@vicehub/database';
+import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 
 import type { AuthContext } from './auth.types.js';
+import type { EffectivePermissions } from '../../authorization/types/authorization.types.js';
 
 declare module 'fastify' {
     interface FastifyInstance {
@@ -11,6 +12,13 @@ declare module 'fastify' {
             request: FastifyRequest,
             reply: FastifyReply,
         ): Promise<void>;
+
+        /**
+         * Constrói um preHandler que exige as permissões indicadas.
+         *
+         * Deve vir sempre a seguir ao authenticate, de que depende.
+         */
+        authorize(...permissions: PermissionKey[]): preHandlerHookHandler;
     }
 
     interface FastifyRequest {
@@ -24,5 +32,13 @@ declare module 'fastify' {
          * tipado pela augmentation em plugins/auth/jwt.types.ts.
          */
         authContext: AuthContext | null;
+
+        /**
+         * Permissões já reunidas neste pedido.
+         *
+         * Serve de cache: várias verificações no mesmo pedido não
+         * repetem a consulta à base de dados.
+         */
+        effectivePermissions: EffectivePermissions | null;
     }
 }
