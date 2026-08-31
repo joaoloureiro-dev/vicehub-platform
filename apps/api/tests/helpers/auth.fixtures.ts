@@ -19,6 +19,9 @@ export const createAuthRepositoryMock = () => ({
     findUserById: vi.fn(),
     createLocalUser: vi.fn(),
     updateLastLogin: vi.fn(),
+    registerFailedLoginAttempt: vi.fn(),
+    lockCredential: vi.fn(),
+    clearFailedLoginAttempts: vi.fn(),
     createSession: vi.fn(),
     findActiveSession: vi.fn(),
     findActiveSessionWithUser: vi.fn(),
@@ -88,15 +91,30 @@ export const buildUserRow = (overrides: UserRowOverrides = {}) => ({
     is_deleted: overrides.is_deleted ?? false,
 });
 
+interface CredentialOverrides {
+    credentialsDeleted?: boolean;
+    failedLoginAttempts?: number;
+    lockedUntil?: Date | null;
+}
+
 export const buildUserWithCredentials = (
-    overrides: UserRowOverrides & { credentialsDeleted?: boolean } = {},
+    overrides: UserRowOverrides & CredentialOverrides = {},
 ) => ({
     ...buildUserRow(overrides),
     credentials: {
+        id: 'credential-1',
         password_hash: 'hash-argon2',
         is_deleted: overrides.credentialsDeleted ?? false,
+        failed_login_attempts: overrides.failedLoginAttempts ?? 0,
+        locked_until: overrides.lockedUntil ?? null,
     },
 });
+
+/**
+ * Data no futuro, usada para simular uma conta ainda bloqueada.
+ */
+export const minutesFromNow = (minutes: number): Date =>
+    new Date(Date.now() + minutes * 60_000);
 
 export const buildSessionWithUser = (
     overrides: { sessionId?: string; user?: ReturnType<typeof buildUserRow> } = {},

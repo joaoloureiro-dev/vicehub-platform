@@ -15,6 +15,11 @@ import {
  * silenciosamente em 500.
  */
 const authErrorStatusCodes: Record<AuthErrorCode, number> = {
+    /**
+     * 423 distingue o bloqueio da conta do 429 devolvido pelo limitador
+     * global de pedidos, que é por endereço IP.
+     */
+    ACCOUNT_LOCKED: 423,
     EMAIL_ALREADY_EXISTS: 409,
     INVALID_CREDENTIALS: 401,
     INVALID_ACCESS_TOKEN: 401,
@@ -29,6 +34,7 @@ const httpErrorNames: Record<number, string> = {
     401: 'Unauthorized',
     404: 'Not Found',
     409: 'Conflict',
+    423: 'Locked',
 };
 
 /**

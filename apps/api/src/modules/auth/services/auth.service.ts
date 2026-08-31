@@ -132,19 +132,33 @@ export class AuthService {
             );
         }
 
+        const credentials = user.credentials;
+
+        /**
+         * O bloqueio é verificado antes de validar a password. Se fosse
+         * depois, cada tentativa continuaria a consumir um Argon2 completo
+         * e o bloqueio não protegeria o servidor de nada.
+         */
+        this.assertCredentialIsNotLocked(credentials.locked_until);
+
         const passwordIsValid = await this.passwordService.verify(
-            user.credentials.password_hash,
+            credentials.password_hash,
             input.password,
         );
 
         if (!passwordIsValid) {
-            throw new AuthError(
-                'INVALID_CREDENTIALS',
-                'Email ou password inválidos.',
-            );
+            throw await this.registerFailedLoginAttempt(credentials.id);
         }
 
         const now = new Date();
+
+        /**
+         * Só escrevemos quando há mesmo estado para limpar, para não
+         * gerar uma escrita e um incremento de versão em cada login.
+         */
+        if (credentials.failed_login_attempts > 0 || credentials.locked_until) {
+            await this.authRepository.clearFailedLoginAttempts(credentials.id);
+        }
 
         await this.authRepository.updateLastLogin(user.id, now);
 
@@ -296,6 +310,66 @@ export class AuthService {
         await this.authRepository.incrementUserTokenVersion(input.userId);
 
         await this.authRepository.revokeAllUserSessions(input.userId, now);
+    }
+
+    /**
+     * Recusa o login enquanto a conta estiver bloqueada.
+     *
+     * A mensagem indica quanto falta para o desbloqueio, para que o
+     * utilizador legítimo saiba o que esperar.
+     */
+    private assertCredentialIsNotLocked(lockedUntil: Date | null): void {
+        if (!lockedUntil || lockedUntil <= new Date()) {
+            return;
+        }
+
+        throw this.buildAccountLockedError(lockedUntil);
+    }
+
+    /**
+     * Constrói o erro de conta bloqueada, indicando quanto falta para o
+     * desbloqueio para que o utilizador legítimo saiba o que esperar.
+     */
+    private buildAccountLockedError(lockedUntil: Date): AuthError {
+        const remainingMinutes = Math.max(
+            1,
+            Math.ceil((lockedUntil.getTime() - Date.now()) / 60_000),
+        );
+
+        return new AuthError(
+            'ACCOUNT_LOCKED',
+            `Demasiadas tentativas de início de sessão falhadas. Tenta novamente dentro de ${remainingMinutes} minuto(s).`,
+        );
+    }
+
+    /**
+     * Contabiliza uma tentativa falhada e devolve o erro a lançar.
+     *
+     * Bloqueia a conta quando o limite configurado é atingido, caso em
+     * que o erro devolvido passa a ser o de conta bloqueada.
+     */
+    private async registerFailedLoginAttempt(
+        credentialId: string,
+    ): Promise<AuthError> {
+        const credentials =
+            await this.authRepository.registerFailedLoginAttempt(credentialId);
+
+        if (
+            credentials.failed_login_attempts >= env.AUTH_MAX_FAILED_LOGIN_ATTEMPTS
+        ) {
+            const lockedUntil = new Date(
+                Date.now() + env.AUTH_LOCKOUT_DURATION_SECONDS * 1000,
+            );
+
+            await this.authRepository.lockCredential(credentialId, lockedUntil);
+
+            return this.buildAccountLockedError(lockedUntil);
+        }
+
+        return new AuthError(
+            'INVALID_CREDENTIALS',
+            'Email ou password inválidos.',
+        );
     }
 
     /**

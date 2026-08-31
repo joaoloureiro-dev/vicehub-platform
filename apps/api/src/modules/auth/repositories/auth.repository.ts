@@ -143,6 +143,68 @@ export class AuthRepository {
     }
 
     /**
+     * Regista uma tentativa de login falhada.
+     *
+     * O incremento é feito pela base de dados e não em memória, para que
+     * tentativas concorrentes não se sobreponham e percam contagens.
+     */
+    registerFailedLoginAttempt(credentialId: string) {
+        return this.database.userCredential.update({
+            where: {
+                id: credentialId,
+            },
+            data: {
+                failed_login_attempts: {
+                    increment: 1,
+                },
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Bloqueia a credencial até à data indicada.
+     *
+     * O contador é reposto no mesmo movimento: depois de o bloqueio
+     * expirar, o utilizador volta a ter o conjunto completo de tentativas
+     * em vez de ser bloqueado de novo à primeira falha.
+     */
+    lockCredential(credentialId: string, lockedUntil: Date) {
+        return this.database.userCredential.update({
+            where: {
+                id: credentialId,
+            },
+            data: {
+                locked_until: lockedUntil,
+                failed_login_attempts: 0,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
+     * Limpa o estado de bloqueio após um login bem sucedido.
+     */
+    clearFailedLoginAttempts(credentialId: string) {
+        return this.database.userCredential.update({
+            where: {
+                id: credentialId,
+            },
+            data: {
+                locked_until: null,
+                failed_login_attempts: 0,
+                version: {
+                    increment: 1,
+                },
+            },
+        });
+    }
+
+    /**
      * Cria uma sessão autenticada.
      *
      * Cada login cria uma AuthSession própria,

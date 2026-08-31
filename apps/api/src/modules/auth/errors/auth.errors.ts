@@ -1,4 +1,5 @@
 export type AuthErrorCode =
+    | 'ACCOUNT_LOCKED'
     | 'EMAIL_ALREADY_EXISTS'
     | 'INVALID_CREDENTIALS'
     | 'INVALID_ACCESS_TOKEN'
