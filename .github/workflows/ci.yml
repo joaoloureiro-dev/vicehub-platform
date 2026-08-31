@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+# Um push novo sobre o mesmo ramo torna a execução anterior irrelevante.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build, tipos e testes
+    runs-on: ubuntu-latest
+
+    env:
+      # O prisma.config.ts exige DATABASE_URL para carregar, mesmo em comandos
+      # que não abrem ligação, como o generate. Nenhum passo deste workflow
+      # contacta uma base de dados: os testes usam duplos em memória.
+      DATABASE_URL: postgresql://vicehub:vicehub@localhost:5432/vicehub_ci
+
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Os workspaces declaram engines >=24. O Node 24 traz npm 11.
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # O Prisma Client é gerado, não versionado. Sem este passo, a compilação
+      # do package database falha por não encontrar os tipos de @prisma/client.
+      - name: Gerar o Prisma Client
+        run: npm run db:generate
+
+      - name: Validar o schema Prisma
+        run: npm run db:validate
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Verificar tipos
+        run: npm run typecheck
+
+      - name: Correr testes
+        run: npm run test
