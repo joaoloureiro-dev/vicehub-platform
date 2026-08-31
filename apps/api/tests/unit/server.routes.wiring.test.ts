@@ -2,17 +2,17 @@ import Fastify from 'fastify';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RouteOptions } from 'fastify';
 
-import crewRoutes from '../../src/modules/crews/crew.routes.js';
+import serverRoutes from '../../src/modules/servers/server.routes.js';
 import validationPlugin from '../../src/plugins/http/validation.plugin.js';
-import type { CrewController } from '../../src/modules/crews/controllers/crew.controller.js';
+import type { ServerController } from '../../src/modules/servers/controllers/server.controller.js';
 
 /**
- * Verifica que permissões cada rota de crew exige.
+ * Verifica que permissões cada rota de servidor exige.
  *
  * É o mapa de quem pode o quê. Uma rota de gestão que perdesse o guard
  * ficaria aberta a qualquer membro, e nada mais na suite daria por isso.
  */
-describe('ligação das rotas de crew', () => {
+describe('ligação das rotas de servidor', () => {
     const registered = new Map<string, RouteOptions>();
     const permissoesPorRota = new Map<string, string[]>();
 
@@ -23,10 +23,6 @@ describe('ligação das rotas de crew', () => {
 
         app.decorate('authenticate', vi.fn() as never);
 
-        /**
-         * O authorize devolve um preHandler; guardamos as permissões que
-         * lhe foram pedidas para as poder verificar por rota.
-         */
         const pedidas = new Map<unknown, string[]>();
 
         app.decorate('authorize', ((...permissions: string[]) => {
@@ -58,14 +54,15 @@ describe('ligação das rotas de crew', () => {
             listMembers: vi.fn(),
             listJoinRequests: vi.fn(),
             requestToJoin: vi.fn(),
+            withdrawJoinRequest: vi.fn(),
             leave: vi.fn(),
             acceptRequest: vi.fn(),
             rejectRequest: vi.fn(),
             removeMember: vi.fn(),
             setMemberRole: vi.fn(),
-        } as unknown as CrewController;
+        } as unknown as ServerController;
 
-        await app.register(crewRoutes, { controller });
+        await app.register(serverRoutes, { controller });
         await app.ready();
         await app.close();
     });
@@ -85,7 +82,7 @@ describe('ligação das rotas de crew', () => {
     };
 
     describe('rotas públicas', () => {
-        it.each(['GET /:crewId', 'GET /:crewId/members'])(
+        it.each(['GET /:serverId', 'GET /:serverId/members'])(
             '%s é acessível sem conta',
             (key) => {
                 expect(preHandlerCount(key)).toBe(0);
@@ -94,59 +91,61 @@ describe('ligação das rotas de crew', () => {
     });
 
     describe('rotas que exigem apenas conta', () => {
-        it.each(['POST /', 'POST /:crewId/join', 'POST /:crewId/leave'])(
-            '%s exige autenticação mas nenhuma permissão',
-            (key) => {
-                expect(preHandlerCount(key)).toBe(1);
-                expect(permissoesPorRota.get(key)).toEqual([]);
-            },
-        );
+        it.each([
+            'POST /',
+            'POST /:serverId/join',
+            'DELETE /:serverId/join',
+            'POST /:serverId/leave',
+        ])('%s exige autenticação mas nenhuma permissão', (key) => {
+            expect(preHandlerCount(key)).toBe(1);
+            expect(permissoesPorRota.get(key)).toEqual([]);
+        });
     });
 
     describe('rotas de gestão de membros', () => {
         it.each([
-            'GET /:crewId/requests',
-            'POST /:crewId/requests/:userId/accept',
-            'POST /:crewId/requests/:userId/reject',
-            'DELETE /:crewId/members/:userId',
-        ])('%s exige crew:manage_members', (key) => {
-            expect(permissoesPorRota.get(key)).toEqual(['crew:manage_members']);
+            'GET /:serverId/requests',
+            'POST /:serverId/requests/:userId/accept',
+            'POST /:serverId/requests/:userId/reject',
+            'DELETE /:serverId/members/:userId',
+        ])('%s exige server:manage_members', (key) => {
+            expect(permissoesPorRota.get(key)).toEqual(['server:manage_members']);
         });
     });
 
     describe('rotas que mexem em quem manda', () => {
         /**
-         * Alterar cargos tem de exigir crew:manage e não a mera gestão de
-         * membros: caso contrário um oficial podia promover um cúmplice a
-         * líder e tomar a crew a quem a fundou.
+         * Alterar cargos tem de exigir server:manage e não a mera gestão
+         * de membros: caso contrário um moderador podia promover um
+         * cúmplice a dono e tomar o servidor a quem o criou.
          */
-        it.each(['PATCH /:crewId', 'PUT /:crewId/members/:userId/role'])(
-            '%s exige crew:manage',
+        it.each(['PATCH /:serverId', 'PUT /:serverId/members/:userId/role'])(
+            '%s exige server:manage',
             (key) => {
-                expect(permissoesPorRota.get(key)).toEqual(['crew:manage']);
+                expect(permissoesPorRota.get(key)).toEqual(['server:manage']);
             },
         );
 
-        it('alterar cargos não se contenta com crew:manage_members', () => {
+        it('alterar cargos não se contenta com server:manage_members', () => {
             expect(
-                permissoesPorRota.get('PUT /:crewId/members/:userId/role'),
-            ).not.toContain('crew:manage_members');
+                permissoesPorRota.get('PUT /:serverId/members/:userId/role'),
+            ).not.toContain('server:manage_members');
         });
     });
 
     describe('validação de entrada', () => {
-        it.each([
-            'POST /',
-            'PATCH /:crewId',
-            'PUT /:crewId/members/:userId/role',
-        ])('%s valida o corpo', (key) => {
-            expect(registered.get(key)?.schema?.body).toBeDefined();
-        });
+        it.each(['POST /', 'PATCH /:serverId', 'PUT /:serverId/members/:userId/role'])(
+            '%s valida o corpo',
+            (key) => {
+                expect(registered.get(key)?.schema?.body).toBeDefined();
+            },
+        );
 
         it.each([
-            'GET /:crewId',
-            'POST /:crewId/join',
-            'POST /:crewId/requests/:userId/accept',
+            'GET /:serverId',
+            'POST /:serverId/join',
+            'DELETE /:serverId/join',
+            'POST /:serverId/requests/:userId/accept',
         ])('%s valida os parâmetros', (key) => {
             expect(registered.get(key)?.schema?.params).toBeDefined();
         });
