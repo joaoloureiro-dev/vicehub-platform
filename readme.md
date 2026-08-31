@@ -166,6 +166,30 @@ pode o quê lê-se na tabela `UserRole`. Por isso o `db:seed` é um passo
 obrigatório da instalação — sem os cargos, o registo recusa criar contas
 em vez de as deixar sem autorização nenhuma.
 
+### Perfis de utilizador
+
+| Rota | Autenticação | Devolve |
+|---|---|---|
+| `GET /api/v1/users/:username` | não | perfil público |
+| `GET /api/v1/users/me` | sim | perfil do próprio |
+| `PATCH /api/v1/users/me` | sim | perfil atualizado |
+
+O perfil público é mesmo público: acessível sem conta, porque é isso que
+o torna público. Mostra username, avatar, bio, level, xp, reputação, data
+de registo e o **selo premium**.
+
+O que fica de fora do perfil público está fora por decisão, não por
+esquecimento: email, último início de sessão e a validade do plano. Dizer
+que alguém é premium é diferente de expor até quando pagou, que é
+informação de faturação. A decisão do que cada vista expõe vive num só
+sítio, o `UserService`, e há testes que falham se algum campo privado
+passar a sair na resposta pública.
+
+O `PATCH` altera apenas apresentação — avatar e bio. Não indicar um campo
+deixa-o como está; indicá-lo a `null` limpa-o. Email e username não se
+alteram por aqui: mexem em identidade e unicidade, e merecem fluxos
+próprios com verificação.
+
 ### Subscrições premium
 
 O plano premium custa **10 USD por mês** e pode pertencer a um utilizador,
