@@ -9,6 +9,10 @@ import {
 import { AuthorizationError } from '../../modules/authorization/errors/authorization.errors.js';
 import { UserError } from '../../modules/users/errors/user.errors.js';
 import {
+    CrewError,
+    type CrewErrorCode,
+} from '../../modules/crews/errors/crew.errors.js';
+import {
     SubscriptionError,
     type SubscriptionErrorCode,
 } from '../../modules/subscriptions/errors/subscription.errors.js';
@@ -44,6 +48,17 @@ const authErrorStatusCodes: Record<AuthErrorCode, number> = {
 const subscriptionErrorStatusCodes: Record<SubscriptionErrorCode, number> = {
     SUBSCRIPTION_REQUIRED: 402,
     INVALID_SUBSCRIPTION_OWNER: 500,
+};
+
+const crewErrorStatusCodes: Record<CrewErrorCode, number> = {
+    CREW_NOT_FOUND: 404,
+    CREW_NAME_TAKEN: 409,
+    CREW_TAG_TAKEN: 409,
+    MEMBERSHIP_NOT_FOUND: 404,
+    ALREADY_MEMBER: 409,
+    NOT_A_MEMBER: 404,
+    MEMBERSHIP_NOT_PENDING: 409,
+    CANNOT_MANAGE_SELF: 409,
 };
 
 const httpErrorNames: Record<number, string> = {
@@ -127,6 +142,22 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
 
         if (error instanceof AuthorizationError) {
             /**
+             * Ser o último a ter um cargo não é falta de permissões: é uma
+             * regra de negócio que impede deixar a crew sem líder.
+             */
+            if (error.code === 'LAST_ROLE_HOLDER') {
+                request.log.warn({ err: error }, 'Operação recusada por regra de negócio.');
+
+                reply.status(409).send({
+                    statusCode: 409,
+                    code: error.code,
+                    error: 'Conflict',
+                    message: error.message,
+                });
+                return;
+            }
+
+            /**
              * 403 e não 401: o utilizador está identificado, apenas não
              * tem autorização. Devolver 401 faria o cliente tentar
              * autenticar-se de novo sem qualquer proveito.
@@ -142,6 +173,23 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 error: 'Forbidden',
                 message: error.message,
                 missingPermissions: error.missingPermissions,
+            });
+            return;
+        }
+
+        if (error instanceof CrewError) {
+            const statusCode = crewErrorStatusCodes[error.code];
+
+            request.log.warn(
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo de crews.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: error.code,
+                error: httpErrorNames[statusCode] ?? 'Error',
+                message: error.message,
             });
             return;
         }

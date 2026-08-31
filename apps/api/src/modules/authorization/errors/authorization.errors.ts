@@ -1,4 +1,6 @@
-export type AuthorizationErrorCode = 'INSUFFICIENT_PERMISSIONS';
+export type AuthorizationErrorCode =
+    | 'INSUFFICIENT_PERMISSIONS'
+    | 'LAST_ROLE_HOLDER';
 
 /**
  * Erro de domínio do módulo de autorização.
