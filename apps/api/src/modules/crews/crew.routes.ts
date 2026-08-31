@@ -145,13 +145,16 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
         controller.removeMember.bind(controller),
     );
 
+    /**
+     * Alterar cargos mexe em quem manda na crew, incluindo passar a
+     * liderança a outra pessoa. Exige crew:manage, e não apenas a gestão
+     * de membros: com crew:manage_members um oficial podia promover um
+     * cúmplice a líder e tomar a crew a quem a fundou.
+     */
     fastify.put<{ Params: CrewMemberParamDto; Body: SetMemberRoleDto }>(
         '/:crewId/members/:userId/role',
         {
-            preHandler: [
-                fastify.authenticate,
-                fastify.authorize('crew:manage_members'),
-            ],
+            preHandler: [fastify.authenticate, fastify.authorize('crew:manage')],
             schema: { params: crewMemberParamSchema, body: setMemberRoleSchema },
         },
         controller.setMemberRole.bind(controller),

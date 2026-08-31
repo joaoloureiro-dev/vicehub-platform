@@ -78,6 +78,12 @@ export const PERMISSIONS = {
         name: 'Gerir o servidor',
         description: 'Alterar dados e definições do servidor.',
     },
+    'server:manage_members': {
+        scope: PermissionScope.server,
+        slug: 'manage_members',
+        name: 'Gerir membros do servidor',
+        description: 'Aceitar, recusar e remover membros do servidor.',
+    },
     'treasury:read': {
         scope: PermissionScope.treasury,
         slug: 'read',
@@ -179,7 +185,21 @@ export const ROLES = {
         slug: 'server_owner',
         name: 'Dono do servidor',
         description: 'Controlo total sobre o servidor.',
-        permissions: ['server:read', 'server:manage'],
+        permissions: ['server:read', 'server:manage', 'server:manage_members'],
+    },
+    server_moderator: {
+        scope: RoleScope.server,
+        slug: 'server_moderator',
+        name: 'Moderador do servidor',
+        description: 'Gere os membros do servidor sem lhe alterar as definições.',
+        permissions: ['server:read', 'server:manage_members'],
+    },
+    server_member: {
+        scope: RoleScope.server,
+        slug: 'server_member',
+        name: 'Membro do servidor',
+        description: 'Participa no servidor sem poderes de gestão.',
+        permissions: ['server:read'],
     },
 } as const satisfies Record<string, RoleDefinition>;
 

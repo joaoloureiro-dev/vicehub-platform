@@ -13,6 +13,10 @@ import {
     type CrewErrorCode,
 } from '../../modules/crews/errors/crew.errors.js';
 import {
+    ServerError,
+    type ServerErrorCode,
+} from '../../modules/servers/errors/server.errors.js';
+import {
     SubscriptionError,
     type SubscriptionErrorCode,
 } from '../../modules/subscriptions/errors/subscription.errors.js';
@@ -54,6 +58,16 @@ const crewErrorStatusCodes: Record<CrewErrorCode, number> = {
     CREW_NOT_FOUND: 404,
     CREW_NAME_TAKEN: 409,
     CREW_TAG_TAKEN: 409,
+    MEMBERSHIP_NOT_FOUND: 404,
+    ALREADY_MEMBER: 409,
+    NOT_A_MEMBER: 404,
+    MEMBERSHIP_NOT_PENDING: 409,
+    CANNOT_MANAGE_SELF: 409,
+};
+
+const serverErrorStatusCodes: Record<ServerErrorCode, number> = {
+    SERVER_NOT_FOUND: 404,
+    SERVER_NAME_TAKEN: 409,
     MEMBERSHIP_NOT_FOUND: 404,
     ALREADY_MEMBER: 409,
     NOT_A_MEMBER: 404,
@@ -143,7 +157,8 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
         if (error instanceof AuthorizationError) {
             /**
              * Ser o último a ter um cargo não é falta de permissões: é uma
-             * regra de negócio que impede deixar a crew sem líder.
+             * regra de negócio que impede deixar uma crew sem líder ou um
+             * servidor sem dono.
              */
             if (error.code === 'LAST_ROLE_HOLDER') {
                 request.log.warn({ err: error }, 'Operação recusada por regra de negócio.');
@@ -183,6 +198,23 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             request.log.warn(
                 { err: error, code: error.code },
                 'Pedido recusado pelo módulo de crews.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: error.code,
+                error: httpErrorNames[statusCode] ?? 'Error',
+                message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof ServerError) {
+            const statusCode = serverErrorStatusCodes[error.code];
+
+            request.log.warn(
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo de servidores.',
             );
 
             reply.status(statusCode).send({

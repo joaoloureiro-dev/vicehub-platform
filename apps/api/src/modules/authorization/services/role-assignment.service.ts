@@ -78,8 +78,9 @@ export class RoleAssignmentService {
     /**
      * Recusa a operação se ela deixasse o âmbito sem ninguém no cargo.
      *
-     * Uma crew sem líder fica sem quem aceite membros ou altere cargos,
-     * e não haveria forma de a recuperar pela própria API.
+     * Uma crew sem líder, ou um servidor sem dono, fica sem quem aceite
+     * membros ou altere cargos, e não haveria forma de o recuperar pela
+     * própria API.
      */
     async assertNotLastHolder(
         userId: string,
@@ -109,7 +110,7 @@ export class RoleAssignmentService {
         if (total <= 1) {
             throw new AuthorizationError(
                 'LAST_ROLE_HOLDER',
-                'És o único líder. Promove outro membro antes de sair ou de mudares de cargo.',
+                'És o único com este cargo. Passa-o a outro membro antes de saíres ou de mudares de cargo.',
                 [],
             );
         }

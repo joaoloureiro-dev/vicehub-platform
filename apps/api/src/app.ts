@@ -10,6 +10,7 @@ import { env } from './config/env.js';
 import authModule from './modules/auth/auth.module.js';
 import userModule from './modules/users/user.module.js';
 import crewModule from './modules/crews/crew.module.js';
+import serverModule from './modules/servers/server.module.js';
 
 import authenticatePlugin from './plugins/auth/authenticate.plugin.js';
 import authorizePlugin from './plugins/auth/authorize.plugin.js';
@@ -156,6 +157,9 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Módulo de crews
     void app.register(crewModule);
+
+    // Módulo de servidores
+    void app.register(serverModule);
 
     return app;
 };

@@ -104,6 +104,47 @@ describe('catálogo de RBAC', () => {
             expect(holders).toEqual(['admin']);
         });
 
+        /**
+         * Gerir membros e mandar na entidade são poderes diferentes, e o
+         * catálogo tem de os manter separados: quem apenas aceita e
+         * remove membros não pode ficar com a chave que permite alterar
+         * cargos, ou promoveria um cúmplice e tomaria a crew ou o
+         * servidor a quem o criou.
+         */
+        it('só um cargo por âmbito manda na própria entidade', () => {
+            const holdersOf = (permission: PermissionKey): RoleKey[] =>
+                ROLE_KEYS.filter((key) =>
+                    (ROLES[key].permissions as readonly PermissionKey[]).includes(
+                        permission,
+                    ),
+                );
+
+            expect(holdersOf('crew:manage')).toEqual(['crew_leader']);
+            expect(holdersOf('server:manage')).toEqual(['server_owner']);
+        });
+
+        it('gerir membros não arrasta consigo o poder de gerir a entidade', () => {
+            const temGestaoDeMembrosSemMandar = ROLE_KEYS.filter((key) => {
+                const permissions = ROLES[key].permissions as readonly PermissionKey[];
+
+                return (
+                    (permissions.includes('crew:manage_members') &&
+                        !permissions.includes('crew:manage')) ||
+                    (permissions.includes('server:manage_members') &&
+                        !permissions.includes('server:manage'))
+                );
+            });
+
+            /**
+             * Estes são exatamente os cargos intermédios. O teste existe
+             * para que a distinção seja deliberada e não um acaso.
+             */
+            expect(temGestaoDeMembrosSemMandar).toEqual([
+                'crew_officer',
+                'server_moderator',
+            ]);
+        });
+
         it('cargos de crew não concedem permissões de servidor, e vice-versa', () => {
             for (const key of ROLE_KEYS) {
                 const role = ROLES[key];

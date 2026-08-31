@@ -154,7 +154,10 @@ model Crew {
 model Server {
   id String @id @default(uuid())
 
-  name        String
+  /// O nome identifica o servidor no diretório público, tal como o nome
+  /// de uma crew. Sem unicidade, dois servidores homónimos seriam
+  /// indistinguíveis para quem procura onde jogar.
+  name        String  @unique
   region      String?
   description String?
 
@@ -215,6 +218,7 @@ model Membership {
   @@index([userId, type])
   @@index([status])
   @@index([crewId, status])
+  @@index([serverId, status])
   @@index([is_deleted])
 }
 
