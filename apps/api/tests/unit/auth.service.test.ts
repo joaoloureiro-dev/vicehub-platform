@@ -1,5 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { Prisma } from '@vicehub/database';
+
 import { AuthError, type AuthErrorCode } from '../../src/modules/auth/errors/auth.errors.js';
 import { AuthService } from '../../src/modules/auth/services/auth.service.js';
 import type { TokenService } from '../../src/modules/auth/services/token.service.js';
@@ -77,30 +79,107 @@ describe('AuthService', () => {
     };
 
     describe('register', () => {
+        const newAccount = {
+            email: 'player@vicehub.com',
+            username: 'player',
+            password: 'password-forte-123',
+        };
+
         it('recusa um email já registado', async () => {
-            repository.findUserByEmail.mockResolvedValue(buildUserWithCredentials());
+            repository.findExistingIdentity.mockResolvedValue({
+                email: 'player@vicehub.com',
+                username: 'outro-nome',
+            });
 
             await expectAuthError(
-                service.register({
-                    email: 'player@vicehub.com',
-                    username: 'player',
-                    password: 'password-forte-123',
-                }),
+                service.register(newAccount),
                 'EMAIL_ALREADY_EXISTS',
             );
 
             expect(repository.createLocalUser).not.toHaveBeenCalled();
         });
 
+        it('recusa um username já registado com 409 e não 500', async () => {
+            repository.findExistingIdentity.mockResolvedValue({
+                email: 'outro@vicehub.com',
+                username: 'player',
+            });
+
+            await expectAuthError(
+                service.register(newAccount),
+                'USERNAME_ALREADY_EXISTS',
+            );
+
+            expect(repository.createLocalUser).not.toHaveBeenCalled();
+        });
+
+        it('não gasta um hash Argon2 quando a identidade já existe', async () => {
+            repository.findExistingIdentity.mockResolvedValue({
+                email: 'outro@vicehub.com',
+                username: 'player',
+            });
+
+            await service.register(newAccount).catch(() => undefined);
+
+            expect(passwordService.hash).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            ['username', 'USERNAME_ALREADY_EXISTS'],
+            ['email', 'EMAIL_ALREADY_EXISTS'],
+        ] as const)(
+            'traduz um conflito de %s vindo da base de dados',
+            async (field, code) => {
+                /**
+                 * A verificação prévia não elimina a corrida: entre
+                 * verificar e inserir pode entrar outro registo igual.
+                 */
+                repository.findExistingIdentity.mockResolvedValue(null);
+                repository.createLocalUser.mockRejectedValue(
+                    new Prisma.PrismaClientKnownRequestError('conflito', {
+                        code: 'P2002',
+                        clientVersion: '7.8.0',
+                        meta: { target: [field] },
+                    }),
+                );
+
+                await expectAuthError(service.register(newAccount), code);
+            },
+        );
+
+        it('deixa passar erros da base de dados que não sejam conflitos', async () => {
+            repository.findExistingIdentity.mockResolvedValue(null);
+            repository.createLocalUser.mockRejectedValue(new Error('ligação perdida'));
+
+            await expect(service.register(newAccount)).rejects.toThrow(
+                'ligação perdida',
+            );
+        });
+
+        it('não confunde outros erros do Prisma com um conflito', async () => {
+            /**
+             * Só o P2002 é violação de unicidade. Traduzir qualquer erro
+             * do Prisma para 409 esconderia avarias reais atrás de uma
+             * mensagem de conflito.
+             */
+            repository.findExistingIdentity.mockResolvedValue(null);
+            repository.createLocalUser.mockRejectedValue(
+                new Prisma.PrismaClientKnownRequestError('registo não encontrado', {
+                    code: 'P2025',
+                    clientVersion: '7.8.0',
+                }),
+            );
+
+            await expect(service.register(newAccount)).rejects.toThrow(
+                'registo não encontrado',
+            );
+        });
+
         it('guarda o hash da password e nunca a password', async () => {
-            repository.findUserByEmail.mockResolvedValue(null);
+            repository.findExistingIdentity.mockResolvedValue(null);
             repository.createLocalUser.mockResolvedValue(buildUserRow());
 
-            const result = await service.register({
-                email: 'player@vicehub.com',
-                username: 'player',
-                password: 'password-forte-123',
-            });
+            const result = await service.register(newAccount);
 
             expect(passwordService.hash).toHaveBeenCalledWith('password-forte-123');
             expect(repository.createLocalUser).toHaveBeenCalledWith(

@@ -1,5 +1,6 @@
 import { env } from '../../../config/env.js';
 import { AuthError } from '../errors/auth.errors.js';
+import { getUniqueConstraintFields } from '../repositories/prisma-errors.js';
 import type { AuthRepository } from '../repositories/auth.repository.js';
 import type {
     AccessTokenPayload,
@@ -84,18 +85,31 @@ export class AuthService {
      * Regista um novo utilizador local.
      */
     async register(input: RegisterInput): Promise<AuthResult> {
-        const existingUser = await this.authRepository.findUserByEmail(input.email);
+        /**
+         * Email e username têm ambos restrição de unicidade, por isso
+         * ambos são verificados. Sem a verificação do username, o conflito
+         * só aparecia como erro da base de dados e o registo respondia 500.
+         */
+        const existingIdentity = await this.authRepository.findExistingIdentity(
+            input.email,
+            input.username,
+        );
 
-        if (existingUser) {
-            throw new AuthError(
-                'EMAIL_ALREADY_EXISTS',
-                'Já existe uma conta com este email.',
-            );
+        if (existingIdentity) {
+            throw existingIdentity.email === input.email
+                ? new AuthError(
+                    'EMAIL_ALREADY_EXISTS',
+                    'Já existe uma conta com este email.',
+                )
+                : new AuthError(
+                    'USERNAME_ALREADY_EXISTS',
+                    'Este nome de utilizador já está em uso.',
+                );
         }
 
         const passwordHash = await this.passwordService.hash(input.password);
 
-        const user = await this.authRepository.createLocalUser({
+        const user = await this.createLocalUser({
             email: input.email,
             username: input.username,
             passwordHash,
@@ -370,6 +384,40 @@ export class AuthService {
             'INVALID_CREDENTIALS',
             'Email ou password inválidos.',
         );
+    }
+
+    /**
+     * Cria o utilizador, traduzindo um conflito de unicidade da base de
+     * dados no erro de domínio correspondente.
+     *
+     * A verificação prévia não elimina a corrida: entre verificar e
+     * inserir pode entrar outro registo com o mesmo email ou username.
+     * Sem isto, essa corrida devolveria 500.
+     */
+    private async createLocalUser(input: {
+        email: string;
+        username: string;
+        passwordHash: string;
+    }) {
+        try {
+            return await this.authRepository.createLocalUser(input);
+        } catch (error: unknown) {
+            const conflictingFields = getUniqueConstraintFields(error);
+
+            if (!conflictingFields) {
+                throw error;
+            }
+
+            throw conflictingFields.includes('username')
+                ? new AuthError(
+                    'USERNAME_ALREADY_EXISTS',
+                    'Este nome de utilizador já está em uso.',
+                )
+                : new AuthError(
+                    'EMAIL_ALREADY_EXISTS',
+                    'Já existe uma conta com este email.',
+                );
+        }
     }
 
     /**

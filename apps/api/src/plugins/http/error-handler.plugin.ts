@@ -21,6 +21,7 @@ const authErrorStatusCodes: Record<AuthErrorCode, number> = {
      */
     ACCOUNT_LOCKED: 423,
     EMAIL_ALREADY_EXISTS: 409,
+    USERNAME_ALREADY_EXISTS: 409,
     INVALID_CREDENTIALS: 401,
     INVALID_ACCESS_TOKEN: 401,
     INVALID_REFRESH_TOKEN: 401,
