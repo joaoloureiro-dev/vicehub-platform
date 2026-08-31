@@ -76,6 +76,25 @@ export class AuthRepository {
     }
 
     /**
+     * Procura uma identidade já em uso, por email ou por username.
+     *
+     * Ambos têm restrição de unicidade, por isso o registo tem de os
+     * verificar aos dois. Uma única consulta evita ida e volta extra.
+     */
+    findExistingIdentity(email: string, username: string) {
+        return this.database.user.findFirst({
+            where: {
+                is_deleted: false,
+                OR: [{ email }, { username }],
+            },
+            select: {
+                email: true,
+                username: true,
+            },
+        });
+    }
+
+    /**
      * Procura um utilizador pelo ID.
      *
      * Usado em refresh token, validação de sessão

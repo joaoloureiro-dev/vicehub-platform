@@ -17,6 +17,7 @@ export type AuthRepositoryMock = ReturnType<typeof createAuthRepositoryMock>;
 export const createAuthRepositoryMock = () => ({
     findUserByEmail: vi.fn(),
     findUserById: vi.fn(),
+    findExistingIdentity: vi.fn(),
     createLocalUser: vi.fn(),
     updateLastLogin: vi.fn(),
     registerFailedLoginAttempt: vi.fn(),
