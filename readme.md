@@ -96,13 +96,24 @@ To become the central platform where gaming communities interact, grow, compete 
 ```bash
 npm ci
 cp apps/api/.env.example .env   # preencher DATABASE_URL e os segredos JWT
-npm run db:generate
+npm run db:generate             # gera o Prisma Client
+npm run build                   # compila os packages
 npm run db:migrate:dev
 npm run db:seed                 # cargos e permissões base
 npm run dev
 ```
 
 O `.env` é lido a partir da raiz do monorepo.
+
+**O `npm run build` não é opcional.** A API importa `@vicehub/database`, que
+resolve para `packages/database/dist`, e esse diretório não é versionado. A
+ordem também conta: o `db:generate` vem antes, porque a compilação do package
+`database` precisa dos tipos do Prisma Client.
+
+Depois de um `git pull` que traga alterações a `packages/database`, volta a
+correr `npm run db:generate && npm run build`. O sinal de que falta é o
+TypeScript queixar-se de que `@vicehub/database` não exporta algo que
+claramente lá está — está, mas no código-fonte, não no `dist` compilado.
 
 ### Verificação
 
