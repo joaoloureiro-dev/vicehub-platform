@@ -32,6 +32,9 @@ export {
     SubscriptionPlan,
     SubscriptionProvider,
     SubscriptionStatus,
+    TransactionCategory,
+    TransactionDirection,
+    TransactionStatus,
 } from '@prisma/client';
 
 export {

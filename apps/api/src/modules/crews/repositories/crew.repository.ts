@@ -48,6 +48,7 @@ export class CrewRepository {
             created_by: string;
             description?: string | null;
             memberships: unknown;
+            wallet: unknown;
         } = {
             name: input.name,
             tag: input.tag,
@@ -60,6 +61,11 @@ export class CrewRepository {
                     status: MembershipStatus.active,
                     responded_at: new Date(),
                     responded_by: input.founderId,
+                    source: SourceType.api,
+                },
+            },
+            wallet: {
+                create: {
                     source: SourceType.api,
                 },
             },

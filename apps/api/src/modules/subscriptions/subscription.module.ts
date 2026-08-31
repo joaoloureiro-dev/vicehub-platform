@@ -1,6 +1,8 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
+import { AuditRepository } from '../audit/repositories/audit.repository.js';
+import { AuditService } from '../audit/services/audit.service.js';
 import { SubscriptionController } from './controllers/subscription.controller.js';
 import { SubscriptionRepository } from './repositories/subscription.repository.js';
 import { SubscriptionService } from './services/subscription.service.js';
@@ -16,7 +18,10 @@ const subscriptionModule: FastifyPluginAsync = async (fastify) => {
 
     await fastify.register(subscriptionRoutes, {
         prefix: '/api/v1/subscriptions',
-        controller: new SubscriptionController(subscriptionService),
+        controller: new SubscriptionController(
+            subscriptionService,
+            new AuditService(new AuditRepository(fastify.prisma)),
+        ),
     });
 };
 

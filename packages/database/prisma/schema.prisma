@@ -28,6 +28,38 @@ enum MembershipStatus {
   left
 }
 
+/// Uma movimentação nasce por responder e só entra no saldo quando é
+/// aprovada. Sem estados, uma despesa proposta e uma despesa paga seriam
+/// indistinguíveis, e os saldos atual, pendente e disponível seriam o
+/// mesmo número.
+enum TransactionStatus {
+  pending
+  approved
+  rejected
+  canceled
+}
+
+/// O sentido do dinheiro é explícito em vez de ser o sinal do montante:
+/// um sinal trocado numa conta passa despercebido, um sentido trocado
+/// não.
+enum TransactionDirection {
+  credit
+  debit
+}
+
+/// Para que serviu o dinheiro. Segue as rubricas de tesouraria que uma
+/// comunidade precisa de justificar.
+enum TransactionCategory {
+  contribution
+  server_costs
+  marketing
+  event
+  prize
+  service
+  payout
+  other
+}
+
 enum AuthProviderType {
   local
   discord
@@ -174,6 +206,7 @@ model Server {
   updated_by String?
 
   memberships Membership[]
+  wallet      Wallet?
 
   userRoles     UserRole[]
   subscriptions Subscription[]
@@ -225,9 +258,16 @@ model Membership {
 model Wallet {
   id String @id @default(uuid())
 
-  userId String? @unique
-  crewId String? @unique
+  /// Exatamente um destes é preenchido, tal como na Subscription. A
+  /// restrição está garantida por um CHECK na base de dados, porque o
+  /// Prisma não a sabe exprimir.
+  userId   String? @unique
+  crewId   String? @unique
+  serverId String? @unique
 
+  /// Saldo já liquidado, ou seja, a soma das movimentações aprovadas.
+  /// É mantido dentro da mesma transação que aprova cada movimentação,
+  /// e há um teste que o reconcilia com as próprias movimentações.
   balance BigInt @default(0)
 
   created_at DateTime  @default(now())
@@ -240,13 +280,15 @@ model Wallet {
   created_by String?
   updated_by String?
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-  crew Crew? @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crew   Crew?   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   transactions Transaction[]
 
   @@index([userId])
   @@index([crewId])
+  @@index([serverId])
 }
 
 model Transaction {
@@ -254,9 +296,21 @@ model Transaction {
 
   walletId String
 
-  amount      BigInt
-  type        String
+  /// Sempre positivo. O sentido vive em direction, e um CHECK impede
+  /// montantes nulos ou negativos.
+  amount BigInt
+
+  direction TransactionDirection
+  category  TransactionCategory  @default(other)
+  status    TransactionStatus    @default(pending)
+
   description String?
+
+  /// Quem propôs e quem decidiu são pessoas diferentes por desenho: é o
+  /// que permite auditar uma despesa até a quem a aprovou.
+  requested_by String?
+  decided_by   String?
+  decided_at   DateTime?
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -271,7 +325,9 @@ model Transaction {
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
 
   @@index([walletId])
-  @@index([type])
+  @@index([category])
+  @@index([status])
+  @@index([walletId, status])
   @@index([walletId, created_at(sort: Desc)])
 }
 
@@ -450,6 +506,48 @@ model Subscription {
   @@index([serverId, status])
   @@index([status, current_period_end])
   @@index([is_deleted])
+}
+
+/// Registo do que foi feito, por quem e a quê.
+///
+/// Os campos created_by e updated_by dos outros modelos dizem quem tocou
+/// por último; não dizem o que mudou de quê para quê, nem guardam as
+/// ações que não alteram linha nenhuma. Sem esta tabela não há auditoria
+/// financeira possível.
+///
+/// Nunca é alterado nem apagado: um registo de auditoria que se pode
+/// reescrever não serve de prova.
+model AuditLog {
+  id String @id @default(uuid())
+
+  /// Quem fez. Fica nulo quando a ação é do próprio sistema, e continua
+  /// preenchido depois de a conta ser eliminada — por isso não há chave
+  /// estrangeira: apagar o utilizador não pode apagar o rasto.
+  actor_id String?
+
+  /// O que fez, em minúsculas e separado por pontos, por exemplo
+  /// "subscription.granted" ou "treasury.expense.approved".
+  action String
+
+  /// A que entidade, pelo nome do modelo e pelo seu identificador.
+  entity_type String
+  entity_id   String
+
+  /// O estado antes e depois, quando faz sentido guardá-lo.
+  before Json?
+  after  Json?
+
+  ip_address String?
+  user_agent String?
+
+  created_at DateTime @default(now())
+
+  source SourceType @default(api)
+
+  @@index([actor_id])
+  @@index([action])
+  @@index([entity_type, entity_id])
+  @@index([created_at(sort: Desc)])
 }
 
 model Role {
