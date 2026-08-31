@@ -61,6 +61,23 @@ enum PermissionScope {
   system
 }
 
+enum SubscriptionPlan {
+  premium
+}
+
+enum SubscriptionStatus {
+  active
+  trialing
+  past_due
+  canceled
+  expired
+}
+
+enum SubscriptionProvider {
+  manual
+  stripe
+}
+
 model User {
   id String @id @default(uuid())
 
@@ -95,6 +112,7 @@ model User {
   authProviders UserAuthProvider[]
   authSessions  AuthSession[]
   userRoles     UserRole[]
+  subscriptions Subscription[]
 }
 
 model Crew {
@@ -122,7 +140,8 @@ model Crew {
   memberships Membership[]
   wallet      Wallet?
 
-  userRoles UserRole[]
+  userRoles     UserRole[]
+  subscriptions Subscription[]
 }
 
 model Server {
@@ -146,7 +165,8 @@ model Server {
 
   memberships Membership[]
 
-  userRoles UserRole[]
+  userRoles     UserRole[]
+  subscriptions Subscription[]
 }
 
 model Membership {
@@ -359,6 +379,56 @@ model RefreshToken {
   @@index([status])
   @@index([expires_at])
   @@index([sessionId, status])
+  @@index([is_deleted])
+}
+
+model Subscription {
+  id String @id @default(uuid())
+
+  /// Exatamente um destes é preenchido. A restrição está garantida por um
+  /// CHECK na base de dados, porque o Prisma não a sabe exprimir.
+  userId   String?
+  crewId   String?
+  serverId String?
+
+  plan     SubscriptionPlan     @default(premium)
+  status   SubscriptionStatus   @default(active)
+  provider SubscriptionProvider @default(manual)
+
+  /// Preço cobrado neste período, guardado por linha para que o histórico
+  /// continue exato depois de uma alteração de preços.
+  price_cents Int
+  currency    String @default("USD")
+
+  current_period_start DateTime
+  current_period_end   DateTime
+
+  cancel_at_period_end Boolean   @default(false)
+  canceled_at          DateTime?
+  ended_at             DateTime?
+
+  provider_customer_id     String?
+  provider_subscription_id String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crew   Crew?   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, provider_subscription_id])
+  @@index([userId, status])
+  @@index([crewId, status])
+  @@index([serverId, status])
+  @@index([status, current_period_end])
   @@index([is_deleted])
 }
 

@@ -27,7 +27,19 @@ export {
     RoleScope,
     PermissionScope,
     SourceType,
+    SubscriptionPlan,
+    SubscriptionProvider,
+    SubscriptionStatus,
 } from '@prisma/client';
+
+export {
+    ENTITLING_SUBSCRIPTION_STATUSES,
+    PLANS,
+    PLAN_KEYS,
+    addPlanInterval,
+} from './plans.js';
+
+export type { PlanDefinition, PlanKey } from './plans.js';
 
 export {
     DEFAULT_USER_ROLE,

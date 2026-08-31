@@ -2,6 +2,10 @@ import type { DatabaseClient, PermissionKey } from '@vicehub/database';
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 
 import type { AuthContext } from './auth.types.js';
+import type {
+    SubscriptionEntitlement,
+    SubscriptionOwnerKind,
+} from '../../subscriptions/types/subscription.types.js';
 import type { EffectivePermissions } from '../../authorization/types/authorization.types.js';
 
 declare module 'fastify' {
@@ -19,6 +23,14 @@ declare module 'fastify' {
          * Deve vir sempre a seguir ao authenticate, de que depende.
          */
         authorize(...permissions: PermissionKey[]): preHandlerHookHandler;
+
+        /**
+         * Constrói um preHandler que exige subscrição ativa.
+         *
+         * O titular é indicado explicitamente: 'user' por omissão, ou
+         * 'crew'/'server' para exigir o plano da entidade da rota.
+         */
+        requirePremium(owner?: SubscriptionOwnerKind): preHandlerHookHandler;
     }
 
     interface FastifyRequest {
@@ -40,5 +52,10 @@ declare module 'fastify' {
          * repetem a consulta à base de dados.
          */
         effectivePermissions: EffectivePermissions | null;
+
+        /**
+         * Direito de acesso apurado neste pedido pelo requirePremium.
+         */
+        entitlement: SubscriptionEntitlement | null;
     }
 }

@@ -166,6 +166,44 @@ pode o quê lê-se na tabela `UserRole`. Por isso o `db:seed` é um passo
 obrigatório da instalação — sem os cargos, o registo recusa criar contas
 em vez de as deixar sem autorização nenhuma.
 
+### Subscrições premium
+
+O plano premium custa **10 USD por mês** e pode pertencer a um utilizador,
+a uma crew ou a um servidor. O preço está em
+`packages/database/src/plans.ts`, a mesma fonte única que a aplicação usa.
+
+Cada período é uma **linha própria** na tabela `Subscription`, com o preço
+cobrado nessa altura. Cancelar muda o estado, nunca apaga: o histórico de
+quem teve premium, quando e por quanto, fica sempre disponível. É por isso
+que o preço é gravado por linha — uma alteração de preços não reescreve o
+passado.
+
+Uma rota protege-se assim:
+
+```ts
+fastify.get(
+    '/funcionalidade',
+    { preHandler: [fastify.authenticate, fastify.requirePremium()] },
+    handler,
+);
+```
+
+O titular é indicado explicitamente — `requirePremium()` avalia o plano de
+quem faz o pedido, `requirePremium('crew')` o da crew da rota. Numa rota de
+crew, exigir o plano da crew ou o de quem a usa são decisões diferentes, e
+adivinhar qual seria fonte de enganos.
+
+Quem não tem plano recebe **402 Payment Required**, distinto do 403 de
+falta de permissões: não faltam autorizações, falta o pagamento.
+
+Dão acesso os estados `active` e `trialing`. O `past_due` fica de fora — se
+quiseres um período de tolerância durante a cobrança, é acrescentá-lo a
+`ENTITLING_SUBSCRIPTION_STATUSES`.
+
+A base de dados garante por `CHECK` que cada subscrição tem exatamente um
+titular, que o fim do período é posterior ao início e que o preço não é
+negativo.
+
 ### Valores BigInt nas respostas
 
 O `xp` e o `balance` são `BigInt` no schema Prisma. O JSON não tem inteiros
