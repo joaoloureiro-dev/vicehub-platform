@@ -7,6 +7,7 @@ import {
     type AuthErrorCode,
 } from '../../modules/auth/errors/auth.errors.js';
 import { AuthorizationError } from '../../modules/authorization/errors/authorization.errors.js';
+import { UserError } from '../../modules/users/errors/user.errors.js';
 import {
     SubscriptionError,
     type SubscriptionErrorCode,
@@ -141,6 +142,18 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 error: 'Forbidden',
                 message: error.message,
                 missingPermissions: error.missingPermissions,
+            });
+            return;
+        }
+
+        if (error instanceof UserError) {
+            request.log.warn({ err: error, code: error.code }, 'Recurso não encontrado.');
+
+            reply.status(404).send({
+                statusCode: 404,
+                code: error.code,
+                error: 'Not Found',
+                message: error.message,
             });
             return;
         }
