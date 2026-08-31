@@ -18,6 +18,7 @@ export const createAuthRepositoryMock = () => ({
     findUserByEmail: vi.fn(),
     findUserById: vi.fn(),
     findExistingIdentity: vi.fn(),
+    findRoleIdBySlug: vi.fn(),
     createLocalUser: vi.fn(),
     updateLastLogin: vi.fn(),
     registerFailedLoginAttempt: vi.fn(),

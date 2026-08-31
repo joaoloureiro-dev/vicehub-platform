@@ -2,6 +2,7 @@ import {
     AuthProviderType,
     AuthSessionStatus,
     RefreshTokenStatus,
+    RoleScope,
     SourceType,
     type DatabaseClient,
 } from '@vicehub/database';
@@ -10,6 +11,7 @@ interface CreateLocalUserInput {
     email: string;
     username: string;
     passwordHash: string;
+    defaultRoleId: string;
 }
 
 interface CreateAuthSessionInput {
@@ -76,6 +78,25 @@ export class AuthRepository {
     }
 
     /**
+     * Procura o identificador de um cargo do sistema.
+     *
+     * Os cargos são criados pelo seed, não pela aplicação, por isso
+     * esta consulta é uma leitura e nunca cria nada.
+     */
+    findRoleIdBySlug(slug: string, scope: RoleScope) {
+        return this.database.role.findFirst({
+            where: {
+                slug,
+                scope,
+                is_deleted: false,
+            },
+            select: {
+                id: true,
+            },
+        });
+    }
+
+    /**
      * Procura uma identidade já em uso, por email ou por username.
      *
      * Ambos têm restrição de unicidade, por isso o registo tem de os
@@ -132,6 +153,17 @@ export class AuthRepository {
                         provider: AuthProviderType.local,
                         provider_user_id: input.email,
                         provider_email: input.email,
+                        source: SourceType.api,
+                    },
+                },
+                /**
+                 * O cargo base é atribuído na mesma escrita aninhada que
+                 * cria o utilizador. Assim nunca existe uma conta sem
+                 * cargo, nem sequer por instantes.
+                 */
+                userRoles: {
+                    create: {
+                        roleId: input.defaultRoleId,
                         source: SourceType.api,
                     },
                 },

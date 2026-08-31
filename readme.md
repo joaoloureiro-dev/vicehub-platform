@@ -160,6 +160,12 @@ Uma recusa devolve 403 com a lista do que faltava:
 Acrescentar uma permissão é editar o catálogo e voltar a correr o
 `db:seed`, que é idempotente e nunca elimina nada.
 
+**O registo atribui o cargo `player`** a qualquer conta nova, na mesma
+escrita que a cria. Não existem permissões implícitas no código: quem
+pode o quê lê-se na tabela `UserRole`. Por isso o `db:seed` é um passo
+obrigatório da instalação — sem os cargos, o registo recusa criar contas
+em vez de as deixar sem autorização nenhuma.
+
 ### Valores BigInt nas respostas
 
 O `xp` e o `balance` são `BigInt` no schema Prisma. O JSON não tem inteiros

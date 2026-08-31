@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { Prisma } from '@vicehub/database';
+import { DEFAULT_USER_ROLE, Prisma, ROLES } from '@vicehub/database';
 
 import { AuthError, type AuthErrorCode } from '../../src/modules/auth/errors/auth.errors.js';
 import { AuthService } from '../../src/modules/auth/services/auth.service.js';
@@ -52,6 +52,7 @@ describe('AuthService', () => {
             tokenService,
         );
 
+        repository.findRoleIdBySlug.mockResolvedValue({ id: 'role-player' });
         repository.createSession.mockResolvedValue({ id: 'session-1' });
         repository.createRefreshToken.mockResolvedValue({ id: 'refresh-2' });
         repository.updateLastLogin.mockResolvedValue(undefined);
@@ -173,6 +174,55 @@ describe('AuthService', () => {
             await expect(service.register(newAccount)).rejects.toThrow(
                 'registo não encontrado',
             );
+        });
+
+        it('atribui o cargo base à conta criada', async () => {
+            repository.findExistingIdentity.mockResolvedValue(null);
+            repository.createLocalUser.mockResolvedValue(buildUserRow());
+
+            await service.register(newAccount);
+
+            /**
+             * O cargo entra na mesma escrita que cria o utilizador, para
+             * que nunca exista uma conta sem cargo.
+             */
+            expect(repository.createLocalUser).toHaveBeenCalledWith(
+                expect.objectContaining({ defaultRoleId: 'role-player' }),
+            );
+        });
+
+        it('procura o cargo base pelo slug e escopo do catálogo', async () => {
+            repository.findExistingIdentity.mockResolvedValue(null);
+            repository.createLocalUser.mockResolvedValue(buildUserRow());
+
+            await service.register(newAccount);
+
+            expect(repository.findRoleIdBySlug).toHaveBeenCalledWith(
+                ROLES[DEFAULT_USER_ROLE].slug,
+                ROLES[DEFAULT_USER_ROLE].scope,
+            );
+        });
+
+        it('recusa criar a conta quando o cargo base não existe', async () => {
+            repository.findExistingIdentity.mockResolvedValue(null);
+            repository.findRoleIdBySlug.mockResolvedValue(null);
+
+            /**
+             * Sem o seed, o registo falha em vez de criar contas sem
+             * autorização nenhuma, que seriam difíceis de detetar depois.
+             */
+            await expect(service.register(newAccount)).rejects.toThrow(/db:seed/);
+
+            expect(repository.createLocalUser).not.toHaveBeenCalled();
+        });
+
+        it('não gasta um hash Argon2 quando o cargo base falta', async () => {
+            repository.findExistingIdentity.mockResolvedValue(null);
+            repository.findRoleIdBySlug.mockResolvedValue(null);
+
+            await service.register(newAccount).catch(() => undefined);
+
+            expect(passwordService.hash).not.toHaveBeenCalled();
         });
 
         it('guarda o hash da password e nunca a password', async () => {

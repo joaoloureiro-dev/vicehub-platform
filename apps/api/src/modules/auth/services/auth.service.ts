@@ -1,3 +1,5 @@
+import { DEFAULT_USER_ROLE, ROLES } from '@vicehub/database';
+
 import { env } from '../../../config/env.js';
 import { AuthError } from '../errors/auth.errors.js';
 import { getUniqueConstraintFields } from '../repositories/prisma-errors.js';
@@ -107,12 +109,15 @@ export class AuthService {
                 );
         }
 
+        const defaultRoleId = await this.resolveDefaultRoleId();
+
         const passwordHash = await this.passwordService.hash(input.password);
 
         const user = await this.createLocalUser({
             email: input.email,
             username: input.username,
             passwordHash,
+            defaultRoleId,
         });
 
         const session = await this.authRepository.createSession(
@@ -394,10 +399,34 @@ export class AuthService {
      * inserir pode entrar outro registo com o mesmo email ou username.
      * Sem isto, essa corrida devolveria 500.
      */
+    /**
+     * Obtém o cargo base a atribuir a uma conta nova.
+     *
+     * Os cargos são criados pelo seed. Se este não tiver corrido, o
+     * registo falha em vez de criar contas sem cargo: uma conta sem
+     * autorização nenhuma é um estado difícil de detetar depois, e mais
+     * difícil ainda de corrigir em massa.
+     */
+    private async resolveDefaultRoleId(): Promise<string> {
+        const role = await this.authRepository.findRoleIdBySlug(
+            ROLES[DEFAULT_USER_ROLE].slug,
+            ROLES[DEFAULT_USER_ROLE].scope,
+        );
+
+        if (!role) {
+            throw new Error(
+                `[ViceHub Auth] O cargo base "${ROLES[DEFAULT_USER_ROLE].slug}" não existe na base de dados. Corre "npm run db:seed".`,
+            );
+        }
+
+        return role.id;
+    }
+
     private async createLocalUser(input: {
         email: string;
         username: string;
         passwordHash: string;
+        defaultRoleId: string;
     }) {
         try {
             return await this.authRepository.createLocalUser(input);

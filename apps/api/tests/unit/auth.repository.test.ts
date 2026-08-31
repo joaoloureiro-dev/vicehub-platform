@@ -12,7 +12,12 @@ import type { DatabaseClient } from '@vicehub/database';
  */
 describe('AuthRepository', () => {
     let database: {
-        user: { findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+        user: {
+            findFirst: ReturnType<typeof vi.fn>;
+            update: ReturnType<typeof vi.fn>;
+            create: ReturnType<typeof vi.fn>;
+        };
+        role: { findFirst: ReturnType<typeof vi.fn> };
         userCredential: { update: ReturnType<typeof vi.fn> };
         authSession: {
             findFirst: ReturnType<typeof vi.fn>;
@@ -32,7 +37,8 @@ describe('AuthRepository', () => {
 
     beforeEach(() => {
         database = {
-            user: { findFirst: vi.fn(), update: vi.fn() },
+            user: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
+            role: { findFirst: vi.fn() },
             userCredential: { update: vi.fn() },
             authSession: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
             refreshToken: { findUnique: vi.fn(), updateMany: vi.fn() },
@@ -58,6 +64,57 @@ describe('AuthRepository', () => {
             expect(argsOf(database.user.findFirst)['select']).toEqual({
                 email: true,
                 username: true,
+            });
+        });
+    });
+
+    describe('createLocalUser', () => {
+        const create = () =>
+            repository.createLocalUser({
+                email: 'player@vicehub.com',
+                username: 'player',
+                passwordHash: 'hash-argon2',
+                defaultRoleId: 'role-player',
+            });
+
+        const dataOf = (): Record<string, unknown> => {
+            const args = (database.user.create.mock.calls[0]?.[0] ?? {}) as {
+                data?: Record<string, unknown>;
+            };
+
+            return args.data ?? {};
+        };
+
+        it('atribui o cargo base na mesma escrita que cria o utilizador', () => {
+            create();
+
+            /**
+             * Estando aninhado na criação, ou o utilizador e o cargo
+             * existem ambos, ou nenhum. Nunca há uma conta sem cargo.
+             */
+            expect(dataOf()['userRoles']).toMatchObject({
+                create: { roleId: 'role-player' },
+            });
+        });
+
+        it('cria credenciais e provider na mesma escrita', () => {
+            create();
+
+            expect(dataOf()['credentials']).toMatchObject({
+                create: { password_hash: 'hash-argon2' },
+            });
+            expect(dataOf()['authProviders']).toBeDefined();
+        });
+    });
+
+    describe('findRoleIdBySlug', () => {
+        it('procura pelo slug e escopo, ignorando cargos eliminados', () => {
+            repository.findRoleIdBySlug('player', 'global');
+
+            expect(argsOf(database.role.findFirst)['where']).toEqual({
+                slug: 'player',
+                scope: 'global',
+                is_deleted: false,
             });
         });
     });
