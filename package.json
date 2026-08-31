@@ -35,6 +35,18 @@
     "@fastify/jwt": "10.2.0",
     "argon2": "0.44.0"
   },
+  "optionalDependencies": {
+    "@esbuild/darwin-arm64": "0.28.1",
+    "@esbuild/darwin-x64": "0.28.1",
+    "@esbuild/linux-arm64": "0.28.1",
+    "@esbuild/linux-x64": "0.28.1",
+    "@esbuild/win32-x64": "0.28.1",
+    "@rolldown/binding-darwin-arm64": "1.1.4",
+    "@rolldown/binding-darwin-x64": "1.1.4",
+    "@rolldown/binding-linux-arm64-gnu": "1.1.4",
+    "@rolldown/binding-linux-x64-gnu": "1.1.4",
+    "@rolldown/binding-win32-x64-msvc": "1.1.4"
+  },
   "allowScripts": {
     "argon2@0.44.0": true,
     "@prisma/engines@7.8.0": true,
