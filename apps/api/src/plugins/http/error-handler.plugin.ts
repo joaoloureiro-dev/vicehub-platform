@@ -7,6 +7,10 @@ import {
     type AuthErrorCode,
 } from '../../modules/auth/errors/auth.errors.js';
 import { AuthorizationError } from '../../modules/authorization/errors/authorization.errors.js';
+import {
+    SubscriptionError,
+    type SubscriptionErrorCode,
+} from '../../modules/subscriptions/errors/subscription.errors.js';
 
 /**
  * Estado HTTP associado a cada erro de domínio da autenticação.
@@ -31,10 +35,21 @@ const authErrorStatusCodes: Record<AuthErrorCode, number> = {
     USER_NOT_FOUND: 404,
 };
 
+/**
+ * 402 diz que falta o pagamento, e não que faltam permissões. Um
+ * utilizador com o cargo certo mas sem plano recebe uma resposta que
+ * distingue o que tem de fazer para prosseguir.
+ */
+const subscriptionErrorStatusCodes: Record<SubscriptionErrorCode, number> = {
+    SUBSCRIPTION_REQUIRED: 402,
+    INVALID_SUBSCRIPTION_OWNER: 500,
+};
+
 const httpErrorNames: Record<number, string> = {
     400: 'Bad Request',
     401: 'Unauthorized',
     404: 'Not Found',
+    402: 'Payment Required',
     403: 'Forbidden',
     409: 'Conflict',
     423: 'Locked',
@@ -126,6 +141,31 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 error: 'Forbidden',
                 message: error.message,
                 missingPermissions: error.missingPermissions,
+            });
+            return;
+        }
+
+        if (error instanceof SubscriptionError) {
+            const statusCode = subscriptionErrorStatusCodes[error.code];
+
+            const log = statusCode < 500 ? request.log.warn : request.log.error;
+
+            log.call(
+                request.log,
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo de subscrições.',
+            );
+
+            /**
+             * Um titular inválido é erro de programação, não do cliente.
+             * Como qualquer 5xx, não expõe a mensagem interna.
+             */
+            reply.status(statusCode).send({
+                statusCode,
+                code: statusCode < 500 ? error.code : 'INTERNAL_SERVER_ERROR',
+                error: httpErrorNames[statusCode] ?? 'Internal Server Error',
+                message:
+                    statusCode < 500 ? error.message : 'Erro interno do servidor.',
             });
             return;
         }
