@@ -69,6 +69,7 @@ To become the central platform where gaming communities interact, grow, compete 
 - Soft delete + audit logs
 - Rate limiting
 - Input validation (Zod)
+- Bloqueio temporário da conta após tentativas de login falhadas
 
 ---
 

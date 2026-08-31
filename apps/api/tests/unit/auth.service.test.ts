@@ -11,6 +11,7 @@ import {
     buildUserRow,
     buildUserWithCredentials,
     createAuthRepositoryMock,
+    minutesFromNow,
     createPasswordServiceMock,
     createTokenService,
     type AuthRepositoryMock,
@@ -52,6 +53,11 @@ describe('AuthService', () => {
         repository.createSession.mockResolvedValue({ id: 'session-1' });
         repository.createRefreshToken.mockResolvedValue({ id: 'refresh-2' });
         repository.updateLastLogin.mockResolvedValue(undefined);
+        repository.clearFailedLoginAttempts.mockResolvedValue(undefined);
+        repository.registerFailedLoginAttempt.mockResolvedValue({
+            failed_login_attempts: 1,
+        });
+        repository.lockCredential.mockResolvedValue(undefined);
         repository.touchSession.mockResolvedValue(undefined);
         repository.markRefreshTokenAsUsed.mockResolvedValue(undefined);
         repository.rotateRefreshToken.mockResolvedValue(undefined);
@@ -181,6 +187,124 @@ describe('AuthService', () => {
                 | undefined;
 
             expect(Object.keys(sessionInput ?? {})).toEqual(['userId', 'expiresAt']);
+        });
+    });
+
+    describe('proteção contra brute force', () => {
+        const credentials = {
+            email: 'player@vicehub.com',
+            password: 'password-forte-123',
+        };
+
+        const failLogin = (attemptsAfterIncrement: number) => {
+            passwordService.verify.mockResolvedValue(false);
+            repository.registerFailedLoginAttempt.mockResolvedValue({
+                failed_login_attempts: attemptsAfterIncrement,
+            });
+        };
+
+        it('conta a tentativa quando a password está errada', async () => {
+            repository.findUserByEmail.mockResolvedValue(buildUserWithCredentials());
+            failLogin(1);
+
+            await expectAuthError(service.login(credentials), 'INVALID_CREDENTIALS');
+
+            expect(repository.registerFailedLoginAttempt).toHaveBeenCalledWith(
+                'credential-1',
+            );
+            expect(repository.lockCredential).not.toHaveBeenCalled();
+        });
+
+        it('não bloqueia antes de atingir o limite', async () => {
+            repository.findUserByEmail.mockResolvedValue(
+                buildUserWithCredentials({ failedLoginAttempts: 3 }),
+            );
+            failLogin(4);
+
+            await expectAuthError(service.login(credentials), 'INVALID_CREDENTIALS');
+
+            expect(repository.lockCredential).not.toHaveBeenCalled();
+        });
+
+        it('bloqueia a conta à quinta tentativa falhada', async () => {
+            repository.findUserByEmail.mockResolvedValue(
+                buildUserWithCredentials({ failedLoginAttempts: 4 }),
+            );
+            failLogin(5);
+
+            await expectAuthError(service.login(credentials), 'ACCOUNT_LOCKED');
+
+            expect(repository.lockCredential).toHaveBeenCalledWith(
+                'credential-1',
+                expect.any(Date),
+            );
+        });
+
+        it('recusa o login enquanto a conta está bloqueada, mesmo com a password certa', async () => {
+            repository.findUserByEmail.mockResolvedValue(
+                buildUserWithCredentials({ lockedUntil: minutesFromNow(10) }),
+            );
+            passwordService.verify.mockResolvedValue(true);
+
+            await expectAuthError(service.login(credentials), 'ACCOUNT_LOCKED');
+
+            /**
+             * O bloqueio tem de acontecer antes do Argon2. Caso contrário
+             * cada tentativa continuaria a custar o mesmo ao servidor.
+             */
+            expect(passwordService.verify).not.toHaveBeenCalled();
+            expect(repository.createSession).not.toHaveBeenCalled();
+        });
+
+        it('indica quanto falta para o desbloqueio', async () => {
+            repository.findUserByEmail.mockResolvedValue(
+                buildUserWithCredentials({ lockedUntil: minutesFromNow(10) }),
+            );
+
+            const error: unknown = await service
+                .login(credentials)
+                .catch((caught: unknown) => caught);
+
+            expect(error).toBeInstanceOf(AuthError);
+            expect((error as AuthError).message).toMatch(/10 minuto/);
+        });
+
+        it('deixa entrar quando o bloqueio já expirou', async () => {
+            repository.findUserByEmail.mockResolvedValue(
+                buildUserWithCredentials({ lockedUntil: minutesFromNow(-1) }),
+            );
+
+            await expect(service.login(credentials)).resolves.toMatchObject({
+                accessToken: 'access-token-assinado',
+            });
+        });
+
+        it('repõe o contador num login bem sucedido', async () => {
+            repository.findUserByEmail.mockResolvedValue(
+                buildUserWithCredentials({ failedLoginAttempts: 3 }),
+            );
+
+            await service.login(credentials);
+
+            expect(repository.clearFailedLoginAttempts).toHaveBeenCalledWith(
+                'credential-1',
+            );
+        });
+
+        it('não escreve nada quando não há contador para limpar', async () => {
+            repository.findUserByEmail.mockResolvedValue(buildUserWithCredentials());
+
+            await service.login(credentials);
+
+            expect(repository.clearFailedLoginAttempts).not.toHaveBeenCalled();
+        });
+
+        it('não conta tentativas contra emails que não existem', async () => {
+            repository.findUserByEmail.mockResolvedValue(null);
+
+            await expectAuthError(service.login(credentials), 'INVALID_CREDENTIALS');
+
+            expect(repository.registerFailedLoginAttempt).not.toHaveBeenCalled();
         });
     });
 

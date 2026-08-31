@@ -50,6 +50,16 @@ const envSchema = z.object({
     AUTH_COOKIE_NAME: z.string().min(1).default('vicehub_refresh_token'),
     AUTH_COOKIE_SECURE: booleanStringSchema.default(false),
 
+    /**
+     * Proteção contra brute force no login.
+     *
+     * Após este número de tentativas falhadas consecutivas, a conta fica
+     * bloqueada durante o período configurado. Um login bem sucedido
+     * repõe o contador.
+     */
+    AUTH_MAX_FAILED_LOGIN_ATTEMPTS: z.coerce.number().int().positive().default(5),
+    AUTH_LOCKOUT_DURATION_SECONDS: z.coerce.number().int().positive().default(900),
+
     CORS_ALLOWED_ORIGINS: z
         .string()
         .min(1)
