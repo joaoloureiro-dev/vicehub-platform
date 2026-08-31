@@ -33,3 +33,27 @@ export interface ServerJoinRequest {
     avatarUrl: string | null;
     requestedAt: Date;
 }
+
+export interface ServerDirectoryEntry {
+    id: string;
+    name: string;
+    region: string | null;
+    description: string | null;
+    isOnline: boolean;
+    memberCount: number;
+    isPremium: boolean;
+    createdAt: Date;
+}
+
+/**
+ * Um servidor do ponto de vista de quem se candidatou ou já pertence.
+ */
+export interface ServerMembershipSummary {
+    serverId: string;
+    name: string;
+    region: string | null;
+    status: 'pending' | 'active';
+    /** Cargo dentro do servidor, que só existe depois de ser aceite. */
+    role: string | null;
+    since: Date;
+}

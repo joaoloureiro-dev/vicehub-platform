@@ -49,6 +49,8 @@ describe('ligação das rotas de servidor', () => {
 
         const controller = {
             create: vi.fn(),
+            listDirectory: vi.fn(),
+            listMyMemberships: vi.fn(),
             getProfile: vi.fn(),
             update: vi.fn(),
             listMembers: vi.fn(),
@@ -82,7 +84,7 @@ describe('ligação das rotas de servidor', () => {
     };
 
     describe('rotas públicas', () => {
-        it.each(['GET /:serverId', 'GET /:serverId/members'])(
+        it.each(['GET /', 'GET /:serverId', 'GET /:serverId/members'])(
             '%s é acessível sem conta',
             (key) => {
                 expect(preHandlerCount(key)).toBe(0);
@@ -93,12 +95,24 @@ describe('ligação das rotas de servidor', () => {
     describe('rotas que exigem apenas conta', () => {
         it.each([
             'POST /',
+            'GET /me/memberships',
             'POST /:serverId/join',
             'DELETE /:serverId/join',
             'POST /:serverId/leave',
         ])('%s exige autenticação mas nenhuma permissão', (key) => {
             expect(preHandlerCount(key)).toBe(1);
             expect(permissoesPorRota.get(key)).toEqual([]);
+        });
+
+        /**
+         * O diretório é estático em /me/memberships e paramétrico em
+         * /:serverId. Se a rota estática deixasse de existir, o pedido
+         * cairia no perfil de um servidor chamado "me" e devolveria 400
+         * em vez das candidaturas de quem pergunta.
+         */
+        it('as candidaturas próprias não colidem com o perfil de um servidor', () => {
+            expect(registered.has('GET /me/memberships')).toBe(true);
+            expect(registered.has('GET /:serverId')).toBe(true);
         });
     });
 
@@ -148,6 +162,10 @@ describe('ligação das rotas de servidor', () => {
             'POST /:serverId/requests/:userId/accept',
         ])('%s valida os parâmetros', (key) => {
             expect(registered.get(key)?.schema?.params).toBeDefined();
+        });
+
+        it('o diretório valida e limita os filtros de pesquisa', () => {
+            expect(registered.get('GET /')?.schema?.querystring).toBeDefined();
         });
     });
 });

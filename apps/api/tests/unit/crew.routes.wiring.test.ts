@@ -53,6 +53,9 @@ describe('ligação das rotas de crew', () => {
 
         const controller = {
             create: vi.fn(),
+            listDirectory: vi.fn(),
+            listMyMemberships: vi.fn(),
+            withdrawJoinRequest: vi.fn(),
             getProfile: vi.fn(),
             update: vi.fn(),
             listMembers: vi.fn(),
@@ -85,7 +88,7 @@ describe('ligação das rotas de crew', () => {
     };
 
     describe('rotas públicas', () => {
-        it.each(['GET /:crewId', 'GET /:crewId/members'])(
+        it.each(['GET /', 'GET /:crewId', 'GET /:crewId/members'])(
             '%s é acessível sem conta',
             (key) => {
                 expect(preHandlerCount(key)).toBe(0);
@@ -94,13 +97,27 @@ describe('ligação das rotas de crew', () => {
     });
 
     describe('rotas que exigem apenas conta', () => {
-        it.each(['POST /', 'POST /:crewId/join', 'POST /:crewId/leave'])(
-            '%s exige autenticação mas nenhuma permissão',
-            (key) => {
-                expect(preHandlerCount(key)).toBe(1);
-                expect(permissoesPorRota.get(key)).toEqual([]);
-            },
-        );
+        it.each([
+            'POST /',
+            'GET /me/memberships',
+            'POST /:crewId/join',
+            'DELETE /:crewId/join',
+            'POST /:crewId/leave',
+        ])('%s exige autenticação mas nenhuma permissão', (key) => {
+            expect(preHandlerCount(key)).toBe(1);
+            expect(permissoesPorRota.get(key)).toEqual([]);
+        });
+
+        /**
+         * O diretório é estático em /me/memberships e paramétrico em
+         * /:crewId. Se a rota estática deixasse de existir, o pedido
+         * cairia no perfil de uma crew chamada "me" e devolveria 400 em
+         * vez das candidaturas de quem pergunta.
+         */
+        it('as candidaturas próprias não colidem com o perfil de uma crew', () => {
+            expect(registered.has('GET /me/memberships')).toBe(true);
+            expect(registered.has('GET /:crewId')).toBe(true);
+        });
     });
 
     describe('rotas de gestão de membros', () => {
@@ -146,9 +163,14 @@ describe('ligação das rotas de crew', () => {
         it.each([
             'GET /:crewId',
             'POST /:crewId/join',
+            'DELETE /:crewId/join',
             'POST /:crewId/requests/:userId/accept',
         ])('%s valida os parâmetros', (key) => {
             expect(registered.get(key)?.schema?.params).toBeDefined();
+        });
+
+        it('o diretório valida e limita os filtros de pesquisa', () => {
+            expect(registered.get('GET /')?.schema?.querystring).toBeDefined();
         });
     });
 });

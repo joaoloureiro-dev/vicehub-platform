@@ -5,10 +5,13 @@ import type { SubscriptionService } from '../../subscriptions/services/subscript
 import { CrewError } from '../errors/crew.errors.js';
 import type { CrewRepository } from '../repositories/crew.repository.js';
 import type {
+    CrewDirectoryEntry,
     CrewJoinRequest,
     CrewMember,
+    CrewMembershipSummary,
     CrewProfile,
     CrewRecord,
+    DirectoryPage,
 } from '../types/crew.types.js';
 
 interface CreateCrewInput {
@@ -16,6 +19,13 @@ interface CreateCrewInput {
     tag: string;
     description?: string | null | undefined;
     founderId: string;
+}
+
+interface ListCrewsInput {
+    search?: string | undefined;
+    page: number;
+    pageSize: number;
+    sort: 'newest' | 'level' | 'name';
 }
 
 interface UpdateCrewInput {
@@ -112,6 +122,112 @@ export class CrewService {
         }
 
         await this.crewRepository.createJoinRequest(crewId, userId);
+    }
+
+    /**
+     * Retira um pedido de entrada ainda por responder.
+     *
+     * Sem isto, quem se candidata fica preso: a rota de saída exige uma
+     * adesão ativa, e um pedido pendente bloqueia qualquer novo pedido.
+     */
+    async withdrawJoinRequest(crewId: string, userId: string): Promise<void> {
+        const adesao = await this.requirePendingMembership(crewId, userId);
+
+        await this.crewRepository.setMembershipStatus(
+            adesao.id,
+            MembershipStatus.left,
+            userId,
+        );
+    }
+
+    /**
+     * Uma página do diretório público de crews.
+     *
+     * É o que torna a candidatura possível a partir do ViceHub: sem
+     * forma de encontrar uma crew, pedir entrada exigiria já saber o
+     * identificador de uma.
+     */
+    async listDirectory(
+        input: ListCrewsInput,
+    ): Promise<DirectoryPage<CrewDirectoryEntry>> {
+        const [crews, total] = await this.crewRepository.listDirectory({
+            search: input.search,
+            skip: (input.page - 1) * input.pageSize,
+            take: input.pageSize,
+            sort: input.sort,
+        });
+
+        const ids = crews.map((crew) => crew.id);
+
+        /**
+         * As contagens e as subscrições da página inteira são lidas de
+         * uma só vez: uma consulta por crew faria o custo da listagem
+         * crescer com o tamanho da página.
+         */
+        const [contagens, premium] = await Promise.all([
+            this.crewRepository.countActiveMembersFor(ids),
+            this.subscriptionService.getEntitledIds('crew', ids),
+        ]);
+
+        const porCrew = new Map(
+            contagens.map((contagem) => [contagem.crewId, contagem._count._all]),
+        );
+
+        return {
+            items: crews.map((crew) => ({
+                id: crew.id,
+                name: crew.name,
+                tag: crew.tag,
+                description: crew.description,
+                level: crew.level,
+                memberCount: porCrew.get(crew.id) ?? 0,
+                isPremium: premium.has(crew.id),
+                createdAt: crew.created_at,
+            })),
+            page: input.page,
+            pageSize: input.pageSize,
+            total,
+            totalPages: Math.ceil(total / input.pageSize),
+        };
+    }
+
+    /**
+     * Crews a que um utilizador pertence ou a que se candidatou.
+     */
+    async listMyMemberships(userId: string): Promise<CrewMembershipSummary[]> {
+        const adesoes = await this.crewRepository.listOpenMembershipsOfUser(userId);
+
+        const ids = adesoes
+            .map((adesao) => adesao.crewId)
+            .filter((id): id is string => id !== null);
+
+        const cargos = await this.crewRepository.listUserScopedRoles(userId, ids);
+
+        const porCrew = new Map(
+            cargos.map((cargo) => [cargo.crewId, cargo.role.slug]),
+        );
+
+        return adesoes.flatMap((adesao) => {
+            /**
+             * Uma adesão de crew tem sempre crew preenchida — a base de
+             * dados garante-o com um CHECK. O tipo não sabe disso, e
+             * inventar valores aqui esconderia uma incoerência real.
+             */
+            if (!adesao.crew) {
+                return [];
+            }
+
+            return [
+                {
+                    crewId: adesao.crew.id,
+                    name: adesao.crew.name,
+                    tag: adesao.crew.tag,
+                    status: adesao.status as 'pending' | 'active',
+                    role: porCrew.get(adesao.crew.id) ?? null,
+                    since: adesao.created_at,
+                },
+            ];
+        });
     }
 
     /**

@@ -39,3 +39,38 @@ export interface CrewJoinRequest {
     avatarUrl: string | null;
     requestedAt: Date;
 }
+
+export interface CrewDirectoryEntry {
+    id: string;
+    name: string;
+    tag: string;
+    description: string | null;
+    level: number;
+    memberCount: number;
+    isPremium: boolean;
+    createdAt: Date;
+}
+
+export interface DirectoryPage<TEntry> {
+    items: TEntry[];
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+}
+
+/**
+ * Uma crew do ponto de vista de quem se candidatou ou já pertence.
+ *
+ * Existe para que a candidatura seja acompanhável a partir do ViceHub:
+ * sem isto, quem pede entrada não tem como saber se já foi respondido.
+ */
+export interface CrewMembershipSummary {
+    crewId: string;
+    name: string;
+    tag: string;
+    status: 'pending' | 'active';
+    /** Cargo dentro da crew, que só existe depois de ser aceite. */
+    role: string | null;
+    since: Date;
+}

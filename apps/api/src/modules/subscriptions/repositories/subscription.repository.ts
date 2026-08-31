@@ -34,6 +34,29 @@ export class SubscriptionRepository {
     }
 
     /**
+     * Apura, de uma só vez, quais dos titulares indicados têm plano ativo.
+     *
+     * Existe para as listagens: perguntar por cada crew ou servidor da
+     * página custaria uma consulta por linha, e o custo cresceria com o
+     * tamanho do diretório.
+     */
+    findEntitledOwnerIds(kind: 'crew' | 'server', ids: string[]) {
+        return this.database.subscription.findMany({
+            where: {
+                ...(kind === 'crew' ? { crewId: { in: ids } } : { serverId: { in: ids } }),
+                is_deleted: false,
+                status: {
+                    in: [...ENTITLING_SUBSCRIPTION_STATUSES],
+                },
+                current_period_end: {
+                    gt: new Date(),
+                },
+            },
+            select: { crewId: true, serverId: true },
+        });
+    }
+
+    /**
      * Lista o histórico de subscrições de um titular, da mais recente
      * para a mais antiga.
      */

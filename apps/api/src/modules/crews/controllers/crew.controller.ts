@@ -4,6 +4,7 @@ import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     CreateCrewDto,
     CrewIdParamDto,
+    ListCrewsQueryDto,
     CrewMemberParamDto,
     SetMemberRoleDto,
     UpdateCrewDto,
@@ -26,6 +27,48 @@ export class CrewController {
         });
 
         reply.code(201).send(this.toProfileDto(profile));
+    }
+
+    async listDirectory(
+        request: FastifyRequest<{ Querystring: ListCrewsQueryDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const page = await this.crewService.listDirectory(request.query);
+
+        reply.send({
+            ...page,
+            items: page.items.map((item) => ({
+                ...item,
+                createdAt: item.createdAt.toISOString(),
+            })),
+        });
+    }
+
+    async listMyMemberships(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const adesoes = await this.crewService.listMyMemberships(user.id);
+
+        reply.send(
+            adesoes.map((adesao) => ({
+                ...adesao,
+                since: adesao.since.toISOString(),
+            })),
+        );
+    }
+
+    async withdrawJoinRequest(
+        request: FastifyRequest<{ Params: CrewIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        await this.crewService.withdrawJoinRequest(request.params.crewId, user.id);
+
+        reply.status(204).send();
     }
 
     async getProfile(

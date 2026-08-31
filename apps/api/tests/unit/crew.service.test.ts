@@ -35,6 +35,10 @@ const createRepositoryMock = () => ({
     setMembershipStatus: vi.fn().mockResolvedValue(undefined),
     listMembers: vi.fn().mockResolvedValue([]),
     listScopedRoles: vi.fn().mockResolvedValue([]),
+    listDirectory: vi.fn().mockResolvedValue([[], 0]),
+    countActiveMembersFor: vi.fn().mockResolvedValue([]),
+    listOpenMembershipsOfUser: vi.fn().mockResolvedValue([]),
+    listUserScopedRoles: vi.fn().mockResolvedValue([]),
 });
 
 const createRolesMock = () => ({
@@ -47,7 +51,10 @@ const createRolesMock = () => ({
 describe('CrewService', () => {
     let repository: ReturnType<typeof createRepositoryMock>;
     let roles: ReturnType<typeof createRolesMock>;
-    let subscriptions: { getEntitlement: ReturnType<typeof vi.fn> };
+    let subscriptions: {
+        getEntitlement: ReturnType<typeof vi.fn>;
+        getEntitledIds: ReturnType<typeof vi.fn>;
+    };
     let service: CrewService;
 
     beforeEach(() => {
@@ -57,6 +64,7 @@ describe('CrewService', () => {
             getEntitlement: vi
                 .fn()
                 .mockResolvedValue({ isPremium: false, activeUntil: null }),
+            getEntitledIds: vi.fn().mockResolvedValue(new Set<string>()),
         };
 
         service = new CrewService(
@@ -277,6 +285,199 @@ describe('CrewService', () => {
             repository.findById.mockResolvedValue(null);
 
             await expectCrewError(service.getProfile('crew-x'), 'CREW_NOT_FOUND');
+        });
+    });
+
+    describe('diretório público', () => {
+        const directoryRow = (id: string, name: string) => ({
+            id,
+            name,
+            tag: name.slice(0, 3).toUpperCase(),
+            description: null,
+            level: 1,
+            created_at: new Date('2026-03-01T00:00:00.000Z'),
+        });
+
+        it('traduz a página pedida em salto e limite', async () => {
+            await service.listDirectory({ page: 3, pageSize: 20, sort: 'newest' });
+
+            expect(repository.listDirectory).toHaveBeenCalledWith({
+                search: undefined,
+                skip: 40,
+                take: 20,
+                sort: 'newest',
+            });
+        });
+
+        it('devolve o total de páginas a partir do total de crews', async () => {
+            repository.listDirectory.mockResolvedValue([[], 41]);
+
+            const page = await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+            });
+
+            expect(page.total).toBe(41);
+            expect(page.totalPages).toBe(3);
+        });
+
+        it('junta a contagem de membros a cada crew da página', async () => {
+            repository.listDirectory.mockResolvedValue([
+                [directoryRow('crew-1', 'Vice Kings'), directoryRow('crew-2', 'Los Santos')],
+                2,
+            ]);
+            repository.countActiveMembersFor.mockResolvedValue([
+                { crewId: 'crew-1', _count: { _all: 7 } },
+            ]);
+
+            const page = await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+            });
+
+            expect(page.items[0]?.memberCount).toBe(7);
+            /**
+             * Uma crew sem linha na contagem tem zero membros ativos, e
+             * não uma contagem em falta: a listagem nunca mostra vazio.
+             */
+            expect(page.items[1]?.memberCount).toBe(0);
+        });
+
+        it('marca como premium apenas as crews com plano ativo', async () => {
+            repository.listDirectory.mockResolvedValue([
+                [directoryRow('crew-1', 'Vice Kings'), directoryRow('crew-2', 'Los Santos')],
+                2,
+            ]);
+            subscriptions.getEntitledIds.mockResolvedValue(new Set(['crew-1']));
+
+            const page = await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+            });
+
+            expect(subscriptions.getEntitledIds).toHaveBeenCalledWith('crew', [
+                'crew-1',
+                'crew-2',
+            ]);
+            expect(page.items[0]?.isPremium).toBe(true);
+            expect(page.items[1]?.isPremium).toBe(false);
+        });
+
+        /**
+         * Contagens e subscrições são lidas em bloco para a página
+         * inteira. Uma consulta por linha faria o custo da listagem
+         * crescer com o tamanho da página.
+         */
+        it('lê contagens e subscrições numa consulta por página, não por crew', async () => {
+            repository.listDirectory.mockResolvedValue([
+                [
+                    directoryRow('crew-1', 'Um'),
+                    directoryRow('crew-2', 'Dois'),
+                    directoryRow('crew-3', 'Tres'),
+                ],
+                3,
+            ]);
+
+            await service.listDirectory({ page: 1, pageSize: 20, sort: 'newest' });
+
+            expect(repository.countActiveMembersFor).toHaveBeenCalledTimes(1);
+            expect(subscriptions.getEntitledIds).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('candidaturas de quem pergunta', () => {
+        it('junta o cargo a cada crew a que já pertence', async () => {
+            repository.listOpenMembershipsOfUser.mockResolvedValue([
+                {
+                    crewId: 'crew-1',
+                    status: 'active',
+                    created_at: new Date('2026-02-01T00:00:00.000Z'),
+                    crew: { id: 'crew-1', name: 'Vice Kings', tag: 'VK' },
+                },
+                {
+                    crewId: 'crew-2',
+                    status: 'pending',
+                    created_at: new Date('2026-02-02T00:00:00.000Z'),
+                    crew: { id: 'crew-2', name: 'Los Santos', tag: 'LS' },
+                },
+            ]);
+            repository.listUserScopedRoles.mockResolvedValue([
+                { crewId: 'crew-1', role: { slug: 'crew_member' } },
+            ]);
+
+            const adesoes = await service.listMyMemberships('user-1');
+
+            expect(adesoes[0]).toEqual({
+                crewId: 'crew-1',
+                name: 'Vice Kings',
+                tag: 'VK',
+                status: 'active',
+                role: 'crew_member',
+                since: new Date('2026-02-01T00:00:00.000Z'),
+            });
+        });
+
+        /**
+         * Uma candidatura por responder ainda não concede cargo nenhum.
+         * Mostrar um cargo aqui daria a entender que já foi aceite.
+         */
+        it('uma candidatura pendente aparece sem cargo', async () => {
+            repository.listOpenMembershipsOfUser.mockResolvedValue([
+                {
+                    crewId: 'crew-2',
+                    status: 'pending',
+                    created_at: new Date('2026-02-02T00:00:00.000Z'),
+                    crew: { id: 'crew-2', name: 'Los Santos', tag: 'LS' },
+                },
+            ]);
+
+            const adesoes = await service.listMyMemberships('user-1');
+
+            expect(adesoes[0]?.status).toBe('pending');
+            expect(adesoes[0]?.role).toBeNull();
+        });
+    });
+
+    describe('retirada da candidatura', () => {
+        it('encerra o pedido pendente e deixa voltar a candidatar-se', async () => {
+            repository.findOpenMembership.mockResolvedValue({
+                id: 'membership-1',
+                status: 'pending',
+            });
+
+            await service.withdrawJoinRequest('crew-1', 'user-2');
+
+            expect(repository.setMembershipStatus).toHaveBeenCalledWith(
+                'membership-1',
+                'left',
+                'user-2',
+            );
+        });
+
+        it('recusa retirar uma adesão já aceite', async () => {
+            repository.findOpenMembership.mockResolvedValue({
+                id: 'membership-1',
+                status: 'active',
+            });
+
+            await expectCrewError(
+                service.withdrawJoinRequest('crew-1', 'user-2'),
+                'MEMBERSHIP_NOT_PENDING',
+            );
+
+            expect(repository.setMembershipStatus).not.toHaveBeenCalled();
+        });
+
+        it('recusa quando não há candidatura nenhuma', async () => {
+            repository.findOpenMembership.mockResolvedValue(null);
+
+            await expectCrewError(
+                service.withdrawJoinRequest('crew-1', 'user-2'),
+                'MEMBERSHIP_NOT_FOUND',
+            );
         });
     });
 });

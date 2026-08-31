@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { ServerController } from './controllers/server.controller.js';
 import type {
     CreateServerDto,
+    ListServersQueryDto,
     ServerIdParamDto,
     ServerMemberParamDto,
     SetServerMemberRoleDto,
@@ -10,6 +11,7 @@ import type {
 } from './dto/server.dto.js';
 import {
     createServerSchema,
+    listServersQuerySchema,
     serverIdParamSchema,
     serverMemberParamSchema,
     setServerMemberRoleSchema,
@@ -44,6 +46,27 @@ const serverRoutes: FastifyPluginAsync<ServerRoutesOptions> = async (
             schema: { body: createServerSchema },
         },
         controller.create.bind(controller),
+    );
+
+    /**
+     * O diretório é público e paginado.
+     *
+     * É por aqui que alguém encontra um servidor a que se candidatar sem
+     * já saber o identificador dele.
+     */
+    fastify.get<{ Querystring: ListServersQueryDto }>(
+        '/',
+        { schema: { querystring: listServersQuerySchema } },
+        controller.listDirectory.bind(controller),
+    );
+
+    /**
+     * As candidaturas e adesões de quem faz o pedido.
+     */
+    fastify.get(
+        '/me/memberships',
+        { preHandler: [fastify.authenticate] },
+        controller.listMyMemberships.bind(controller),
     );
 
     /**

@@ -110,6 +110,129 @@ export class ServerRepository {
         return this.database.server.update({ where: { id: serverId }, data });
     }
 
+    /**
+     * Uma página do diretório público de servidores.
+     *
+     * A contagem vem na mesma transação que a página: sem isso, um
+     * servidor criado entre as duas consultas daria um total que não bate
+     * certo com o que foi devolvido.
+     */
+    listDirectory(input: {
+        search?: string | undefined;
+        onlineOnly?: boolean | undefined;
+        skip: number;
+        take: number;
+        sort: 'newest' | 'name';
+    }) {
+        const where = {
+            is_deleted: false,
+            ...(input.onlineOnly ? { isOnline: true } : {}),
+            ...(input.search
+                ? {
+                    OR: [
+                        {
+                            name: {
+                                contains: input.search,
+                                mode: 'insensitive' as const,
+                            },
+                        },
+                        {
+                            region: {
+                                contains: input.search,
+                                mode: 'insensitive' as const,
+                            },
+                        },
+                    ],
+                }
+                : {}),
+        };
+
+        const orderBy =
+            input.sort === 'name'
+                ? [{ name: 'asc' as const }]
+                : [{ created_at: 'desc' as const }];
+
+        return this.database.$transaction([
+            this.database.server.findMany({
+                where,
+                /**
+                 * O id desempata: sem uma ordem total, dois servidores
+                 * criados no mesmo instante podiam trocar de página entre
+                 * pedidos e aparecer duas vezes ou nenhuma.
+                 */
+                orderBy: [...orderBy, { id: 'asc' as const }],
+                skip: input.skip,
+                take: input.take,
+                select: {
+                    id: true,
+                    name: true,
+                    region: true,
+                    description: true,
+                    isOnline: true,
+                    created_at: true,
+                },
+            }),
+            this.database.server.count({ where }),
+        ]);
+    }
+
+    /**
+     * Conta os membros ativos de vários servidores de uma só vez.
+     */
+    countActiveMembersFor(serverIds: string[]) {
+        return this.database.membership.groupBy({
+            by: ['serverId'],
+            where: {
+                serverId: { in: serverIds },
+                type: MembershipType.server,
+                status: MembershipStatus.active,
+                is_deleted: false,
+            },
+            _count: { _all: true },
+        });
+    }
+
+    /**
+     * Servidores a que um utilizador pertence ou a que se candidatou.
+     *
+     * Só os estados em aberto: quem saiu ou foi recusado pode voltar a
+     * candidatar-se, e listar esses casos daria a ideia errada de que
+     * ainda há alguma coisa pendente.
+     */
+    listOpenMembershipsOfUser(userId: string) {
+        return this.database.membership.findMany({
+            where: {
+                userId,
+                type: MembershipType.server,
+                is_deleted: false,
+                status: {
+                    in: [MembershipStatus.pending, MembershipStatus.active],
+                },
+            },
+            orderBy: { created_at: 'desc' },
+            select: {
+                serverId: true,
+                status: true,
+                created_at: true,
+                server: { select: { id: true, name: true, region: true } },
+            },
+        });
+    }
+
+    /**
+     * Cargos de servidor de um utilizador nos servidores indicados.
+     */
+    listUserScopedRoles(userId: string, serverIds: string[]) {
+        return this.database.userRole.findMany({
+            where: {
+                userId,
+                serverId: { in: serverIds },
+                is_deleted: false,
+            },
+            select: { serverId: true, role: { select: { slug: true } } },
+        });
+    }
+
     countActiveMembers(serverId: string) {
         return this.database.membership.count({
             where: {
