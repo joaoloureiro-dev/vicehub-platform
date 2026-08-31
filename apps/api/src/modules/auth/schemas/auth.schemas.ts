@@ -29,38 +29,32 @@ export const registerSchema = z.object({
 
 /**
  * Pedido de login.
+ *
+ * A password não é validada com as regras de complexidade do registo:
+ * no login queremos apenas garantir que o campo existe, sem revelar
+ * qual é a política de passwords através das mensagens de erro.
  */
 export const loginSchema = z.object({
     email: z.string().trim().email(),
-    password: passwordSchema,
+    password: z.string().min(1).max(128),
 });
 
 /**
- * Pedido de refresh.
+ * Perfil devolvido nas rotas autenticadas.
  */
-export const refreshTokenSchema = z.object({
-    refreshToken: z.string().min(1),
-});
-
-/**
- * Pedido de logout.
- */
-export const logoutSchema = z.object({
-    sessionId: z.string().uuid(),
-    refreshTokenId: z.string().uuid().optional(),
-});
-
-/**
- * Pedido de logout global.
- */
-export const logoutAllSchema = z.object({
-    userId: z.string().uuid(),
+export const authenticatedUserSchema = z.object({
+    id: z.string(),
+    email: z.string(),
+    username: z.string(),
 });
 
 /**
  * Resposta da autenticação.
+ *
+ * O refresh token não faz parte do corpo da resposta:
+ * viaja exclusivamente no cookie HttpOnly.
  */
 export const authResponseSchema = z.object({
     accessToken: z.string(),
-    refreshToken: z.string(),
+    user: authenticatedUserSchema,
 });

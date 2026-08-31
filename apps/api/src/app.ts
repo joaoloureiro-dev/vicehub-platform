@@ -17,6 +17,7 @@ import prismaPlugin from './plugins/database/prisma.plugin.js';
 
 import securityPlugin from './plugins/http/security.plugin.js';
 import errorHandlerPlugin from './plugins/http/error-handler.plugin.js';
+import validationPlugin from './plugins/http/validation.plugin.js';
 
 import healthRoutes from './routes/health/health.routes.js';
 
@@ -108,7 +109,17 @@ export const buildApp = (): ViceHubFastifyInstance => {
     // Segurança HTTP
     void app.register(securityPlugin);
 
+    // Tratamento de erros e validação Zod, antes de qualquer rota
     void app.register(errorHandlerPlugin);
+
+    void app.register(validationPlugin);
+
+    /**
+     * Prisma é registado antes dos plugins de autenticação porque o
+     * middleware de autenticação precisa de app.prisma para validar
+     * a sessão na base de dados.
+     */
+    void app.register(prismaPlugin);
 
     // Cookies
     void app.register(cookiePlugin);
@@ -118,9 +129,6 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Middleware de autenticação
     void app.register(authenticatePlugin);
-
-    // Prisma
-    void app.register(prismaPlugin);
 
     // Health Check
     void app.register(healthRoutes, {
