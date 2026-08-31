@@ -18,6 +18,7 @@ import prismaPlugin from './plugins/database/prisma.plugin.js';
 import securityPlugin from './plugins/http/security.plugin.js';
 import errorHandlerPlugin from './plugins/http/error-handler.plugin.js';
 import validationPlugin from './plugins/http/validation.plugin.js';
+import bigIntSerializationPlugin from './plugins/http/bigint-serialization.plugin.js';
 
 import healthRoutes from './routes/health/health.routes.js';
 
@@ -113,6 +114,8 @@ export const buildApp = (): ViceHubFastifyInstance => {
     void app.register(errorHandlerPlugin);
 
     void app.register(validationPlugin);
+
+    void app.register(bigIntSerializationPlugin);
 
     /**
      * Prisma é registado antes dos plugins de autenticação porque o

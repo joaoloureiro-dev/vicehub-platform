@@ -115,6 +115,24 @@ Os testes usam duplos em memória em vez do Prisma, por isso correm em
 qualquer máquina sem preparação. O mesmo conjunto de comandos corre no CI,
 em `.github/workflows/ci.yml`.
 
+### Valores BigInt nas respostas
+
+O `xp` e o `balance` são `BigInt` no schema Prisma. O JSON não tem inteiros
+de precisão arbitrária, por isso a API devolve-os **como string**:
+
+```json
+{ "xp": "9007199254740993", "wallet": { "balance": "1500" } }
+```
+
+Converter para número perderia o valor exato acima de
+`Number.MAX_SAFE_INTEGER`, o que num sistema com economia e transações é
+inaceitável. O cliente deve tratá-los como string ou `BigInt`, nunca como
+`Number`.
+
+A conversão é global, feita num hook `preSerialization`, pelo que nenhuma
+rota precisa de se lembrar dela. Quando forem adicionados schemas de
+resposta, os campos `BigInt` devem ser declarados como `type: 'string'`.
+
 ### Nota sobre as optionalDependencies da raiz
 
 O `package.json` da raiz declara explicitamente os binários de plataforma do
