@@ -95,6 +95,131 @@ export class CrewRepository {
         return this.database.crew.update({ where: { id: crewId }, data });
     }
 
+    /**
+     * Uma página do diretório público de crews.
+     *
+     * A contagem vem na mesma transação que a página: sem isso, uma crew
+     * criada entre as duas consultas daria um total que não bate certo
+     * com o que foi devolvido.
+     */
+    listDirectory(input: {
+        search?: string | undefined;
+        skip: number;
+        take: number;
+        sort: 'newest' | 'level' | 'name';
+    }) {
+        const where = {
+            is_deleted: false,
+            ...(input.search
+                ? {
+                    OR: [
+                        {
+                            name: {
+                                contains: input.search,
+                                mode: 'insensitive' as const,
+                            },
+                        },
+                        {
+                            tag: {
+                                contains: input.search,
+                                mode: 'insensitive' as const,
+                            },
+                        },
+                    ],
+                }
+                : {}),
+        };
+
+        const orderBy =
+            input.sort === 'level'
+                ? [{ level: 'desc' as const }, { xp: 'desc' as const }]
+                : input.sort === 'name'
+                    ? [{ name: 'asc' as const }]
+                    : [{ created_at: 'desc' as const }];
+
+        return this.database.$transaction([
+            this.database.crew.findMany({
+                where,
+                /**
+                 * O id desempata: sem uma ordem total, duas crews com o
+                 * mesmo nível podiam trocar de página entre pedidos e
+                 * aparecer duas vezes ou nenhuma.
+                 */
+                orderBy: [...orderBy, { id: 'asc' as const }],
+                skip: input.skip,
+                take: input.take,
+                select: {
+                    id: true,
+                    name: true,
+                    tag: true,
+                    description: true,
+                    level: true,
+                    created_at: true,
+                },
+            }),
+            this.database.crew.count({ where }),
+        ]);
+    }
+
+    /**
+     * Conta os membros ativos de várias crews de uma só vez.
+     *
+     * Uma consulta para a página inteira, em vez de uma por linha.
+     */
+    countActiveMembersFor(crewIds: string[]) {
+        return this.database.membership.groupBy({
+            by: ['crewId'],
+            where: {
+                crewId: { in: crewIds },
+                type: MembershipType.crew,
+                status: MembershipStatus.active,
+                is_deleted: false,
+            },
+            _count: { _all: true },
+        });
+    }
+
+    /**
+     * Crews a que um utilizador pertence ou a que se candidatou.
+     *
+     * Só os estados em aberto: quem saiu ou foi recusado pode voltar a
+     * candidatar-se, e listar esses casos daria a ideia errada de que
+     * ainda há alguma coisa pendente.
+     */
+    listOpenMembershipsOfUser(userId: string) {
+        return this.database.membership.findMany({
+            where: {
+                userId,
+                type: MembershipType.crew,
+                is_deleted: false,
+                status: {
+                    in: [MembershipStatus.pending, MembershipStatus.active],
+                },
+            },
+            orderBy: { created_at: 'desc' },
+            select: {
+                crewId: true,
+                status: true,
+                created_at: true,
+                crew: { select: { id: true, name: true, tag: true } },
+            },
+        });
+    }
+
+    /**
+     * Cargos de crew de um utilizador nas crews indicadas.
+     */
+    listUserScopedRoles(userId: string, crewIds: string[]) {
+        return this.database.userRole.findMany({
+            where: {
+                userId,
+                crewId: { in: crewIds },
+                is_deleted: false,
+            },
+            select: { crewId: true, role: { select: { slug: true } } },
+        });
+    }
+
     countActiveMembers(crewId: string) {
         return this.database.membership.count({
             where: {

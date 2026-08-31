@@ -4,9 +4,12 @@ import type { RoleAssignmentService } from '../../authorization/services/role-as
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
 import { ServerError } from '../errors/server.errors.js';
 import type { ServerRepository } from '../repositories/server.repository.js';
+import type { DirectoryPage } from '../../crews/types/crew.types.js';
 import type {
+    ServerDirectoryEntry,
     ServerJoinRequest,
     ServerMember,
+    ServerMembershipSummary,
     ServerProfile,
     ServerRecord,
 } from '../types/server.types.js';
@@ -16,6 +19,14 @@ interface CreateServerInput {
     region?: string | null | undefined;
     description?: string | null | undefined;
     ownerId: string;
+}
+
+interface ListServersInput {
+    search?: string | undefined;
+    onlineOnly?: boolean | undefined;
+    page: number;
+    pageSize: number;
+    sort: 'newest' | 'name';
 }
 
 interface UpdateServerInput {
@@ -126,6 +137,92 @@ export class ServerService {
             MembershipStatus.left,
             userId,
         );
+    }
+
+    /**
+     * Uma página do diretório público de servidores.
+     *
+     * É o que torna a candidatura possível a partir do ViceHub: sem
+     * forma de encontrar um servidor, pedir entrada exigiria já saber o
+     * identificador de um.
+     */
+    async listDirectory(
+        input: ListServersInput,
+    ): Promise<DirectoryPage<ServerDirectoryEntry>> {
+        const [servers, total] = await this.serverRepository.listDirectory({
+            search: input.search,
+            onlineOnly: input.onlineOnly,
+            skip: (input.page - 1) * input.pageSize,
+            take: input.pageSize,
+            sort: input.sort,
+        });
+
+        const ids = servers.map((server) => server.id);
+
+        const [contagens, premium] = await Promise.all([
+            this.serverRepository.countActiveMembersFor(ids),
+            this.subscriptionService.getEntitledIds('server', ids),
+        ]);
+
+        const porServidor = new Map(
+            contagens.map((contagem) => [contagem.serverId, contagem._count._all]),
+        );
+
+        return {
+            items: servers.map((server) => ({
+                id: server.id,
+                name: server.name,
+                region: server.region,
+                description: server.description,
+                isOnline: server.isOnline,
+                memberCount: porServidor.get(server.id) ?? 0,
+                isPremium: premium.has(server.id),
+                createdAt: server.created_at,
+            })),
+            page: input.page,
+            pageSize: input.pageSize,
+            total,
+            totalPages: Math.ceil(total / input.pageSize),
+        };
+    }
+
+    /**
+     * Servidores a que um utilizador pertence ou a que se candidatou.
+     */
+    async listMyMemberships(userId: string): Promise<ServerMembershipSummary[]> {
+        const adesoes = await this.serverRepository.listOpenMembershipsOfUser(userId);
+
+        const ids = adesoes
+            .map((adesao) => adesao.serverId)
+            .filter((id): id is string => id !== null);
+
+        const cargos = await this.serverRepository.listUserScopedRoles(userId, ids);
+
+        const porServidor = new Map(
+            cargos.map((cargo) => [cargo.serverId, cargo.role.slug]),
+        );
+
+        return adesoes.flatMap((adesao) => {
+            /**
+             * Uma adesão de servidor tem sempre servidor preenchido — a
+             * base de dados garante-o com um CHECK. O tipo não sabe disso,
+             * e inventar valores aqui esconderia uma incoerência real.
+             */
+            if (!adesao.server) {
+                return [];
+            }
+
+            return [
+                {
+                    serverId: adesao.server.id,
+                    name: adesao.server.name,
+                    region: adesao.server.region,
+                    status: adesao.status as 'pending' | 'active',
+                    role: porServidor.get(adesao.server.id) ?? null,
+                    since: adesao.created_at,
+                },
+            ];
+        });
     }
 
     /**

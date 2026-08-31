@@ -43,3 +43,17 @@ export const crewMemberParamSchema = z.object({
 export const setMemberRoleSchema = z.object({
     role: z.enum(['crew_leader', 'crew_officer', 'crew_member']),
 });
+
+/**
+ * Filtros do diretório de crews.
+ *
+ * Os parâmetros de query chegam sempre como texto, por isso os números
+ * são convertidos antes de validados. O limite por página é fechado a
+ * 50: sem tecto, um pedido podia arrastar o diretório inteiro.
+ */
+export const listCrewsQuerySchema = z.object({
+    search: z.string().trim().min(1).max(48).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(50).default(20),
+    sort: z.enum(['newest', 'level', 'name']).default('newest'),
+});

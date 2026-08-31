@@ -35,6 +35,38 @@ export class SubscriptionService {
     }
 
     /**
+     * Apura em bloco quais dos titulares indicados têm plano ativo.
+     *
+     * Devolve um conjunto para que quem lista possa perguntar por cada
+     * linha sem voltar à base de dados.
+     */
+    async getEntitledIds(
+        kind: 'crew' | 'server',
+        ids: string[],
+    ): Promise<Set<string>> {
+        if (ids.length === 0) {
+            return new Set();
+        }
+
+        const subscriptions = await this.subscriptionRepository.findEntitledOwnerIds(
+            kind,
+            ids,
+        );
+
+        const entitled = new Set<string>();
+
+        for (const subscription of subscriptions) {
+            const id = kind === 'crew' ? subscription.crewId : subscription.serverId;
+
+            if (id !== null) {
+                entitled.add(id);
+            }
+        }
+
+        return entitled;
+    }
+
+    /**
      * Devolve o histórico de subscrições de um titular.
      */
     async listHistory(owner: SubscriptionOwner) {

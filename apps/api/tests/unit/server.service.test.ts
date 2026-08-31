@@ -32,6 +32,10 @@ const createRepositoryMock = () => ({
     setMembershipStatus: vi.fn().mockResolvedValue(undefined),
     listMembers: vi.fn().mockResolvedValue([]),
     listScopedRoles: vi.fn().mockResolvedValue([]),
+    listDirectory: vi.fn().mockResolvedValue([[], 0]),
+    countActiveMembersFor: vi.fn().mockResolvedValue([]),
+    listOpenMembershipsOfUser: vi.fn().mockResolvedValue([]),
+    listUserScopedRoles: vi.fn().mockResolvedValue([]),
 });
 
 const createRolesMock = () => ({
@@ -47,7 +51,10 @@ const pendingMembership = { id: 'membership-1', status: 'pending' };
 describe('ServerService', () => {
     let repository: ReturnType<typeof createRepositoryMock>;
     let roles: ReturnType<typeof createRolesMock>;
-    let subscriptions: { getEntitlement: ReturnType<typeof vi.fn> };
+    let subscriptions: {
+        getEntitlement: ReturnType<typeof vi.fn>;
+        getEntitledIds: ReturnType<typeof vi.fn>;
+    };
     let service: ServerService;
 
     beforeEach(() => {
@@ -57,6 +64,7 @@ describe('ServerService', () => {
             getEntitlement: vi
                 .fn()
                 .mockResolvedValue({ isPremium: false, activeUntil: null }),
+            getEntitledIds: vi.fn().mockResolvedValue(new Set<string>()),
         };
 
         service = new ServerService(
@@ -427,6 +435,139 @@ describe('ServerService', () => {
             await service.listJoinRequests('server-1');
 
             expect(repository.listMembers).toHaveBeenCalledWith('server-1', 'pending');
+        });
+    });
+
+    describe('diretório público', () => {
+        const directoryRow = (id: string, name: string) => ({
+            id,
+            name,
+            region: 'eu-west',
+            description: null,
+            isOnline: true,
+            created_at: new Date('2026-03-01T00:00:00.000Z'),
+        });
+
+        it('traduz a página pedida em salto e limite', async () => {
+            await service.listDirectory({ page: 2, pageSize: 10, sort: 'newest' });
+
+            expect(repository.listDirectory).toHaveBeenCalledWith({
+                search: undefined,
+                onlineOnly: undefined,
+                skip: 10,
+                take: 10,
+                sort: 'newest',
+            });
+        });
+
+        it('passa adiante o filtro de servidores online', async () => {
+            await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+                onlineOnly: true,
+            });
+
+            expect(repository.listDirectory).toHaveBeenCalledWith(
+                expect.objectContaining({ onlineOnly: true }),
+            );
+        });
+
+        it('devolve o total de páginas a partir do total de servidores', async () => {
+            repository.listDirectory.mockResolvedValue([[], 21]);
+
+            const page = await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+            });
+
+            expect(page.totalPages).toBe(2);
+        });
+
+        it('junta contagem de membros e plano a cada servidor da página', async () => {
+            repository.listDirectory.mockResolvedValue([
+                [directoryRow('server-1', 'Vice City RP'), directoryRow('server-2', 'Outro')],
+                2,
+            ]);
+            repository.countActiveMembersFor.mockResolvedValue([
+                { serverId: 'server-1', _count: { _all: 12 } },
+            ]);
+            subscriptions.getEntitledIds.mockResolvedValue(new Set(['server-2']));
+
+            const page = await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+            });
+
+            expect(page.items[0]?.memberCount).toBe(12);
+            expect(page.items[0]?.isPremium).toBe(false);
+            expect(page.items[1]?.memberCount).toBe(0);
+            expect(page.items[1]?.isPremium).toBe(true);
+        });
+
+        it('lê contagens e subscrições numa consulta por página, não por servidor', async () => {
+            repository.listDirectory.mockResolvedValue([
+                [
+                    directoryRow('server-1', 'Um'),
+                    directoryRow('server-2', 'Dois'),
+                    directoryRow('server-3', 'Tres'),
+                ],
+                3,
+            ]);
+
+            await service.listDirectory({ page: 1, pageSize: 20, sort: 'newest' });
+
+            expect(repository.countActiveMembersFor).toHaveBeenCalledTimes(1);
+            expect(subscriptions.getEntitledIds).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('candidaturas de quem pergunta', () => {
+        it('junta o cargo a cada servidor a que já pertence', async () => {
+            repository.listOpenMembershipsOfUser.mockResolvedValue([
+                {
+                    serverId: 'server-1',
+                    status: 'active',
+                    created_at: new Date('2026-02-01T00:00:00.000Z'),
+                    server: { id: 'server-1', name: 'Vice City RP', region: 'eu-west' },
+                },
+            ]);
+            repository.listUserScopedRoles.mockResolvedValue([
+                { serverId: 'server-1', role: { slug: 'server_moderator' } },
+            ]);
+
+            const adesoes = await service.listMyMemberships('user-1');
+
+            expect(adesoes[0]).toEqual({
+                serverId: 'server-1',
+                name: 'Vice City RP',
+                region: 'eu-west',
+                status: 'active',
+                role: 'server_moderator',
+                since: new Date('2026-02-01T00:00:00.000Z'),
+            });
+        });
+
+        /**
+         * Uma candidatura por responder ainda não concede cargo nenhum.
+         * Mostrar um cargo aqui daria a entender que já foi aceite.
+         */
+        it('uma candidatura pendente aparece sem cargo', async () => {
+            repository.listOpenMembershipsOfUser.mockResolvedValue([
+                {
+                    serverId: 'server-2',
+                    status: 'pending',
+                    created_at: new Date('2026-02-02T00:00:00.000Z'),
+                    server: { id: 'server-2', name: 'Outro', region: null },
+                },
+            ]);
+
+            const adesoes = await service.listMyMemberships('user-1');
+
+            expect(adesoes[0]?.status).toBe('pending');
+            expect(adesoes[0]?.role).toBeNull();
         });
     });
 });

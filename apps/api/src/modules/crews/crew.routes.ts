@@ -4,6 +4,7 @@ import type { CrewController } from './controllers/crew.controller.js';
 import type {
     CreateCrewDto,
     CrewIdParamDto,
+    ListCrewsQueryDto,
     CrewMemberParamDto,
     SetMemberRoleDto,
     UpdateCrewDto,
@@ -11,6 +12,7 @@ import type {
 import {
     createCrewSchema,
     crewIdParamSchema,
+    listCrewsQuerySchema,
     crewMemberParamSchema,
     setMemberRoleSchema,
     updateCrewSchema,
@@ -47,6 +49,30 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
     );
 
     /**
+     * O diretório é público e paginado.
+     *
+     * É por aqui que alguém encontra uma crew a que se candidatar sem
+     * já saber o identificador dela.
+     */
+    fastify.get<{ Querystring: ListCrewsQueryDto }>(
+        '/',
+        { schema: { querystring: listCrewsQuerySchema } },
+        controller.listDirectory.bind(controller),
+    );
+
+    /**
+     * As candidaturas e adesões de quem faz o pedido.
+     *
+     * O segmento é estático, pelo que nunca colide com /:crewId — que só
+     * aceita um uuid.
+     */
+    fastify.get(
+        '/me/memberships',
+        { preHandler: [fastify.authenticate] },
+        controller.listMyMemberships.bind(controller),
+    );
+
+    /**
      * Perfil e lista de membros são públicos, tal como o perfil de
      * utilizador.
      */
@@ -72,8 +98,8 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
     );
 
     /**
-     * Pedir entrada e sair dizem respeito ao próprio: exigem conta, mas
-     * nenhuma permissão sobre a crew.
+     * Pedir entrada, retirar o pedido e sair dizem respeito ao próprio:
+     * exigem conta, mas nenhuma permissão sobre a crew.
      */
     fastify.post<{ Params: CrewIdParamDto }>(
         '/:crewId/join',
@@ -82,6 +108,15 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
             schema: { params: crewIdParamSchema },
         },
         controller.requestToJoin.bind(controller),
+    );
+
+    fastify.delete<{ Params: CrewIdParamDto }>(
+        '/:crewId/join',
+        {
+            preHandler: [fastify.authenticate],
+            schema: { params: crewIdParamSchema },
+        },
+        controller.withdrawJoinRequest.bind(controller),
     );
 
     fastify.post<{ Params: CrewIdParamDto }>(

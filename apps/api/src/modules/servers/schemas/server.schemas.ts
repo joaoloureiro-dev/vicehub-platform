@@ -40,3 +40,21 @@ export const serverMemberParamSchema = z.object({
 export const setServerMemberRoleSchema = z.object({
     role: z.enum(['server_owner', 'server_moderator', 'server_member']),
 });
+
+/**
+ * Filtros do diretório de servidores.
+ *
+ * Segue o diretório de crews: números convertidos a partir do texto da
+ * query e um tecto por página, para que um pedido não possa arrastar o
+ * diretório inteiro.
+ */
+export const listServersQuerySchema = z.object({
+    search: z.string().trim().min(1).max(48).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(50).default(20),
+    sort: z.enum(['newest', 'name']).default('newest'),
+    onlineOnly: z
+        .union([z.literal('true'), z.literal('false')])
+        .transform((value) => value === 'true')
+        .optional(),
+});
