@@ -1,9 +1,19 @@
+import { PLANS, addPlanInterval } from '@vicehub/database';
+
 import { SubscriptionError } from '../errors/subscription.errors.js';
 import type { SubscriptionRepository } from '../repositories/subscription.repository.js';
 import type {
     SubscriptionEntitlement,
     SubscriptionOwner,
+    SubscriptionOwnerKind,
 } from '../types/subscription.types.js';
+
+interface GrantInput {
+    ownerKind: SubscriptionOwnerKind;
+    ownerId: string;
+    months?: number | undefined;
+    grantedBy: string;
+}
 
 /**
  * Serviço de subscrições.
@@ -32,6 +42,96 @@ export class SubscriptionService {
             isPremium: subscription !== null,
             activeUntil: subscription?.current_period_end ?? null,
         };
+    }
+
+    /**
+     * Concede um período de plano a um titular.
+     *
+     * Conceder a quem já tem plano **estende** o que existe em vez de
+     * abrir um período paralelo: dois períodos sobrepostos fariam o
+     * histórico deixar de dizer por quanto tempo se pagou, que é
+     * precisamente o que estes registos existem para responder.
+     */
+    async grant(input: GrantInput) {
+        const owner = this.buildOwner(input.ownerKind, input.ownerId);
+
+        const existe = await this.subscriptionRepository.ownerExists(
+            input.ownerKind,
+            input.ownerId,
+        );
+
+        if (!existe) {
+            throw new SubscriptionError(
+                'SUBSCRIPTION_OWNER_NOT_FOUND',
+                'Não existe utilizador, crew ou servidor com este identificador.',
+            );
+        }
+
+        const plan = PLANS.premium;
+
+        const atual = await this.subscriptionRepository.findLatestPeriodEnd(owner);
+
+        /**
+         * O período novo começa onde o anterior acaba, ou agora se não
+         * houver nenhum a decorrer.
+         */
+        const periodStart = atual?.current_period_end ?? new Date();
+
+        const periodEnd =
+            input.months === undefined
+                ? addPlanInterval(periodStart, plan)
+                : addPlanInterval(periodStart, {
+                    ...plan,
+                    intervalMonths: input.months,
+                });
+
+        return this.subscriptionRepository.createPeriod({
+            owner,
+            plan: plan.plan,
+            priceCents: plan.priceCents,
+            currency: plan.currency,
+            periodStart,
+            periodEnd,
+            grantedBy: input.grantedBy,
+        });
+    }
+
+    /**
+     * Marca uma subscrição para não renovar no fim do período.
+     */
+    async cancelAtPeriodEnd(subscriptionId: string, canceledBy: string) {
+        const subscription =
+            await this.subscriptionRepository.findById(subscriptionId);
+
+        if (!subscription) {
+            throw new SubscriptionError(
+                'SUBSCRIPTION_NOT_FOUND',
+                'Subscrição não encontrada.',
+            );
+        }
+
+        if (subscription.cancel_at_period_end) {
+            throw new SubscriptionError(
+                'SUBSCRIPTION_ALREADY_CANCELED',
+                'Esta subscrição já estava marcada para não renovar.',
+            );
+        }
+
+        return this.subscriptionRepository.markToCancelAtPeriodEnd(
+            subscriptionId,
+            canceledBy,
+        );
+    }
+
+    /**
+     * Constrói o titular a partir do par tipo e identificador.
+     */
+    buildOwner(kind: SubscriptionOwnerKind, id: string): SubscriptionOwner {
+        if (kind === 'user') {
+            return { userId: id };
+        }
+
+        return kind === 'crew' ? { crewId: id } : { serverId: id };
     }
 
     /**

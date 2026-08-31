@@ -52,6 +52,9 @@ const authErrorStatusCodes: Record<AuthErrorCode, number> = {
 const subscriptionErrorStatusCodes: Record<SubscriptionErrorCode, number> = {
     SUBSCRIPTION_REQUIRED: 402,
     INVALID_SUBSCRIPTION_OWNER: 500,
+    SUBSCRIPTION_OWNER_NOT_FOUND: 404,
+    SUBSCRIPTION_NOT_FOUND: 404,
+    SUBSCRIPTION_ALREADY_CANCELED: 409,
 };
 
 const crewErrorStatusCodes: Record<CrewErrorCode, number> = {
