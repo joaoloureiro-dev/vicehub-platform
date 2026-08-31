@@ -28,3 +28,19 @@ export {
     PermissionScope,
     SourceType,
 } from '@prisma/client';
+
+export {
+    PERMISSIONS,
+    PERMISSION_KEYS,
+    ROLES,
+    ROLE_KEYS,
+    SYSTEM_MANAGE_PERMISSION,
+    buildPermissionKey,
+} from './rbac.js';
+
+export type {
+    PermissionDefinition,
+    PermissionKey,
+    RoleDefinition,
+    RoleKey,
+} from './rbac.js';

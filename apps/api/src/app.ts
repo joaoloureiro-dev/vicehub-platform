@@ -10,6 +10,7 @@ import { env } from './config/env.js';
 import authModule from './modules/auth/auth.module.js';
 
 import authenticatePlugin from './plugins/auth/authenticate.plugin.js';
+import authorizePlugin from './plugins/auth/authorize.plugin.js';
 import cookiePlugin from './plugins/auth/cookie.plugin.js';
 import jwtPlugin from './plugins/auth/jwt.plugin.js';
 
@@ -132,6 +133,9 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Middleware de autenticação
     void app.register(authenticatePlugin);
+
+    // Middleware de autorização por permissões
+    void app.register(authorizePlugin);
 
     // Health Check
     void app.register(healthRoutes, {

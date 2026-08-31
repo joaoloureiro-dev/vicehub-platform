@@ -98,6 +98,7 @@ npm ci
 cp apps/api/.env.example .env   # preencher DATABASE_URL e os segredos JWT
 npm run db:generate
 npm run db:migrate:dev
+npm run db:seed                 # cargos e permissões base
 npm run dev
 ```
 
@@ -114,6 +115,50 @@ npm run test       # não precisa de base de dados
 Os testes usam duplos em memória em vez do Prisma, por isso correm em
 qualquer máquina sem preparação. O mesmo conjunto de comandos corre no CI,
 em `.github/workflows/ci.yml`.
+
+### Autorização por permissões
+
+Os cargos e permissões estão definidos num só sítio,
+`packages/database/src/rbac.ts`. É esse catálogo que alimenta o
+`db:seed` e é dele que a API importa as permissões, pelo que o que está
+gravado e o que o código exige não podem divergir.
+
+Uma rota protege-se assim:
+
+```ts
+fastify.get(
+    '/crews/:crewId/definicoes',
+    { preHandler: [fastify.authenticate, fastify.authorize('crew:manage')] },
+    handler,
+);
+```
+
+Notas sobre o comportamento:
+
+- O `authorize` vem sempre **a seguir** ao `authenticate`, de que depende.
+  Uma rota que se esqueça do `authenticate` é recusada com 401, em vez de
+  ficar aberta.
+- As permissões indicadas são **conjuntivas**: são todas exigidas.
+- O âmbito é lido dos parâmetros `crewId` e `serverId` da própria rota. Um
+  cargo atribuído noutra crew nunca autoriza uma operação nesta.
+- Atribuições expiradas ou eliminadas por soft delete não contam.
+- A permissão `system:manage` cobre todas as outras, para que uma
+  permissão nova não deixe o administrador de fora.
+- As permissões são lidas uma única vez por pedido, mesmo que a rota
+  declare várias ou volte a consultá-las.
+
+Uma recusa devolve 403 com a lista do que faltava:
+
+```json
+{
+  "statusCode": 403,
+  "code": "INSUFFICIENT_PERMISSIONS",
+  "missingPermissions": ["crew:manage"]
+}
+```
+
+Acrescentar uma permissão é editar o catálogo e voltar a correr o
+`db:seed`, que é idempotente e nunca elimina nada.
 
 ### Valores BigInt nas respostas
 
