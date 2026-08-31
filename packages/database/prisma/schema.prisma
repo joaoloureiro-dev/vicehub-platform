@@ -21,6 +21,13 @@ enum MembershipType {
   server
 }
 
+enum MembershipStatus {
+  pending
+  active
+  rejected
+  left
+}
+
 enum AuthProviderType {
   local
   discord
@@ -178,7 +185,14 @@ model Membership {
 
   type MembershipType
 
-  role String @default("member")
+  /// Uma adesão começa pendente e só passa a ativa quando alguém com
+  /// autorização a aceita. O cargo dentro da crew não vive aqui: é
+  /// dado por UserRole com âmbito de crew, para que exista uma única
+  /// fonte de verdade sobre quem pode o quê.
+  status MembershipStatus @default(pending)
+
+  responded_at DateTime?
+  responded_by String?
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -199,6 +213,8 @@ model Membership {
   @@index([serverId])
   @@index([type])
   @@index([userId, type])
+  @@index([status])
+  @@index([crewId, status])
   @@index([is_deleted])
 }
 

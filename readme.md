@@ -201,6 +201,41 @@ deixa-o como está; indicá-lo a `null` limpa-o. Email e username não se
 alteram por aqui: mexem em identidade e unicidade, e merecem fluxos
 próprios com verificação.
 
+### Crews
+
+| Rota | Quem pode |
+|---|---|
+| `GET /api/v1/crews/:crewId` | qualquer pessoa |
+| `GET /api/v1/crews/:crewId/members` | qualquer pessoa |
+| `POST /api/v1/crews` | qualquer conta |
+| `POST /api/v1/crews/:crewId/join` | qualquer conta |
+| `POST /api/v1/crews/:crewId/leave` | qualquer conta |
+| `GET /api/v1/crews/:crewId/requests` | `crew:manage_members` |
+| `POST /api/v1/crews/:crewId/requests/:userId/accept` | `crew:manage_members` |
+| `POST /api/v1/crews/:crewId/requests/:userId/reject` | `crew:manage_members` |
+| `DELETE /api/v1/crews/:crewId/members/:userId` | `crew:manage_members` |
+| `PUT /api/v1/crews/:crewId/members/:userId/role` | `crew:manage_members` |
+| `PATCH /api/v1/crews/:crewId` | `crew:manage` |
+
+**Pertencer e mandar são coisas distintas.** O `Membership` diz quem
+pertence e desde quando; o cargo dentro da crew é dado por `UserRole` com
+âmbito de crew, e é o RBAC que decide quem pode o quê. Uma única fonte de
+verdade evita que a interface diga que és oficial e o guard diga que não.
+
+O serviço mantém as duas coerentes: entrar dá cargo, sair retira-o.
+
+Entrar numa crew é por **aprovação**. Quem pede fica com adesão pendente e
+sem cargo nenhum; só ao ser aceite recebe `crew_member`. A base de dados
+impede dois pedidos em aberto na mesma crew, mas permite voltar a pedir
+depois de sair ou de ser recusado — o histórico fica.
+
+**Uma crew nunca fica sem líder.** Sair, ser removido ou ser despromovido
+é recusado com 409 se fores o único `crew_leader`. Também não se altera o
+próprio cargo nem se remove a si próprio pelas rotas de gestão.
+
+O âmbito é o que evita o erro mais perigoso: um cargo de líder noutra crew
+**não** autoriza nada nesta, porque o guard lê o `crewId` da própria rota.
+
 ### Subscrições premium
 
 O plano premium custa **10 USD por mês** e pode pertencer a um utilizador,

@@ -22,6 +22,8 @@ export type DatabaseClient = typeof prisma;
 export {
     AuthProviderType,
     AuthSessionStatus,
+    MembershipStatus,
+    MembershipType,
     Prisma,
     RefreshTokenStatus,
     RoleScope,
