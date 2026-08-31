@@ -1,7 +1,26 @@
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { PrismaClient, SourceType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PERMISSIONS, ROLES } from '../src/rbac.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/**
+ * Carrega o .env da raiz do monorepo, tal como o prisma.config.ts.
+ *
+ * O seed corre por tsx e não passa pelo carregamento de configuração do
+ * Prisma, por isso tem de ler o ficheiro por si. Sem isto só funcionava
+ * quando a variável já estivesse definida na shell.
+ */
+dotenv.config({
+    path: path.resolve(__dirname, '../../../.env'),
+    quiet: true,
+});
 
 /**
  * Seed dos cargos e permissões base do ViceHub.
