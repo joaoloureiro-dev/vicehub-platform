@@ -51,11 +51,34 @@ export const ENTITLING_SUBSCRIPTION_STATUSES: readonly SubscriptionStatus[] = [
 
 /**
  * Calcula o fim de um período a partir do seu início.
+ *
+ * O dia é limitado ao último dia do mês de destino. Sem isso, somar um
+ * mês a 31 de janeiro pediria "31 de fevereiro", que o JavaScript
+ * transborda para março — e um período encadeado a partir de um fim de
+ * mês ganharia dias a cada renovação, sempre a favor de quem subscreve.
  */
 export const addPlanInterval = (start: Date, plan: PlanDefinition): Date => {
     const end = new Date(start);
 
+    const diaPretendido = end.getDate();
+
+    /**
+     * Fixar o dia 1 antes de mudar de mês evita o transbordo durante o
+     * próprio cálculo, que de outra forma saltaria um mês inteiro.
+     */
+    end.setDate(1);
     end.setMonth(end.getMonth() + plan.intervalMonths);
+
+    /**
+     * O dia 0 do mês seguinte é o último dia deste.
+     */
+    const ultimoDiaDoMes = new Date(
+        end.getFullYear(),
+        end.getMonth() + 1,
+        0,
+    ).getDate();
+
+    end.setDate(Math.min(diaPretendido, ultimoDiaDoMes));
 
     return end;
 };

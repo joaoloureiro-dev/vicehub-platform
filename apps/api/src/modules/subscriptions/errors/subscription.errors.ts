@@ -1,6 +1,9 @@
 export type SubscriptionErrorCode =
     | 'SUBSCRIPTION_REQUIRED'
-    | 'INVALID_SUBSCRIPTION_OWNER';
+    | 'INVALID_SUBSCRIPTION_OWNER'
+    | 'SUBSCRIPTION_OWNER_NOT_FOUND'
+    | 'SUBSCRIPTION_NOT_FOUND'
+    | 'SUBSCRIPTION_ALREADY_CANCELED';
 
 /**
  * Erro de domínio do módulo de subscrições.
