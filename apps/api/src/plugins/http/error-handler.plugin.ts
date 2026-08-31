@@ -17,6 +17,10 @@ import {
     type ServerErrorCode,
 } from '../../modules/servers/errors/server.errors.js';
 import {
+    TreasuryError,
+    type TreasuryErrorCode,
+} from '../../modules/treasury/errors/treasury.errors.js';
+import {
     SubscriptionError,
     type SubscriptionErrorCode,
 } from '../../modules/subscriptions/errors/subscription.errors.js';
@@ -76,6 +80,12 @@ const serverErrorStatusCodes: Record<ServerErrorCode, number> = {
     NOT_A_MEMBER: 404,
     MEMBERSHIP_NOT_PENDING: 409,
     CANNOT_MANAGE_SELF: 409,
+};
+
+const treasuryErrorStatusCodes: Record<TreasuryErrorCode, number> = {
+    WALLET_NOT_FOUND: 404,
+    /** Titular inválido é erro de programação, não do cliente. */
+    INVALID_WALLET_OWNER: 500,
 };
 
 const httpErrorNames: Record<number, string> = {
@@ -225,6 +235,27 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 code: error.code,
                 error: httpErrorNames[statusCode] ?? 'Error',
                 message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof TreasuryError) {
+            const statusCode = treasuryErrorStatusCodes[error.code];
+
+            const log = statusCode < 500 ? request.log.warn : request.log.error;
+
+            log.call(
+                request.log,
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo de tesouraria.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: statusCode < 500 ? error.code : 'INTERNAL_SERVER_ERROR',
+                error: httpErrorNames[statusCode] ?? 'Internal Server Error',
+                message:
+                    statusCode < 500 ? error.message : 'Erro interno do servidor.',
             });
             return;
         }

@@ -45,6 +45,7 @@ export class ServerRepository {
             region?: string | null;
             description?: string | null;
             memberships: unknown;
+            wallet: unknown;
         } = {
             name: input.name,
             source: SourceType.api,
@@ -56,6 +57,11 @@ export class ServerRepository {
                     status: MembershipStatus.active,
                     responded_at: new Date(),
                     responded_by: input.ownerId,
+                    source: SourceType.api,
+                },
+            },
+            wallet: {
+                create: {
                     source: SourceType.api,
                 },
             },

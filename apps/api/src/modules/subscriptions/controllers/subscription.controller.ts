@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
+import { AuditService } from '../../audit/services/audit.service.js';
 import type {
     CrewScopeParamDto,
     GrantSubscriptionDto,
@@ -29,7 +30,10 @@ interface SubscriptionRow {
 }
 
 export class SubscriptionController {
-    constructor(private readonly subscriptionService: SubscriptionService) { }
+    constructor(
+        private readonly subscriptionService: SubscriptionService,
+        private readonly auditService: AuditService,
+    ) { }
 
     async grant(
         request: FastifyRequest<{ Body: GrantSubscriptionDto }>,
@@ -40,6 +44,26 @@ export class SubscriptionController {
         const subscription = await this.subscriptionService.grant({
             ...request.body,
             grantedBy: user.id,
+        });
+
+        /**
+         * Conceder um plano é dar acesso pago sem pagamento. Fica no rasto
+         * de auditoria com quem o fez, a quem, e por que período.
+         */
+        await this.auditService.record({
+            action: 'subscription.granted',
+            entityType: 'Subscription',
+            entityId: subscription.id,
+            actorId: user.id,
+            after: {
+                ownerKind: request.body.ownerKind,
+                ownerId: request.body.ownerId,
+                priceCents: subscription.price_cents,
+                currency: subscription.currency,
+                periodStart: subscription.current_period_start.toISOString(),
+                periodEnd: subscription.current_period_end.toISOString(),
+            },
+            ...AuditService.contextOf(request),
         });
 
         reply.code(201).send(this.toRow(subscription));
@@ -55,6 +79,19 @@ export class SubscriptionController {
             request.params.subscriptionId,
             user.id,
         );
+
+        await this.auditService.record({
+            action: 'subscription.canceled',
+            entityType: 'Subscription',
+            entityId: subscription.id,
+            actorId: user.id,
+            before: { cancelAtPeriodEnd: false },
+            after: {
+                cancelAtPeriodEnd: true,
+                periodEnd: subscription.current_period_end.toISOString(),
+            },
+            ...AuditService.contextOf(request),
+        });
 
         reply.send(this.toRow(subscription));
     }

@@ -167,6 +167,16 @@ export class AuthRepository {
                         source: SourceType.api,
                     },
                 },
+                /**
+                 * A carteira nasce com a conta, pela mesma razão: uma
+                 * carteira criada só quando alguém a consulta abriria uma
+                 * corrida entre dois pedidos simultâneos.
+                 */
+                wallet: {
+                    create: {
+                        source: SourceType.api,
+                    },
+                },
             },
             include: {
                 credentials: true,

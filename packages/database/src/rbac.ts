@@ -94,7 +94,13 @@ export const PERMISSIONS = {
         scope: PermissionScope.treasury,
         slug: 'transfer',
         name: 'Movimentar fundos',
-        description: 'Executar transferências a partir da tesouraria.',
+        description: 'Propor entradas e saídas na tesouraria.',
+    },
+    'treasury:approve': {
+        scope: PermissionScope.treasury,
+        slug: 'approve',
+        name: 'Aprovar movimentos',
+        description: 'Aprovar ou recusar movimentos propostos na tesouraria.',
     },
     'system:manage': {
         scope: PermissionScope.system,
@@ -164,6 +170,7 @@ export const ROLES = {
             'crew:manage_members',
             'treasury:read',
             'treasury:transfer',
+            'treasury:approve',
         ],
     },
     crew_officer: {
@@ -171,7 +178,12 @@ export const ROLES = {
         slug: 'crew_officer',
         name: 'Oficial de crew',
         description: 'Gere membros e consulta a tesouraria da crew.',
-        permissions: ['crew:read', 'crew:manage_members', 'treasury:read'],
+        permissions: [
+            'crew:read',
+            'crew:manage_members',
+            'treasury:read',
+            'treasury:transfer',
+        ],
     },
     crew_member: {
         scope: RoleScope.crew,
@@ -185,7 +197,14 @@ export const ROLES = {
         slug: 'server_owner',
         name: 'Dono do servidor',
         description: 'Controlo total sobre o servidor.',
-        permissions: ['server:read', 'server:manage', 'server:manage_members'],
+        permissions: [
+            'server:read',
+            'server:manage',
+            'server:manage_members',
+            'treasury:read',
+            'treasury:transfer',
+            'treasury:approve',
+        ],
     },
     server_moderator: {
         scope: RoleScope.server,

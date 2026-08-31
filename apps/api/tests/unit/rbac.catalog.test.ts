@@ -145,6 +145,56 @@ describe('catálogo de RBAC', () => {
             ]);
         });
 
+        /**
+         * Propor uma despesa e autorizá-la são atos diferentes, e é essa
+         * separação que torna a aprovação uma aprovação: se quem propõe
+         * também decide, a tesouraria não tem controlo nenhum.
+         */
+        it('quem aprova despesas é sempre menos do que quem as propõe', () => {
+            const holdersOf = (permission: PermissionKey): RoleKey[] =>
+                ROLE_KEYS.filter((key) =>
+                    (ROLES[key].permissions as readonly PermissionKey[]).includes(
+                        permission,
+                    ),
+                );
+
+            const propoem = holdersOf('treasury:transfer');
+            const aprovam = holdersOf('treasury:approve');
+
+            expect(aprovam.length).toBeLessThan(propoem.length);
+
+            for (const cargo of aprovam) {
+                expect(propoem, `${cargo} aprova mas não propõe`).toContain(cargo);
+            }
+        });
+
+        it('só quem manda na entidade aprova a sua tesouraria', () => {
+            const aprovam = ROLE_KEYS.filter((key) =>
+                (ROLES[key].permissions as readonly PermissionKey[]).includes(
+                    'treasury:approve',
+                ),
+            );
+
+            expect(aprovam).toEqual(['crew_leader', 'server_owner']);
+        });
+
+        /**
+         * Ver a tesouraria é o mínimo para quem lhe mexe. Um cargo que
+         * pudesse movimentar sem ver estaria a agir às cegas.
+         */
+        it('quem mexe na tesouraria consegue vê-la', () => {
+            for (const key of ROLE_KEYS) {
+                const permissions = ROLES[key].permissions as readonly PermissionKey[];
+
+                if (
+                    permissions.includes('treasury:transfer') ||
+                    permissions.includes('treasury:approve')
+                ) {
+                    expect(permissions, `cargo ${key}`).toContain('treasury:read');
+                }
+            }
+        });
+
         it('cargos de crew não concedem permissões de servidor, e vice-versa', () => {
             for (const key of ROLE_KEYS) {
                 const role = ROLES[key];
