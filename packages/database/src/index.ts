@@ -30,6 +30,7 @@ export {
 } from '@prisma/client';
 
 export {
+    DEFAULT_USER_ROLE,
     PERMISSIONS,
     PERMISSION_KEYS,
     ROLES,

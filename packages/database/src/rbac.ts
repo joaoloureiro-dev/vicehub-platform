@@ -188,6 +188,15 @@ export type RoleKey = keyof typeof ROLES;
 export const ROLE_KEYS = Object.keys(ROLES) as RoleKey[];
 
 /**
+ * Cargo atribuído a qualquer conta criada pelo registo.
+ *
+ * Sem ele, um utilizador novo ficaria sem permissão nenhuma. Atribuir
+ * um cargo real, em vez de tratar o caso à parte no código, mantém a
+ * autorização auditável: quem tem o quê lê-se na base de dados.
+ */
+export const DEFAULT_USER_ROLE: RoleKey = 'player';
+
+/**
  * Constrói a chave de uma permissão a partir dos campos guardados.
  *
  * É o inverso do catálogo e permite comparar o que vem da base de dados

@@ -1,4 +1,5 @@
 import {
+    DEFAULT_USER_ROLE,
     PERMISSIONS,
     PERMISSION_KEYS,
     ROLES,
@@ -126,5 +127,36 @@ describe('catálogo de RBAC', () => {
                 }
             }
         });
+    });
+});
+
+describe('cargo base do registo', () => {
+    it('existe no catálogo', () => {
+        expect(ROLES[DEFAULT_USER_ROLE]).toBeDefined();
+    });
+
+    it('é global, para valer em qualquer contexto', () => {
+        /**
+         * Um cargo de crew ou de servidor só valeria dentro desse
+         * âmbito, deixando o utilizador sem nada fora dele.
+         */
+        expect(ROLES[DEFAULT_USER_ROLE].scope).toBe('global');
+    });
+
+    it('não concede poderes de gestão nem de administração', () => {
+        const permissions: readonly PermissionKey[] = ROLES[DEFAULT_USER_ROLE].permissions;
+
+        expect(permissions).not.toContain(SYSTEM_MANAGE_PERMISSION);
+        expect(
+            permissions.filter((permission) => permission.endsWith(':manage')),
+        ).toEqual([]);
+    });
+
+    it('concede alguma leitura, senão não valeria a pena atribuí-lo', () => {
+        const permissions: readonly PermissionKey[] = ROLES[DEFAULT_USER_ROLE].permissions;
+
+        expect(
+            permissions.some((permission) => permission.endsWith(':read')),
+        ).toBe(true);
     });
 });
