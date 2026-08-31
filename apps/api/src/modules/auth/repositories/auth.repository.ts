@@ -65,11 +65,12 @@ export class AuthRepository {
                 is_deleted: false,
             },
             include: {
-                credentials: {
-                    where: {
-                        is_deleted: false,
-                    },
-                },
+                /**
+                 * credentials é uma relação to-one, por isso não aceita
+                 * filtro próprio. O estado is_deleted da credencial é
+                 * validado explicitamente no AuthService.
+                 */
+                credentials: true,
             },
         });
     }
@@ -147,12 +148,6 @@ export class AuthRepository {
      * Cada login cria uma AuthSession própria,
      * permitindo logout por dispositivo.
      */
-    /**
- * Cria uma sessão autenticada.
- *
- * Cada login cria uma AuthSession própria,
- * permitindo logout por dispositivo.
- */
     createSession(input: CreateAuthSessionInput) {
         return this.database.authSession.create({
             data: {
@@ -179,6 +174,28 @@ export class AuthRepository {
                 expires_at: {
                     gt: new Date(),
                 },
+            },
+        });
+    }
+
+    /**
+     * Procura uma sessão ativa com o utilizador associado.
+     *
+     * Usado pelo middleware de autenticação para confirmar que
+     * a sessão do access token continua válida na base de dados.
+     */
+    findActiveSessionWithUser(sessionId: string) {
+        return this.database.authSession.findFirst({
+            where: {
+                id: sessionId,
+                status: AuthSessionStatus.active,
+                is_deleted: false,
+                expires_at: {
+                    gt: new Date(),
+                },
+            },
+            include: {
+                user: true,
             },
         });
     }
@@ -218,12 +235,26 @@ export class AuthRepository {
     }
 
     /**
- * Procura um refresh token ativo pelo ID.
- *
- * Usado no refresh flow.
- * O token recebido pelo cliente contém o ID público
- * e o segredo privado separado.
- */
+     * Procura um refresh token pelo ID, independentemente do estado.
+     *
+     * É necessário para detetar reutilização: um token já rodado ou
+     * revogado que volte a aparecer indica que foi comprometido.
+     */
+    findRefreshTokenById(refreshTokenId: string) {
+        return this.database.refreshToken.findUnique({
+            where: {
+                id: refreshTokenId,
+            },
+        });
+    }
+
+    /**
+     * Procura um refresh token ativo pelo ID.
+     *
+     * Usado no refresh flow.
+     * O token recebido pelo cliente contém o ID público
+     * e o segredo privado separado.
+     */
     findActiveRefreshTokenById(refreshTokenId: string) {
         return this.database.refreshToken.findFirst({
             where: {
@@ -359,6 +390,44 @@ export class AuthRepository {
                 },
             },
         });
+    }
+
+    /**
+     * Revoga uma sessão e todos os seus refresh tokens ativos.
+     *
+     * As duas operações correm na mesma transação para que nunca
+     * exista um estado intermédio em que a sessão está revogada mas
+     * os tokens continuam utilizáveis.
+     */
+    revokeSessionWithRefreshTokens(sessionId: string, revokedAt: Date) {
+        return this.database.$transaction([
+            this.database.refreshToken.updateMany({
+                where: {
+                    sessionId,
+                    status: RefreshTokenStatus.active,
+                    is_deleted: false,
+                },
+                data: {
+                    status: RefreshTokenStatus.revoked,
+                    revoked_at: revokedAt,
+                    version: {
+                        increment: 1,
+                    },
+                },
+            }),
+            this.database.authSession.update({
+                where: {
+                    id: sessionId,
+                },
+                data: {
+                    status: AuthSessionStatus.revoked,
+                    revoked_at: revokedAt,
+                    version: {
+                        increment: 1,
+                    },
+                },
+            }),
+        ]);
     }
 
     /**
