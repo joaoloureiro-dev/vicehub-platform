@@ -1,7 +1,14 @@
-import { TransactionDirection, TransactionStatus } from '@vicehub/database';
+import {
+    TransactionCategory,
+    TransactionDirection,
+    TransactionStatus,
+} from '@vicehub/database';
 
 import { TreasuryError } from '../errors/treasury.errors.js';
-import type { TreasuryRepository } from '../repositories/treasury.repository.js';
+import {
+    InsufficientFundsSignal,
+    type TreasuryRepository,
+} from '../repositories/treasury.repository.js';
 import type {
     TreasuryBalances,
     TreasuryMovement,
@@ -9,12 +16,24 @@ import type {
     WalletOwnerKind,
 } from '../types/treasury.types.js';
 
+interface ProposeMovementInput {
+    amount: bigint;
+    direction: TransactionDirection;
+    category: TransactionCategory;
+    description: string;
+    requestedBy: string;
+}
+
 /**
  * Serviço de tesouraria.
  *
- * Por agora só responde a duas perguntas: quanto há, e o que se passou.
- * Propor e aprovar movimentos vêm a seguir, e é por isso que os estados
- * e os CHECK já existem na base de dados.
+ * A tesouraria movimenta moeda de jogo, e não dinheiro real: não há
+ * provedor de pagamento nem obrigações de reporte por trás dela. O rigor
+ * é o mesmo — uma comunidade que perde a conta ao que dividiu perde a
+ * confiança de quem contribuiu.
+ *
+ * Todo o movimento nasce por responder. Quem propõe e quem aprova são
+ * permissões distintas, e o dinheiro só se mexe na aprovação.
  */
 export class TreasuryService {
     constructor(private readonly treasuryRepository: TreasuryRepository) { }
@@ -79,6 +98,110 @@ export class TreasuryService {
     }
 
     /**
+     * Propõe um movimento, que fica por decidir.
+     */
+    async proposeMovement(owner: WalletOwner, input: ProposeMovementInput) {
+        const wallet = await this.requireWallet(owner);
+
+        return this.treasuryRepository.createMovement({
+            walletId: wallet.id,
+            amount: input.amount,
+            direction: input.direction,
+            category: input.category,
+            description: input.description,
+            requestedBy: input.requestedBy,
+        });
+    }
+
+    /**
+     * Aprova um movimento e move o dinheiro.
+     */
+    async approveMovement(
+        owner: WalletOwner,
+        movementId: string,
+        approvedBy: string,
+    ) {
+        const { wallet, movement } = await this.requirePendingMovement(
+            owner,
+            movementId,
+        );
+
+        try {
+            const resultado = await this.treasuryRepository.approveMovement({
+                movementId: movement.id,
+                walletId: wallet.id,
+                amount: movement.amount,
+                direction: movement.direction,
+                approvedBy,
+            });
+
+            if (resultado.outcome === 'not_pending') {
+                /**
+                 * Outra aprovação chegou primeiro. O movimento já não é
+                 * desta pessoa para aprovar, e o dinheiro não se mexeu
+                 * duas vezes.
+                 */
+                throw new TreasuryError(
+                    'MOVEMENT_NOT_PENDING',
+                    'Este movimento já foi decidido.',
+                );
+            }
+        } catch (error) {
+            if (error instanceof InsufficientFundsSignal) {
+                throw new TreasuryError(
+                    'INSUFFICIENT_FUNDS',
+                    'A tesouraria não tem saldo suficiente para este movimento.',
+                );
+            }
+
+            throw error;
+        }
+
+        return this.treasuryRepository.findMovementById(movement.id);
+    }
+
+    /**
+     * Recusa um movimento. O saldo não se mexe.
+     */
+    async rejectMovement(
+        owner: WalletOwner,
+        movementId: string,
+        rejectedBy: string,
+    ) {
+        const { movement } = await this.requirePendingMovement(owner, movementId);
+
+        await this.closeOrFail(movement.id, TransactionStatus.rejected, rejectedBy);
+
+        return this.treasuryRepository.findMovementById(movement.id);
+    }
+
+    /**
+     * Retira uma proposta ainda por decidir.
+     *
+     * Só quem a propôs a pode retirar. Cancelar a proposta de outra
+     * pessoa é uma decisão, e decisões passam por recusar — que fica
+     * registada com quem a tomou.
+     */
+    async cancelMovement(
+        owner: WalletOwner,
+        movementId: string,
+        canceledBy: string,
+    ) {
+        const { movement } = await this.requirePendingMovement(owner, movementId);
+
+        if (movement.requested_by !== canceledBy) {
+            throw new TreasuryError(
+                'NOT_THE_PROPOSER',
+                'Só quem propôs o movimento o pode retirar. Para o travar, recusa-o.',
+            );
+        }
+
+        await this.closeOrFail(movement.id, TransactionStatus.canceled, canceledBy);
+
+        return this.treasuryRepository.findMovementById(movement.id);
+    }
+
+    /**
      * Confirma que o saldo guardado bate certo com as movimentações.
      *
      * O saldo da carteira é uma cache. Esta reconciliação é o que impede
@@ -125,6 +248,60 @@ export class TreasuryService {
         }
 
         return this.treasuryRepository.createWalletForOwner(owner);
+    }
+
+    /**
+     * Carrega um movimento pendente, confirmando que pertence mesmo à
+     * tesouraria indicada na rota.
+     *
+     * Esta verificação é o que impede a confusão de âmbito: sem ela,
+     * quem tem autorização na crew A aprovaria um movimento da crew B
+     * pondo o identificador da sua no caminho, e o guard de permissões
+     * não daria por nada — ele só olha para o parâmetro da rota.
+     */
+    private async requirePendingMovement(owner: WalletOwner, movementId: string) {
+        const wallet = await this.requireWallet(owner);
+
+        const movement = await this.treasuryRepository.findMovementById(movementId);
+
+        if (!movement || movement.walletId !== wallet.id) {
+            throw new TreasuryError(
+                'MOVEMENT_NOT_FOUND',
+                'Não existe esse movimento nesta tesouraria.',
+            );
+        }
+
+        if (movement.status !== TransactionStatus.pending) {
+            throw new TreasuryError(
+                'MOVEMENT_NOT_PENDING',
+                'Este movimento já foi decidido.',
+            );
+        }
+
+        return { wallet, movement };
+    }
+
+    /**
+     * Encerra um movimento, recusando se entretanto deixou de estar
+     * pendente.
+     */
+    private async closeOrFail(
+        movementId: string,
+        status: TransactionStatus,
+        decidedBy: string,
+    ): Promise<void> {
+        const fechado = await this.treasuryRepository.closeMovement({
+            movementId,
+            status,
+            decidedBy,
+        });
+
+        if (fechado.count !== 1) {
+            throw new TreasuryError(
+                'MOVEMENT_NOT_PENDING',
+                'Este movimento já foi decidido.',
+            );
+        }
     }
 
     private sumOf(
