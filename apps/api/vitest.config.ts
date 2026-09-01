@@ -23,6 +23,14 @@ export default defineConfig({
         include: ['tests/**/*.test.ts'],
 
         /**
+         * Os testes de integração precisam de PostgreSQL a sério e correm
+         * pelo seu próprio comando. Ficam de fora daqui para que esta
+         * suite continue a poder correr em qualquer lado, sem base de
+         * dados nenhuma.
+         */
+        exclude: ['tests/integration/**'],
+
+        /**
          * Argon2 é propositadamente lento. O tempo por omissão do Vitest
          * não chega para os testes que fazem hash real.
          */
