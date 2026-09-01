@@ -17,10 +17,29 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # O prisma.config.ts exige DATABASE_URL para carregar, mesmo em comandos
-      # que não abrem ligação, como o generate. Nenhum passo deste workflow
-      # contacta uma base de dados: os testes usam duplos em memória.
+      # Usado pelo prisma.config.ts, pelas migrações e pelos testes de
+      # integração. Aponta para o serviço abaixo.
       DATABASE_URL: postgresql://vicehub:vicehub@localhost:5432/vicehub_ci
+
+    # A suite unitária corre com duplos em memória, mas há garantias que
+    # nenhum duplo consegue dar: duas aprovações simultâneas do mesmo
+    # movimento de tesouraria, ou duas saídas que juntas excedem o saldo.
+    # Quem decide quem chega primeiro é a base de dados, e por isso os
+    # testes de integração precisam de uma a sério.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vicehub
+          POSTGRES_PASSWORD: vicehub
+          POSTGRES_DB: vicehub_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Obter o código
@@ -52,3 +71,13 @@ jobs:
 
       - name: Correr testes
         run: npm run test
+
+      # As migrações e o seed correm antes dos testes de integração porque
+      # eles usam cargos e permissões reais do catálogo.
+      - name: Preparar a base de dados de integração
+        run: |
+          npm run db:migrate:deploy
+          npm run db:seed
+
+      - name: Correr testes de integração
+        run: npm run test:integration
