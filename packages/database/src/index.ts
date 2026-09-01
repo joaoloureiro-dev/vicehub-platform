@@ -24,6 +24,8 @@ export {
     AuthSessionStatus,
     DistributionBasis,
     DistributionStatus,
+    EventParticipantStatus,
+    EventStatus,
     MembershipStatus,
     MembershipType,
     Prisma,

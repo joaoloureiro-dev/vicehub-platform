@@ -27,7 +27,9 @@ import type {
 
 interface ProposeDistributionInput {
     total?: bigint | undefined;
-    basis: 'equal' | 'by_role' | 'manual';
+    basis: 'equal' | 'by_role' | 'manual' | 'participation';
+    /** Só para a base por participação: o evento de onde vêm os pesos. */
+    eventId?: string | undefined;
     note?: string | undefined;
     shares?: SplitShare[] | undefined;
     /**
@@ -249,7 +251,18 @@ export class TreasuryService {
             );
         }
 
-        const { total, shares } = this.buildShares(input, membros);
+        /**
+         * Numa divisão por participação os pesos não vêm dos cargos nem
+         * do pedido: vêm das presenças que quem organiza o evento
+         * confirmou. É isso que impede quem propõe de escolher a quem
+         * paga dizendo que participou.
+         */
+        const participantes =
+            input.basis === 'participation'
+                ? await this.requireConfirmedParticipants(owner, input.eventId)
+                : [];
+
+        const { total, shares } = this.buildShares(input, membros, participantes);
 
         /**
          * A soma das partes tem de ser exatamente o total. Se não for, a
@@ -271,6 +284,7 @@ export class TreasuryService {
             walletId: wallet.id,
             total,
             basis: this.basisOf(input.basis),
+            eventId: input.basis === 'participation' ? input.eventId : undefined,
             note: input.note,
             requestedBy: input.requestedBy,
             shares: shares
@@ -368,23 +382,92 @@ export class TreasuryService {
     /**
      * Calcula as partes conforme a base pedida.
      */
-    private basisOf(basis: 'equal' | 'by_role' | 'manual'): DistributionBasis {
+    private basisOf(
+        basis: 'equal' | 'by_role' | 'manual' | 'participation',
+    ): DistributionBasis {
         if (basis === 'equal') {
             return DistributionBasis.equal;
         }
 
-        return basis === 'by_role'
-            ? DistributionBasis.by_role
+        if (basis === 'by_role') {
+            return DistributionBasis.by_role;
+        }
+
+        return basis === 'participation'
+            ? DistributionBasis.participation
             : DistributionBasis.manual;
+    }
+
+    /**
+     * Lê quem participou no evento, recusando os dois casos em que não
+     * há por onde dividir.
+     */
+    private async requireConfirmedParticipants(
+        owner: WalletOwner,
+        eventId: string | undefined,
+    ): Promise<{ userId: string; weight: number }[]> {
+        /**
+         * O schema já exige o eventId nesta base. A verificação aqui
+         * existe para que uma chamada direta ao serviço não caia numa
+         * consulta com undefined.
+         */
+        if (eventId === undefined) {
+            throw new TreasuryError(
+                'EVENT_NOT_IN_THIS_TREASURY',
+                'Uma divisão por participação tem de indicar o evento.',
+            );
+        }
+
+        const evento = await this.treasuryRepository.findEventForOwner(
+            owner,
+            eventId,
+        );
+
+        if (!evento) {
+            throw new TreasuryError(
+                'EVENT_NOT_IN_THIS_TREASURY',
+                'Não existe esse evento nesta crew ou servidor.',
+            );
+        }
+
+        const participantes =
+            await this.treasuryRepository.listConfirmedEventParticipants(
+                owner,
+                eventId,
+            );
+
+        if (participantes.length === 0) {
+            throw new TreasuryError(
+                'NO_CONFIRMED_PARTICIPANTS',
+                'Ninguém tem presença confirmada neste evento.',
+            );
+        }
+
+        return participantes;
     }
 
     private buildShares(
         input: ProposeDistributionInput,
         membros: { userId: string; role: string | null }[],
+        participantes: { userId: string; weight: number }[],
     ): {
         total: bigint;
         shares: SplitShare[];
     } {
+        if (input.basis === 'participation') {
+            const total = input.total ?? 0n;
+
+            /**
+             * O peso é o da presença confirmada. Quem organiza é que o
+             * atribuiu, um a um, e é isso que torna esta base diferente
+             * de uma divisão por igual entre quem apareceu.
+             */
+            return {
+                total,
+                shares: splitByWeight(total, participantes),
+            };
+        }
+
         if (input.basis === 'equal') {
             const total = input.total ?? 0n;
 

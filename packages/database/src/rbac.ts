@@ -84,6 +84,25 @@ export const PERMISSIONS = {
         name: 'Gerir membros do servidor',
         description: 'Aceitar, recusar e remover membros do servidor.',
     },
+    'event:read': {
+        scope: PermissionScope.event,
+        slug: 'read',
+        name: 'Ver eventos',
+        description: 'Consultar eventos e quem participa neles.',
+    },
+    'event:manage': {
+        scope: PermissionScope.event,
+        slug: 'manage',
+        name: 'Gerir eventos',
+        description: 'Criar, alterar e cancelar eventos.',
+    },
+    'event:confirm_attendance': {
+        scope: PermissionScope.event,
+        slug: 'confirm_attendance',
+        name: 'Confirmar presenças',
+        description:
+            'Afirmar quem participou num evento e com que peso, o que dá direito a parte dos ganhos.',
+    },
     'treasury:read': {
         scope: PermissionScope.treasury,
         slug: 'read',
@@ -168,6 +187,9 @@ export const ROLES = {
             'crew:read',
             'crew:manage',
             'crew:manage_members',
+            'event:read',
+            'event:manage',
+            'event:confirm_attendance',
             'treasury:read',
             'treasury:transfer',
             'treasury:approve',
@@ -181,6 +203,9 @@ export const ROLES = {
         permissions: [
             'crew:read',
             'crew:manage_members',
+            'event:read',
+            'event:manage',
+            'event:confirm_attendance',
             'treasury:read',
             'treasury:transfer',
         ],
@@ -190,7 +215,7 @@ export const ROLES = {
         slug: 'crew_member',
         name: 'Membro de crew',
         description: 'Participa na crew sem poderes de gestão.',
-        permissions: ['crew:read'],
+        permissions: ['crew:read', 'event:read'],
     },
     server_owner: {
         scope: RoleScope.server,
@@ -201,6 +226,9 @@ export const ROLES = {
             'server:read',
             'server:manage',
             'server:manage_members',
+            'event:read',
+            'event:manage',
+            'event:confirm_attendance',
             'treasury:read',
             'treasury:transfer',
             'treasury:approve',
@@ -211,14 +239,20 @@ export const ROLES = {
         slug: 'server_moderator',
         name: 'Moderador do servidor',
         description: 'Gere os membros do servidor sem lhe alterar as definições.',
-        permissions: ['server:read', 'server:manage_members'],
+        permissions: [
+            'server:read',
+            'server:manage_members',
+            'event:read',
+            'event:manage',
+            'event:confirm_attendance',
+        ],
     },
     server_member: {
         scope: RoleScope.server,
         slug: 'server_member',
         name: 'Membro do servidor',
         description: 'Participa no servidor sem poderes de gestão.',
-        permissions: ['server:read'],
+        permissions: ['server:read', 'event:read'],
     },
 } as const satisfies Record<string, RoleDefinition>;
 

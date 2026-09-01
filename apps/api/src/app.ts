@@ -12,6 +12,7 @@ import userModule from './modules/users/user.module.js';
 import crewModule from './modules/crews/crew.module.js';
 import serverModule from './modules/servers/server.module.js';
 import subscriptionModule from './modules/subscriptions/subscription.module.js';
+import eventModule from './modules/events/event.module.js';
 import treasuryModule from './modules/treasury/treasury.module.js';
 
 import authenticatePlugin from './plugins/auth/authenticate.plugin.js';
@@ -168,6 +169,9 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Módulo de tesouraria
     void app.register(treasuryModule);
+
+    // Módulo de eventos
+    void app.register(eventModule);
 
     return app;
 };

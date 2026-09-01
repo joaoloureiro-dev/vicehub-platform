@@ -17,6 +17,10 @@ import {
     type ServerErrorCode,
 } from '../../modules/servers/errors/server.errors.js';
 import {
+    EventError,
+    type EventErrorCode,
+} from '../../modules/events/errors/event.errors.js';
+import {
     TreasuryError,
     type TreasuryErrorCode,
 } from '../../modules/treasury/errors/treasury.errors.js';
@@ -82,6 +86,34 @@ const serverErrorStatusCodes: Record<ServerErrorCode, number> = {
     CANNOT_MANAGE_SELF: 409,
 };
 
+/**
+ * Estatuto HTTP de cada erro do módulo de eventos.
+ *
+ * O mapa é exaustivo de propósito: um código novo sem estatuto não
+ * compila, o que obriga a decidir o que devolver em vez de deixar cair
+ * num 500 por omissão.
+ */
+const eventErrorStatusCodes: Record<EventErrorCode, number> = {
+    EVENT_NOT_FOUND: 404,
+    /** Um titular mal indicado é erro de programação, não do cliente. */
+    INVALID_EVENT_OWNER: 500,
+    EVENT_NOT_SCHEDULED: 409,
+    EVENT_ALREADY_CLOSED: 409,
+    INVALID_STATUS_TRANSITION: 409,
+    /** O evento existe e o pedido é válido: o que falta é lugar. */
+    EVENT_FULL: 409,
+    ALREADY_SIGNED_UP: 409,
+    NOT_SIGNED_UP: 404,
+    /**
+     * 403 e não 404: o evento existe e quem pede está identificado; o
+     * que lhe falta é pertencer à comunidade que o organiza.
+     */
+    NOT_A_MEMBER: 403,
+    ATTENDANCE_NOT_CONFIRMABLE: 409,
+    STARTS_IN_THE_PAST: 400,
+    ENDS_BEFORE_IT_STARTS: 400,
+};
+
 const treasuryErrorStatusCodes: Record<TreasuryErrorCode, number> = {
     WALLET_NOT_FOUND: 404,
     /** Titular inválido é erro de programação, não do cliente. */
@@ -102,6 +134,13 @@ const treasuryErrorStatusCodes: Record<TreasuryErrorCode, number> = {
     DISTRIBUTION_NOT_PENDING: 409,
     /** Uma crew sem membros a quem pagar não é erro do cliente, é estado. */
     NO_MEMBERS_TO_PAY: 409,
+    /**
+     * 404: para esta tesouraria, um evento de outra comunidade não
+     * existe. Dizer 403 confirmaria que existe algures.
+     */
+    EVENT_NOT_IN_THIS_TREASURY: 404,
+    /** O evento existe; o que falta é alguém com presença confirmada. */
+    NO_CONFIRMED_PARTICIPANTS: 409,
     /**
      * 500 e não 400: as partes são calculadas do lado do servidor, por
      * isso não baterem certo com o total é erro de programação nosso.
@@ -256,6 +295,27 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 code: error.code,
                 error: httpErrorNames[statusCode] ?? 'Error',
                 message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof EventError) {
+            const statusCode = eventErrorStatusCodes[error.code];
+
+            const log = statusCode < 500 ? request.log.warn : request.log.error;
+
+            log.call(
+                request.log,
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo de eventos.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: statusCode < 500 ? error.code : 'INTERNAL_SERVER_ERROR',
+                error: httpErrorNames[statusCode] ?? 'Internal Server Error',
+                message:
+                    statusCode < 500 ? error.message : 'Erro interno do servidor.',
             });
             return;
         }

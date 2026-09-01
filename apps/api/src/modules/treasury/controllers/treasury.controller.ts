@@ -166,6 +166,9 @@ export class TreasuryController {
             ...(request.body.total !== undefined
                 ? { total: BigInt(request.body.total) }
                 : {}),
+            ...(request.body.eventId !== undefined
+                ? { eventId: request.body.eventId }
+                : {}),
             ...(request.body.note !== undefined ? { note: request.body.note } : {}),
             ...(request.body.weights !== undefined
                 ? { weights: request.body.weights }
@@ -189,6 +192,7 @@ export class TreasuryController {
             after: {
                 total: distribution.total.toString(),
                 basis: distribution.basis,
+                eventId: distribution.eventId,
             },
             ...AuditService.contextOf(request),
         });
@@ -282,6 +286,7 @@ export class TreasuryController {
         total: bigint;
         basis: string;
         status: string;
+        eventId: string | null;
         note: string | null;
         requested_by: string | null;
         decided_by: string | null;
@@ -294,6 +299,7 @@ export class TreasuryController {
             total: distribution.total.toString(),
             basis: distribution.basis,
             status: distribution.status,
+            eventId: distribution.eventId,
             note: distribution.note,
             requestedBy: distribution.requested_by,
             decidedBy: distribution.decided_by,
