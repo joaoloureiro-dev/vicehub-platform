@@ -18,6 +18,11 @@ const createRepositoryMock = () => ({
     approveMovement: vi.fn().mockResolvedValue({ outcome: 'approved' }),
     closeMovement: vi.fn().mockResolvedValue({ count: 1 }),
     listActiveMemberIds: vi.fn().mockResolvedValue(['user-1', 'user-2', 'user-3']),
+    listActiveMembersWithRoles: vi.fn().mockResolvedValue([
+        { userId: 'user-1', role: 'crew_member' },
+        { userId: 'user-2', role: 'crew_member' },
+        { userId: 'user-3', role: 'crew_member' },
+    ]),
     ensureWalletsForUsers: vi.fn().mockImplementation((userIds: string[]) =>
         Promise.resolve(new Map(userIds.map((id) => [id, `wallet-de-${id}`]))),
     ),
@@ -492,7 +497,7 @@ describe('TreasuryService', () => {
         it('divide pelos membros ativos lidos do lado do servidor', async () => {
             await service.proposeDistribution({ crewId: 'crew-1' }, emPartesIguais);
 
-            expect(repository.listActiveMemberIds).toHaveBeenCalledWith({
+            expect(repository.listActiveMembersWithRoles).toHaveBeenCalledWith({
                 crewId: 'crew-1',
             });
 
@@ -514,7 +519,7 @@ describe('TreasuryService', () => {
          * da base de dados, não do pedido.
          */
         it('uma crew sem membros ativos não pode distribuir', async () => {
-            repository.listActiveMemberIds.mockResolvedValue([]);
+            repository.listActiveMembersWithRoles.mockResolvedValue([]);
 
             await expectTreasuryError(
                 service.proposeDistribution({ crewId: 'crew-1' }, emPartesIguais),
@@ -567,12 +572,6 @@ describe('TreasuryService', () => {
         });
 
         it('não grava partes de valor zero', async () => {
-            repository.listActiveMemberIds.mockResolvedValue([
-                'user-1',
-                'user-2',
-                'user-3',
-            ]);
-
             await service.proposeDistribution(
                 { crewId: 'crew-1' },
                 { basis: 'equal', total: 2n, requestedBy: 'leader-1' },
@@ -722,6 +721,117 @@ describe('TreasuryService', () => {
                 decidedBy: 'leader-1',
             });
             expect(repository.approveDistribution).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('divisão ponderada por cargo', () => {
+        const comCargos = () => {
+            repository.listActiveMembersWithRoles.mockResolvedValue([
+                { userId: 'lider', role: 'crew_leader' },
+                { userId: 'oficial', role: 'crew_officer' },
+                { userId: 'membro', role: 'crew_member' },
+            ]);
+        };
+
+        const partesDe = () => {
+            const criada = repository.createDistribution.mock.calls[0]?.[0] as {
+                shares: { walletId: string; amount: bigint }[];
+                basis: string;
+            };
+
+            return criada;
+        };
+
+        it('pesa cada membro pelo cargo que tem', async () => {
+            comCargos();
+
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                { basis: 'by_role', total: 600n, requestedBy: 'lider' },
+            );
+
+            /**
+             * Pesos por omissão: líder 3, oficial 2, membro 1. Sobre 600
+             * dá 300, 200 e 100.
+             */
+            expect(partesDe().shares).toEqual([
+                { walletId: 'wallet-de-lider', amount: 300n },
+                { walletId: 'wallet-de-oficial', amount: 200n },
+                { walletId: 'wallet-de-membro', amount: 100n },
+            ]);
+        });
+
+        it('a base fica registada como ponderada', async () => {
+            comCargos();
+
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                { basis: 'by_role', total: 600n, requestedBy: 'lider' },
+            );
+
+            expect(partesDe().basis).toBe('by_role');
+        });
+
+        /**
+         * Uma comunidade acha justo o dobro para o líder, outra o
+         * triplo. Essa decisão é delas.
+         */
+        it('respeita os pesos indicados pela crew', async () => {
+            comCargos();
+
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                {
+                    basis: 'by_role',
+                    total: 400n,
+                    weights: { crew_leader: 2, crew_officer: 1, crew_member: 1 },
+                    requestedBy: 'lider',
+                },
+            );
+
+            expect(partesDe().shares).toEqual([
+                { walletId: 'wallet-de-lider', amount: 200n },
+                { walletId: 'wallet-de-oficial', amount: 100n },
+                { walletId: 'wallet-de-membro', amount: 100n },
+            ]);
+        });
+
+        /**
+         * Pertencer já dá direito a parte: quem ainda não tem cargo
+         * atribuído conta como membro comum, e não zero. Zero seria
+         * excluir da divisão alguém que a crew aceitou.
+         */
+        it('quem não tem cargo conta como membro comum', async () => {
+            repository.listActiveMembersWithRoles.mockResolvedValue([
+                { userId: 'lider', role: 'crew_leader' },
+                { userId: 'novo', role: null },
+            ]);
+
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                { basis: 'by_role', total: 400n, requestedBy: 'lider' },
+            );
+
+            expect(partesDe().shares).toEqual([
+                { walletId: 'wallet-de-lider', amount: 300n },
+                { walletId: 'wallet-de-novo', amount: 100n },
+            ]);
+        });
+
+        it('a soma das partes continua a ser exatamente o total', async () => {
+            comCargos();
+
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                { basis: 'by_role', total: 1_000n, requestedBy: 'lider' },
+            );
+
+            const soma = partesDe().shares.reduce(
+                (total, parte) => total + parte.amount,
+                0n,
+            );
+
+            expect(soma).toBe(1_000n);
         });
     });
 });

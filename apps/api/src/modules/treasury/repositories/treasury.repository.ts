@@ -237,6 +237,42 @@ export class TreasuryRepository {
     }
 
     /**
+     * Membros ativos com o cargo que têm neste âmbito.
+     *
+     * O cargo vem do RBAC, que é a fonte única sobre quem é o quê. Quem
+     * não tiver cargo atribuído vem com null, e o cálculo trata-o como
+     * membro comum: pertencer já dá direito a parte.
+     */
+    async listActiveMembersWithRoles(
+        owner: WalletOwner,
+    ): Promise<{ userId: string; role: string | null }[]> {
+        const memberIds = await this.listActiveMemberIds(owner);
+
+        if (memberIds.length === 0) {
+            return [];
+        }
+
+        const cargos = await this.database.userRole.findMany({
+            where: {
+                userId: { in: memberIds },
+                crewId: owner.crewId ?? null,
+                serverId: owner.serverId ?? null,
+                is_deleted: false,
+            },
+            select: { userId: true, role: { select: { slug: true } } },
+        });
+
+        const porUtilizador = new Map(
+            cargos.map((cargo) => [cargo.userId, cargo.role.slug]),
+        );
+
+        return memberIds.map((userId) => ({
+            userId,
+            role: porUtilizador.get(userId) ?? null,
+        }));
+    }
+
+    /**
      * Garante que cada utilizador indicado tem carteira, e devolve o
      * identificador da de cada um.
      *

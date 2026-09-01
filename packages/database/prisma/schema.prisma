@@ -76,6 +76,7 @@ enum DistributionStatus {
 /// seja distinguível de uma escrita à mão.
 enum DistributionBasis {
   equal
+  by_role
   manual
   assisted
 }
