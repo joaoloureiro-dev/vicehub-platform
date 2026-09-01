@@ -289,6 +289,61 @@ describe('divisões de ganhos', () => {
         expect(entradas._sum.amount).toBe(saidas._sum.amount);
     });
 
+    /**
+     * A divisão ponderada precisa que o valor 'by_role' exista mesmo no
+     * enum da base de dados. Os testes unitários mockam o Prisma, por
+     * isso não o conseguem provar: sem este, uma migração em falta só
+     * apareceria em produção, ao propor a primeira divisão ponderada.
+     */
+    it('a divisão ponderada por cargo é aceite pela base de dados', async () => {
+        await fund('600');
+
+        const proposta = await app.inject({
+            method: 'POST',
+            url: `/api/v1/treasury/crews/${crewId}/distributions`,
+            headers: auth(leader),
+            payload: { total: '600', basis: 'by_role' },
+        });
+
+        expect(proposta.statusCode, proposta.body).toBe(201);
+        expect(proposta.json().basis).toBe('by_role');
+
+        const gravada = await prisma.distribution.findFirstOrThrow({
+            where: { id: proposta.json().id as string },
+        });
+
+        expect(gravada.basis).toBe('by_role');
+    });
+
+    /**
+     * O líder pesa 3 e os dois membros 1 cada: 600 reparte-se em 360,
+     * 120 e 120. É a prova de que o cargo do RBAC chega mesmo ao
+     * cálculo, e não só o número de membros.
+     */
+    it('o cargo de cada membro determina a sua parte', async () => {
+        await fund('600');
+
+        const proposta = await app.inject({
+            method: 'POST',
+            url: `/api/v1/treasury/crews/${crewId}/distributions`,
+            headers: auth(leader),
+            payload: { total: '600', basis: 'by_role' },
+        });
+
+        expect(proposta.statusCode, proposta.body).toBe(201);
+
+        const entradas = (
+            proposta.json().lines as { direction: string; amount: string }[]
+        )
+            .filter((linha) => linha.direction === 'credit')
+            .map((linha) => BigInt(linha.amount))
+            .sort((a, b) => (a > b ? -1 : 1));
+
+        expect(entradas).toEqual([360n, 120n, 120n]);
+
+        expect(entradas.reduce((total, parte) => total + parte, 0n)).toBe(600n);
+    });
+
     it('o saldo da tesouraria bate certo com os seus movimentos', async () => {
         const carteira = await prisma.wallet.findFirstOrThrow({ where: { crewId } });
 
