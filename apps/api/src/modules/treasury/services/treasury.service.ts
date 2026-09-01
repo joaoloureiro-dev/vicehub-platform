@@ -1,4 +1,6 @@
 import {
+    DistributionBasis,
+    DistributionStatus,
     TransactionCategory,
     TransactionDirection,
     TransactionStatus,
@@ -9,12 +11,21 @@ import {
     InsufficientFundsSignal,
     type TreasuryRepository,
 } from '../repositories/treasury.repository.js';
+import { splitEqually, sumShares, type SplitShare } from './split.js';
 import type {
     TreasuryBalances,
     TreasuryMovement,
     WalletOwner,
     WalletOwnerKind,
 } from '../types/treasury.types.js';
+
+interface ProposeDistributionInput {
+    total?: bigint | undefined;
+    basis: 'equal' | 'manual';
+    note?: string | undefined;
+    shares?: SplitShare[] | undefined;
+    requestedBy: string;
+}
 
 interface ProposeMovementInput {
     amount: bigint;
@@ -199,6 +210,206 @@ export class TreasuryService {
         await this.closeOrFail(movement.id, TransactionStatus.canceled, canceledBy);
 
         return this.treasuryRepository.findMovementById(movement.id);
+    }
+
+    /**
+     * Propõe uma divisão de ganhos pelos membros.
+     *
+     * O cálculo da divisão é separado de quem o pediu: em partes iguais
+     * é feito aqui, manualmente vem indicado, e uma sugestão automática
+     * entra pelo mesmo caminho. Seja quem for a calcular, a proposta fica
+     * pendente e é o líder que decide.
+     */
+    async proposeDistribution(owner: WalletOwner, input: ProposeDistributionInput) {
+        const wallet = await this.requireWallet(owner);
+
+        /**
+         * Os membros são lidos aqui, e não enviados no pedido: quem
+         * propõe não pode escolher a quem paga numa divisão em partes
+         * iguais.
+         */
+        const memberIds = await this.treasuryRepository.listActiveMemberIds(owner);
+
+        if (memberIds.length === 0) {
+            throw new TreasuryError(
+                'NO_MEMBERS_TO_PAY',
+                'Esta crew não tem membros a quem distribuir.',
+            );
+        }
+
+        const { total, shares } = this.buildShares(input, memberIds);
+
+        /**
+         * A soma das partes tem de ser exatamente o total. Se não for, a
+         * tesouraria ficaria com dinheiro a mais ou a menos que ninguém
+         * sabe explicar — por isso falha aqui, e não depois de gravar.
+         */
+        if (sumShares(shares) !== total) {
+            throw new TreasuryError(
+                'SHARES_DO_NOT_MATCH_TOTAL',
+                'A soma das partes não corresponde ao total da divisão.',
+            );
+        }
+
+        const carteiras = await this.treasuryRepository.ensureWalletsForUsers(
+            shares.map((share) => share.userId),
+        );
+
+        return this.treasuryRepository.createDistribution({
+            walletId: wallet.id,
+            total,
+            basis:
+                input.basis === 'equal'
+                    ? DistributionBasis.equal
+                    : DistributionBasis.manual,
+            note: input.note,
+            requestedBy: input.requestedBy,
+            shares: shares
+                .filter((share) => share.amount > 0n)
+                .map((share) => ({
+                    /**
+                     * A carteira existe: acabámos de a garantir para
+                     * todos os que recebem.
+                     */
+                    walletId: carteiras.get(share.userId) as string,
+                    amount: share.amount,
+                })),
+        });
+    }
+
+    /**
+     * Aprova a divisão inteira e paga a todos, ou não paga a ninguém.
+     */
+    async approveDistribution(
+        owner: WalletOwner,
+        distributionId: string,
+        approvedBy: string,
+    ) {
+        const { wallet, distribution } = await this.requirePendingDistribution(
+            owner,
+            distributionId,
+        );
+
+        const credits = distribution.lines
+            .filter((linha) => linha.direction === TransactionDirection.credit)
+            .map((linha) => ({ walletId: linha.walletId, amount: linha.amount }));
+
+        try {
+            const resultado = await this.treasuryRepository.approveDistribution({
+                distributionId: distribution.id,
+                walletId: wallet.id,
+                total: distribution.total,
+                credits,
+                approvedBy,
+            });
+
+            if (resultado.outcome === 'not_pending') {
+                throw new TreasuryError(
+                    'DISTRIBUTION_NOT_PENDING',
+                    'Esta divisão já foi decidida.',
+                );
+            }
+        } catch (error) {
+            if (error instanceof InsufficientFundsSignal) {
+                throw new TreasuryError(
+                    'INSUFFICIENT_FUNDS',
+                    'A tesouraria não tem saldo suficiente para esta divisão.',
+                );
+            }
+
+            throw error;
+        }
+
+        return this.treasuryRepository.findDistributionById(distribution.id);
+    }
+
+    async rejectDistribution(
+        owner: WalletOwner,
+        distributionId: string,
+        rejectedBy: string,
+    ) {
+        const { distribution } = await this.requirePendingDistribution(
+            owner,
+            distributionId,
+        );
+
+        const fechada = await this.treasuryRepository.closeDistribution({
+            distributionId: distribution.id,
+            status: DistributionStatus.rejected,
+            lineStatus: TransactionStatus.rejected,
+            decidedBy: rejectedBy,
+        });
+
+        if (fechada.count !== 1) {
+            throw new TreasuryError(
+                'DISTRIBUTION_NOT_PENDING',
+                'Esta divisão já foi decidida.',
+            );
+        }
+
+        return this.treasuryRepository.findDistributionById(distribution.id);
+    }
+
+    listDistributions(owner: WalletOwner, limit: number) {
+        return this.requireWallet(owner).then((wallet) =>
+            this.treasuryRepository.listDistributions(wallet.id, limit),
+        );
+    }
+
+    /**
+     * Calcula as partes conforme a base pedida.
+     */
+    private buildShares(
+        input: ProposeDistributionInput,
+        memberIds: string[],
+    ): {
+        total: bigint;
+        shares: SplitShare[];
+    } {
+        if (input.basis === 'equal') {
+            const total = input.total ?? 0n;
+
+            return { total, shares: splitEqually(total, memberIds) };
+        }
+
+        const shares = input.shares ?? [];
+
+        /**
+         * Numa divisão manual o total é o que as partes somam, e não um
+         * número enviado à parte: assim não pode haver desacordo entre os
+         * dois.
+         */
+        return { total: sumShares(shares), shares };
+    }
+
+    private async requirePendingDistribution(
+        owner: WalletOwner,
+        distributionId: string,
+    ) {
+        const wallet = await this.requireWallet(owner);
+
+        const distribution =
+            await this.treasuryRepository.findDistributionById(distributionId);
+
+        /**
+         * A mesma verificação de âmbito dos movimentos: sem ela, quem
+         * manda numa crew aprovaria divisões de outra.
+         */
+        if (!distribution || distribution.walletId !== wallet.id) {
+            throw new TreasuryError(
+                'DISTRIBUTION_NOT_FOUND',
+                'Não existe essa divisão nesta tesouraria.',
+            );
+        }
+
+        if (distribution.status !== DistributionStatus.pending) {
+            throw new TreasuryError(
+                'DISTRIBUTION_NOT_PENDING',
+                'Esta divisão já foi decidida.',
+            );
+        }
+
+        return { wallet, distribution };
     }
 
     /**

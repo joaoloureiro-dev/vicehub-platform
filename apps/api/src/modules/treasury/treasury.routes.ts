@@ -2,7 +2,9 @@ import type { FastifyPluginAsync } from 'fastify';
 
 import type { TreasuryController } from './controllers/treasury.controller.js';
 import type {
+    CrewDistributionParamDto,
     CrewMovementParamDto,
+    ProposeDistributionDto,
     CrewTreasuryParamDto,
     ListMovementsQueryDto,
     ProposeMovementDto,
@@ -10,7 +12,9 @@ import type {
     ServerTreasuryParamDto,
 } from './dto/treasury.dto.js';
 import {
+    crewDistributionParamSchema,
     crewMovementParamSchema,
+    proposeDistributionSchema,
     crewTreasuryParamSchema,
     listMovementsQuerySchema,
     proposeMovementSchema,
@@ -192,6 +196,67 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             schema: { params: serverMovementParamSchema },
         },
         controller.cancelServerMovement.bind(controller),
+    );
+    /**
+     * Divisões de ganhos.
+     *
+     * Propor uma divisão é propor uma despesa da tesouraria, e por isso
+     * basta treasury:transfer. Aprovar paga a toda a gente de uma vez e
+     * exige treasury:approve — que é o mesmo nível que aprova qualquer
+     * outra saída.
+     */
+    fastify.post<{ Params: CrewTreasuryParamDto; Body: ProposeDistributionDto }>(
+        '/crews/:crewId/distributions',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('treasury:transfer'),
+            ],
+            schema: {
+                params: crewTreasuryParamSchema,
+                body: proposeDistributionSchema,
+            },
+        },
+        controller.proposeCrewDistribution.bind(controller),
+    );
+
+    fastify.get<{
+        Params: CrewTreasuryParamDto;
+        Querystring: ListMovementsQueryDto;
+    }>(
+        '/crews/:crewId/distributions',
+        {
+            preHandler: [fastify.authenticate, fastify.authorize('treasury:read')],
+            schema: {
+                params: crewTreasuryParamSchema,
+                querystring: listMovementsQuerySchema,
+            },
+        },
+        controller.listCrewDistributions.bind(controller),
+    );
+
+    fastify.post<{ Params: CrewDistributionParamDto }>(
+        '/crews/:crewId/distributions/:distributionId/approve',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('treasury:approve'),
+            ],
+            schema: { params: crewDistributionParamSchema },
+        },
+        controller.approveCrewDistribution.bind(controller),
+    );
+
+    fastify.post<{ Params: CrewDistributionParamDto }>(
+        '/crews/:crewId/distributions/:distributionId/reject',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('treasury:approve'),
+            ],
+            schema: { params: crewDistributionParamSchema },
+        },
+        controller.rejectCrewDistribution.bind(controller),
     );
 };
 

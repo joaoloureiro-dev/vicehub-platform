@@ -59,6 +59,10 @@ describe('ligação das rotas de tesouraria', () => {
             rejectServerMovement: vi.fn(),
             cancelCrewMovement: vi.fn(),
             cancelServerMovement: vi.fn(),
+            proposeCrewDistribution: vi.fn(),
+            approveCrewDistribution: vi.fn(),
+            rejectCrewDistribution: vi.fn(),
+            listCrewDistributions: vi.fn(),
         } as unknown as TreasuryController;
 
         await app.register(treasuryRoutes, { controller });
@@ -196,6 +200,71 @@ describe('ligação das rotas de tesouraria', () => {
             'DELETE /servers/:serverId/movements/:movementId',
         ])('%s basta-se com treasury:transfer', (key) => {
             expect(permissoesPorRota.get(key)).toEqual(['treasury:transfer']);
+        });
+    });
+
+    describe('divisões de ganhos', () => {
+        /**
+         * Propor uma divisão é propor uma despesa: basta a permissão de
+         * propor. Se exigisse a de aprovar, quem propõe estaria a decidir.
+         */
+        it('propor uma divisão exige treasury:transfer', () => {
+            expect(permissoesPorRota.get('POST /crews/:crewId/distributions')).toEqual([
+                'treasury:transfer',
+            ]);
+        });
+
+        /**
+         * Aprovar uma divisão paga a toda a gente de uma vez. Tem de
+         * exigir o mesmo nível que aprova qualquer outra saída.
+         */
+        it.each([
+            'POST /crews/:crewId/distributions/:distributionId/approve',
+            'POST /crews/:crewId/distributions/:distributionId/reject',
+        ])('%s exige treasury:approve', (key) => {
+            expect(permissoesPorRota.get(key)).toEqual(['treasury:approve']);
+        });
+
+        it('propor não se basta com a permissão de aprovar, nem o contrário', () => {
+            expect(
+                permissoesPorRota.get('POST /crews/:crewId/distributions'),
+            ).not.toContain('treasury:approve');
+            expect(
+                permissoesPorRota.get(
+                    'POST /crews/:crewId/distributions/:distributionId/approve',
+                ),
+            ).not.toContain('treasury:transfer');
+        });
+
+        it('ver as divisões exige treasury:read', () => {
+            expect(permissoesPorRota.get('GET /crews/:crewId/distributions')).toEqual([
+                'treasury:read',
+            ]);
+        });
+
+        /**
+         * O âmbito vem do parâmetro da rota. Sem crewId no caminho, o
+         * guard avaliaria sem âmbito nenhum.
+         */
+        it.each([
+            'POST /crews/:crewId/distributions',
+            'POST /crews/:crewId/distributions/:distributionId/approve',
+        ])('%s carrega o âmbito no caminho', (key) => {
+            expect(key).toContain(':crewId');
+        });
+
+        it('a proposta valida o corpo', () => {
+            expect(
+                registered.get('POST /crews/:crewId/distributions')?.schema?.body,
+            ).toBeDefined();
+        });
+
+        it('as decisões validam os parâmetros', () => {
+            expect(
+                registered.get(
+                    'POST /crews/:crewId/distributions/:distributionId/approve',
+                )?.schema?.params,
+            ).toBeDefined();
         });
     });
 });

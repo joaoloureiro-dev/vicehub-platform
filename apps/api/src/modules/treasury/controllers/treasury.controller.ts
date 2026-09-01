@@ -9,7 +9,9 @@ import type {
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import type {
+    CrewDistributionParamDto,
     CrewMovementParamDto,
+    ProposeDistributionDto,
     CrewTreasuryParamDto,
     ListMovementsQueryDto,
     ProposeMovementDto,
@@ -146,6 +148,156 @@ export class TreasuryController {
         reply.send(
             await this.build({ serverId: request.params.serverId }, request.query),
         );
+    }
+
+    async proposeCrewDistribution(
+        request: FastifyRequest<{
+            Params: CrewTreasuryParamDto;
+            Body: ProposeDistributionDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const owner = { crewId: request.params.crewId };
+
+        const distribution = await this.treasuryService.proposeDistribution(owner, {
+            basis: request.body.basis,
+            ...(request.body.total !== undefined
+                ? { total: BigInt(request.body.total) }
+                : {}),
+            ...(request.body.note !== undefined ? { note: request.body.note } : {}),
+            ...(request.body.shares !== undefined
+                ? {
+                    shares: request.body.shares.map((share) => ({
+                        userId: share.userId,
+                        amount: BigInt(share.amount),
+                    })),
+                }
+                : {}),
+            requestedBy: user.id,
+        });
+
+        await this.auditService.record({
+            action: 'treasury.distribution.proposed',
+            entityType: 'Distribution',
+            entityId: distribution.id,
+            actorId: user.id,
+            after: {
+                total: distribution.total.toString(),
+                basis: distribution.basis,
+            },
+            ...AuditService.contextOf(request),
+        });
+
+        reply.code(201).send(await this.loadDistributionDto(owner, distribution.id));
+    }
+
+    async approveCrewDistribution(
+        request: FastifyRequest<{ Params: CrewDistributionParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.decideDistribution(request, reply, 'approve');
+    }
+
+    async rejectCrewDistribution(
+        request: FastifyRequest<{ Params: CrewDistributionParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.decideDistribution(request, reply, 'reject');
+    }
+
+    async listCrewDistributions(
+        request: FastifyRequest<{
+            Params: CrewTreasuryParamDto;
+            Querystring: ListMovementsQueryDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const distribuicoes = await this.treasuryService.listDistributions(
+            { crewId: request.params.crewId },
+            request.query.limit,
+        );
+
+        reply.send(distribuicoes.map((linha) => this.toDistributionDto(linha)));
+    }
+
+    private async decideDistribution(
+        request: FastifyRequest<{ Params: CrewDistributionParamDto }>,
+        reply: FastifyReply,
+        decision: 'approve' | 'reject',
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const owner = { crewId: request.params.crewId };
+
+        const distribution =
+            decision === 'approve'
+                ? await this.treasuryService.approveDistribution(
+                    owner,
+                    request.params.distributionId,
+                    user.id,
+                )
+                : await this.treasuryService.rejectDistribution(
+                    owner,
+                    request.params.distributionId,
+                    user.id,
+                );
+
+        if (!distribution) {
+            reply.code(404).send();
+            return;
+        }
+
+        await this.auditService.record({
+            action: `treasury.distribution.${decision}d`,
+            entityType: 'Distribution',
+            entityId: distribution.id,
+            actorId: user.id,
+            before: { status: 'pending' },
+            after: {
+                status: distribution.status,
+                total: distribution.total.toString(),
+                lines: distribution.lines.length,
+            },
+            ...AuditService.contextOf(request),
+        });
+
+        reply.send(this.toDistributionDto(distribution));
+    }
+
+    private async loadDistributionDto(owner: WalletOwner, distributionId: string) {
+        const distribuicoes = await this.treasuryService.listDistributions(owner, 50);
+
+        const encontrada = distribuicoes.find((linha) => linha.id === distributionId);
+
+        return encontrada ? this.toDistributionDto(encontrada) : null;
+    }
+
+    private toDistributionDto(distribution: {
+        id: string;
+        total: bigint;
+        basis: string;
+        status: string;
+        note: string | null;
+        requested_by: string | null;
+        decided_by: string | null;
+        decided_at: Date | null;
+        created_at: Date;
+        lines: MovementRow[];
+    }) {
+        return {
+            id: distribution.id,
+            total: distribution.total.toString(),
+            basis: distribution.basis,
+            status: distribution.status,
+            note: distribution.note,
+            requestedBy: distribution.requested_by,
+            decidedBy: distribution.decided_by,
+            decidedAt: distribution.decided_at?.toISOString() ?? null,
+            createdAt: distribution.created_at.toISOString(),
+            lines: distribution.lines.map((linha) => this.toMovementDto(linha)),
+        };
     }
 
     private async propose(
