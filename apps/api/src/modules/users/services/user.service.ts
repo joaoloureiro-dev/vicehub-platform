@@ -1,3 +1,5 @@
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { visibleAppearance } from '../../../shared/appearance.js';
 import { UserError } from '../errors/user.errors.js';
 import type { UserRepository } from '../repositories/user.repository.js';
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
@@ -75,6 +77,28 @@ export class UserService {
         return this.getPrivateProfile(userId);
     }
 
+    /**
+     * Altera a personalização do próprio perfil.
+     *
+     * Quem chega aqui já passou pelo requirePremium da rota. O serviço
+     * não volta a apurar o plano: fazê-lo em dois sítios permitiria que
+     * discordassem, e a rota é o sítio onde a regra é visível a quem lê.
+     */
+    async updateAppearance(
+        userId: string,
+        input: UpdateAppearanceDto,
+    ): Promise<PrivateProfile> {
+        const user = await this.userRepository.findById(userId);
+
+        if (!user) {
+            throw new UserError('USER_NOT_FOUND', 'Utilizador não encontrado.');
+        }
+
+        await this.userRepository.updateAppearance(userId, input);
+
+        return this.getPrivateProfile(userId);
+    }
+
     private async isPremium(userId: string): Promise<boolean> {
         const entitlement = await this.subscriptionService.getEntitlement({
             userId,
@@ -99,6 +123,7 @@ export class UserService {
             xp: user.xp,
             reputation: user.reputation,
             isPremium,
+            appearance: visibleAppearance(user, isPremium),
             createdAt: user.created_at,
         };
     }

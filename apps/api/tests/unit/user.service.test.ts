@@ -11,6 +11,8 @@ const userRow = (overrides: Record<string, unknown> = {}) => ({
     username: 'player',
     avatarUrl: null,
     bio: null,
+    banner_url: null,
+    accent_color: null,
     level: 7,
     xp: 9_007_199_254_740_993n,
     reputation: 42,
@@ -25,6 +27,7 @@ describe('UserService', () => {
         findByUsername: ReturnType<typeof vi.fn>;
         findById: ReturnType<typeof vi.fn>;
         updateProfile: ReturnType<typeof vi.fn>;
+        updateAppearance: ReturnType<typeof vi.fn>;
     };
     let subscriptions: { getEntitlement: ReturnType<typeof vi.fn> };
     let service: UserService;
@@ -36,6 +39,7 @@ describe('UserService', () => {
             findByUsername: vi.fn().mockResolvedValue(userRow()),
             findById: vi.fn().mockResolvedValue(userRow()),
             updateProfile: vi.fn().mockResolvedValue(undefined),
+            updateAppearance: vi.fn().mockResolvedValue(undefined),
         };
         subscriptions = {
             getEntitlement: vi
@@ -75,6 +79,7 @@ describe('UserService', () => {
             const profile = await service.getPublicProfile('player');
 
             expect(Object.keys(profile).sort()).toEqual([
+                'appearance',
                 'avatarUrl',
                 'bio',
                 'createdAt',
@@ -172,6 +177,73 @@ describe('UserService', () => {
             await expect(
                 service.updateProfile('user-1', { bio: 'nova bio' }),
             ).resolves.toMatchObject({ bio: 'nova bio' });
+        });
+    });
+
+    describe('personalização, que é funcionalidade do plano', () => {
+        const personalizado = () =>
+            userRow({
+                banner_url: 'https://cdn.vicehub.gg/p.png',
+                accent_color: '#1B9AAA',
+            });
+
+        it('mostra a personalização a quem tem plano ativo', async () => {
+            repository.findByUsername.mockResolvedValue(personalizado());
+            subscriptions.getEntitlement.mockResolvedValue({
+                isPremium: true,
+                activeUntil: new Date('2027-01-01T00:00:00.000Z'),
+            });
+
+            await expect(
+                service.getPublicProfile('player'),
+            ).resolves.toMatchObject({
+                appearance: {
+                    bannerUrl: 'https://cdn.vicehub.gg/p.png',
+                    accentColor: '#1B9AAA',
+                },
+            });
+        });
+
+        /**
+         * Sem isto, bastava pagar um mês para ficar com a personalização
+         * para sempre.
+         */
+        it('esconde a personalização quando o plano termina', async () => {
+            repository.findByUsername.mockResolvedValue(personalizado());
+
+            await expect(
+                service.getPublicProfile('player'),
+            ).resolves.toMatchObject({
+                appearance: { bannerUrl: null, accentColor: null },
+            });
+        });
+
+        it('grava apenas os campos indicados', async () => {
+            await service.updateAppearance('user-1', { accentColor: '#1B9AAA' });
+
+            expect(repository.updateAppearance).toHaveBeenCalledWith('user-1', {
+                accentColor: '#1B9AAA',
+            });
+        });
+
+        it('recusa personalizar um utilizador que não existe', async () => {
+            repository.findById.mockResolvedValue(null);
+
+            await expect(
+                service.updateAppearance('inexistente', { accentColor: '#1B9AAA' }),
+            ).rejects.toBeInstanceOf(UserError);
+
+            expect(repository.updateAppearance).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Alterar a personalização não toca na bio nem no avatar: são
+         * rotas diferentes porque uma é paga e a outra não.
+         */
+        it('não mexe nos campos gratuitos do perfil', async () => {
+            await service.updateAppearance('user-1', { bannerUrl: null });
+
+            expect(repository.updateProfile).not.toHaveBeenCalled();
         });
     });
 });

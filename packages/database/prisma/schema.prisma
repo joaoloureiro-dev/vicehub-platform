@@ -147,6 +147,13 @@ model User {
   avatarUrl String?
   bio       String?
 
+  /// Personalização reservada a quem tem plano ativo. Os campos ficam
+  /// gravados mesmo que o plano termine: quem voltar a subscrever
+  /// reencontra o que tinha, e perder trabalho por deixar de pagar seria
+  /// um castigo, não uma condição de acesso.
+  banner_url   String?
+  accent_color String?
+
   level      Int    @default(1)
   xp         BigInt @default(0)
   reputation Int    @default(0)
@@ -182,6 +189,13 @@ model Crew {
   tag         String  @unique
   description String?
 
+  /// Personalização reservada a quem tem plano ativo. Os campos ficam
+  /// gravados mesmo que o plano termine: quem voltar a subscrever
+  /// reencontra o que tinha, e perder trabalho por deixar de pagar seria
+  /// um castigo, não uma condição de acesso.
+  banner_url   String?
+  accent_color String?
+
   level     Int    @default(1)
   xp        BigInt @default(0)
   influence Int    @default(0)
@@ -213,6 +227,13 @@ model Server {
   name        String  @unique
   region      String?
   description String?
+
+  /// Personalização reservada a quem tem plano ativo. Os campos ficam
+  /// gravados mesmo que o plano termine: quem voltar a subscrever
+  /// reencontra o que tinha, e perder trabalho por deixar de pagar seria
+  /// um castigo, não uma condição de acesso.
+  banner_url   String?
+  accent_color String?
 
   isOnline Boolean @default(false)
 

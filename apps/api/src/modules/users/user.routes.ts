@@ -1,6 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 
 import type { UserController } from './controllers/user.controller.js';
+import type { UpdateAppearanceDto } from '../../shared/appearance.js';
+import { updateAppearanceSchema } from '../../shared/appearance.js';
 import type { UpdateProfileDto, UsernameParamDto } from './dto/user.dto.js';
 import {
     updateProfileSchema,
@@ -38,6 +40,22 @@ const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
             schema: { body: updateProfileSchema },
         },
         controller.updateOwnProfile.bind(controller),
+    );
+
+    /**
+     * Personalização do perfil: banner e cor de destaque.
+     *
+     * É a primeira funcionalidade paga da plataforma. O requirePremium
+     * lê o plano de quem faz o pedido — não o de uma crew —, por isso
+     * corre sem parâmetros.
+     */
+    fastify.patch<{ Body: UpdateAppearanceDto }>(
+        '/me/appearance',
+        {
+            preHandler: [fastify.authenticate, fastify.requirePremium('user')],
+            schema: { body: updateAppearanceSchema },
+        },
+        controller.updateOwnAppearance.bind(controller),
     );
 
     /**

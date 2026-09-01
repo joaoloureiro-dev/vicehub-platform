@@ -1,3 +1,5 @@
+import type { Appearance } from '../../../shared/appearance.js';
+
 /**
  * Campos do utilizador que o módulo lê da base de dados.
  *
@@ -10,6 +12,8 @@ export interface UserRecord {
     username: string;
     avatarUrl: string | null;
     bio: string | null;
+    banner_url: string | null;
+    accent_color: string | null;
     level: number;
     xp: bigint;
     reputation: number;
@@ -27,6 +31,11 @@ export interface PublicProfile {
     xp: bigint;
     reputation: number;
     isPremium: boolean;
+    /**
+     * Personalização, vazia para quem não tem plano ativo. Sai sempre,
+     * mesmo vazia, para que quem consome não precise de dois caminhos.
+     */
+    appearance: Appearance;
     createdAt: Date;
 }
 

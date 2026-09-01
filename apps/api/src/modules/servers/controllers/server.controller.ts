@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     CreateServerDto,
@@ -10,7 +11,10 @@ import type {
     UpdateServerDto,
 } from '../dto/server.dto.js';
 import type { ServerService } from '../services/server.service.js';
-import type { ServerProfile } from '../types/server.types.js';
+import type {
+    ServerDirectoryEntry,
+    ServerProfile,
+} from '../types/server.types.js';
 
 export class ServerController {
     constructor(private readonly serverService: ServerService) { }
@@ -37,10 +41,8 @@ export class ServerController {
 
         reply.send({
             ...page,
-            items: page.items.map((item) => ({
-                ...item,
-                createdAt: item.createdAt.toISOString(),
-            })),
+            items: page.items.map((item) => this.toDirectoryDto(item)),
+            featured: page.featured.map((item) => this.toDirectoryDto(item)),
         });
     }
 
@@ -213,6 +215,33 @@ export class ServerController {
         );
 
         reply.status(204).send();
+    }
+
+    /**
+     * PATCH /servers/:serverId/appearance
+     */
+    async updateAppearance(
+        request: FastifyRequest<{
+            Params: ServerIdParamDto;
+            Body: UpdateAppearanceDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        reply.send(
+            this.toProfileDto(
+                await this.serverService.updateAppearance(
+                    request.params.serverId,
+                    request.body,
+                ),
+            ),
+        );
+    }
+
+    private toDirectoryDto(entry: ServerDirectoryEntry) {
+        return {
+            ...entry,
+            createdAt: entry.createdAt.toISOString(),
+        };
     }
 
     private toProfileDto(profile: ServerProfile) {

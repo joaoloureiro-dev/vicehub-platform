@@ -15,6 +15,7 @@ import type { CrewController } from '../../src/modules/crews/controllers/crew.co
 describe('ligação das rotas de crew', () => {
     const registered = new Map<string, RouteOptions>();
     const permissoesPorRota = new Map<string, string[]>();
+    const planoPorRota = new Map<string, string[]>();
 
     beforeAll(async () => {
         const app = Fastify();
@@ -35,6 +36,21 @@ describe('ligação das rotas de crew', () => {
             return handler;
         }) as never);
 
+
+        /**
+         * O requirePremium devolve um preHandler; guardamos o titular
+         * cujo plano cada rota exige. Numa rota com crewId, exigir o
+         * plano da crew ou o de quem faz o pedido são coisas diferentes,
+         * e é essa escolha que interessa fixar.
+         */
+        const planos = new Map<unknown, string>();
+
+        app.decorate('requirePremium', ((kind = 'user') => {
+            const handler = vi.fn();
+            planos.set(handler, kind as string);
+            return handler;
+        }) as never);
+
         app.addHook('onRoute', (route) => {
             const key = `${route.method as string} ${route.url}`;
             registered.set(key, route);
@@ -48,6 +64,15 @@ describe('ligação das rotas de crew', () => {
             permissoesPorRota.set(
                 key,
                 preHandlers.flatMap((handler) => pedidas.get(handler) ?? []),
+            );
+
+            planoPorRota.set(
+                key,
+                preHandlers.flatMap((handler) => {
+                    const kind = planos.get(handler);
+
+                    return kind === undefined ? [] : [kind];
+                }),
             );
         });
 
@@ -66,6 +91,7 @@ describe('ligação das rotas de crew', () => {
             rejectRequest: vi.fn(),
             removeMember: vi.fn(),
             setMemberRole: vi.fn(),
+            updateAppearance: vi.fn(),
         } as unknown as CrewController;
 
         await app.register(crewRoutes, { controller });
@@ -151,10 +177,36 @@ describe('ligação das rotas de crew', () => {
         });
     });
 
+    describe('personalização, que é funcionalidade do plano', () => {
+        const rota = 'PATCH /:crewId/appearance';
+
+        /**
+         * São duas condições distintas e ambas têm de estar presentes:
+         * mandar na crew não a torna premium, e ter plano não faz de
+         * ninguém líder.
+         */
+        it('exige mandar na crew', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(['crew:manage']);
+        });
+
+        it('exige o plano da crew, e não o de quem faz o pedido', () => {
+            expect(planoPorRota.get(rota)).toEqual(['crew']);
+        });
+
+        it('nenhuma outra rota de crew é paga', () => {
+            const pagas = [...planoPorRota.entries()]
+                .filter(([, kinds]) => kinds.length > 0)
+                .map(([key]) => key);
+
+            expect(pagas).toEqual([rota]);
+        });
+    });
+
     describe('validação de entrada', () => {
         it.each([
             'POST /',
             'PATCH /:crewId',
+            'PATCH /:crewId/appearance',
             'PUT /:crewId/members/:userId/role',
         ])('%s valida o corpo', (key) => {
             expect(registered.get(key)?.schema?.body).toBeDefined();

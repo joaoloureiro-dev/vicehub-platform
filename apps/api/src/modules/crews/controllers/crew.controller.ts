@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     CreateCrewDto,
@@ -10,7 +11,7 @@ import type {
     UpdateCrewDto,
 } from '../dto/crew.dto.js';
 import type { CrewService } from '../services/crew.service.js';
-import type { CrewProfile } from '../types/crew.types.js';
+import type { CrewDirectoryEntry, CrewProfile } from '../types/crew.types.js';
 
 export class CrewController {
     constructor(private readonly crewService: CrewService) { }
@@ -37,10 +38,8 @@ export class CrewController {
 
         reply.send({
             ...page,
-            items: page.items.map((item) => ({
-                ...item,
-                createdAt: item.createdAt.toISOString(),
-            })),
+            items: page.items.map((item) => this.toDirectoryDto(item)),
+            featured: page.featured.map((item) => this.toDirectoryDto(item)),
         });
     }
 
@@ -87,6 +86,23 @@ export class CrewController {
         reply.send(
             this.toProfileDto(
                 await this.crewService.updateCrew(request.params.crewId, request.body),
+            ),
+        );
+    }
+
+    /**
+     * PATCH /crews/:crewId/appearance
+     */
+    async updateAppearance(
+        request: FastifyRequest<{ Params: CrewIdParamDto; Body: UpdateAppearanceDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        reply.send(
+            this.toProfileDto(
+                await this.crewService.updateAppearance(
+                    request.params.crewId,
+                    request.body,
+                ),
             ),
         );
     }
@@ -203,6 +219,13 @@ export class CrewController {
         );
 
         reply.status(204).send();
+    }
+
+    private toDirectoryDto(entry: CrewDirectoryEntry) {
+        return {
+            ...entry,
+            createdAt: entry.createdAt.toISOString(),
+        };
     }
 
     /**

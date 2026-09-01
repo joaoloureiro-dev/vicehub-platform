@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     PrivateProfileDto,
@@ -65,6 +66,27 @@ export class UserController {
     }
 
     /**
+     * PATCH /users/me/appearance
+     *
+     * Rota à parte da alteração de perfil porque a exigência é outra: o
+     * plano protege a rota inteira, e juntá-las faria a bio passar a
+     * exigir subscrição.
+     */
+    async updateOwnAppearance(
+        request: FastifyRequest<{ Body: UpdateAppearanceDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const profile = await this.userService.updateAppearance(
+            user.id,
+            request.body,
+        );
+
+        reply.send(this.toPrivateDto(profile));
+    }
+
+    /**
      * Converte para o formato de transporte.
      *
      * O xp é BigInt e sai como string, para não perder precisão. As
@@ -80,6 +102,7 @@ export class UserController {
             xp: profile.xp.toString(),
             reputation: profile.reputation,
             isPremium: profile.isPremium,
+            appearance: profile.appearance,
             createdAt: profile.createdAt.toISOString(),
         };
     }

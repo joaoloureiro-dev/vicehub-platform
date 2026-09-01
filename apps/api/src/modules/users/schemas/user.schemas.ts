@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export { updateAppearanceSchema } from '../../../shared/appearance.js';
+
+/**
+ * Personalização tal como sai numa resposta.
+ */
+const appearanceSchema = z.object({
+    bannerUrl: z.string().nullable(),
+    accentColor: z.string().nullable(),
+});
+
 /**
  * Perfil visível a qualquer pessoa.
  *
@@ -16,6 +26,7 @@ export const publicProfileSchema = z.object({
     xp: z.string(),
     reputation: z.number(),
     isPremium: z.boolean(),
+    appearance: appearanceSchema,
     createdAt: z.string(),
 });
 

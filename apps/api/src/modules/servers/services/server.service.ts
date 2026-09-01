@@ -1,5 +1,8 @@
 import { MembershipStatus, type RoleKey } from '@vicehub/database';
 
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { visibleAppearance } from '../../../shared/appearance.js';
+import { pickFeatured } from '../../../shared/featured.js';
 import type { RoleAssignmentService } from '../../authorization/services/role-assignment.service.js';
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
 import { ServerError } from '../errors/server.errors.js';
@@ -99,6 +102,24 @@ export class ServerService {
     }
 
     /**
+     * Altera a personalização do servidor.
+     *
+     * Duas condições distintas, verificadas na rota: mandar no servidor
+     * e o servidor ter plano ativo. O dono de um servidor sem plano
+     * continua a mandar nele.
+     */
+    async updateAppearance(
+        serverId: string,
+        input: UpdateAppearanceDto,
+    ): Promise<ServerProfile> {
+        await this.requireServer(serverId);
+
+        await this.serverRepository.updateAppearance(serverId, input);
+
+        return this.getProfile(serverId);
+    }
+
+    /**
      * Pede entrada num servidor.
      *
      * O pedido fica pendente até alguém com autorização responder.
@@ -149,13 +170,20 @@ export class ServerService {
     async listDirectory(
         input: ListServersInput,
     ): Promise<DirectoryPage<ServerDirectoryEntry>> {
-        const [servers, total] = await this.serverRepository.listDirectory({
-            search: input.search,
-            onlineOnly: input.onlineOnly,
-            skip: (input.page - 1) * input.pageSize,
-            take: input.pageSize,
-            sort: input.sort,
-        });
+        /**
+         * O destaque não depende da página listada, por isso é pedido ao
+         * mesmo tempo e não a seguir.
+         */
+        const [[servers, total], featured] = await Promise.all([
+            this.serverRepository.listDirectory({
+                search: input.search,
+                onlineOnly: input.onlineOnly,
+                skip: (input.page - 1) * input.pageSize,
+                take: input.pageSize,
+                sort: input.sort,
+            }),
+            this.listFeatured(input),
+        ]);
 
         const ids = servers.map((server) => server.id);
 
@@ -169,20 +197,101 @@ export class ServerService {
         );
 
         return {
-            items: servers.map((server) => ({
-                id: server.id,
-                name: server.name,
-                region: server.region,
-                description: server.description,
-                isOnline: server.isOnline,
-                memberCount: porServidor.get(server.id) ?? 0,
-                isPremium: premium.has(server.id),
-                createdAt: server.created_at,
-            })),
+            items: servers.map((server) =>
+                this.toDirectoryEntry(
+                    server,
+                    premium.has(server.id),
+                    porServidor.get(server.id) ?? 0,
+                ),
+            ),
+            featured,
             page: input.page,
             pageSize: input.pageSize,
             total,
             totalPages: Math.ceil(total / input.pageSize),
+        };
+    }
+
+    /**
+     * Os servidores que ocupam os lugares de destaque.
+     *
+     * Só na primeira página e só sem filtros: quem pesquisa ou pede
+     * apenas os que estão online fez um pedido concreto, e responder-lhe
+     * com colocação paga tornaria o filtro inútil.
+     */
+    private async listFeatured(
+        input: ListServersInput,
+    ): Promise<ServerDirectoryEntry[]> {
+        if (
+            input.page !== 1 ||
+            input.search !== undefined ||
+            input.onlineOnly === true
+        ) {
+            return [];
+        }
+
+        const candidatos = await this.serverRepository.listEntitledIds();
+
+        const escolhidos = pickFeatured(
+            candidatos.map((candidato) => candidato.id),
+            new Date(),
+        );
+
+        if (escolhidos.length === 0) {
+            return [];
+        }
+
+        const [servers, contagens] = await Promise.all([
+            this.serverRepository.listDirectoryEntriesByIds(escolhidos),
+            this.serverRepository.countActiveMembersFor(escolhidos),
+        ]);
+
+        const porId = new Map(servers.map((server) => [server.id, server]));
+
+        const porServidor = new Map(
+            contagens.map((contagem) => [contagem.serverId, contagem._count._all]),
+        );
+
+        /**
+         * A ordem da rotação é reposta aqui: é ela que atribui os
+         * lugares, e a base de dados devolve as linhas pela ordem que
+         * lhe convier.
+         */
+        return escolhidos.flatMap((id) => {
+            const server = porId.get(id);
+
+            if (!server) {
+                return [];
+            }
+
+            return [this.toDirectoryEntry(server, true, porServidor.get(id) ?? 0)];
+        });
+    }
+
+    private toDirectoryEntry(
+        server: {
+            id: string;
+            name: string;
+            region: string | null;
+            description: string | null;
+            banner_url: string | null;
+            accent_color: string | null;
+            isOnline: boolean;
+            created_at: Date;
+        },
+        isPremium: boolean,
+        memberCount: number,
+    ): ServerDirectoryEntry {
+        return {
+            id: server.id,
+            name: server.name,
+            region: server.region,
+            description: server.description,
+            isOnline: server.isOnline,
+            memberCount,
+            isPremium,
+            appearance: visibleAppearance(server, isPremium),
+            createdAt: server.created_at,
         };
     }
 
@@ -445,6 +554,7 @@ export class ServerService {
             description: server.description,
             isOnline: server.isOnline,
             isPremium: entitlement.isPremium,
+            appearance: visibleAppearance(server, entitlement.isPremium),
             memberCount,
             createdAt: server.created_at,
         };
