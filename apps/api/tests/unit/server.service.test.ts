@@ -12,6 +12,8 @@ const serverRow = () => ({
     name: 'Vice City RP',
     region: 'eu-west',
     description: null,
+    banner_url: null,
+    accent_color: null,
     isOnline: false,
     created_at: new Date('2026-01-01T00:00:00.000Z'),
 });
@@ -33,6 +35,9 @@ const createRepositoryMock = () => ({
     listMembers: vi.fn().mockResolvedValue([]),
     listScopedRoles: vi.fn().mockResolvedValue([]),
     listDirectory: vi.fn().mockResolvedValue([[], 0]),
+    updateAppearance: vi.fn().mockResolvedValue(undefined),
+    listEntitledIds: vi.fn().mockResolvedValue([]),
+    listDirectoryEntriesByIds: vi.fn().mockResolvedValue([]),
     countActiveMembersFor: vi.fn().mockResolvedValue([]),
     listOpenMembershipsOfUser: vi.fn().mockResolvedValue([]),
     listUserScopedRoles: vi.fn().mockResolvedValue([]),
@@ -444,8 +449,115 @@ describe('ServerService', () => {
             name,
             region: 'eu-west',
             description: null,
+            banner_url: null,
+            accent_color: null,
             isOnline: true,
             created_at: new Date('2026-03-01T00:00:00.000Z'),
+        });
+
+        describe('lugares de destaque', () => {
+            const comCandidatos = (ids: string[]) => {
+                repository.listEntitledIds.mockResolvedValue(
+                    ids.map((id) => ({ id })),
+                );
+                repository.listDirectoryEntriesByIds.mockResolvedValue(
+                    ids.map((id) => directoryRow(id, id)),
+                );
+            };
+
+            it('não devolve destaques quando ninguém tem plano', async () => {
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+            });
+
+            it('põe em destaque quem tem plano ativo', async () => {
+                comCandidatos(['server-1']);
+
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toHaveLength(1);
+                expect(page.featured[0]?.isPremium).toBe(true);
+            });
+
+            /**
+             * Uma pesquisa ou um pedido só dos que estão online são
+             * intenções concretas. Responder-lhes com colocação paga
+             * tornaria o filtro inútil — e quem procura um servidor
+             * online não quer um offline por ele pagar.
+             */
+            it.each([
+                ['pesquisa', { search: 'vice' }],
+                ['apenas online', { onlineOnly: true }],
+            ])('não interfere com %s', async (_nome, filtro) => {
+                comCandidatos(['server-1']);
+
+                const page = await service.listDirectory({
+                    ...filtro,
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+            });
+
+            it('só aparece na primeira página', async () => {
+                comCandidatos(['server-1']);
+
+                const page = await service.listDirectory({
+                    page: 2,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+            });
+
+            it('deixa cair um servidor que desapareceu entretanto', async () => {
+                comCandidatos(['server-1']);
+                repository.listDirectoryEntriesByIds.mockResolvedValue([]);
+
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+            });
+        });
+
+        it('esconde a personalização dos servidores sem plano na listagem', async () => {
+            repository.listDirectory.mockResolvedValue([
+                [
+                    {
+                        ...directoryRow('server-1', 'Vice City RP'),
+                        banner_url: 'https://cdn.vicehub.gg/s.png',
+                        accent_color: '#1B9AAA',
+                    },
+                ],
+                1,
+            ]);
+
+            const page = await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+            });
+
+            expect(page.items[0]?.appearance).toEqual({
+                bannerUrl: null,
+                accentColor: null,
+            });
         });
 
         it('traduz a página pedida em salto e limite', async () => {

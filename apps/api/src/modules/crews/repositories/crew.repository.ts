@@ -1,9 +1,13 @@
 import {
+    ENTITLING_SUBSCRIPTION_STATUSES,
     MembershipStatus,
     MembershipType,
     SourceType,
     type DatabaseClient,
 } from '@vicehub/database';
+
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { toAppearanceColumns } from '../../../shared/appearance.js';
 
 interface CreateCrewInput {
     name: string;
@@ -11,6 +15,24 @@ interface CreateCrewInput {
     description?: string | null | undefined;
     founderId: string;
 }
+
+/**
+ * Campos que uma linha do diretório mostra.
+ *
+ * Partilhado entre a listagem e o destaque para que as duas devolvam
+ * exatamente a mesma forma: uma entrada em destaque é a mesma crew no
+ * mesmo formato, apenas noutro sítio da página.
+ */
+const DIRECTORY_ENTRY_SELECT = {
+    id: true,
+    name: true,
+    tag: true,
+    description: true,
+    banner_url: true,
+    accent_color: true,
+    level: true,
+    created_at: true,
+} as const;
 
 /**
  * Repositório do módulo de crews.
@@ -102,6 +124,61 @@ export class CrewRepository {
     }
 
     /**
+     * Grava a personalização da crew.
+     *
+     * Separada de updateCrew porque a rota que lhe chega exige plano
+     * ativo, e juntá-las faria alterar a descrição passar a ser pago.
+     */
+    updateAppearance(crewId: string, input: UpdateAppearanceDto) {
+        return this.database.crew.update({
+            where: { id: crewId },
+            data: {
+                ...toAppearanceColumns(input),
+                version: { increment: 1 },
+            },
+        });
+    }
+
+    /**
+     * Crews com plano ativo, candidatas aos lugares de destaque.
+     *
+     * Devolve só os identificadores e por ordem estável: a rotação que
+     * decide quem ocupa os lugares precisa da lista inteira, mas não do
+     * conteúdo de cada linha, e as assinantes são poucas ao pé do
+     * diretório todo. Se um dia deixarem de ser, é aqui que se põe um
+     * tecto.
+     */
+    listEntitledIds() {
+        return this.database.crew.findMany({
+            where: {
+                is_deleted: false,
+                subscriptions: {
+                    some: {
+                        is_deleted: false,
+                        status: { in: [...ENTITLING_SUBSCRIPTION_STATUSES] },
+                        current_period_end: { gt: new Date() },
+                    },
+                },
+            },
+            orderBy: { id: 'asc' },
+            select: { id: true },
+        });
+    }
+
+    /**
+     * As linhas do diretório correspondentes aos identificadores dados.
+     *
+     * A ordem devolvida pela base de dados não é a ordem pedida; quem
+     * chama é que a repõe, porque é quem sabe qual foi.
+     */
+    listDirectoryEntriesByIds(crewIds: string[]) {
+        return this.database.crew.findMany({
+            where: { id: { in: crewIds }, is_deleted: false },
+            select: DIRECTORY_ENTRY_SELECT,
+        });
+    }
+
+    /**
      * Uma página do diretório público de crews.
      *
      * A contagem vem na mesma transação que a página: sem isso, uma crew
@@ -154,14 +231,7 @@ export class CrewRepository {
                 orderBy: [...orderBy, { id: 'asc' as const }],
                 skip: input.skip,
                 take: input.take,
-                select: {
-                    id: true,
-                    name: true,
-                    tag: true,
-                    description: true,
-                    level: true,
-                    created_at: true,
-                },
+                select: DIRECTORY_ENTRY_SELECT,
             }),
             this.database.crew.count({ where }),
         ]);

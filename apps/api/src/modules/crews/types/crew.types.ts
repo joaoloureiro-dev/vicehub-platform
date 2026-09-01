@@ -1,8 +1,12 @@
+import type { Appearance } from '../../../shared/appearance.js';
+
 export interface CrewRecord {
     id: string;
     name: string;
     tag: string;
     description: string | null;
+    banner_url: string | null;
+    accent_color: string | null;
     level: number;
     xp: bigint;
     influence: number;
@@ -20,6 +24,8 @@ export interface CrewProfile {
     influence: number;
     prestige: number;
     isPremium: boolean;
+    /** Personalização, vazia para quem não tem plano ativo. */
+    appearance: Appearance;
     memberCount: number;
     createdAt: Date;
 }
@@ -48,11 +54,23 @@ export interface CrewDirectoryEntry {
     level: number;
     memberCount: number;
     isPremium: boolean;
+    appearance: Appearance;
     createdAt: Date;
 }
 
 export interface DirectoryPage<TEntry> {
     items: TEntry[];
+    /**
+     * Lugares de destaque, uma das funcionalidades do plano.
+     *
+     * Vêm à parte da lista em vez de misturados com ela: assim a
+     * paginação continua a dizer a verdade, e quem consome consegue
+     * mostrar o destaque como destaque em vez de o disfarçar de
+     * resultado. Só vêm preenchidos na primeira página e sem pesquisa —
+     * uma pesquisa é uma intenção concreta, e responder-lhe com
+     * colocação paga tornaria os resultados pouco fiáveis.
+     */
+    featured: TEntry[];
     page: number;
     pageSize: number;
     total: number;

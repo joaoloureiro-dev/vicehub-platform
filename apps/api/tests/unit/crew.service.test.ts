@@ -12,6 +12,8 @@ const crewRow = () => ({
     name: 'Vice Kings',
     tag: 'VK',
     description: null,
+    banner_url: null,
+    accent_color: null,
     level: 1,
     xp: 0n,
     influence: 0,
@@ -36,6 +38,9 @@ const createRepositoryMock = () => ({
     listMembers: vi.fn().mockResolvedValue([]),
     listScopedRoles: vi.fn().mockResolvedValue([]),
     listDirectory: vi.fn().mockResolvedValue([[], 0]),
+    updateAppearance: vi.fn().mockResolvedValue(undefined),
+    listEntitledIds: vi.fn().mockResolvedValue([]),
+    listDirectoryEntriesByIds: vi.fn().mockResolvedValue([]),
     countActiveMembersFor: vi.fn().mockResolvedValue([]),
     listOpenMembershipsOfUser: vi.fn().mockResolvedValue([]),
     listUserScopedRoles: vi.fn().mockResolvedValue([]),
@@ -294,8 +299,178 @@ describe('CrewService', () => {
             name,
             tag: name.slice(0, 3).toUpperCase(),
             description: null,
+            banner_url: null,
+            accent_color: null,
             level: 1,
             created_at: new Date('2026-03-01T00:00:00.000Z'),
+        });
+
+        describe('lugares de destaque', () => {
+            const comCandidatas = (ids: string[]) => {
+                repository.listEntitledIds.mockResolvedValue(
+                    ids.map((id) => ({ id })),
+                );
+                repository.listDirectoryEntriesByIds.mockResolvedValue(
+                    ids.map((id) => directoryRow(id, id)),
+                );
+            };
+
+            it('não devolve destaques quando ninguém tem plano', async () => {
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+                expect(repository.listDirectoryEntriesByIds).not.toHaveBeenCalled();
+            });
+
+            it('põe em destaque quem tem plano ativo', async () => {
+                comCandidatas(['crew-1']);
+
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toHaveLength(1);
+                expect(page.featured[0]?.id).toBe('crew-1');
+                expect(page.featured[0]?.isPremium).toBe(true);
+            });
+
+            /**
+             * Quem pesquisa procura uma crew concreta. Responder-lhe com
+             * colocação paga tornaria a pesquisa pouco fiável, que é
+             * exatamente o que faria as pessoas deixarem de a usar.
+             */
+            it('não interfere com uma pesquisa', async () => {
+                comCandidatas(['crew-1']);
+
+                const page = await service.listDirectory({
+                    search: 'kings',
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+                expect(repository.listEntitledIds).not.toHaveBeenCalled();
+            });
+
+            it('só aparece na primeira página', async () => {
+                comCandidatas(['crew-1']);
+
+                const page = await service.listDirectory({
+                    page: 2,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+            });
+
+            /**
+             * A paginação continua a descrever a lista, e não a lista
+             * mais os destaques: mexer no total para os esconder faria
+             * os números deixarem de bater certo.
+             */
+            it('não altera os totais da listagem', async () => {
+                comCandidatas(['crew-1']);
+                repository.listDirectory.mockResolvedValue([[], 41]);
+
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.total).toBe(41);
+                expect(page.totalPages).toBe(3);
+            });
+
+            it('junta a contagem de membros a cada destaque', async () => {
+                comCandidatas(['crew-1']);
+                repository.countActiveMembersFor.mockResolvedValue([
+                    { crewId: 'crew-1', _count: { _all: 12 } },
+                ]);
+
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured[0]?.memberCount).toBe(12);
+            });
+
+            /**
+             * Uma crew apagada entre a escolha e a leitura perde o lugar
+             * em vez de aparecer meia.
+             */
+            it('deixa cair uma crew que desapareceu entretanto', async () => {
+                comCandidatas(['crew-1']);
+                repository.listDirectoryEntriesByIds.mockResolvedValue([]);
+
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured).toEqual([]);
+            });
+
+            it('mostra a personalização de quem está em destaque', async () => {
+                repository.listEntitledIds.mockResolvedValue([{ id: 'crew-1' }]);
+                repository.listDirectoryEntriesByIds.mockResolvedValue([
+                    {
+                        ...directoryRow('crew-1', 'Vice Kings'),
+                        banner_url: 'https://cdn.vicehub.gg/vk.png',
+                        accent_color: '#1B9AAA',
+                    },
+                ]);
+
+                const page = await service.listDirectory({
+                    page: 1,
+                    pageSize: 20,
+                    sort: 'newest',
+                });
+
+                expect(page.featured[0]?.appearance).toEqual({
+                    bannerUrl: 'https://cdn.vicehub.gg/vk.png',
+                    accentColor: '#1B9AAA',
+                });
+            });
+        });
+
+        /**
+         * A personalização de uma crew sem plano fica gravada mas não é
+         * mostrada: caso contrário bastava pagar um mês.
+         */
+        it('esconde a personalização das crews sem plano na listagem', async () => {
+            repository.listDirectory.mockResolvedValue([
+                [
+                    {
+                        ...directoryRow('crew-1', 'Vice Kings'),
+                        banner_url: 'https://cdn.vicehub.gg/vk.png',
+                        accent_color: '#1B9AAA',
+                    },
+                ],
+                1,
+            ]);
+
+            const page = await service.listDirectory({
+                page: 1,
+                pageSize: 20,
+                sort: 'newest',
+            });
+
+            expect(page.items[0]?.appearance).toEqual({
+                bannerUrl: null,
+                accentColor: null,
+            });
         });
 
         it('traduz a página pedida em salto e limite', async () => {

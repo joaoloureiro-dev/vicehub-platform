@@ -1,8 +1,12 @@
+import type { Appearance } from '../../../shared/appearance.js';
+
 export interface ServerRecord {
     id: string;
     name: string;
     region: string | null;
     description: string | null;
+    banner_url: string | null;
+    accent_color: string | null;
     isOnline: boolean;
     created_at: Date;
 }
@@ -14,6 +18,8 @@ export interface ServerProfile {
     description: string | null;
     isOnline: boolean;
     isPremium: boolean;
+    /** Personalização, vazia para quem não tem plano ativo. */
+    appearance: Appearance;
     memberCount: number;
     createdAt: Date;
 }
@@ -42,6 +48,7 @@ export interface ServerDirectoryEntry {
     isOnline: boolean;
     memberCount: number;
     isPremium: boolean;
+    appearance: Appearance;
     createdAt: Date;
 }
 

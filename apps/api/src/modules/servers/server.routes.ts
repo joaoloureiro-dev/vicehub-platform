@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 
+import type { UpdateAppearanceDto } from '../../shared/appearance.js';
+import { updateAppearanceSchema } from '../../shared/appearance.js';
 import type { ServerController } from './controllers/server.controller.js';
 import type {
     CreateServerDto,
@@ -91,6 +93,27 @@ const serverRoutes: FastifyPluginAsync<ServerRoutesOptions> = async (
             schema: { params: serverIdParamSchema, body: updateServerSchema },
         },
         controller.update.bind(controller),
+    );
+
+    /**
+     * Personalização do servidor: banner e cor de destaque.
+     *
+     * Dois guards, porque são duas condições distintas: mandar no
+     * servidor (server:manage) e o servidor ter plano ativo. O
+     * requirePremium lê o serverId dos parâmetros, pelo que é o plano
+     * *deste* servidor que conta — e não o de quem faz o pedido.
+     */
+    fastify.patch<{ Params: ServerIdParamDto; Body: UpdateAppearanceDto }>(
+        '/:serverId/appearance',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('server:manage'),
+                fastify.requirePremium('server'),
+            ],
+            schema: { params: serverIdParamSchema, body: updateAppearanceSchema },
+        },
+        controller.updateAppearance.bind(controller),
     );
 
     /**

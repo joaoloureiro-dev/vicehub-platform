@@ -1,9 +1,13 @@
 import {
+    ENTITLING_SUBSCRIPTION_STATUSES,
     MembershipStatus,
     MembershipType,
     SourceType,
     type DatabaseClient,
 } from '@vicehub/database';
+
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { toAppearanceColumns } from '../../../shared/appearance.js';
 
 interface CreateServerInput {
     name: string;
@@ -11,6 +15,23 @@ interface CreateServerInput {
     description?: string | null | undefined;
     ownerId: string;
 }
+
+/**
+ * Campos que uma linha do diretório mostra.
+ *
+ * Partilhado entre a listagem e o destaque para que as duas devolvam
+ * exatamente a mesma forma.
+ */
+const DIRECTORY_ENTRY_SELECT = {
+    id: true,
+    name: true,
+    region: true,
+    description: true,
+    banner_url: true,
+    accent_color: true,
+    isOnline: true,
+    created_at: true,
+} as const;
 
 /**
  * Repositório do módulo de servidores.
@@ -117,6 +138,56 @@ export class ServerRepository {
     }
 
     /**
+     * Grava a personalização do servidor.
+     *
+     * Separada de updateServer porque a rota que lhe chega exige plano
+     * ativo, e juntá-las faria marcar o servidor como online passar a
+     * ser pago.
+     */
+    updateAppearance(serverId: string, input: UpdateAppearanceDto) {
+        return this.database.server.update({
+            where: { id: serverId },
+            data: {
+                ...toAppearanceColumns(input),
+                version: { increment: 1 },
+            },
+        });
+    }
+
+    /**
+     * Servidores com plano ativo, candidatos aos lugares de destaque.
+     *
+     * Devolve só os identificadores e por ordem estável, como nas crews:
+     * a rotação precisa da lista inteira, mas não do conteúdo das linhas.
+     */
+    listEntitledIds() {
+        return this.database.server.findMany({
+            where: {
+                is_deleted: false,
+                subscriptions: {
+                    some: {
+                        is_deleted: false,
+                        status: { in: [...ENTITLING_SUBSCRIPTION_STATUSES] },
+                        current_period_end: { gt: new Date() },
+                    },
+                },
+            },
+            orderBy: { id: 'asc' },
+            select: { id: true },
+        });
+    }
+
+    /**
+     * As linhas do diretório correspondentes aos identificadores dados.
+     */
+    listDirectoryEntriesByIds(serverIds: string[]) {
+        return this.database.server.findMany({
+            where: { id: { in: serverIds }, is_deleted: false },
+            select: DIRECTORY_ENTRY_SELECT,
+        });
+    }
+
+    /**
      * Uma página do diretório público de servidores.
      *
      * A contagem vem na mesma transação que a página: sem isso, um
@@ -169,14 +240,7 @@ export class ServerRepository {
                 orderBy: [...orderBy, { id: 'asc' as const }],
                 skip: input.skip,
                 take: input.take,
-                select: {
-                    id: true,
-                    name: true,
-                    region: true,
-                    description: true,
-                    isOnline: true,
-                    created_at: true,
-                },
+                select: DIRECTORY_ENTRY_SELECT,
             }),
             this.database.server.count({ where }),
         ]);

@@ -1,5 +1,8 @@
 import type { DatabaseClient } from '@vicehub/database';
 
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { toAppearanceColumns } from '../../../shared/appearance.js';
+
 interface UpdateProfileInput {
     avatarUrl?: string | null | undefined;
     bio?: string | null | undefined;
@@ -69,6 +72,26 @@ export class UserRepository {
                 id: userId,
             },
             data,
+        });
+    }
+
+    /**
+     * Grava a personalização do perfil.
+     *
+     * Separada do resto do perfil porque a rota que lhe chega é outra:
+     * alterar a bio não exige plano, alterar o banner exige.
+     */
+    updateAppearance(userId: string, input: UpdateAppearanceDto) {
+        return this.database.user.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                ...toAppearanceColumns(input),
+                version: {
+                    increment: 1,
+                },
+            },
         });
     }
 }

@@ -15,6 +15,7 @@ import type { ServerController } from '../../src/modules/servers/controllers/ser
 describe('ligação das rotas de servidor', () => {
     const registered = new Map<string, RouteOptions>();
     const permissoesPorRota = new Map<string, string[]>();
+    const planoPorRota = new Map<string, string[]>();
 
     beforeAll(async () => {
         const app = Fastify();
@@ -31,6 +32,21 @@ describe('ligação das rotas de servidor', () => {
             return handler;
         }) as never);
 
+
+        /**
+         * O requirePremium devolve um preHandler; guardamos o titular
+         * cujo plano cada rota exige. Numa rota com crewId, exigir o
+         * plano da crew ou o de quem faz o pedido são coisas diferentes,
+         * e é essa escolha que interessa fixar.
+         */
+        const planos = new Map<unknown, string>();
+
+        app.decorate('requirePremium', ((kind = 'user') => {
+            const handler = vi.fn();
+            planos.set(handler, kind as string);
+            return handler;
+        }) as never);
+
         app.addHook('onRoute', (route) => {
             const key = `${route.method as string} ${route.url}`;
             registered.set(key, route);
@@ -44,6 +60,15 @@ describe('ligação das rotas de servidor', () => {
             permissoesPorRota.set(
                 key,
                 preHandlers.flatMap((handler) => pedidas.get(handler) ?? []),
+            );
+
+            planoPorRota.set(
+                key,
+                preHandlers.flatMap((handler) => {
+                    const kind = planos.get(handler);
+
+                    return kind === undefined ? [] : [kind];
+                }),
             );
         });
 
@@ -62,6 +87,7 @@ describe('ligação das rotas de servidor', () => {
             rejectRequest: vi.fn(),
             removeMember: vi.fn(),
             setMemberRole: vi.fn(),
+            updateAppearance: vi.fn(),
         } as unknown as ServerController;
 
         await app.register(serverRoutes, { controller });
@@ -147,8 +173,38 @@ describe('ligação das rotas de servidor', () => {
         });
     });
 
+    describe('personalização, que é funcionalidade do plano', () => {
+        const rota = 'PATCH /:serverId/appearance';
+
+        /**
+         * São duas condições distintas e ambas têm de estar presentes:
+         * mandar no servidor não o torna premium, e ter plano não faz de
+         * ninguém dono.
+         */
+        it('exige mandar no servidor', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(['server:manage']);
+        });
+
+        it('exige o plano do servidor, e não o de quem faz o pedido', () => {
+            expect(planoPorRota.get(rota)).toEqual(['server']);
+        });
+
+        it('nenhuma outra rota de servidor é paga', () => {
+            const pagas = [...planoPorRota.entries()]
+                .filter(([, kinds]) => kinds.length > 0)
+                .map(([key]) => key);
+
+            expect(pagas).toEqual([rota]);
+        });
+    });
+
     describe('validação de entrada', () => {
-        it.each(['POST /', 'PATCH /:serverId', 'PUT /:serverId/members/:userId/role'])(
+        it.each([
+            'POST /',
+            'PATCH /:serverId',
+            'PATCH /:serverId/appearance',
+            'PUT /:serverId/members/:userId/role',
+        ])(
             '%s valida o corpo',
             (key) => {
                 expect(registered.get(key)?.schema?.body).toBeDefined();

@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 
+import type { UpdateAppearanceDto } from '../../shared/appearance.js';
+import { updateAppearanceSchema } from '../../shared/appearance.js';
 import type { CrewController } from './controllers/crew.controller.js';
 import type {
     CreateCrewDto,
@@ -95,6 +97,27 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
             schema: { params: crewIdParamSchema, body: updateCrewSchema },
         },
         controller.update.bind(controller),
+    );
+
+    /**
+     * Personalização da crew: banner e cor de destaque.
+     *
+     * Dois guards, porque são duas condições distintas: mandar na crew
+     * (crew:manage) e a crew ter plano ativo. O requirePremium lê o
+     * crewId dos parâmetros, pelo que é o plano *desta* crew que conta —
+     * e não o de quem faz o pedido.
+     */
+    fastify.patch<{ Params: CrewIdParamDto; Body: UpdateAppearanceDto }>(
+        '/:crewId/appearance',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('crew:manage'),
+                fastify.requirePremium('crew'),
+            ],
+            schema: { params: crewIdParamSchema, body: updateAppearanceSchema },
+        },
+        controller.updateAppearance.bind(controller),
     );
 
     /**

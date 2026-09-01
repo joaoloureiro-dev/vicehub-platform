@@ -1,5 +1,8 @@
 import { MembershipStatus, ROLES, type RoleKey } from '@vicehub/database';
 
+import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { visibleAppearance } from '../../../shared/appearance.js';
+import { pickFeatured } from '../../../shared/featured.js';
 import type { RoleAssignmentService } from '../../authorization/services/role-assignment.service.js';
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
 import { CrewError } from '../errors/crew.errors.js';
@@ -103,6 +106,25 @@ export class CrewService {
     }
 
     /**
+     * Altera a personalização da crew.
+     *
+     * Quem chega aqui já passou por duas condições na rota: mandar na
+     * crew e a crew ter plano ativo. São coisas diferentes — o líder de
+     * uma crew sem plano manda nela na mesma —, e por isso são dois
+     * guards e não um.
+     */
+    async updateAppearance(
+        crewId: string,
+        input: UpdateAppearanceDto,
+    ): Promise<CrewProfile> {
+        await this.requireCrew(crewId);
+
+        await this.crewRepository.updateAppearance(crewId, input);
+
+        return this.getProfile(crewId);
+    }
+
+    /**
      * Pede entrada numa crew.
      *
      * O pedido fica pendente até alguém com autorização responder.
@@ -150,12 +172,20 @@ export class CrewService {
     async listDirectory(
         input: ListCrewsInput,
     ): Promise<DirectoryPage<CrewDirectoryEntry>> {
-        const [crews, total] = await this.crewRepository.listDirectory({
-            search: input.search,
-            skip: (input.page - 1) * input.pageSize,
-            take: input.pageSize,
-            sort: input.sort,
-        });
+        /**
+         * O destaque não depende da página listada, por isso é pedido ao
+         * mesmo tempo e não a seguir: encadeá-los acrescentaria uma ida à
+         * base de dados ao tempo de resposta de toda a primeira página.
+         */
+        const [[crews, total], featured] = await Promise.all([
+            this.crewRepository.listDirectory({
+                search: input.search,
+                skip: (input.page - 1) * input.pageSize,
+                take: input.pageSize,
+                sort: input.sort,
+            }),
+            this.listFeatured(input),
+        ]);
 
         const ids = crews.map((crew) => crew.id);
 
@@ -174,20 +204,99 @@ export class CrewService {
         );
 
         return {
-            items: crews.map((crew) => ({
-                id: crew.id,
-                name: crew.name,
-                tag: crew.tag,
-                description: crew.description,
-                level: crew.level,
-                memberCount: porCrew.get(crew.id) ?? 0,
-                isPremium: premium.has(crew.id),
-                createdAt: crew.created_at,
-            })),
+            items: crews.map((crew) =>
+                this.toDirectoryEntry(crew, premium.has(crew.id), porCrew.get(crew.id) ?? 0),
+            ),
+            featured,
             page: input.page,
             pageSize: input.pageSize,
             total,
             totalPages: Math.ceil(total / input.pageSize),
+        };
+    }
+
+    /**
+     * As crews que ocupam os lugares de destaque.
+     *
+     * Só na primeira página e só sem pesquisa: quem pesquisa procura uma
+     * crew concreta, e responder-lhe com colocação paga tornaria a
+     * pesquisa inútil. As entradas em destaque continuam a aparecer na
+     * lista normal se lá couberem — a paginação não é alterada para as
+     * esconder, ou os totais deixariam de bater certo.
+     */
+    private async listFeatured(
+        input: ListCrewsInput,
+    ): Promise<CrewDirectoryEntry[]> {
+        if (input.page !== 1 || input.search !== undefined) {
+            return [];
+        }
+
+        const candidatas = await this.crewRepository.listEntitledIds();
+
+        const escolhidas = pickFeatured(
+            candidatas.map((candidata) => candidata.id),
+            new Date(),
+        );
+
+        if (escolhidas.length === 0) {
+            return [];
+        }
+
+        const [crews, contagens] = await Promise.all([
+            this.crewRepository.listDirectoryEntriesByIds(escolhidas),
+            this.crewRepository.countActiveMembersFor(escolhidas),
+        ]);
+
+        const porId = new Map(crews.map((crew) => [crew.id, crew]));
+
+        const porCrew = new Map(
+            contagens.map((contagem) => [contagem.crewId, contagem._count._all]),
+        );
+
+        /**
+         * A ordem da rotação é reposta aqui: a base de dados devolve as
+         * linhas pela ordem que lhe convier, e o lugar que cada crew
+         * ocupa é precisamente o que se está a atribuir.
+         */
+        return escolhidas.flatMap((id) => {
+            const crew = porId.get(id);
+
+            /**
+             * Uma crew apagada entre as duas consultas deixa de existir
+             * para quem consulta: perde o lugar em vez de aparecer meia.
+             */
+            if (!crew) {
+                return [];
+            }
+
+            return [this.toDirectoryEntry(crew, true, porCrew.get(id) ?? 0)];
+        });
+    }
+
+    private toDirectoryEntry(
+        crew: {
+            id: string;
+            name: string;
+            tag: string;
+            description: string | null;
+            banner_url: string | null;
+            accent_color: string | null;
+            level: number;
+            created_at: Date;
+        },
+        isPremium: boolean,
+        memberCount: number,
+    ): CrewDirectoryEntry {
+        return {
+            id: crew.id,
+            name: crew.name,
+            tag: crew.tag,
+            description: crew.description,
+            level: crew.level,
+            memberCount,
+            isPremium,
+            appearance: visibleAppearance(crew, isPremium),
+            createdAt: crew.created_at,
         };
     }
 
@@ -450,6 +559,7 @@ export class CrewService {
             influence: crew.influence,
             prestige: crew.prestige,
             isPremium: entitlement.isPremium,
+            appearance: visibleAppearance(crew, entitlement.isPremium),
             memberCount,
             createdAt: crew.created_at,
         };

@@ -184,6 +184,7 @@ em vez de as deixar sem autorização nenhuma.
 | `GET /api/v1/users/:username` | não | perfil público |
 | `GET /api/v1/users/me` | sim | perfil do próprio |
 | `PATCH /api/v1/users/me` | sim | perfil atualizado |
+| `PATCH /api/v1/users/me/appearance` | sim, **com plano ativo** | perfil atualizado |
 
 O perfil público é mesmo público: acessível sem conta, porque é isso que
 o torna público. Mostra username, avatar, bio, level, xp, reputação, data
@@ -196,10 +197,14 @@ informação de faturação. A decisão do que cada vista expõe vive num só
 sítio, o `UserService`, e há testes que falham se algum campo privado
 passar a sair na resposta pública.
 
-O `PATCH` altera apenas apresentação — avatar e bio. Não indicar um campo
-deixa-o como está; indicá-lo a `null` limpa-o. Email e username não se
-alteram por aqui: mexem em identidade e unicidade, e merecem fluxos
+O `PATCH /users/me` altera apenas apresentação — avatar e bio. Não indicar
+um campo deixa-o como está; indicá-lo a `null` limpa-o. Email e username
+não se alteram por aqui: mexem em identidade e unicidade, e merecem fluxos
 próprios com verificação.
+
+A personalização — banner e cor de destaque — está numa **rota à parte**
+precisamente porque é paga: juntá-la ao `PATCH /users/me` faria alterar a
+bio passar a exigir subscrição.
 
 ### Crews
 
@@ -214,8 +219,9 @@ próprios com verificação.
 | `POST /api/v1/crews/:crewId/requests/:userId/accept` | `crew:manage_members` |
 | `POST /api/v1/crews/:crewId/requests/:userId/reject` | `crew:manage_members` |
 | `DELETE /api/v1/crews/:crewId/members/:userId` | `crew:manage_members` |
-| `PUT /api/v1/crews/:crewId/members/:userId/role` | `crew:manage_members` |
+| `PUT /api/v1/crews/:crewId/members/:userId/role` | `crew:manage` |
 | `PATCH /api/v1/crews/:crewId` | `crew:manage` |
+| `PATCH /api/v1/crews/:crewId/appearance` | `crew:manage` **e plano da crew** |
 
 **Pertencer e mandar são coisas distintas.** O `Membership` diz quem
 pertence e desde quando; o cargo dentro da crew é dado por `UserRole` com
@@ -232,6 +238,11 @@ depois de sair ou de ser recusado — o histórico fica.
 **Uma crew nunca fica sem líder.** Sair, ser removido ou ser despromovido
 é recusado com 409 se fores o único `crew_leader`. Também não se altera o
 próprio cargo nem se remove a si próprio pelas rotas de gestão.
+
+**Alterar cargos exige `crew:manage`, e não a mera gestão de membros.**
+Com `crew:manage_members` — que os oficiais têm — um oficial podia promover
+um cúmplice a líder e tomar a crew a quem a fundou. A gestão de membros
+cobre aceitar e remover; mexer em quem manda é outra coisa.
 
 O âmbito é o que evita o erro mais perigoso: um cargo de líder noutra crew
 **não** autoriza nada nesta, porque o guard lê o `crewId` da própria rota.
@@ -273,6 +284,40 @@ quiseres um período de tolerância durante a cobrança, é acrescentá-lo a
 A base de dados garante por `CHECK` que cada subscrição tem exatamente um
 titular, que o fim do período é posterior ao início e que o preço não é
 negativo.
+
+#### O que o plano desbloqueia
+
+**Personalização do perfil.** Banner e cor de destaque (`#RRGGBB`), em
+utilizadores, crews e servidores, por `PATCH .../appearance`. Numa crew ou
+servidor são exigidas **duas** condições, porque são distintas: mandar lá
+dentro (`crew:manage` / `server:manage`) e a crew ou o servidor terem plano.
+Um líder com plano pessoal não personaliza uma crew que nunca pagou, e ter
+plano não faz de ninguém líder.
+
+O que fica gravado **não é apagado** quando o plano termina — quem voltar a
+subscrever reencontra o que tinha —, mas **deixa de ser mostrado**. Sem
+isso, bastava pagar um mês para ficar com a personalização para sempre: o
+que se vende é exibi-la, não defini-la uma vez. A cor tem um `CHECK` na base
+de dados além da validação da API, para que um valor mal formado não entre
+por outra via.
+
+**Destaque no diretório.** Os diretórios de crews e servidores devolvem um
+bloco `featured` além de `items`. Vem à parte da lista, e não misturado com
+ela, para que a paginação continue a dizer a verdade e para que quem
+consome possa mostrar o destaque como destaque em vez de o disfarçar de
+resultado.
+
+São três lugares e **rodam de hora a hora** por todos os candidatos: sem
+rotação, os três primeiros a subscrever ficavam com o topo para sempre e o
+quarto pagava por uma coisa que nunca chegava a ter. A escolha é
+determinística dentro de cada intervalo — dois pedidos seguidos dão a mesma
+resposta —, e não aleatória, ou a mesma página vista duas vezes mostrava
+coisas diferentes sem nada ter mudado.
+
+O bloco só vem preenchido na **primeira página e sem filtros**. Quem
+pesquisa, ou pede apenas os servidores online, fez um pedido concreto;
+responder-lhe com colocação paga tornaria os resultados pouco fiáveis, que
+é exatamente o que faria as pessoas deixarem de os usar.
 
 ### Valores BigInt nas respostas
 
