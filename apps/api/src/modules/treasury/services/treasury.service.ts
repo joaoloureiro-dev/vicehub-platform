@@ -1,4 +1,5 @@
 import {
+    weightOfRole,
     DistributionBasis,
     DistributionStatus,
     TransactionCategory,
@@ -11,7 +12,12 @@ import {
     InsufficientFundsSignal,
     type TreasuryRepository,
 } from '../repositories/treasury.repository.js';
-import { splitEqually, sumShares, type SplitShare } from './split.js';
+import {
+    splitByWeight,
+    splitEqually,
+    sumShares,
+    type SplitShare,
+} from './split.js';
 import type {
     TreasuryBalances,
     TreasuryMovement,
@@ -21,9 +27,14 @@ import type {
 
 interface ProposeDistributionInput {
     total?: bigint | undefined;
-    basis: 'equal' | 'manual';
+    basis: 'equal' | 'by_role' | 'manual';
     note?: string | undefined;
     shares?: SplitShare[] | undefined;
+    /**
+     * Pesos por cargo, quando a crew quer os seus em vez dos por
+     * omissão. Parcial: indicar só o peso do líder é o caso normal.
+     */
+    weights?: Partial<Record<string, number | undefined>> | undefined;
     requestedBy: string;
 }
 
@@ -228,16 +239,17 @@ export class TreasuryService {
          * propõe não pode escolher a quem paga numa divisão em partes
          * iguais.
          */
-        const memberIds = await this.treasuryRepository.listActiveMemberIds(owner);
+        const membros =
+            await this.treasuryRepository.listActiveMembersWithRoles(owner);
 
-        if (memberIds.length === 0) {
+        if (membros.length === 0) {
             throw new TreasuryError(
                 'NO_MEMBERS_TO_PAY',
                 'Esta crew não tem membros a quem distribuir.',
             );
         }
 
-        const { total, shares } = this.buildShares(input, memberIds);
+        const { total, shares } = this.buildShares(input, membros);
 
         /**
          * A soma das partes tem de ser exatamente o total. Se não for, a
@@ -258,10 +270,7 @@ export class TreasuryService {
         return this.treasuryRepository.createDistribution({
             walletId: wallet.id,
             total,
-            basis:
-                input.basis === 'equal'
-                    ? DistributionBasis.equal
-                    : DistributionBasis.manual,
+            basis: this.basisOf(input.basis),
             note: input.note,
             requestedBy: input.requestedBy,
             shares: shares
@@ -359,9 +368,19 @@ export class TreasuryService {
     /**
      * Calcula as partes conforme a base pedida.
      */
+    private basisOf(basis: 'equal' | 'by_role' | 'manual'): DistributionBasis {
+        if (basis === 'equal') {
+            return DistributionBasis.equal;
+        }
+
+        return basis === 'by_role'
+            ? DistributionBasis.by_role
+            : DistributionBasis.manual;
+    }
+
     private buildShares(
         input: ProposeDistributionInput,
-        memberIds: string[],
+        membros: { userId: string; role: string | null }[],
     ): {
         total: bigint;
         shares: SplitShare[];
@@ -369,7 +388,33 @@ export class TreasuryService {
         if (input.basis === 'equal') {
             const total = input.total ?? 0n;
 
-            return { total, shares: splitEqually(total, memberIds) };
+            return {
+                total,
+                shares: splitEqually(
+                    total,
+                    membros.map((membro) => membro.userId),
+                ),
+            };
+        }
+
+        if (input.basis === 'by_role') {
+            const total = input.total ?? 0n;
+
+            /**
+             * O peso vem do cargo que a pessoa tem, e os pesos são os do
+             * catálogo salvo se a crew indicar os seus. Quem recebe
+             * quanto é uma decisão da comunidade, não nossa.
+             */
+            return {
+                total,
+                shares: splitByWeight(
+                    total,
+                    membros.map((membro) => ({
+                        userId: membro.userId,
+                        weight: weightOfRole(membro.role, input.weights ?? {}),
+                    })),
+                ),
+            };
         }
 
         const shares = input.shares ?? [];

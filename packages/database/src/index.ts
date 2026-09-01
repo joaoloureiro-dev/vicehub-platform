@@ -40,6 +40,15 @@ export {
 } from '@prisma/client';
 
 export {
+    DEFAULT_ROLE_WEIGHTS,
+    WEIGHTED_ROLE_KEYS,
+    WEIGHT_WITHOUT_ROLE,
+    weightOfRole,
+} from './distribution-weights.js';
+
+export type { WeightedRoleKey } from './distribution-weights.js';
+
+export {
     ENTITLING_SUBSCRIPTION_STATUSES,
     PLANS,
     PLAN_KEYS,

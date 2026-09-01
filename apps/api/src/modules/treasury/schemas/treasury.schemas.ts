@@ -64,7 +64,33 @@ export const proposeDistributionSchema = z
             .string()
             .regex(/^[1-9][0-9]{0,18}$/, 'O total tem de ser um inteiro positivo.')
             .optional(),
-        basis: z.enum(['equal', 'manual']),
+        basis: z.enum(['equal', 'by_role', 'manual']),
+        /**
+         * Pesos por cargo, para a divisão ponderada. Só é preciso
+         * indicá-los quando a crew quer os seus em vez dos do catálogo:
+         * uma acha justo o dobro para o líder, outra o triplo.
+         *
+         * A chave "none" cobre quem não tem cargo atribuído.
+         */
+        weights: z
+            .object({
+                crew_leader: z.number().int().min(0).max(1_000),
+                crew_officer: z.number().int().min(0).max(1_000),
+                crew_member: z.number().int().min(0).max(1_000),
+                server_owner: z.number().int().min(0).max(1_000),
+                server_moderator: z.number().int().min(0).max(1_000),
+                server_member: z.number().int().min(0).max(1_000),
+                none: z.number().int().min(0).max(1_000),
+            })
+            /**
+             * Parcial e estrito: indicar só o peso do líder é o caso
+             * normal, e um cargo mal escrito tem de ser recusado em vez
+             * de ignorado em silêncio — quem o enviou ficaria a achar
+             * que valeu alguma coisa.
+             */
+            .partial()
+            .strict()
+            .optional(),
         note: z.string().trim().max(280).optional(),
         /**
          * Só para a base manual: quanto recebe cada um.
@@ -83,12 +109,22 @@ export const proposeDistributionSchema = z
     })
     .refine(
         (value) =>
-            value.basis === 'equal' ? value.total !== undefined : value.shares !== undefined,
+            value.basis === 'manual'
+                ? value.shares !== undefined
+                : value.total !== undefined,
         {
             message:
-                'A divisão em partes iguais precisa do total; a manual precisa das partes.',
+                'As divisões calculadas precisam do total; a manual precisa das partes.',
         },
-    );
+    )
+    /**
+     * Pesos numa divisão que não é ponderada seriam ignorados em
+     * silêncio, e quem os enviou ficaria a achar que valeram alguma
+     * coisa.
+     */
+    .refine((value) => value.weights === undefined || value.basis === 'by_role', {
+        message: 'Os pesos só se aplicam à divisão ponderada por cargo.',
+    });
 
 export const crewDistributionParamSchema = z.object({
     crewId: z.string().uuid(),

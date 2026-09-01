@@ -167,6 +167,9 @@ export class TreasuryController {
                 ? { total: BigInt(request.body.total) }
                 : {}),
             ...(request.body.note !== undefined ? { note: request.body.note } : {}),
+            ...(request.body.weights !== undefined
+                ? { weights: request.body.weights }
+                : {}),
             ...(request.body.shares !== undefined
                 ? {
                     shares: request.body.shares.map((share) => ({
