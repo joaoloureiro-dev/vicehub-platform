@@ -60,6 +60,26 @@ enum TransactionCategory {
   other
 }
 
+/// Uma distribuição segue o mesmo circuito de um movimento: nasce por
+/// responder e só move dinheiro quando alguém com autorização a aprova.
+enum DistributionStatus {
+  pending
+  approved
+  rejected
+  canceled
+}
+
+/// Como a divisão foi calculada.
+///
+/// Existe para o histórico dizer não só quanto cada um recebeu, mas
+/// porquê — e para que uma divisão sugerida por um cálculo automático
+/// seja distinguível de uma escrita à mão.
+enum DistributionBasis {
+  equal
+  manual
+  assisted
+}
+
 enum AuthProviderType {
   local
   discord
@@ -284,7 +304,8 @@ model Wallet {
   crew   Crew?   @relation(fields: [crewId], references: [id], onDelete: Cascade)
   server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  transactions Transaction[]
+  transactions  Transaction[]
+  distributions Distribution[]
 
   @@index([userId])
   @@index([crewId])
@@ -306,6 +327,9 @@ model Transaction {
 
   description String?
 
+  /// A divisão de que esta linha faz parte, quando faz.
+  distributionId String?
+
   /// Quem propôs e quem decidiu são pessoas diferentes por desenho: é o
   /// que permite auditar uma despesa até a quem a aprovou.
   requested_by String?
@@ -322,9 +346,11 @@ model Transaction {
   created_by String?
   updated_by String?
 
-  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  wallet       Wallet        @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  distribution Distribution? @relation(fields: [distributionId], references: [id], onDelete: Restrict)
 
   @@index([walletId])
+  @@index([distributionId])
   @@index([category])
   @@index([status])
   @@index([walletId, status])
@@ -506,6 +532,52 @@ model Subscription {
   @@index([serverId, status])
   @@index([status, current_period_end])
   @@index([is_deleted])
+}
+
+/// Uma divisão de ganhos pelos membros.
+///
+/// Existe para que se aprove **a divisão inteira** e não vinte
+/// movimentos soltos: sem ela, aprovar metade das linhas deixaria a
+/// tesouraria num estado que ninguém decidiu.
+///
+/// A soma das linhas é sempre igual ao total, mesmo quando a divisão não
+/// é exata: o resto é repartido em unidades inteiras em vez de ficar
+/// perdido no arredondamento.
+model Distribution {
+  id String @id @default(uuid())
+
+  /// A carteira de onde o dinheiro sai.
+  walletId String
+
+  total BigInt
+
+  basis  DistributionBasis
+  status DistributionStatus @default(pending)
+
+  note String?
+
+  requested_by String?
+  decided_by   String?
+  decided_at   DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  lines Transaction[]
+
+  @@index([walletId])
+  @@index([status])
+  @@index([walletId, status])
+  @@index([created_at(sort: Desc)])
 }
 
 /// Registo do que foi feito, por quem e a quê.

@@ -51,3 +51,46 @@ export const serverMovementParamSchema = z.object({
     serverId: z.string().uuid(),
     movementId: z.string().uuid(),
 });
+
+/**
+ * Proposta de divisão de ganhos.
+ *
+ * O total vem como texto, pela mesma razão dos movimentos. A base diz
+ * como repartir: em partes iguais, ou com os valores indicados um a um.
+ */
+export const proposeDistributionSchema = z
+    .object({
+        total: z
+            .string()
+            .regex(/^[1-9][0-9]{0,18}$/, 'O total tem de ser um inteiro positivo.')
+            .optional(),
+        basis: z.enum(['equal', 'manual']),
+        note: z.string().trim().max(280).optional(),
+        /**
+         * Só para a base manual: quanto recebe cada um.
+         */
+        shares: z
+            .array(
+                z.object({
+                    userId: z.string().uuid(),
+                    amount: z
+                        .string()
+                        .regex(/^[0-9]{1,19}$/, 'A parte tem de ser um inteiro.'),
+                }),
+            )
+            .min(1)
+            .optional(),
+    })
+    .refine(
+        (value) =>
+            value.basis === 'equal' ? value.total !== undefined : value.shares !== undefined,
+        {
+            message:
+                'A divisão em partes iguais precisa do total; a manual precisa das partes.',
+        },
+    );
+
+export const crewDistributionParamSchema = z.object({
+    crewId: z.string().uuid(),
+    distributionId: z.string().uuid(),
+});

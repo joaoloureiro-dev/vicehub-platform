@@ -17,6 +17,29 @@ const createRepositoryMock = () => ({
     createMovement: vi.fn().mockResolvedValue({ id: 'mov-1' }),
     approveMovement: vi.fn().mockResolvedValue({ outcome: 'approved' }),
     closeMovement: vi.fn().mockResolvedValue({ count: 1 }),
+    listActiveMemberIds: vi.fn().mockResolvedValue(['user-1', 'user-2', 'user-3']),
+    ensureWalletsForUsers: vi.fn().mockImplementation((userIds: string[]) =>
+        Promise.resolve(new Map(userIds.map((id) => [id, `wallet-de-${id}`]))),
+    ),
+    createDistribution: vi.fn().mockResolvedValue({ id: 'dist-1' }),
+    findDistributionById: vi.fn(),
+    listDistributions: vi.fn().mockResolvedValue([]),
+    approveDistribution: vi.fn().mockResolvedValue({ outcome: 'approved' }),
+    closeDistribution: vi.fn().mockResolvedValue({ count: 1 }),
+});
+
+const pendingDistribution = (overrides: Record<string, unknown> = {}) => ({
+    id: 'dist-1',
+    walletId: 'wallet-1',
+    total: 900n,
+    status: 'pending',
+    lines: [
+        { walletId: 'wallet-1', amount: 900n, direction: 'debit' },
+        { walletId: 'wallet-de-user-1', amount: 300n, direction: 'credit' },
+        { walletId: 'wallet-de-user-2', amount: 300n, direction: 'credit' },
+        { walletId: 'wallet-de-user-3', amount: 300n, direction: 'credit' },
+    ],
+    ...overrides,
 });
 
 const pendingMovement = (overrides: Record<string, unknown> = {}) => ({
@@ -456,6 +479,249 @@ describe('TreasuryService', () => {
             );
 
             expect(repository.closeMovement).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('propor uma divisão', () => {
+        const emPartesIguais = {
+            basis: 'equal' as const,
+            total: 900n,
+            requestedBy: 'leader-1',
+        };
+
+        it('divide pelos membros ativos lidos do lado do servidor', async () => {
+            await service.proposeDistribution({ crewId: 'crew-1' }, emPartesIguais);
+
+            expect(repository.listActiveMemberIds).toHaveBeenCalledWith({
+                crewId: 'crew-1',
+            });
+
+            const criada = repository.createDistribution.mock.calls[0]?.[0] as {
+                shares: { walletId: string; amount: bigint }[];
+                total: bigint;
+            };
+
+            expect(criada.total).toBe(900n);
+            expect(criada.shares).toEqual([
+                { walletId: 'wallet-de-user-1', amount: 300n },
+                { walletId: 'wallet-de-user-2', amount: 300n },
+                { walletId: 'wallet-de-user-3', amount: 300n },
+            ]);
+        });
+
+        /**
+         * Quem propõe não escolhe a quem paga: a lista de membros é lida
+         * da base de dados, não do pedido.
+         */
+        it('uma crew sem membros ativos não pode distribuir', async () => {
+            repository.listActiveMemberIds.mockResolvedValue([]);
+
+            await expectTreasuryError(
+                service.proposeDistribution({ crewId: 'crew-1' }, emPartesIguais),
+                'NO_MEMBERS_TO_PAY',
+            );
+
+            expect(repository.createDistribution).not.toHaveBeenCalled();
+        });
+
+        it('propor não move dinheiro nenhum', async () => {
+            await service.proposeDistribution({ crewId: 'crew-1' }, emPartesIguais);
+
+            expect(repository.approveDistribution).not.toHaveBeenCalled();
+        });
+
+        it('garante carteira a todos os que recebem', async () => {
+            await service.proposeDistribution({ crewId: 'crew-1' }, emPartesIguais);
+
+            expect(repository.ensureWalletsForUsers).toHaveBeenCalledWith([
+                'user-1',
+                'user-2',
+                'user-3',
+            ]);
+        });
+
+        /**
+         * Numa divisão manual o total é o que as partes somam. Aceitar um
+         * total enviado à parte abriria a porta a uma divisão que diz
+         * tirar 1000 da tesouraria e só distribui 900.
+         */
+        it('numa divisão manual o total é a soma das partes, e não um valor enviado', async () => {
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                {
+                    basis: 'manual',
+                    total: 5_000n,
+                    shares: [
+                        { userId: 'user-1', amount: 600n },
+                        { userId: 'user-2', amount: 300n },
+                    ],
+                    requestedBy: 'leader-1',
+                },
+            );
+
+            const criada = repository.createDistribution.mock.calls[0]?.[0] as {
+                total: bigint;
+            };
+
+            expect(criada.total).toBe(900n);
+        });
+
+        it('não grava partes de valor zero', async () => {
+            repository.listActiveMemberIds.mockResolvedValue([
+                'user-1',
+                'user-2',
+                'user-3',
+            ]);
+
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                { basis: 'equal', total: 2n, requestedBy: 'leader-1' },
+            );
+
+            const criada = repository.createDistribution.mock.calls[0]?.[0] as {
+                shares: { amount: bigint }[];
+            };
+
+            expect(criada.shares).toHaveLength(2);
+            expect(criada.shares.every((share) => share.amount > 0n)).toBe(true);
+        });
+    });
+
+    describe('a soma das partes tem de fechar', () => {
+        /**
+         * Esta verificação não é alcançável pelo uso normal: os dois
+         * cálculos fecham por construção. Existe como rede contra um erro
+         * futuro no cálculo da divisão, e por isso é forçada aqui — se a
+         * calculadora começasse a mentir, a tesouraria ficava com
+         * dinheiro a mais ou a menos sem ninguém dar por isso.
+         */
+        it('recusa gravar quando as partes não somam o total', async () => {
+            const partido = new TreasuryService(
+                repository as unknown as TreasuryRepository,
+            );
+
+            const original = Object.getPrototypeOf(partido) as {
+                buildShares: unknown;
+            };
+
+            const espia = vi
+                .spyOn(
+                    original as unknown as {
+                        buildShares: (...args: unknown[]) => unknown;
+                    },
+                    'buildShares',
+                )
+                .mockReturnValue({
+                    total: 900n,
+                    shares: [{ userId: 'user-1', amount: 100n }],
+                });
+
+            await expectTreasuryError(
+                partido.proposeDistribution(
+                    { crewId: 'crew-1' },
+                    { basis: 'equal', total: 900n, requestedBy: 'leader-1' },
+                ),
+                'SHARES_DO_NOT_MATCH_TOTAL',
+            );
+
+            expect(repository.createDistribution).not.toHaveBeenCalled();
+
+            espia.mockRestore();
+        });
+    });
+
+    describe('decidir uma divisão', () => {
+        beforeEach(() => {
+            repository.findDistributionById.mockResolvedValue(pendingDistribution());
+        });
+
+        it('aprovar paga apenas as linhas de entrada', async () => {
+            await service.approveDistribution(
+                { crewId: 'crew-1' },
+                'dist-1',
+                'leader-1',
+            );
+
+            const pedido = repository.approveDistribution.mock.calls[0]?.[0] as {
+                credits: { walletId: string; amount: bigint }[];
+                total: bigint;
+            };
+
+            expect(pedido.total).toBe(900n);
+            expect(pedido.credits).toHaveLength(3);
+            expect(pedido.credits.every((credit) => credit.amount === 300n)).toBe(true);
+        });
+
+        /**
+         * A mesma confusão de âmbito dos movimentos: o guard só olha para
+         * o parâmetro da rota, por isso é o serviço que tem de confirmar
+         * que a divisão é mesmo desta tesouraria.
+         */
+        it('recusa decidir uma divisão de outra tesouraria', async () => {
+            repository.findDistributionById.mockResolvedValue(
+                pendingDistribution({ walletId: 'wallet-de-outra-crew' }),
+            );
+
+            await expectTreasuryError(
+                service.approveDistribution({ crewId: 'crew-1' }, 'dist-1', 'leader-1'),
+                'DISTRIBUTION_NOT_FOUND',
+            );
+
+            expect(repository.approveDistribution).not.toHaveBeenCalled();
+        });
+
+        it('recusa uma divisão que não existe', async () => {
+            repository.findDistributionById.mockResolvedValue(null);
+
+            await expectTreasuryError(
+                service.approveDistribution({ crewId: 'crew-1' }, 'dist-1', 'leader-1'),
+                'DISTRIBUTION_NOT_FOUND',
+            );
+        });
+
+        it('recusa aprovar uma divisão já decidida', async () => {
+            repository.findDistributionById.mockResolvedValue(
+                pendingDistribution({ status: 'approved' }),
+            );
+
+            await expectTreasuryError(
+                service.approveDistribution({ crewId: 'crew-1' }, 'dist-1', 'leader-1'),
+                'DISTRIBUTION_NOT_PENDING',
+            );
+        });
+
+        it('recusa quando outra aprovação chegou primeiro', async () => {
+            repository.approveDistribution.mockResolvedValue({
+                outcome: 'not_pending',
+            });
+
+            await expectTreasuryError(
+                service.approveDistribution({ crewId: 'crew-1' }, 'dist-1', 'leader-1'),
+                'DISTRIBUTION_NOT_PENDING',
+            );
+        });
+
+        it('traduz a falta de saldo', async () => {
+            repository.approveDistribution.mockRejectedValue(
+                new InsufficientFundsSignal(),
+            );
+
+            await expectTreasuryError(
+                service.approveDistribution({ crewId: 'crew-1' }, 'dist-1', 'leader-1'),
+                'INSUFFICIENT_FUNDS',
+            );
+        });
+
+        it('recusar encerra a divisão e as linhas sem mexer no saldo', async () => {
+            await service.rejectDistribution({ crewId: 'crew-1' }, 'dist-1', 'leader-1');
+
+            expect(repository.closeDistribution).toHaveBeenCalledWith({
+                distributionId: 'dist-1',
+                status: 'rejected',
+                lineStatus: 'rejected',
+                decidedBy: 'leader-1',
+            });
+            expect(repository.approveDistribution).not.toHaveBeenCalled();
         });
     });
 });

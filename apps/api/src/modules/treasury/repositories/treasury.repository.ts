@@ -1,4 +1,8 @@
 import {
+    MembershipStatus,
+    MembershipType,
+    DistributionBasis,
+    DistributionStatus,
     SourceType,
     TransactionCategory,
     TransactionDirection,
@@ -197,6 +201,283 @@ export class TreasuryRepository {
                 decided_at: new Date(),
                 version: { increment: 1 },
             },
+        });
+    }
+
+    /**
+     * Membros ativos de uma crew ou servidor, por ordem de antiguidade.
+     *
+     * A ordem importa: é por ela que o resto de uma divisão não exata é
+     * repartido, e tem de ser sempre a mesma para a divisão ser
+     * reproduzível.
+     */
+    async listActiveMemberIds(owner: WalletOwner): Promise<string[]> {
+        /**
+         * Os identificadores são fixados aqui em vez de passarem como
+         * opcionais: com exactOptionalPropertyTypes, um undefined no
+         * filtro deixaria de restringir e devolveria membros de todas as
+         * crews.
+         */
+        const escopo =
+            owner.crewId !== undefined && owner.crewId !== null
+                ? { crewId: owner.crewId, type: MembershipType.crew }
+                : { serverId: owner.serverId ?? '', type: MembershipType.server };
+
+        const adesoes = await this.database.membership.findMany({
+            where: {
+                ...escopo,
+                status: MembershipStatus.active,
+                is_deleted: false,
+            },
+            orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+            select: { userId: true },
+        });
+
+        return adesoes.map((adesao) => adesao.userId);
+    }
+
+    /**
+     * Garante que cada utilizador indicado tem carteira, e devolve o
+     * identificador da de cada um.
+     *
+     * As carteiras nascem com a conta, mas as contas criadas antes disso
+     * não têm nenhuma. Uma divisão não pode falhar a meio por causa de um
+     * membro antigo.
+     */
+    async ensureWalletsForUsers(userIds: string[]): Promise<Map<string, string>> {
+        const existentes = await this.database.wallet.findMany({
+            where: { userId: { in: userIds }, is_deleted: false },
+            select: { id: true, userId: true },
+        });
+
+        const porUtilizador = new Map<string, string>();
+
+        for (const carteira of existentes) {
+            if (carteira.userId !== null) {
+                porUtilizador.set(carteira.userId, carteira.id);
+            }
+        }
+
+        const emFalta = userIds.filter((userId) => !porUtilizador.has(userId));
+
+        for (const userId of emFalta) {
+            const criada = await this.database.wallet.create({
+                data: { userId, source: SourceType.api },
+            });
+
+            porUtilizador.set(userId, criada.id);
+        }
+
+        return porUtilizador;
+    }
+
+    /**
+     * Cria a divisão e as suas linhas na mesma transação.
+     *
+     * As linhas nascem todas pendentes: propor uma divisão não move
+     * dinheiro nenhum, tal como propor um movimento.
+     */
+    createDistribution(input: {
+        walletId: string;
+        total: bigint;
+        basis: DistributionBasis;
+        note?: string | undefined;
+        requestedBy: string;
+        shares: { walletId: string; amount: bigint }[];
+    }) {
+        return this.database.$transaction(async (tx) => {
+            const distribution = await tx.distribution.create({
+                data: {
+                    walletId: input.walletId,
+                    total: input.total,
+                    basis: input.basis,
+                    status: DistributionStatus.pending,
+                    note: input.note ?? null,
+                    requested_by: input.requestedBy,
+                    source: SourceType.api,
+                    created_by: input.requestedBy,
+                },
+            });
+
+            /**
+             * A saída da tesouraria é uma linha só, com o total. As
+             * entradas são uma por pessoa. Assim o extrato da crew mostra
+             * uma despesa, e o de cada membro mostra o que recebeu.
+             */
+            await tx.transaction.create({
+                data: {
+                    walletId: input.walletId,
+                    distributionId: distribution.id,
+                    amount: input.total,
+                    direction: TransactionDirection.debit,
+                    category: TransactionCategory.payout,
+                    status: TransactionStatus.pending,
+                    description: 'Divisão de ganhos pelos membros',
+                    requested_by: input.requestedBy,
+                    source: SourceType.api,
+                },
+            });
+
+            for (const share of input.shares) {
+                await tx.transaction.create({
+                    data: {
+                        walletId: share.walletId,
+                        distributionId: distribution.id,
+                        amount: share.amount,
+                        direction: TransactionDirection.credit,
+                        category: TransactionCategory.payout,
+                        status: TransactionStatus.pending,
+                        description: 'Parte da divisão de ganhos',
+                        requested_by: input.requestedBy,
+                        source: SourceType.api,
+                    },
+                });
+            }
+
+            return distribution;
+        });
+    }
+
+    findDistributionById(distributionId: string) {
+        return this.database.distribution.findFirst({
+            where: { id: distributionId, is_deleted: false },
+            include: {
+                lines: {
+                    where: { is_deleted: false },
+                    orderBy: { direction: 'asc' },
+                },
+            },
+        });
+    }
+
+    listDistributions(walletId: string, take: number) {
+        return this.database.distribution.findMany({
+            where: { walletId, is_deleted: false },
+            orderBy: { created_at: 'desc' },
+            take,
+            include: {
+                lines: { where: { is_deleted: false } },
+            },
+        });
+    }
+
+    /**
+     * Aprova a divisão inteira, ou nada.
+     *
+     * Segue a mesma ordem da aprovação de um movimento — reclamar
+     * primeiro, mexer no dinheiro depois — e acrescenta o essencial de
+     * uma divisão: ou entram todas as partes, ou não entra nenhuma. Se a
+     * transação se desfizer a meio, não fica um membro pago e outro não.
+     */
+    approveDistribution(input: {
+        distributionId: string;
+        walletId: string;
+        total: bigint;
+        credits: { walletId: string; amount: bigint }[];
+        approvedBy: string;
+    }) {
+        return this.database.$transaction(async (tx) => {
+            const decididoEm = new Date();
+
+            const reclamada = await tx.distribution.updateMany({
+                where: {
+                    id: input.distributionId,
+                    status: DistributionStatus.pending,
+                },
+                data: {
+                    status: DistributionStatus.approved,
+                    decided_by: input.approvedBy,
+                    decided_at: decididoEm,
+                    version: { increment: 1 },
+                },
+            });
+
+            if (reclamada.count !== 1) {
+                return { outcome: 'not_pending' as const };
+            }
+
+            const debitada = await tx.wallet.updateMany({
+                where: { id: input.walletId, balance: { gte: input.total } },
+                data: {
+                    balance: { decrement: input.total },
+                    version: { increment: 1 },
+                },
+            });
+
+            if (debitada.count !== 1) {
+                throw new InsufficientFundsSignal();
+            }
+
+            for (const credit of input.credits) {
+                await tx.wallet.update({
+                    where: { id: credit.walletId },
+                    data: {
+                        balance: { increment: credit.amount },
+                        version: { increment: 1 },
+                    },
+                });
+            }
+
+            await tx.transaction.updateMany({
+                where: {
+                    distributionId: input.distributionId,
+                    status: TransactionStatus.pending,
+                },
+                data: {
+                    status: TransactionStatus.approved,
+                    decided_by: input.approvedBy,
+                    decided_at: decididoEm,
+                    version: { increment: 1 },
+                },
+            });
+
+            return { outcome: 'approved' as const };
+        });
+    }
+
+    /**
+     * Encerra a divisão e as suas linhas sem mexer em saldo nenhum.
+     */
+    closeDistribution(input: {
+        distributionId: string;
+        status: DistributionStatus;
+        lineStatus: TransactionStatus;
+        decidedBy: string;
+    }) {
+        return this.database.$transaction(async (tx) => {
+            const decididoEm = new Date();
+
+            const fechada = await tx.distribution.updateMany({
+                where: {
+                    id: input.distributionId,
+                    status: DistributionStatus.pending,
+                },
+                data: {
+                    status: input.status,
+                    decided_by: input.decidedBy,
+                    decided_at: decididoEm,
+                    version: { increment: 1 },
+                },
+            });
+
+            if (fechada.count !== 1) {
+                return { count: 0 };
+            }
+
+            await tx.transaction.updateMany({
+                where: {
+                    distributionId: input.distributionId,
+                    status: TransactionStatus.pending,
+                },
+                data: {
+                    status: input.lineStatus,
+                    decided_by: input.decidedBy,
+                    decided_at: decididoEm,
+                    version: { increment: 1 },
+                },
+            });
+
+            return { count: 1 };
         });
     }
 

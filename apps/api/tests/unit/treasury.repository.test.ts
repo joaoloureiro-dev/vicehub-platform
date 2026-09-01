@@ -332,4 +332,260 @@ describe('TreasuryRepository', () => {
             expect(args.data['decided_at']).toBeInstanceOf(Date);
         });
     });
+
+    /**
+     * As divisões correm igualmente dentro de uma transação. O duplo
+     * chama o callback com um cliente falso para se poderem observar as
+     * condições de escrita.
+     */
+    const withDistributionTransaction = () => {
+        const tx = {
+            distribution: {
+                create: vi.fn().mockResolvedValue({ id: 'dist-1' }),
+                updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            },
+            transaction: {
+                create: vi.fn().mockResolvedValue({}),
+                updateMany: vi.fn().mockResolvedValue({ count: 4 }),
+            },
+            wallet: {
+                update: vi.fn().mockResolvedValue({}),
+                updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            },
+        };
+
+        (database as unknown as {
+            $transaction: (fn: (client: unknown) => unknown) => unknown;
+        }).$transaction = (fn) => fn(tx);
+
+        repository = new TreasuryRepository(database as unknown as DatabaseClient);
+
+        return tx;
+    };
+
+    describe('criar uma divisão', () => {
+        const input = {
+            walletId: 'wallet-1',
+            total: 900n,
+            basis: 'equal' as const,
+            requestedBy: 'leader-1',
+            shares: [
+                { walletId: 'wallet-a', amount: 300n },
+                { walletId: 'wallet-b', amount: 300n },
+                { walletId: 'wallet-c', amount: 300n },
+            ],
+        };
+
+        /**
+         * Tal como um movimento, uma divisão nasce por responder. Se
+         * nascesse aprovada, saltaria a decisão do líder por inteiro.
+         */
+        it('nasce pendente', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.createDistribution(input);
+
+            const dados = (tx.distribution.create.mock.calls[0]?.[0] as {
+                data: Record<string, unknown>;
+            }).data;
+
+            expect(dados['status']).toBe('pending');
+            expect(dados['decided_by']).toBeUndefined();
+        });
+
+        /**
+         * Uma saída com o total e uma entrada por pessoa: o extrato da
+         * crew mostra uma despesa, e o de cada membro mostra o que
+         * recebeu.
+         */
+        it('grava uma saída com o total e uma entrada por pessoa', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.createDistribution(input);
+
+            const linhas = tx.transaction.create.mock.calls.map(
+                (chamada) => (chamada[0] as { data: Record<string, unknown> }).data,
+            );
+
+            expect(linhas).toHaveLength(4);
+
+            const saidas = linhas.filter((linha) => linha['direction'] === 'debit');
+            const entradas = linhas.filter((linha) => linha['direction'] === 'credit');
+
+            expect(saidas).toHaveLength(1);
+            expect(saidas[0]?.['amount']).toBe(900n);
+            expect(entradas).toHaveLength(3);
+        });
+
+        it('todas as linhas nascem pendentes e ligadas à divisão', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.createDistribution(input);
+
+            const linhas = tx.transaction.create.mock.calls.map(
+                (chamada) => (chamada[0] as { data: Record<string, unknown> }).data,
+            );
+
+            expect(linhas.every((linha) => linha['status'] === 'pending')).toBe(true);
+            expect(
+                linhas.every((linha) => linha['distributionId'] === 'dist-1'),
+            ).toBe(true);
+        });
+    });
+
+    describe('aprovar uma divisão', () => {
+        const input = {
+            distributionId: 'dist-1',
+            walletId: 'wallet-1',
+            total: 900n,
+            credits: [
+                { walletId: 'wallet-a', amount: 300n },
+                { walletId: 'wallet-b', amount: 300n },
+                { walletId: 'wallet-c', amount: 300n },
+            ],
+            approvedBy: 'leader-1',
+        };
+
+        it('reclama a divisão só se ainda estiver pendente', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.approveDistribution(input);
+
+            const args = tx.distribution.updateMany.mock.calls[0]?.[0] as {
+                where: Record<string, unknown>;
+            };
+
+            expect(args.where).toEqual({ id: 'dist-1', status: 'pending' });
+        });
+
+        it('desiste sem pagar ninguém quando já não está pendente', async () => {
+            const tx = withDistributionTransaction();
+            tx.distribution.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(repository.approveDistribution(input)).resolves.toEqual({
+                outcome: 'not_pending',
+            });
+
+            expect(tx.wallet.updateMany).not.toHaveBeenCalled();
+            expect(tx.wallet.update).not.toHaveBeenCalled();
+        });
+
+        it('a saída da tesouraria exige que o saldo chegue', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.approveDistribution(input);
+
+            const args = tx.wallet.updateMany.mock.calls[0]?.[0] as {
+                where: Record<string, unknown>;
+            };
+
+            expect(args.where).toEqual({ id: 'wallet-1', balance: { gte: 900n } });
+        });
+
+        /**
+         * Sem saldo, a transação inteira é desfeita: ninguém é pago, e a
+         * divisão volta a pendente.
+         */
+        it('desfaz tudo quando o saldo não chega', async () => {
+            const tx = withDistributionTransaction();
+            tx.wallet.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(
+                repository.approveDistribution(input),
+            ).rejects.toBeInstanceOf(InsufficientFundsSignal);
+        });
+
+        it('credita todas as carteiras que recebem', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.approveDistribution(input);
+
+            expect(tx.wallet.update).toHaveBeenCalledTimes(3);
+
+            const creditadas = tx.wallet.update.mock.calls.map(
+                (chamada) => (chamada[0] as { where: { id: string } }).where.id,
+            );
+
+            expect(creditadas).toEqual(['wallet-a', 'wallet-b', 'wallet-c']);
+        });
+
+        it('marca as linhas pendentes como aprovadas', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.approveDistribution(input);
+
+            const args = tx.transaction.updateMany.mock.calls[0]?.[0] as {
+                where: Record<string, unknown>;
+                data: Record<string, unknown>;
+            };
+
+            expect(args.where).toEqual({
+                distributionId: 'dist-1',
+                status: 'pending',
+            });
+            expect(args.data['status']).toBe('approved');
+            expect(args.data['decided_by']).toBe('leader-1');
+        });
+    });
+
+    describe('encerrar uma divisão', () => {
+        const input = {
+            distributionId: 'dist-1',
+            status: 'rejected' as const,
+            lineStatus: 'rejected' as const,
+            decidedBy: 'leader-1',
+        };
+
+        it('só encerra o que ainda está pendente', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.closeDistribution(input);
+
+            const args = tx.distribution.updateMany.mock.calls[0]?.[0] as {
+                where: Record<string, unknown>;
+            };
+
+            expect(args.where).toEqual({ id: 'dist-1', status: 'pending' });
+        });
+
+        /**
+         * Recusar não é pagar: nenhuma carteira pode mexer-se.
+         */
+        it('não toca em carteira nenhuma', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.closeDistribution(input);
+
+            expect(tx.wallet.update).not.toHaveBeenCalled();
+            expect(tx.wallet.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('encerra também as linhas da divisão', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.closeDistribution(input);
+
+            const args = tx.transaction.updateMany.mock.calls[0]?.[0] as {
+                where: Record<string, unknown>;
+                data: Record<string, unknown>;
+            };
+
+            expect(args.where).toEqual({
+                distributionId: 'dist-1',
+                status: 'pending',
+            });
+            expect(args.data['status']).toBe('rejected');
+        });
+
+        it('não encerra linhas quando a divisão já não estava pendente', async () => {
+            const tx = withDistributionTransaction();
+            tx.distribution.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(repository.closeDistribution(input)).resolves.toEqual({
+                count: 0,
+            });
+
+            expect(tx.transaction.updateMany).not.toHaveBeenCalled();
+        });
+    });
 });

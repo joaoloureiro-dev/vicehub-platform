@@ -98,6 +98,15 @@ const treasuryErrorStatusCodes: Record<TreasuryErrorCode, number> = {
      * e o movimento existe; falta-lhe é legitimidade sobre ele.
      */
     NOT_THE_PROPOSER: 403,
+    DISTRIBUTION_NOT_FOUND: 404,
+    DISTRIBUTION_NOT_PENDING: 409,
+    /** Uma crew sem membros a quem pagar não é erro do cliente, é estado. */
+    NO_MEMBERS_TO_PAY: 409,
+    /**
+     * 500 e não 400: as partes são calculadas do lado do servidor, por
+     * isso não baterem certo com o total é erro de programação nosso.
+     */
+    SHARES_DO_NOT_MATCH_TOTAL: 500,
 };
 
 const httpErrorNames: Record<number, string> = {
