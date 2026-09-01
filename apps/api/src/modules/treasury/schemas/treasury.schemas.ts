@@ -64,7 +64,13 @@ export const proposeDistributionSchema = z
             .string()
             .regex(/^[1-9][0-9]{0,18}$/, 'O total tem de ser um inteiro positivo.')
             .optional(),
-        basis: z.enum(['equal', 'by_role', 'manual']),
+        basis: z.enum(['equal', 'by_role', 'manual', 'participation']),
+        /**
+         * Só para a base por participação: o evento de onde vêm os
+         * pesos. Quem participou e quanto vale cada um vem das presenças
+         * confirmadas, e não do pedido.
+         */
+        eventId: z.string().uuid().optional(),
         /**
          * Pesos por cargo, para a divisão ponderada. Só é preciso
          * indicá-los quando a crew quer os seus em vez dos do catálogo:
@@ -115,6 +121,22 @@ export const proposeDistributionSchema = z
         {
             message:
                 'As divisões calculadas precisam do total; a manual precisa das partes.',
+        },
+    )
+    /**
+     * Sem evento, uma divisão por participação não tem por onde se
+     * guiar; com evento numa base que o ignora, quem o enviou ficaria a
+     * achar que ele contou para alguma coisa.
+     */
+    .refine(
+        (value) =>
+            value.basis === 'participation'
+                ? value.eventId !== undefined
+                : value.eventId === undefined,
+        {
+            message:
+                'A divisão por participação precisa do evento, e só ela o aceita.',
+            path: ['eventId'],
         },
     )
     /**

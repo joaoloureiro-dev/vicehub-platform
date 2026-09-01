@@ -319,6 +319,81 @@ pesquisa, ou pede apenas os servidores online, fez um pedido concreto;
 responder-lhe com colocação paga tornaria os resultados pouco fiáveis, que
 é exatamente o que faria as pessoas deixarem de os usar.
 
+### Eventos
+
+| Rota (prefixo `/api/v1/events`) | Quem pode |
+|---|---|
+| `GET /crews/:crewId` | `event:read` |
+| `POST /crews/:crewId` | `event:manage` |
+| `GET /crews/:crewId/:eventId` | `event:read` |
+| `PATCH /crews/:crewId/:eventId` | `event:manage` |
+| `POST /crews/:crewId/:eventId/status` | `event:manage` |
+| `POST /crews/:crewId/:eventId/signup` | qualquer membro |
+| `DELETE /crews/:crewId/:eventId/signup` | qualquer membro |
+| `GET /crews/:crewId/:eventId/participants` | `event:read` |
+| `POST /crews/:crewId/:eventId/participants/:userId/confirm` | `event:confirm_attendance` |
+| `POST /crews/:crewId/:eventId/participants/:userId/no-show` | `event:confirm_attendance` |
+
+As mesmas rotas existem com `/servers/:serverId`. São declaradas **uma
+vez** e registadas com os dois prefixos: escrevê-las duas vezes faria com
+que uma correção só entrasse numa delas.
+
+Os eventos existem para responder a uma pergunta que a tesouraria não
+sabia responder sozinha: **quem participou nisto?** Sem eles, dividir
+ganhos só podia ser por igual ou por cargo, e quem apareceu ao assalto
+recebia o mesmo que quem não apareceu.
+
+**Inscrever-se e ter presença confirmada são coisas distintas.** Quem se
+inscreve diz que tenciona ir; só quem organiza pode afirmar que foi. É
+essa afirmação — e não a inscrição — que dá direito a parte dos ganhos.
+Por isso confirmar presenças exige uma permissão própria e não se
+contenta com `event:manage`: organizar um evento e decidir quem é pago
+por ele são poderes distintos, e uma comunidade pode querer dar um sem
+dar o outro. Fica gravado quem confirmou e quando, com um `CHECK` que
+impede uma presença confirmada sem autor.
+
+Cada presença confirmada leva um **peso**. Quem lidera um assalto costuma
+levar mais, e sem poder dizê-lo as comunidades voltariam a dividir fora
+da plataforma.
+
+Só membros ativos se inscrevem: sem isso, qualquer conta se inscrevia num
+evento alheio e, uma vez confirmada, recebia parte dos ganhos de uma
+comunidade a que não pertence.
+
+Os estados são `scheduled`, `ongoing`, `completed` e `canceled`, e as
+transições permitidas estão declaradas como dados num só sítio. A mudança
+é aplicada condicionalmente na base de dados: dois pedidos simultâneos a
+concluir o mesmo evento não o concluem duas vezes.
+
+#### Dividir por participação
+
+```http
+POST /api/v1/treasury/crews/:crewId/distributions
+{ "total": "400", "basis": "participation", "eventId": "..." }
+```
+
+Os pesos vêm das presenças confirmadas, não do pedido. Quem faltou não
+recebe, mesmo sendo membro da crew — é isso que distingue esta base da
+divisão por igual. O evento é procurado **pelo titular da carteira**:
+sem isso, quem manda numa crew pagava o dinheiro dela aos participantes
+do evento de outra, bastando-lhe saber o `eventId` de lá. O evento fica
+gravado na divisão, para que se saiba porque é que aquelas pessoas em
+concreto foram pagas.
+
+#### Uma armadilha a evitar em rotas novas
+
+O guard de autorização lê o âmbito de `request.params.crewId` e
+`request.params.serverId`. **O Zod descarta o que o schema não declara.**
+Uma rota `/crews/:crewId/:eventId` cujo schema de parâmetros só declare o
+`eventId` fica sem `crewId` no momento em que o guard corre: a permissão
+passa a ser avaliada sem âmbito nenhum, e quem manda na crew vê a própria
+rota recusada com 403.
+
+É silencioso — o schema parece correto e a rota parece correta. Há um
+teste (`tests/integration/route-scope.test.ts`) que percorre **todas** as
+rotas da aplicação e falha se alguma perder o seu âmbito na validação,
+incluindo as que ainda não foram escritas.
+
 ### Valores BigInt nas respostas
 
 O `xp` e o `balance` são `BigInt` no schema Prisma. O JSON não tem inteiros

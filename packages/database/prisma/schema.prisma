@@ -78,7 +78,40 @@ enum DistributionBasis {
   equal
   by_role
   manual
+
+  /// Divisão pelo peso de quem participou num evento.
+  ///
+  /// É a base que os eventos existem para permitir: quem apareceu ao
+  /// assalto recebe, quem não apareceu não, e quem liderou pode receber
+  /// mais — tudo a partir de presenças confirmadas, e não do que quem
+  /// propõe diz que aconteceu.
+  participation
+
   assisted
+}
+
+/// Estados por que passa um evento.
+///
+/// Não há estado "adiado": adiar é mudar a data de um evento agendado, e
+/// um estado à parte para isso só faria haver duas formas de dizer o
+/// mesmo.
+enum EventStatus {
+  scheduled
+  ongoing
+  completed
+  canceled
+}
+
+/// O que aconteceu a quem se inscreveu num evento.
+///
+/// A inscrição e a presença são coisas distintas: quem se inscreve diz
+/// que tenciona ir, e só quem organiza pode afirmar que foi. Sem essa
+/// distinção, bastava inscrever-se para receber parte dos ganhos.
+enum EventParticipantStatus {
+  signed_up
+  confirmed
+  no_show
+  withdrawn
 }
 
 enum AuthProviderType {
@@ -178,8 +211,9 @@ model User {
   credentials   UserCredential?
   authProviders UserAuthProvider[]
   authSessions  AuthSession[]
-  userRoles     UserRole[]
-  subscriptions Subscription[]
+  userRoles         UserRole[]
+  subscriptions     Subscription[]
+  eventParticipants EventParticipant[]
 }
 
 model Crew {
@@ -216,6 +250,7 @@ model Crew {
 
   userRoles     UserRole[]
   subscriptions Subscription[]
+  events        Event[]
 }
 
 model Server {
@@ -252,6 +287,7 @@ model Server {
 
   userRoles     UserRole[]
   subscriptions Subscription[]
+  events        Event[]
 }
 
 model Membership {
@@ -576,6 +612,13 @@ model Distribution {
   basis  DistributionBasis
   status DistributionStatus @default(pending)
 
+  /// O evento de onde vieram os pesos, nas divisões por participação.
+  ///
+  /// Fica gravado para que se saiba porque é que aquelas pessoas em
+  /// concreto foram pagas: sem isto, uma divisão por participação seria
+  /// indistinguível de uma lista de nomes escolhida à mão.
+  eventId String?
+
   note String?
 
   requested_by String?
@@ -592,13 +635,15 @@ model Distribution {
   created_by String?
   updated_by String?
 
-  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  wallet Wallet  @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  event  Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   lines Transaction[]
 
   @@index([walletId])
   @@index([status])
   @@index([walletId, status])
+  @@index([eventId])
   @@index([created_at(sort: Desc)])
 }
 
@@ -756,4 +801,101 @@ model RolePermission {
   @@unique([roleId, permissionId])
   @@index([roleId])
   @@index([permissionId])
+}
+
+/// Um evento de uma crew ou de um servidor.
+///
+/// Existe para responder a uma pergunta que a tesouraria não sabia
+/// responder sozinha: *quem participou nisto?* Sem eventos, dividir
+/// ganhos só podia ser por igual ou por cargo, e quem apareceu a um
+/// assalto recebia o mesmo que quem não apareceu.
+model Event {
+  id String @id @default(uuid())
+
+  /// Exatamente um destes é preenchido, tal como na carteira. A
+  /// restrição está garantida por um CHECK na base de dados, porque o
+  /// Prisma não a sabe exprimir.
+  crewId   String?
+  serverId String?
+
+  name        String
+  description String?
+
+  status EventStatus @default(scheduled)
+
+  starts_at DateTime
+  ends_at   DateTime?
+
+  /// Quantos podem participar. Sem valor é sem limite.
+  capacity Int?
+
+  /// Quem organiza, e é quem confirma as presenças.
+  organizer_id String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  crew   Crew?   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  participants  EventParticipant[]
+  distributions Distribution[]
+
+  @@index([crewId, status])
+  @@index([serverId, status])
+  @@index([starts_at])
+  @@index([is_deleted])
+}
+
+/// A participação de alguém num evento.
+///
+/// A inscrição e a presença são distintas de propósito: `signed_up` diz
+/// que tenciona ir, `confirmed` que quem organiza afirma que foi. É essa
+/// confirmação, e não a inscrição, que dá direito a parte dos ganhos.
+model EventParticipant {
+  id String @id @default(uuid())
+
+  eventId String
+  userId  String
+
+  status EventParticipantStatus @default(signed_up)
+
+  /// Peso desta participação na divisão dos ganhos.
+  ///
+  /// Existe porque nem toda a participação vale o mesmo: quem lidera um
+  /// assalto costuma levar mais, e obrigar a partes iguais faria as
+  /// comunidades voltarem a dividir fora da plataforma. Quem organiza é
+  /// que o define, ao confirmar a presença.
+  weight Int @default(1)
+
+  /// Quem confirmou a presença, e quando.
+  confirmed_by String?
+  confirmed_at DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Uma pessoa aparece uma vez por evento. Desistir e voltar a
+  /// inscrever-se reaproveita a mesma linha, para que o histórico não
+  /// se multiplique.
+  @@unique([eventId, userId])
+  @@index([eventId, status])
+  @@index([userId])
 }

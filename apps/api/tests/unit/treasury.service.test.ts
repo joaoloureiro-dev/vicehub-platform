@@ -27,6 +27,10 @@ const createRepositoryMock = () => ({
         Promise.resolve(new Map(userIds.map((id) => [id, `wallet-de-${id}`]))),
     ),
     createDistribution: vi.fn().mockResolvedValue({ id: 'dist-1' }),
+    findEventForOwner: vi
+        .fn()
+        .mockResolvedValue({ id: 'event-1', name: 'Assalto', status: 'completed' }),
+    listConfirmedEventParticipants: vi.fn().mockResolvedValue([]),
     findDistributionById: vi.fn(),
     listDistributions: vi.fn().mockResolvedValue([]),
     approveDistribution: vi.fn().mockResolvedValue({ outcome: 'approved' }),
@@ -484,6 +488,151 @@ describe('TreasuryService', () => {
             );
 
             expect(repository.closeMovement).not.toHaveBeenCalled();
+        });
+    });
+
+    /**
+     * A divisão por participação é a razão de ser do módulo de eventos:
+     * quem apareceu recebe, quem não apareceu não, e quem liderou pode
+     * receber mais — a partir de presenças confirmadas por quem organiza,
+     * e não do que quem propõe diz que aconteceu.
+     */
+    describe('propor uma divisão por participação', () => {
+        const porParticipacao = {
+            basis: 'participation' as const,
+            total: 600n,
+            eventId: 'event-1',
+            requestedBy: 'leader-1',
+        };
+
+        it('divide pelo peso das presenças confirmadas', async () => {
+            repository.listConfirmedEventParticipants.mockResolvedValue([
+                { userId: 'user-1', weight: 3 },
+                { userId: 'user-2', weight: 1 },
+                { userId: 'user-3', weight: 1 },
+            ]);
+
+            await service.proposeDistribution({ crewId: 'crew-1' }, porParticipacao);
+
+            const criada = repository.createDistribution.mock.calls[0]?.[0] as {
+                shares: { walletId: string; amount: bigint }[];
+            };
+
+            expect(criada.shares).toEqual([
+                { walletId: 'wallet-de-user-1', amount: 360n },
+                { walletId: 'wallet-de-user-2', amount: 120n },
+                { walletId: 'wallet-de-user-3', amount: 120n },
+            ]);
+        });
+
+        /**
+         * Quem não apareceu não recebe, mesmo sendo membro da crew. É a
+         * diferença entre esta base e a divisão por igual.
+         */
+        it('não paga a membros que não participaram', async () => {
+            repository.listConfirmedEventParticipants.mockResolvedValue([
+                { userId: 'user-1', weight: 1 },
+            ]);
+
+            await service.proposeDistribution({ crewId: 'crew-1' }, porParticipacao);
+
+            const criada = repository.createDistribution.mock.calls[0]?.[0] as {
+                shares: { walletId: string }[];
+            };
+
+            expect(criada.shares).toEqual([
+                { walletId: 'wallet-de-user-1', amount: 600n },
+            ]);
+        });
+
+        /**
+         * Sem esta verificação, quem manda numa crew pagava o dinheiro
+         * dela aos participantes do evento de outra, bastando-lhe saber
+         * o eventId de lá.
+         */
+        it('recusa um evento que não é desta tesouraria', async () => {
+            repository.findEventForOwner.mockResolvedValue(null);
+
+            await expectTreasuryError(
+                service.proposeDistribution({ crewId: 'crew-1' }, porParticipacao),
+                'EVENT_NOT_IN_THIS_TREASURY',
+            );
+
+            expect(repository.createDistribution).not.toHaveBeenCalled();
+        });
+
+        it('procura o evento pelo titular da carteira', async () => {
+            repository.listConfirmedEventParticipants.mockResolvedValue([
+                { userId: 'user-1', weight: 1 },
+            ]);
+
+            await service.proposeDistribution({ crewId: 'crew-1' }, porParticipacao);
+
+            expect(repository.findEventForOwner).toHaveBeenCalledWith(
+                { crewId: 'crew-1' },
+                'event-1',
+            );
+        });
+
+        /**
+         * Um evento sem presenças confirmadas e um evento de outra crew
+         * dariam ambos uma lista vazia. São problemas diferentes e têm
+         * códigos diferentes.
+         */
+        it('distingue um evento sem presenças de um evento alheio', async () => {
+            await expectTreasuryError(
+                service.proposeDistribution({ crewId: 'crew-1' }, porParticipacao),
+                'NO_CONFIRMED_PARTICIPANTS',
+            );
+        });
+
+        it('grava o evento na divisão', async () => {
+            repository.listConfirmedEventParticipants.mockResolvedValue([
+                { userId: 'user-1', weight: 1 },
+            ]);
+
+            await service.proposeDistribution({ crewId: 'crew-1' }, porParticipacao);
+
+            expect(repository.createDistribution).toHaveBeenCalledWith(
+                expect.objectContaining({ basis: 'participation', eventId: 'event-1' }),
+            );
+        });
+
+        /**
+         * O evento só é lido nesta base. Nas outras, uma consulta a mais
+         * por divisão não serviria para nada.
+         */
+        it('não lê eventos nas outras bases', async () => {
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                { basis: 'equal', total: 900n, requestedBy: 'leader-1' },
+            );
+
+            expect(repository.findEventForOwner).not.toHaveBeenCalled();
+            expect(
+                repository.listConfirmedEventParticipants,
+            ).not.toHaveBeenCalled();
+        });
+
+        it('as partes somam sempre o total, mesmo com restos', async () => {
+            repository.listConfirmedEventParticipants.mockResolvedValue([
+                { userId: 'user-1', weight: 3 },
+                { userId: 'user-2', weight: 2 },
+                { userId: 'user-3', weight: 1 },
+            ]);
+
+            await service.proposeDistribution(
+                { crewId: 'crew-1' },
+                { ...porParticipacao, total: 100n },
+            );
+
+            const criada = repository.createDistribution.mock.calls[0]?.[0] as {
+                shares: { amount: bigint }[];
+            };
+
+            expect(
+                criada.shares.reduce((soma, share) => soma + share.amount, 0n),
+            ).toBe(100n);
         });
     });
 

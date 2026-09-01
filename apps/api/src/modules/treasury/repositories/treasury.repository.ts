@@ -3,6 +3,7 @@ import {
     MembershipType,
     DistributionBasis,
     DistributionStatus,
+    EventParticipantStatus,
     SourceType,
     TransactionCategory,
     TransactionDirection,
@@ -313,10 +314,62 @@ export class TreasuryRepository {
      * As linhas nascem todas pendentes: propor uma divisão não move
      * dinheiro nenhum, tal como propor um movimento.
      */
+    /**
+     * Procura um evento **desta** tesouraria.
+     *
+     * Existe para separar dois casos que de outra forma se confundiriam:
+     * um evento que não é desta crew e um evento sem presenças
+     * confirmadas. Ambos dariam uma lista vazia, e são problemas
+     * diferentes para quem propõe a divisão.
+     */
+    findEventForOwner(owner: WalletOwner, eventId: string) {
+        return this.database.event.findFirst({
+            where: {
+                id: eventId,
+                is_deleted: false,
+                crewId: owner.crewId ?? null,
+                serverId: owner.serverId ?? null,
+            },
+            select: { id: true, name: true, status: true },
+        });
+    }
+
+    /**
+     * Quem teve presença confirmada num evento desta tesouraria, e com
+     * que peso.
+     *
+     * O evento é procurado **pelo titular da carteira**, e não apenas
+     * pelo identificador: sem isso, quem manda numa crew pagava o
+     * dinheiro dela aos participantes do evento de outra, bastando-lhe
+     * saber o eventId de lá.
+     *
+     * A ordem é a da inscrição, e é estável: é ela que desempata os
+     * restos da divisão, e sem ordem fixa a mesma divisão dava contas
+     * diferentes de cada vez.
+     */
+    listConfirmedEventParticipants(owner: WalletOwner, eventId: string) {
+        return this.database.eventParticipant.findMany({
+            where: {
+                eventId,
+                is_deleted: false,
+                status: EventParticipantStatus.confirmed,
+                event: {
+                    id: eventId,
+                    is_deleted: false,
+                    crewId: owner.crewId ?? null,
+                    serverId: owner.serverId ?? null,
+                },
+            },
+            orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+            select: { userId: true, weight: true },
+        });
+    }
+
     createDistribution(input: {
         walletId: string;
         total: bigint;
         basis: DistributionBasis;
+        eventId?: string | undefined;
         note?: string | undefined;
         requestedBy: string;
         shares: { walletId: string; amount: bigint }[];
@@ -328,6 +381,7 @@ export class TreasuryRepository {
                     total: input.total,
                     basis: input.basis,
                     status: DistributionStatus.pending,
+                    eventId: input.eventId ?? null,
                     note: input.note ?? null,
                     requested_by: input.requestedBy,
                     source: SourceType.api,
