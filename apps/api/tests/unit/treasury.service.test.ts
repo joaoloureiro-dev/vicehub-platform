@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TreasuryError } from '../../src/modules/treasury/errors/treasury.errors.js';
+import { InsufficientFundsSignal } from '../../src/modules/treasury/repositories/treasury.repository.js';
 import { TreasuryService } from '../../src/modules/treasury/services/treasury.service.js';
 import type { TreasuryRepository } from '../../src/modules/treasury/repositories/treasury.repository.js';
 
@@ -12,6 +13,20 @@ const createRepositoryMock = () => ({
     sumByDirection: vi.fn().mockResolvedValue([]),
     listMovements: vi.fn().mockResolvedValue([]),
     recomputeSettledBalance: vi.fn().mockResolvedValue(0n),
+    findMovementById: vi.fn(),
+    createMovement: vi.fn().mockResolvedValue({ id: 'mov-1' }),
+    approveMovement: vi.fn().mockResolvedValue({ outcome: 'approved' }),
+    closeMovement: vi.fn().mockResolvedValue({ count: 1 }),
+});
+
+const pendingMovement = (overrides: Record<string, unknown> = {}) => ({
+    id: 'mov-1',
+    walletId: 'wallet-1',
+    amount: 500n,
+    direction: 'debit',
+    status: 'pending',
+    requested_by: 'officer-1',
+    ...overrides,
 });
 
 describe('TreasuryService', () => {
@@ -238,6 +253,209 @@ describe('TreasuryService', () => {
                 decidedAt: new Date('2026-03-02T00:00:00.000Z'),
                 createdAt: new Date('2026-03-01T00:00:00.000Z'),
             });
+        });
+    });
+
+    const expectTreasuryError = async (promise: Promise<unknown>, code: string) => {
+        const error = await promise.catch((caught: unknown) => caught);
+
+        expect(error).toBeInstanceOf(TreasuryError);
+        expect((error as TreasuryError).code).toBe(code);
+    };
+
+    describe('propor um movimento', () => {
+        it('nasce pendente na carteira do titular', async () => {
+            await service.proposeMovement(
+                { crewId: 'crew-1' },
+                {
+                    amount: 1_500n,
+                    direction: 'debit',
+                    category: 'server_costs',
+                    description: 'Servidor de outubro',
+                    requestedBy: 'officer-1',
+                },
+            );
+
+            expect(repository.createMovement).toHaveBeenCalledWith({
+                walletId: 'wallet-1',
+                amount: 1_500n,
+                direction: 'debit',
+                category: 'server_costs',
+                description: 'Servidor de outubro',
+                requestedBy: 'officer-1',
+            });
+        });
+
+        /**
+         * Propor não é mover. Se propor mexesse no saldo, a aprovação
+         * chegaria tarde de mais para servir de alguma coisa.
+         */
+        it('propor não mexe no saldo', async () => {
+            await service.proposeMovement(
+                { crewId: 'crew-1' },
+                {
+                    amount: 1_500n,
+                    direction: 'debit',
+                    category: 'other',
+                    description: 'seja o que for',
+                    requestedBy: 'officer-1',
+                },
+            );
+
+            expect(repository.approveMovement).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('confusão de âmbito', () => {
+        /**
+         * O guard de permissões só olha para o parâmetro da rota. Se o
+         * serviço não confirmasse que o movimento pertence a esta
+         * tesouraria, quem manda na crew A aprovaria movimentos da crew B
+         * pondo o identificador da sua no caminho.
+         */
+        it('recusa decidir um movimento de outra tesouraria', async () => {
+            repository.findWalletByOwner.mockResolvedValue(wallet(0n));
+            repository.findMovementById.mockResolvedValue(
+                pendingMovement({ walletId: 'wallet-de-outra-crew' }),
+            );
+
+            await expectTreasuryError(
+                service.approveMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1'),
+                'MOVEMENT_NOT_FOUND',
+            );
+
+            expect(repository.approveMovement).not.toHaveBeenCalled();
+        });
+
+        it('recusa um movimento que não existe', async () => {
+            repository.findMovementById.mockResolvedValue(null);
+
+            await expectTreasuryError(
+                service.approveMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1'),
+                'MOVEMENT_NOT_FOUND',
+            );
+        });
+    });
+
+    describe('aprovar', () => {
+        beforeEach(() => {
+            repository.findMovementById.mockResolvedValue(pendingMovement());
+        });
+
+        it('move o dinheiro com o sentido e o montante do movimento', async () => {
+            await service.approveMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1');
+
+            expect(repository.approveMovement).toHaveBeenCalledWith({
+                movementId: 'mov-1',
+                walletId: 'wallet-1',
+                amount: 500n,
+                direction: 'debit',
+                approvedBy: 'leader-1',
+            });
+        });
+
+        /**
+         * Duas aprovações simultâneas do mesmo movimento: a segunda
+         * encontra-o já decidido e não pode fazer o dinheiro sair outra
+         * vez.
+         */
+        it('recusa quando outra aprovação chegou primeiro', async () => {
+            repository.approveMovement.mockResolvedValue({ outcome: 'not_pending' });
+
+            await expectTreasuryError(
+                service.approveMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1'),
+                'MOVEMENT_NOT_PENDING',
+            );
+        });
+
+        it('recusa quando a tesouraria não tem saldo', async () => {
+            repository.approveMovement.mockRejectedValue(new InsufficientFundsSignal());
+
+            await expectTreasuryError(
+                service.approveMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1'),
+                'INSUFFICIENT_FUNDS',
+            );
+        });
+
+        it('não engole erros que não sejam falta de saldo', async () => {
+            repository.approveMovement.mockRejectedValue(new Error('a base caiu'));
+
+            const error = await service
+                .approveMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1')
+                .catch((caught: unknown) => caught);
+
+            expect(error).toBeInstanceOf(Error);
+            expect(error).not.toBeInstanceOf(TreasuryError);
+        });
+
+        it('recusa aprovar um movimento já decidido', async () => {
+            repository.findMovementById.mockResolvedValue(
+                pendingMovement({ status: 'approved' }),
+            );
+
+            await expectTreasuryError(
+                service.approveMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1'),
+                'MOVEMENT_NOT_PENDING',
+            );
+
+            expect(repository.approveMovement).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('recusar', () => {
+        beforeEach(() => {
+            repository.findMovementById.mockResolvedValue(pendingMovement());
+        });
+
+        it('encerra o movimento sem mexer no saldo', async () => {
+            await service.rejectMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1');
+
+            expect(repository.closeMovement).toHaveBeenCalledWith({
+                movementId: 'mov-1',
+                status: 'rejected',
+                decidedBy: 'leader-1',
+            });
+            expect(repository.approveMovement).not.toHaveBeenCalled();
+        });
+
+        it('recusa quando o movimento deixou de estar pendente entretanto', async () => {
+            repository.closeMovement.mockResolvedValue({ count: 0 });
+
+            await expectTreasuryError(
+                service.rejectMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1'),
+                'MOVEMENT_NOT_PENDING',
+            );
+        });
+    });
+
+    describe('retirar a própria proposta', () => {
+        beforeEach(() => {
+            repository.findMovementById.mockResolvedValue(pendingMovement());
+        });
+
+        it('quem propôs pode retirar', async () => {
+            await service.cancelMovement({ crewId: 'crew-1' }, 'mov-1', 'officer-1');
+
+            expect(repository.closeMovement).toHaveBeenCalledWith({
+                movementId: 'mov-1',
+                status: 'canceled',
+                decidedBy: 'officer-1',
+            });
+        });
+
+        /**
+         * Cancelar a proposta de outra pessoa é uma decisão, e decisões
+         * passam por recusar — que fica registada com quem a tomou.
+         * Deixar cancelar seria uma forma de travar despesas sem deixar
+         * rasto de quem as travou.
+         */
+        it('mais ninguém pode retirar a proposta de outro', async () => {
+            await expectTreasuryError(
+                service.cancelMovement({ crewId: 'crew-1' }, 'mov-1', 'leader-1'),
+                'NOT_THE_PROPOSER',
+            );
+
+            expect(repository.closeMovement).not.toHaveBeenCalled();
         });
     });
 });

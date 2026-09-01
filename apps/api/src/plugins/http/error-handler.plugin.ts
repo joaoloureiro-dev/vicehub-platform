@@ -86,6 +86,18 @@ const treasuryErrorStatusCodes: Record<TreasuryErrorCode, number> = {
     WALLET_NOT_FOUND: 404,
     /** Titular inválido é erro de programação, não do cliente. */
     INVALID_WALLET_OWNER: 500,
+    MOVEMENT_NOT_FOUND: 404,
+    MOVEMENT_NOT_PENDING: 409,
+    /**
+     * 409 e não 402: o pedido é legítimo e quem o faz tem autorização,
+     * apenas a tesouraria não tem o dinheiro neste momento.
+     */
+    INSUFFICIENT_FUNDS: 409,
+    /**
+     * 403 e não 404: quem cancela sem ser o proponente está identificado
+     * e o movimento existe; falta-lhe é legitimidade sobre ele.
+     */
+    NOT_THE_PROPOSER: 403,
 };
 
 const httpErrorNames: Record<number, string> = {

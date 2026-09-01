@@ -51,6 +51,14 @@ describe('ligação das rotas de tesouraria', () => {
             getMine: vi.fn(),
             getCrew: vi.fn(),
             getServer: vi.fn(),
+            proposeCrewMovement: vi.fn(),
+            proposeServerMovement: vi.fn(),
+            approveCrewMovement: vi.fn(),
+            approveServerMovement: vi.fn(),
+            rejectCrewMovement: vi.fn(),
+            rejectServerMovement: vi.fn(),
+            cancelCrewMovement: vi.fn(),
+            cancelServerMovement: vi.fn(),
         } as unknown as TreasuryController;
 
         await app.register(treasuryRoutes, { controller });
@@ -118,5 +126,76 @@ describe('ligação das rotas de tesouraria', () => {
                 expect(registered.get(key)?.schema?.querystring).toBeDefined();
             },
         );
+    });
+
+    describe('propor movimentos', () => {
+        it.each([
+            'POST /crews/:crewId/movements',
+            'POST /servers/:serverId/movements',
+        ])('%s exige treasury:transfer', (key) => {
+            expect(permissoesPorRota.get(key)).toEqual(['treasury:transfer']);
+        });
+
+        /**
+         * Propor não pode exigir a permissão de aprovar: seria dar a
+         * quem propõe o poder de decidir, e a aprovação deixaria de ser
+         * um controlo.
+         */
+        it.each([
+            'POST /crews/:crewId/movements',
+            'POST /servers/:serverId/movements',
+        ])('%s não exige treasury:approve', (key) => {
+            expect(permissoesPorRota.get(key)).not.toContain('treasury:approve');
+        });
+
+        it.each([
+            'POST /crews/:crewId/movements',
+            'POST /servers/:serverId/movements',
+        ])('%s valida o corpo', (key) => {
+            expect(registered.get(key)?.schema?.body).toBeDefined();
+        });
+    });
+
+    describe('decidir movimentos', () => {
+        it.each([
+            'POST /crews/:crewId/movements/:movementId/approve',
+            'POST /crews/:crewId/movements/:movementId/reject',
+            'POST /servers/:serverId/movements/:movementId/approve',
+            'POST /servers/:serverId/movements/:movementId/reject',
+        ])('%s exige treasury:approve', (key) => {
+            expect(permissoesPorRota.get(key)).toEqual(['treasury:approve']);
+        });
+
+        /**
+         * O guard tira o âmbito do parâmetro da rota. Uma rota de decisão
+         * sem crewId ou serverId no caminho seria avaliada sem âmbito
+         * nenhum, e um cargo de tesouraria noutra crew passaria a servir.
+         */
+        it.each([
+            ['POST /crews/:crewId/movements/:movementId/approve', ':crewId'],
+            ['POST /servers/:serverId/movements/:movementId/approve', ':serverId'],
+        ])('%s carrega o âmbito no caminho', (key, parametro) => {
+            expect(key).toContain(parametro);
+        });
+
+        it.each([
+            'POST /crews/:crewId/movements/:movementId/approve',
+            'POST /servers/:serverId/movements/:movementId/reject',
+        ])('%s valida os parâmetros', (key) => {
+            expect(registered.get(key)?.schema?.params).toBeDefined();
+        });
+    });
+
+    describe('retirar a própria proposta', () => {
+        /**
+         * Retirar a sua proposta não é decidir: quem propõe pode
+         * arrepender-se sem precisar do poder de aprovar.
+         */
+        it.each([
+            'DELETE /crews/:crewId/movements/:movementId',
+            'DELETE /servers/:serverId/movements/:movementId',
+        ])('%s basta-se com treasury:transfer', (key) => {
+            expect(permissoesPorRota.get(key)).toEqual(['treasury:transfer']);
+        });
     });
 });

@@ -1,6 +1,8 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
+import { AuditRepository } from '../audit/repositories/audit.repository.js';
+import { AuditService } from '../audit/services/audit.service.js';
 import { TreasuryController } from './controllers/treasury.controller.js';
 import { TreasuryRepository } from './repositories/treasury.repository.js';
 import { TreasuryService } from './services/treasury.service.js';
@@ -16,7 +18,10 @@ const treasuryModule: FastifyPluginAsync = async (fastify) => {
 
     await fastify.register(treasuryRoutes, {
         prefix: '/api/v1/treasury',
-        controller: new TreasuryController(treasuryService),
+        controller: new TreasuryController(
+            treasuryService,
+            new AuditService(new AuditRepository(fastify.prisma)),
+        ),
     });
 };
 
