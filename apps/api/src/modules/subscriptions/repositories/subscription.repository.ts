@@ -1,6 +1,7 @@
 import {
     ENTITLING_SUBSCRIPTION_STATUSES,
     SourceType,
+    entitlingSubscriptionFilter,
     SubscriptionPlan,
     SubscriptionProvider,
     SubscriptionStatus,
@@ -29,16 +30,16 @@ export class SubscriptionRepository {
         return this.database.subscription.findFirst({
             where: {
                 ...this.ownerFilter(owner),
-                is_deleted: false,
-                status: {
-                    in: [...ENTITLING_SUBSCRIPTION_STATUSES],
-                },
-                current_period_end: {
-                    gt: new Date(),
-                },
+                ...entitlingSubscriptionFilter(),
             },
+            /**
+             * Sem fim primeiro: uma subscrição vitalícia ganha a
+             * qualquer período com data, por mais longe que ele esteja.
+             * A ordenação dos nulos é declarada em vez de herdada do
+             * comportamento por omissão da base de dados.
+             */
             orderBy: {
-                current_period_end: 'desc',
+                current_period_end: { sort: 'desc', nulls: 'first' },
             },
         });
     }
@@ -54,13 +55,7 @@ export class SubscriptionRepository {
         return this.database.subscription.findMany({
             where: {
                 ...(kind === 'crew' ? { crewId: { in: ids } } : { serverId: { in: ids } }),
-                is_deleted: false,
-                status: {
-                    in: [...ENTITLING_SUBSCRIPTION_STATUSES],
-                },
-                current_period_end: {
-                    gt: new Date(),
-                },
+                ...entitlingSubscriptionFilter(),
             },
             select: { crewId: true, serverId: true },
         });
@@ -112,16 +107,12 @@ export class SubscriptionRepository {
         return this.database.subscription.findFirst({
             where: {
                 ...this.ownerFilter(owner),
-                is_deleted: false,
-                status: {
-                    in: [...ENTITLING_SUBSCRIPTION_STATUSES],
-                },
-                current_period_end: {
-                    gt: new Date(),
-                },
+                ...entitlingSubscriptionFilter(),
             },
-            orderBy: { current_period_end: 'desc' },
-            select: { current_period_end: true },
+            orderBy: {
+                current_period_end: { sort: 'desc', nulls: 'first' },
+            },
+            select: { current_period_end: true, plan: true },
         });
     }
 
@@ -137,7 +128,8 @@ export class SubscriptionRepository {
         priceCents: number;
         currency: string;
         periodStart: Date;
-        periodEnd: Date;
+        /** Ausente no plano vitalício, que não termina. */
+        periodEnd: Date | null;
         grantedBy: string;
     }) {
         return this.database.subscription.create({
@@ -177,6 +169,28 @@ export class SubscriptionRepository {
                 cancel_at_period_end: true,
                 canceled_at: new Date(),
                 updated_by: canceledBy,
+                version: { increment: 1 },
+            },
+        });
+    }
+
+    /**
+     * Termina uma subscrição já.
+     *
+     * O registo não é apagado: passa a um estado que não dá acesso e
+     * fica com a data em que terminou, para que o histórico continue a
+     * dizer que existiu e até quando.
+     */
+    endNow(subscriptionId: string, revokedBy: string) {
+        const agora = new Date();
+
+        return this.database.subscription.update({
+            where: { id: subscriptionId },
+            data: {
+                status: SubscriptionStatus.canceled,
+                canceled_at: agora,
+                ended_at: agora,
+                updated_by: revokedBy,
                 version: { increment: 1 },
             },
         });

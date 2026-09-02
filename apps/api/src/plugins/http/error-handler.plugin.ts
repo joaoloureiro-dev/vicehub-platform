@@ -63,6 +63,15 @@ const subscriptionErrorStatusCodes: Record<SubscriptionErrorCode, number> = {
     SUBSCRIPTION_OWNER_NOT_FOUND: 404,
     SUBSCRIPTION_NOT_FOUND: 404,
     SUBSCRIPTION_ALREADY_CANCELED: 409,
+    SUBSCRIPTION_ALREADY_ENDED: 409,
+    /**
+     * 400 e não 409: pedir duração para um plano que não termina é um
+     * pedido mal formado, e não um conflito com o estado atual.
+     */
+    LIFETIME_HAS_NO_DURATION: 400,
+    /** O titular já tem o que se estava a tentar dar-lhe. */
+    ALREADY_LIFETIME: 409,
+    LIFETIME_CANNOT_BE_CANCELED: 409,
 };
 
 const crewErrorStatusCodes: Record<CrewErrorCode, number> = {

@@ -13,11 +13,22 @@ describe('SubscriptionService', () => {
         findLatestPeriodEnd: ReturnType<typeof vi.fn>;
         createPeriod: ReturnType<typeof vi.fn>;
         findById: ReturnType<typeof vi.fn>;
+        endNow: ReturnType<typeof vi.fn>;
         markToCancelAtPeriodEnd: ReturnType<typeof vi.fn>;
     };
     let service: SubscriptionService;
 
     const periodEnd = new Date('2026-12-31T00:00:00.000Z');
+
+    const expectSubscriptionError = async (
+        promise: Promise<unknown>,
+        code: string,
+    ) => {
+        const error = await promise.catch((caught: unknown) => caught);
+
+        expect(error).toBeInstanceOf(SubscriptionError);
+        expect((error as SubscriptionError).code).toBe(code);
+    };
 
     beforeEach(() => {
         repository = {
@@ -28,18 +39,152 @@ describe('SubscriptionService', () => {
             createPeriod: vi.fn().mockResolvedValue({ id: 'sub-1' }),
             findById: vi.fn().mockResolvedValue({
                 id: 'sub-1',
+                plan: 'premium',
                 cancel_at_period_end: false,
+                ended_at: null,
             }),
             markToCancelAtPeriodEnd: vi.fn().mockResolvedValue({ id: 'sub-1' }),
+            endNow: vi.fn().mockResolvedValue({ id: 'sub-1' }),
         };
         service = new SubscriptionService(
             repository as unknown as SubscriptionRepository,
         );
     });
 
+    /**
+     * A subscrição vitalícia é o gesto que se faz a quem apoiou a
+     * plataforma no princípio: acesso premium que não termina e nunca é
+     * cobrado. É concedida um a um por quem administra, e por isso o que
+     * mais importa aqui é que não se conceda por engano nem se perca por
+     * engano.
+     */
+    describe('subscrição vitalícia', () => {
+        const vitalicia = {
+            ownerKind: 'user' as const,
+            ownerId: '11111111-1111-4111-8111-111111111111',
+            plan: 'lifetime' as const,
+            grantedBy: 'admin-1',
+        };
+
+        it('grava-a sem fim de período', async () => {
+            await service.grant(vitalicia);
+
+            expect(repository.createPeriod).toHaveBeenCalledWith(
+                expect.objectContaining({ plan: 'lifetime', periodEnd: null }),
+            );
+        });
+
+        /**
+         * Um preço qualquer aqui faria uma soma de receita contar
+         * dinheiro que nunca entrou.
+         */
+        it('grava-a a custo zero', async () => {
+            await service.grant(vitalicia);
+
+            expect(repository.createPeriod).toHaveBeenCalledWith(
+                expect.objectContaining({ priceCents: 0 }),
+            );
+        });
+
+        /**
+         * Não tendo período, não se encadeia: perguntar pelo período
+         * anterior seria uma consulta sem propósito.
+         */
+        it('não procura períodos anteriores para encadear', async () => {
+            await service.grant(vitalicia);
+
+            expect(repository.findLatestPeriodEnd).not.toHaveBeenCalled();
+        });
+
+        it('recusa uma duração para um plano que não termina', async () => {
+            await expectSubscriptionError(
+                service.grant({ ...vitalicia, months: 12 }),
+                'LIFETIME_HAS_NO_DURATION',
+            );
+
+            expect(repository.createPeriod).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Conceder tempo a quem já é vitalício deixaria no histórico um
+         * período que nunca chega a dar acesso, e quem concedeu ficava a
+         * achar que tinha feito alguma coisa.
+         */
+        it('recusa estender quem já tem acesso vitalício', async () => {
+            repository.findLatestPeriodEnd.mockResolvedValue({
+                plan: 'lifetime',
+                current_period_end: null,
+            });
+
+            await expectSubscriptionError(
+                service.grant({ ...vitalicia, plan: 'premium' }),
+                'ALREADY_LIFETIME',
+            );
+
+            expect(repository.createPeriod).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Marcar para não renovar não faz nada a um plano que não
+         * renova: ficava a marca e o acesso continuava, dando a quem
+         * cancelou a ideia errada de que o tinha terminado.
+         */
+        it('não se cancela no fim do período, porque não há fim', async () => {
+            repository.findById.mockResolvedValue({
+                id: 'sub-1',
+                plan: 'lifetime',
+                cancel_at_period_end: false,
+                ended_at: null,
+            });
+
+            await expectSubscriptionError(
+                service.cancelAtPeriodEnd('sub-1', 'admin-1'),
+                'LIFETIME_CANNOT_BE_CANCELED',
+            );
+
+            expect(repository.markToCancelAtPeriodEnd).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Sem revogação, um acesso oferecido por engano — ou a quem
+         * depois abusa da plataforma — não teria como ser retirado.
+         */
+        it('retira-se com a revogação', async () => {
+            await service.revoke('sub-1', 'admin-1');
+
+            expect(repository.endNow).toHaveBeenCalledWith('sub-1', 'admin-1');
+        });
+
+        it('não se revoga duas vezes', async () => {
+            repository.findById.mockResolvedValue({
+                id: 'sub-1',
+                plan: 'lifetime',
+                cancel_at_period_end: false,
+                ended_at: new Date('2026-09-01T00:00:00.000Z'),
+            });
+
+            await expectSubscriptionError(
+                service.revoke('sub-1', 'admin-1'),
+                'SUBSCRIPTION_ALREADY_ENDED',
+            );
+
+            expect(repository.endNow).not.toHaveBeenCalled();
+        });
+
+        it('não se revoga o que não existe', async () => {
+            repository.findById.mockResolvedValue(null);
+
+            await expectSubscriptionError(
+                service.revoke('sub-1', 'admin-1'),
+                'SUBSCRIPTION_NOT_FOUND',
+            );
+        });
+    });
+
     describe('apuramento do direito de acesso', () => {
         it('é premium quando existe subscrição a dar acesso', async () => {
             repository.findEntitlingSubscription.mockResolvedValue({
+                plan: 'premium',
                 status: SubscriptionStatus.active,
                 current_period_end: periodEnd,
             });
@@ -47,8 +192,37 @@ describe('SubscriptionService', () => {
             await expect(service.getEntitlement({ userId: 'user-1' })).resolves.toEqual({
                 owner: { userId: 'user-1' },
                 isPremium: true,
+                isLifetime: false,
                 activeUntil: periodEnd,
             });
+        });
+
+        /**
+         * `activeUntil: null` é ambíguo sozinho: é o que se vê tanto em
+         * quem não tem plano como em quem tem um vitalício. Sem o
+         * isLifetime, quem consome teria de deduzir a diferença.
+         */
+        it('distingue um vitalício de quem não tem plano nenhum', async () => {
+            repository.findEntitlingSubscription.mockResolvedValue({
+                plan: 'lifetime',
+                status: SubscriptionStatus.active,
+                current_period_end: null,
+            });
+
+            await expect(service.getEntitlement({ userId: 'user-1' })).resolves.toEqual({
+                owner: { userId: 'user-1' },
+                isPremium: true,
+                isLifetime: true,
+                activeUntil: null,
+            });
+        });
+
+        it('quem não tem plano não é vitalício', async () => {
+            const entitlement = await service.getEntitlement({ userId: 'user-1' });
+
+            expect(entitlement.isPremium).toBe(false);
+            expect(entitlement.isLifetime).toBe(false);
+            expect(entitlement.activeUntil).toBeNull();
         });
 
         it('não é premium quando não existe nenhuma', async () => {
@@ -116,7 +290,24 @@ describe('SubscriptionService', () => {
                 service.assertPremium({
                     owner: { userId: 'user-1' },
                     isPremium: true,
+                    isLifetime: false,
                     activeUntil: periodEnd,
+                }),
+            ).not.toThrow();
+        });
+
+        /**
+         * O vitalício é acesso premium como qualquer outro: se não
+         * passasse aqui, quem apoiou a plataforma no princípio ficava
+         * sem as funcionalidades que lhe foram prometidas.
+         */
+        it('deixa passar quem tem acesso vitalício', () => {
+            expect(() =>
+                service.assertPremium({
+                    owner: { userId: 'user-1' },
+                    isPremium: true,
+                    isLifetime: true,
+                    activeUntil: null,
                 }),
             ).not.toThrow();
         });
@@ -126,6 +317,7 @@ describe('SubscriptionService', () => {
                 service.assertPremium({
                     owner: { userId: 'user-1' },
                     isPremium: false,
+                    isLifetime: false,
                     activeUntil: null,
                 });
                 expect.unreachable('devia ter lançado');
@@ -147,16 +339,6 @@ describe('SubscriptionService', () => {
     });
 
     describe('concessão de um período', () => {
-        const expectSubscriptionError = async (
-            promise: Promise<unknown>,
-            code: string,
-        ) => {
-            const error = await promise.catch((caught: unknown) => caught);
-
-            expect(error).toBeInstanceOf(SubscriptionError);
-            expect((error as SubscriptionError).code).toBe(code);
-        };
-
         it('recusa conceder a um titular que não existe', async () => {
             repository.ownerExists.mockResolvedValue(false);
 
@@ -292,16 +474,6 @@ describe('SubscriptionService', () => {
     });
 
     describe('cancelamento', () => {
-        const expectSubscriptionError = async (
-            promise: Promise<unknown>,
-            code: string,
-        ) => {
-            const error = await promise.catch((caught: unknown) => caught);
-
-            expect(error).toBeInstanceOf(SubscriptionError);
-            expect((error as SubscriptionError).code).toBe(code);
-        };
-
         it('marca para não renovar no fim do período', async () => {
             await service.cancelAtPeriodEnd('sub-1', 'admin-1');
 

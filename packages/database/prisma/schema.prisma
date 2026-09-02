@@ -156,6 +156,13 @@ enum PermissionScope {
 
 enum SubscriptionPlan {
   premium
+
+  /// Acesso premium que não termina nem se cobra.
+  ///
+  /// Existe para quem apoiou a plataforma no princípio. É concedido um a
+  /// um por quem administra — nunca automaticamente por ordem de
+  /// chegada, porque quem merece o gesto é uma decisão de pessoas.
+  lifetime
 }
 
 enum SubscriptionStatus {
@@ -561,7 +568,14 @@ model Subscription {
   currency    String @default("USD")
 
   current_period_start DateTime
-  current_period_end   DateTime
+
+  /// Fim do período. **Ausente quer dizer que não termina**, o que só é
+  /// válido no plano vitalício.
+  ///
+  /// A ausência é a forma honesta de dizer "nunca acaba". Uma data muito
+  /// distante, como o ano 9999, parece resolver e depois morde: aparece
+  /// em ecrãs, entra em contas de dias restantes e ordena mal.
+  current_period_end   DateTime?
 
   cancel_at_period_end Boolean   @default(false)
   canceled_at          DateTime?

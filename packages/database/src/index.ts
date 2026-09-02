@@ -55,6 +55,8 @@ export {
     PLANS,
     PLAN_KEYS,
     addPlanInterval,
+    entitlingSubscriptionFilter,
+    isPerpetualPlan,
 } from './plans.js';
 
 export type { PlanDefinition, PlanKey } from './plans.js';

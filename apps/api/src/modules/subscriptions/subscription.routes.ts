@@ -56,6 +56,22 @@ const subscriptionRoutes: FastifyPluginAsync<SubscriptionRoutesOptions> = async 
     );
 
     /**
+     * Retirar uma subscrição com efeito imediato.
+     *
+     * Existe sobretudo por causa do vitalício: não tendo período que
+     * acabe, o cancelamento no fim do período não lhe faz nada, e um
+     * acesso oferecido por engano ficaria sem forma de ser retirado.
+     */
+    fastify.post<{ Params: SubscriptionIdParamDto }>(
+        '/:subscriptionId/revoke',
+        {
+            preHandler: [fastify.authenticate, fastify.authorize('system:manage')],
+            schema: { params: subscriptionIdParamSchema },
+        },
+        controller.revoke.bind(controller),
+    );
+
+    /**
      * O próprio vê sempre o seu plano, sem precisar de permissão nenhuma.
      */
     fastify.get(

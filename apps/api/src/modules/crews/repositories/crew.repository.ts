@@ -1,5 +1,5 @@
 import {
-    ENTITLING_SUBSCRIPTION_STATUSES,
+    entitlingSubscriptionFilter,
     MembershipStatus,
     MembershipType,
     SourceType,
@@ -153,11 +153,7 @@ export class CrewRepository {
             where: {
                 is_deleted: false,
                 subscriptions: {
-                    some: {
-                        is_deleted: false,
-                        status: { in: [...ENTITLING_SUBSCRIPTION_STATUSES] },
-                        current_period_end: { gt: new Date() },
-                    },
+                    some: entitlingSubscriptionFilter(),
                 },
             },
             orderBy: { id: 'asc' },
