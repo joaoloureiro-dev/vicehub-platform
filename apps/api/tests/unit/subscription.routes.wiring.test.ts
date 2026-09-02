@@ -51,6 +51,7 @@ describe('ligação das rotas de subscrição', () => {
         const controller = {
             grant: vi.fn(),
             cancel: vi.fn(),
+            revoke: vi.fn(),
             getMine: vi.fn(),
             getCrew: vi.fn(),
             getServer: vi.fn(),
@@ -75,13 +76,19 @@ describe('ligação das rotas de subscrição', () => {
         return Array.isArray(preHandler) ? preHandler.length : 1;
     };
 
-    describe('conceder e cancelar', () => {
-        it.each(['POST /grant', 'POST /:subscriptionId/cancel'])(
-            '%s exige system:manage',
-            (key) => {
-                expect(permissoesPorRota.get(key)).toEqual(['system:manage']);
-            },
-        );
+    describe('conceder, cancelar e revogar', () => {
+        /**
+         * Dar e tirar acesso pago são atos de administração. Em
+         * particular, revogar tem de exigir o mesmo que conceder: seria
+         * absurdo que retirar um vitalício fosse mais fácil do que dá-lo.
+         */
+        it.each([
+            'POST /grant',
+            'POST /:subscriptionId/cancel',
+            'POST /:subscriptionId/revoke',
+        ])('%s exige system:manage', (key) => {
+            expect(permissoesPorRota.get(key)).toEqual(['system:manage']);
+        });
 
         /**
          * Nenhuma rota de subscrição pode estar aberta: a mais barata
@@ -136,6 +143,7 @@ describe('ligação das rotas de subscrição', () => {
         });
 
         it.each([
+            'POST /:subscriptionId/revoke',
             'POST /:subscriptionId/cancel',
             'GET /crews/:crewId',
             'GET /servers/:serverId',

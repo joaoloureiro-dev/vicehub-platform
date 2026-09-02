@@ -14,10 +14,42 @@ import { describe, expect, it } from 'vitest';
  * a menos, sem ninguém dar por isso.
  */
 describe('catálogo de planos', () => {
-    it('o preço está em cêntimos e é positivo', () => {
+    it('o preço está em cêntimos e nunca é negativo', () => {
         for (const key of PLAN_KEYS) {
             expect(Number.isInteger(PLANS[key].priceCents)).toBe(true);
-            expect(PLANS[key].priceCents).toBeGreaterThan(0);
+            expect(PLANS[key].priceCents).toBeGreaterThanOrEqual(0);
+        }
+    });
+
+    /**
+     * O vitalício é o único plano de graça, e tem de o ser: um preço
+     * qualquer aqui faria uma soma de receita contar dinheiro que nunca
+     * entrou.
+     */
+    it('só o vitalício é gratuito', () => {
+        for (const key of PLAN_KEYS) {
+            if (PLANS[key].priceCents === 0) {
+                expect(PLANS[key].plan).toBe('lifetime');
+            }
+        }
+
+        expect(PLANS.lifetime.priceCents).toBe(0);
+    });
+
+    /**
+     * Um plano sem período tem de o dizer com a ausência de intervalo, e
+     * não com um número enorme: um "vitalício" que afinal acabasse daqui
+     * a mil anos apareceria em ecrãs e em contas de dias restantes.
+     */
+    it('o vitalício não tem intervalo nenhum', () => {
+        expect(PLANS.lifetime.intervalMonths).toBeNull();
+    });
+
+    it('só o vitalício não tem intervalo', () => {
+        for (const key of PLAN_KEYS) {
+            if (PLANS[key].intervalMonths === null) {
+                expect(PLANS[key].plan).toBe('lifetime');
+            }
         }
     });
 

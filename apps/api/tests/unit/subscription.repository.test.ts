@@ -61,12 +61,19 @@ describe('SubscriptionRepository', () => {
             });
         });
 
-        it('exige que o período ainda não tenha terminado', () => {
+        /**
+         * Um período por terminar **ou** a ausência de fim, que é como
+         * se diz "vitalício". Sem o segundo ramo, quem tem acesso para
+         * sempre deixava de o ter no instante em que a coluna passou a
+         * poder ser nula.
+         */
+        it('aceita um período por terminar ou sem fim nenhum', () => {
             repository.findEntitlingSubscription({ userId: 'user-1' });
 
-            expect(whereOf(database.subscription.findFirst)['current_period_end']).toEqual(
-                { gt: expect.any(Date) },
-            );
+            expect(whereOf(database.subscription.findFirst)['OR']).toEqual([
+                { current_period_end: null },
+                { current_period_end: { gt: expect.any(Date) } },
+            ]);
         });
 
         it('ignora subscrições eliminadas', () => {
@@ -75,14 +82,22 @@ describe('SubscriptionRepository', () => {
             expect(whereOf(database.subscription.findFirst)['is_deleted']).toBe(false);
         });
 
-        it('devolve a que expira mais tarde', () => {
+        /**
+         * O vitalício vem primeiro, e a ordenação dos nulos é declarada
+         * em vez de herdada do comportamento por omissão da base de
+         * dados: quem tem acesso para sempre ganha a qualquer período
+         * com data, por mais longe que ele esteja.
+         */
+        it('devolve primeiro o que não termina, depois o que expira mais tarde', () => {
             repository.findEntitlingSubscription({ userId: 'user-1' });
 
             const args = database.subscription.findFirst.mock.calls[0]?.[0] as {
                 orderBy: unknown;
             };
 
-            expect(args.orderBy).toEqual({ current_period_end: 'desc' });
+            expect(args.orderBy).toEqual({
+                current_period_end: { sort: 'desc', nulls: 'first' },
+            });
         });
     });
 
@@ -178,18 +193,38 @@ describe('SubscriptionRepository', () => {
             const where = whereOf(database.subscription.findFirst);
 
             expect(where['is_deleted']).toBe(false);
-            expect(where['current_period_end']).toHaveProperty('gt');
+            expect(where['OR']).toEqual([
+                { current_period_end: null },
+                { current_period_end: { gt: expect.any(Date) } },
+            ]);
             expect(where['status']).toEqual({ in: ['active', 'trialing'] });
         });
 
-        it('procura o que termina mais tarde', async () => {
+        it('procura o que termina mais tarde, ou não termina', async () => {
             await repository.findLatestPeriodEnd({ userId: 'user-1' });
 
             const args = database.subscription.findFirst.mock.calls[0]?.[0] as {
                 orderBy?: unknown;
             };
 
-            expect(args.orderBy).toEqual({ current_period_end: 'desc' });
+            expect(args.orderBy).toEqual({
+                current_period_end: { sort: 'desc', nulls: 'first' },
+            });
+        });
+
+        /**
+         * O plano vem na seleção porque quem encadeia períodos precisa
+         * de saber se o que já existe é vitalício: nesse caso não há
+         * nada a encadear.
+         */
+        it('lê também o plano do período que encontrou', async () => {
+            await repository.findLatestPeriodEnd({ userId: 'user-1' });
+
+            const args = database.subscription.findFirst.mock.calls[0]?.[0] as {
+                select?: Record<string, unknown>;
+            };
+
+            expect(args.select?.['plan']).toBe(true);
         });
 
         /**

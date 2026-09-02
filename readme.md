@@ -134,6 +134,38 @@ Os cargos e permissões estão definidos num só sítio,
 `db:seed` e é dele que a API importa as permissões, pelo que o que está
 gravado e o que o código exige não podem divergir.
 
+#### Vitalícia, para os primeiros
+
+| Rota | Quem pode |
+|---|---|
+| `POST /api/v1/subscriptions/grant` com `plan: "lifetime"` | `system:manage` |
+| `POST /api/v1/subscriptions/:id/revoke` | `system:manage` |
+
+Acesso premium que **não termina e nunca é cobrado**, para quem apoiou a
+plataforma no princípio. É concedida um a um por quem administra — nunca
+automaticamente por ordem de chegada, porque quem merece o gesto é uma
+decisão de pessoas.
+
+O `current_period_end` **ausente** é como se diz "não termina". Uma data
+muito distante, como o ano 9999, parece resolver e depois morde: aparece
+em ecrãs, entra em contas de dias restantes e ordena mal.
+
+Dois `CHECK` impedem as duas maneiras de errar em silêncio, ambas caras:
+um `premium` sem fim seria acesso gratuito para sempre sem que nada o
+dissesse, e um `lifetime` com fim expirava um dia a quem lhe foi
+prometido que não expirava.
+
+O preço fica a **zero**, e não ao preço do premium: uma soma de receita
+passaria a contar dinheiro que nunca entrou.
+
+A resposta traz `isLifetime` além do `activeUntil`. Sem ele, um vitalício
+era indistinguível de quem não tem plano — em ambos os casos não há data.
+
+**Retirar** faz-se pela revogação, e não pelo cancelamento no fim do
+período: não havendo fim, marcar para não renovar deixava a marca posta e
+o acesso a correr. O registo não é apagado; fica com o fim marcado, para
+que o histórico continue a dizer que existiu e até quando.
+
 Uma rota protege-se assim:
 
 ```ts

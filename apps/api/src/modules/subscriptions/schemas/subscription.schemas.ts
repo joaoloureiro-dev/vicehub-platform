@@ -15,7 +15,24 @@ export const grantSubscriptionSchema = z.object({
      * caso normal; indicar mais serve para ofertas e compensações.
      */
     months: z.number().int().min(1).max(24).optional(),
-});
+    /**
+     * O plano a conceder. Por omissão o premium, que é o caso normal.
+     *
+     * O vitalício pede-se pelo nome porque é um gesto excecional: dá
+     * acesso para sempre e sem cobrança, e não deve poder sair de um
+     * pedido a que alguém se esqueceu de pôr um campo.
+     */
+    plan: z.enum(['premium', 'lifetime']).optional(),
+})
+    /**
+     * Meses num plano que não termina seriam ignorados em silêncio, e
+     * quem os enviou ficaria a achar que limitou o que afinal não tem
+     * limite.
+     */
+    .refine((value) => value.plan !== 'lifetime' || value.months === undefined, {
+        message: 'Uma subscrição vitalícia não termina, por isso não leva duração.',
+        path: ['months'],
+    });
 
 export const subscriptionIdParamSchema = z.object({
     subscriptionId: z.string().uuid(),

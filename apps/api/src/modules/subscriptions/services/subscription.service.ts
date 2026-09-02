@@ -1,7 +1,13 @@
-import { PLANS, addPlanInterval } from '@vicehub/database';
+import {
+    PLANS,
+    SubscriptionPlan,
+    addPlanInterval,
+    isPerpetualPlan,
+} from '@vicehub/database';
 
 import { SubscriptionError } from '../errors/subscription.errors.js';
 import type { SubscriptionRepository } from '../repositories/subscription.repository.js';
+import type { PlanKey } from '@vicehub/database';
 import type {
     SubscriptionEntitlement,
     SubscriptionOwner,
@@ -12,6 +18,11 @@ interface GrantInput {
     ownerKind: SubscriptionOwnerKind;
     ownerId: string;
     months?: number | undefined;
+    /**
+     * O plano a conceder. Por omissão o premium, que é o caso normal;
+     * o vitalício é o gesto excecional e por isso pede-se pelo nome.
+     */
+    plan?: PlanKey | undefined;
     grantedBy: string;
 }
 
@@ -40,6 +51,8 @@ export class SubscriptionService {
         return {
             owner,
             isPremium: subscription !== null,
+            isLifetime:
+                subscription !== null && isPerpetualPlan(subscription.plan),
             activeUntil: subscription?.current_period_end ?? null,
         };
     }
@@ -67,9 +80,46 @@ export class SubscriptionService {
             );
         }
 
-        const plan = PLANS.premium;
+        const plan = PLANS[input.plan ?? 'premium'];
+
+        /**
+         * Um plano que não termina não se encadeia nem se mede em meses:
+         * pedir uma duração para ele é um mal-entendido que vale a pena
+         * recusar em vez de ignorar em silêncio.
+         */
+        if (isPerpetualPlan(plan.plan)) {
+            if (input.months !== undefined) {
+                throw new SubscriptionError(
+                    'LIFETIME_HAS_NO_DURATION',
+                    'Uma subscrição vitalícia não termina, por isso não leva duração.',
+                );
+            }
+
+            return this.subscriptionRepository.createPeriod({
+                owner,
+                plan: plan.plan,
+                priceCents: plan.priceCents,
+                currency: plan.currency,
+                periodStart: new Date(),
+                periodEnd: null,
+                grantedBy: input.grantedBy,
+            });
+        }
 
         const atual = await this.subscriptionRepository.findLatestPeriodEnd(owner);
+
+        /**
+         * Conceder tempo a quem já é vitalício não acrescenta nada e
+         * deixaria no histórico um período que nunca chega a dar acesso
+         * — o vitalício já o dá. Recusar diz a quem concede que o gesto
+         * era desnecessário, em vez de o deixar a achar que resultou.
+         */
+        if (atual && isPerpetualPlan(atual.plan)) {
+            throw new SubscriptionError(
+                'ALREADY_LIFETIME',
+                'Este titular já tem acesso vitalício, que não precisa de ser estendido.',
+            );
+        }
 
         /**
          * O período novo começa onde o anterior acaba, ou agora se não
@@ -117,10 +167,55 @@ export class SubscriptionService {
             );
         }
 
+        /**
+         * Marcar para não renovar não faz nada a um plano que não
+         * renova: a subscrição ficaria com a marca e o acesso continuava
+         * para sempre, dando a quem cancelou a ideia errada de que a
+         * tinha terminado. Para retirar um vitalício existe o revoke.
+         */
+        if (isPerpetualPlan(subscription.plan)) {
+            throw new SubscriptionError(
+                'LIFETIME_CANNOT_BE_CANCELED',
+                'Uma subscrição vitalícia não renova; para a retirar usa a revogação.',
+            );
+        }
+
         return this.subscriptionRepository.markToCancelAtPeriodEnd(
             subscriptionId,
             canceledBy,
         );
+    }
+
+    /**
+     * Retira uma subscrição com efeito imediato.
+     *
+     * É o contrário de conceder, e existe sobretudo por causa do
+     * vitalício: sem isto, um acesso oferecido por engano — ou a quem
+     * depois abusa da plataforma — não teria como ser retirado, porque
+     * não há período para deixar acabar.
+     *
+     * O registo não é apagado: fica com o fim marcado, para que o
+     * histórico continue a dizer que existiu e até quando.
+     */
+    async revoke(subscriptionId: string, revokedBy: string) {
+        const subscription =
+            await this.subscriptionRepository.findById(subscriptionId);
+
+        if (!subscription) {
+            throw new SubscriptionError(
+                'SUBSCRIPTION_NOT_FOUND',
+                'Subscrição não encontrada.',
+            );
+        }
+
+        if (subscription.ended_at !== null) {
+            throw new SubscriptionError(
+                'SUBSCRIPTION_ALREADY_ENDED',
+                'Esta subscrição já tinha terminado.',
+            );
+        }
+
+        return this.subscriptionRepository.endNow(subscriptionId, revokedBy);
     }
 
     /**

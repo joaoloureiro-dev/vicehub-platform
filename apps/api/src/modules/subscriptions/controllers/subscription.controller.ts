@@ -25,7 +25,8 @@ interface SubscriptionRow {
     price_cents: number;
     currency: string;
     current_period_start: Date;
-    current_period_end: Date;
+    /** Ausente no plano vitalício, que não termina. */
+    current_period_end: Date | null;
     cancel_at_period_end: boolean;
 }
 
@@ -60,8 +61,10 @@ export class SubscriptionController {
                 ownerId: request.body.ownerId,
                 priceCents: subscription.price_cents,
                 currency: subscription.currency,
+                plan: subscription.plan,
                 periodStart: subscription.current_period_start.toISOString(),
-                periodEnd: subscription.current_period_end.toISOString(),
+                /** Ausente quer dizer vitalício: não termina. */
+                periodEnd: this.toIso(subscription.current_period_end),
             },
             ...AuditService.contextOf(request),
         });
@@ -88,7 +91,40 @@ export class SubscriptionController {
             before: { cancelAtPeriodEnd: false },
             after: {
                 cancelAtPeriodEnd: true,
-                periodEnd: subscription.current_period_end.toISOString(),
+                periodEnd: this.toIso(subscription.current_period_end),
+            },
+            ...AuditService.contextOf(request),
+        });
+
+        reply.send(this.toRow(subscription));
+    }
+
+    /**
+     * Retira uma subscrição com efeito imediato.
+     *
+     * Fica no rasto de auditoria com quem a retirou: dar e tirar acesso
+     * pago são ambos atos que alguém há de querer explicar mais tarde.
+     */
+    async revoke(
+        request: FastifyRequest<{ Params: SubscriptionIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const subscription = await this.subscriptionService.revoke(
+            request.params.subscriptionId,
+            user.id,
+        );
+
+        await this.auditService.record({
+            action: 'subscription.revoked',
+            entityType: 'Subscription',
+            entityId: subscription.id,
+            actorId: user.id,
+            after: {
+                plan: subscription.plan,
+                status: subscription.status,
+                endedAt: this.toIso(subscription.ended_at),
             },
             ...AuditService.contextOf(request),
         });
@@ -127,6 +163,12 @@ export class SubscriptionController {
 
         return {
             isPremium: entitlement.isPremium,
+            /**
+             * Sai à parte do activeUntil porque, sem isso, um vitalício
+             * ficava indistinguível de quem não tem plano: em ambos os
+             * casos não há data.
+             */
+            isLifetime: entitlement.isLifetime,
             activeUntil: this.toIso(entitlement.activeUntil),
             history: history.map((row) => this.toRow(row)),
         };
@@ -141,7 +183,7 @@ export class SubscriptionController {
             priceCents: subscription.price_cents,
             currency: subscription.currency,
             currentPeriodStart: subscription.current_period_start.toISOString(),
-            currentPeriodEnd: subscription.current_period_end.toISOString(),
+            currentPeriodEnd: this.toIso(subscription.current_period_end),
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
         };
     }
