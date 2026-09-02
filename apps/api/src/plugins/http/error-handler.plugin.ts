@@ -17,6 +17,10 @@ import {
     type ServerErrorCode,
 } from '../../modules/servers/errors/server.errors.js';
 import {
+    BillingError,
+    type BillingErrorCode,
+} from '../../modules/billing/errors/billing.errors.js';
+import {
     EventError,
     type EventErrorCode,
 } from '../../modules/events/errors/event.errors.js';
@@ -96,6 +100,29 @@ const serverErrorStatusCodes: Record<ServerErrorCode, number> = {
 };
 
 /**
+ * Estatuto HTTP de cada erro do módulo de cobrança.
+ */
+const billingErrorStatusCodes: Record<BillingErrorCode, number> = {
+    /**
+     * 503 e não 500: não está avariado, está por configurar. A distinção
+     * importa a quem instala a plataforma — um 500 mandava-o procurar um
+     * defeito que não existe.
+     */
+    BILLING_NOT_CONFIGURED: 503,
+    BILLING_OWNER_NOT_FOUND: 404,
+    /** Já tem acesso para sempre: cobrar seria receber duas vezes. */
+    ALREADY_LIFETIME: 409,
+    /**
+     * 400 e não 401: não é uma questão de credenciais. O corpo não
+     * corresponde à assinatura, e o pedido não veio de quem diz.
+     */
+    INVALID_WEBHOOK_SIGNATURE: 400,
+    /** O Stripe recusou ou não respondeu. Não é culpa de quem pediu. */
+    STRIPE_REQUEST_FAILED: 502,
+    SUBSCRIPTION_NOT_FROM_STRIPE: 409,
+};
+
+/**
  * Estatuto HTTP de cada erro do módulo de eventos.
  *
  * O mapa é exaustivo de propósito: um código novo sem estatuto não
@@ -165,6 +192,11 @@ const httpErrorNames: Record<number, string> = {
     403: 'Forbidden',
     409: 'Conflict',
     423: 'Locked',
+    500: 'Internal Server Error',
+    /** O Stripe recusou ou não respondeu. */
+    502: 'Bad Gateway',
+    /** A funcionalidade não está avariada: está por configurar. */
+    503: 'Service Unavailable',
 };
 
 /**
@@ -297,6 +329,26 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             request.log.warn(
                 { err: error, code: error.code },
                 'Pedido recusado pelo módulo de servidores.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: error.code,
+                error: httpErrorNames[statusCode] ?? 'Error',
+                message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof BillingError) {
+            const statusCode = billingErrorStatusCodes[error.code];
+
+            const log = statusCode < 500 ? request.log.warn : request.log.error;
+
+            log.call(
+                request.log,
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo de cobrança.',
             );
 
             reply.status(statusCode).send({
