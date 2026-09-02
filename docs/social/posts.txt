@@ -1,0 +1,55 @@
+==========================================
+X  —  English  —  colar tal e qual
+==========================================
+
+Been building the paid layer of ViceHub, a SaaS for gaming communities, starting with GTA VI.
+
+It comes down to two kinds of money, and neither may leak.
+
+The crew's money is in-game currency. Members contribute mission earnings to a treasury, a leader approves a split, and everyone is paid in one transaction or nobody is. Three ways to split it: equally, by rank, or by who actually turned up.
+
+That last one is why the events module exists. Signing up and being confirmed are different things. Only the organiser can say you were there, and it's that assertion, not the sign-up, that earns a share.
+
+The platform's money is real, monthly, through Stripe. Plus lifetime access I grant one by one to early supporters. Both paths write the same table, and one entitlement check reads it.
+
+The three mistakes taught me more than the features did:
+
+1. An officer could promote an accomplice to leader and take the crew from whoever founded it. Role changes now need crew:manage, not merely the permission to manage members.
+
+2. Zod discards whatever the schema doesn't declare, including the crewId the authorisation guard reads for scope. A params schema listing only :eventId silently disarms the guard, and the crew's own leader gets a 403. The schema looks right. The route looks right. There is now a test that walks every route in the application and fails if any of them loses its scope, including routes not yet written.
+
+3. I shipped a lifetime grant behind a permission nobody could hold. No seed step, no route, no script. The feature was there and callable by nobody, including me.
+
+734 unit tests, 95 integration tests against real Postgres. Then I broke every dangerous path on purpose, to check the tests actually caught it.
+
+
+==========================================
+LinkedIn  —  Português  —  colar tal e qual
+==========================================
+
+Tenho andado a construir a camada paga do ViceHub, o SaaS que estou a desenvolver para comunidades de jogo, a começar pelo GTA VI.
+
+No fundo são dois tipos de dinheiro, e nenhum pode fugir.
+
+O dinheiro da crew é moeda de jogo. Os membros entregam à tesouraria o que ganham nas missões, o líder aprova uma divisão, e ou toda a gente é paga na mesma transação, ou não é paga ninguém. Três formas de dividir: por igual, por cargo, ou por quem apareceu mesmo.
+
+Esta última é a razão de existir o módulo de eventos. Inscrever-se e ter presença confirmada são coisas diferentes: só quem organiza pode afirmar que estiveste lá, e é essa afirmação, e não a inscrição, que dá direito a receber.
+
+O dinheiro da plataforma é real, mensal, por Stripe. Mais o acesso vitalício que ofereço, um a um, a quem apoiar o projeto no princípio. Os dois caminhos escrevem na mesma tabela, e uma só verificação decide quem tem acesso.
+
+Mas o que aprendi de mais útil não foram as funcionalidades. Foram três erros.
+
+1. Um oficial podia tomar a crew a quem a fundou.
+Alterar cargos exigia apenas a permissão de gerir membros, que os oficiais têm. Bastava promover um cúmplice a líder. Passou a exigir crew:manage.
+
+2. O Zod descarta o que o schema não declara.
+Incluindo o crewId que o guard de autorização lê para saber em que âmbito avaliar a permissão. Um schema de parâmetros que liste só o :eventId desarma o guard em silêncio, e o próprio líder da crew leva 403. O schema parece certo. A rota parece certa. Só um pedido a sério revela. Escrevi um teste que percorre todas as rotas da aplicação e falha se alguma perder o seu âmbito, incluindo rotas que ainda não existem.
+
+3. Entreguei o acesso vitalício atrás de uma permissão que ninguém podia ter.
+Sem seed, sem rota, sem guião. A funcionalidade estava lá e não era chamável por ninguém, nem por mim. Só dei por isso quando a tentaram usar.
+
+734 testes unitários e 95 de integração contra PostgreSQL a sério. Depois estraguei de propósito cada caminho perigoso, para confirmar que os testes o apanhavam.
+
+Escrever a funcionalidade é a parte fácil. O trabalho é perceber de que maneiras ela pode falhar em silêncio, e essas quase sempre custam dinheiro.
+
+#SaaS #TypeScript #PostgreSQL #Stripe #GTA6 #Gaming #SoftwareEngineering
