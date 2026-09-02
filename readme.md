@@ -457,6 +457,59 @@ teste (`tests/integration/route-scope.test.ts`) que percorre **todas** as
 rotas da aplicação e falha se alguma perder o seu âmbito na validação,
 incluindo as que ainda não foram escritas.
 
+### Cobrança pelo Stripe
+
+| Rota | Quem pode |
+|---|---|
+| `POST /api/v1/billing/checkout` | qualquer conta |
+| `POST /api/v1/billing/webhook` | o Stripe, provado pela assinatura |
+
+```bash
+STRIPE_SECRET_KEY=sk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...        # preço mensal recorrente
+STRIPE_SUCCESS_URL=https://.../obrigado
+STRIPE_CANCEL_URL=https://.../planos
+```
+
+As cinco variáveis são **opcionais e andam juntas**. Sem elas a
+plataforma arranca na mesma e tudo funciona — incluindo a concessão
+manual e o vitalício; o que não existe é a compra pelo próprio, e as
+rotas respondem **503** a dizê-lo. Uma configuração meia-feita é recusada
+ao arrancar: ter a chave e não ter o segredo do webhook seria pior do que
+não ter nada, porque a compra funcionava, o Stripe cobrava, e a
+plataforma nunca chegava a saber que alguém tinha pago.
+
+**Quem cobra é que sabe.** Enquanto o plano é concedido à mão, os
+períodos são calculados aqui. A partir do momento em que o Stripe cobra,
+as datas, o preço e o estado vêm dele — uma segunda contagem nossa
+acabaria por discordar da fatura, sempre num dia em que alguém está a
+olhar. O estado é lido ao Stripe a cada evento, e não deduzido do corpo:
+eventos chegam fora de ordem, e aplicar um antigo por cima de um recente
+daria acesso a quem já cancelou.
+
+**A assinatura é o que protege o webhook.** A rota é pública por natureza
+— quem a chama é o Stripe, que não tem conta aqui. Sem a verificação,
+seria uma forma pública de conceder planos. Por isso o corpo chega **em
+bruto**: a assinatura cobre os bytes tal como foram enviados, e voltar a
+serializar o JSON invalidaria-a. O interpretador em bruto está
+encapsulado no âmbito do webhook; registá-lo mais acima faria as
+restantes rotas deixarem de receber JSON interpretado.
+
+**Um reenvio não cobra duas vezes.** O Stripe reenvia sempre que não
+recebe resposta a tempo. A tabela `WebhookEvent` tem o identificador do
+evento como chave primária, e é a *escrita* que serve de verificação:
+tentar gravar e apanhar a chave duplicada é o que aguenta duas entregas
+em paralelo, que uma leitura antes da escrita deixaria passar.
+
+**Um pagamento em falta corta o acesso já.** `past_due` não dá direito ao
+plano. O Stripe continua a tentar cobrar durante uns dias e, se
+conseguir, manda outro evento e o acesso volta sozinho.
+
+**Um vitalício não começa a pagar.** A compra é recusada com 409 a quem
+já tem acesso que não termina: receber dinheiro por uma coisa que já foi
+oferecida é a espécie de erro que ninguém repara e toda a gente acha mal.
+
 ### Valores BigInt nas respostas
 
 O `xp` e o `balance` são `BigInt` no schema Prisma. O JSON não tem inteiros

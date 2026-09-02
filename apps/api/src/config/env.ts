@@ -60,6 +60,31 @@ const envSchema = z.object({
     AUTH_MAX_FAILED_LOGIN_ATTEMPTS: z.coerce.number().int().positive().default(5),
     AUTH_LOCKOUT_DURATION_SECONDS: z.coerce.number().int().positive().default(900),
 
+    /**
+     * Configuração do Stripe.
+     *
+     * Os três campos são opcionais e andam juntos: sem eles a plataforma
+     * arranca na mesma e a compra pelo próprio responde 503. É
+     * deliberado — o desenvolvimento, os testes e a integração contínua
+     * não têm chaves de cobrança, e exigi-las faria a aplicação recusar
+     * arrancar em todos esses sítios por causa de uma funcionalidade que
+     * lá não se usa.
+     *
+     * A coerência entre os três é verificada depois de validar, para que
+     * uma configuração meia-feita seja um erro claro em vez de uma
+     * cobrança que falha em silêncio.
+     */
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    /** Preço mensal recorrente do premium, criado no painel do Stripe. */
+    STRIPE_PRICE_ID: z.string().min(1).optional(),
+
+    /**
+     * Para onde o Stripe devolve quem termina ou abandona a compra.
+     */
+    STRIPE_SUCCESS_URL: z.string().url().optional(),
+    STRIPE_CANCEL_URL: z.string().url().optional(),
+
     CORS_ALLOWED_ORIGINS: z
         .string()
         .min(1)
@@ -90,3 +115,58 @@ if (!parsedEnvironment.success) {
 export const env = Object.freeze(parsedEnvironment.data);
 
 export type Environment = typeof env;
+
+/**
+ * Os campos que a cobrança pelo Stripe exige, todos ao mesmo tempo.
+ */
+const STRIPE_FIELDS = [
+    'STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET',
+    'STRIPE_PRICE_ID',
+    'STRIPE_SUCCESS_URL',
+    'STRIPE_CANCEL_URL',
+] as const;
+
+const stripeFieldsPresent = STRIPE_FIELDS.filter(
+    (field) => env[field] !== undefined,
+);
+
+/**
+ * Uma configuração de Stripe meia-feita é recusada ao arrancar.
+ *
+ * Ter a chave e não ter o segredo do webhook seria pior do que não ter
+ * nada: a compra funcionava, o Stripe cobrava, e a plataforma nunca
+ * chegava a saber que alguém tinha pago. O erro tem de aparecer aqui, e
+ * não no primeiro pagamento.
+ */
+if (stripeFieldsPresent.length > 0 && stripeFieldsPresent.length !== STRIPE_FIELDS.length) {
+    const emFalta = STRIPE_FIELDS.filter((field) => env[field] === undefined);
+
+    throw new Error(
+        `[ViceHub API] Configuração do Stripe incompleta. Em falta: ${emFalta.join(', ')}.`,
+    );
+}
+
+/**
+ * Se a cobrança pelo Stripe está configurada.
+ *
+ * Sem ela a plataforma funciona toda, incluindo a concessão manual de
+ * planos; o que não existe é a compra pelo próprio.
+ */
+export const isStripeConfigured = stripeFieldsPresent.length === STRIPE_FIELDS.length;
+
+/**
+ * A configuração do Stripe, quando existe.
+ *
+ * Devolve os campos já sem `undefined`, para que quem a use não tenha de
+ * voltar a verificar o que o arranque já garantiu.
+ */
+export const stripeConfig = isStripeConfigured
+    ? Object.freeze({
+        secretKey: env.STRIPE_SECRET_KEY as string,
+        webhookSecret: env.STRIPE_WEBHOOK_SECRET as string,
+        priceId: env.STRIPE_PRICE_ID as string,
+        successUrl: env.STRIPE_SUCCESS_URL as string,
+        cancelUrl: env.STRIPE_CANCEL_URL as string,
+    })
+    : null;

@@ -913,3 +913,30 @@ model EventParticipant {
   @@index([eventId, status])
   @@index([userId])
 }
+
+/// Um evento de webhook já processado.
+///
+/// O Stripe reenvia eventos quando não recebe resposta a tempo, e o
+/// mesmo evento pode chegar várias vezes. Sem esta tabela, um reenvio de
+/// `checkout.session.completed` criaria um segundo período de plano — o
+/// cliente pagou uma vez e ficaria com dois meses.
+///
+/// O identificador é o do próprio evento no Stripe, e é a chave
+/// primária: a segunda tentativa de o gravar falha, e é essa falha que
+/// diz que já foi tratado.
+model WebhookEvent {
+  /// O `evt_...` atribuído pelo fornecedor.
+  id String @id
+
+  provider SubscriptionProvider @default(stripe)
+  type     String
+
+  received_at  DateTime  @default(now())
+  processed_at DateTime?
+
+  /// Guardado para se poder investigar um evento que correu mal.
+  payload Json?
+
+  @@index([provider, type])
+  @@index([received_at(sort: Desc)])
+}
