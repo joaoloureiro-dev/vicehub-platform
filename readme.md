@@ -186,6 +186,13 @@ em vez de as deixar sem autorização nenhuma.
 | `PATCH /api/v1/users/me` | sim | perfil atualizado |
 | `PATCH /api/v1/users/me/appearance` | sim, **com plano ativo** | perfil atualizado |
 
+**O email identifica a conta, e a caixa das letras não faz parte dessa
+identidade.** `Player@vicehub.com` e `player@vicehub.com` são a mesma
+caixa de correio em qualquer servidor que exista na prática. O email é
+normalizado no domínio — e não só no schema HTTP — para que uma via de
+entrada nova, como um início de sessão por Discord, não volte a
+introduzir o problema por esquecimento.
+
 O perfil público é mesmo público: acessível sem conta, porque é isso que
 o torna público. Mostra username, avatar, bio, level, xp, reputação, data
 de registo e o **selo premium**.

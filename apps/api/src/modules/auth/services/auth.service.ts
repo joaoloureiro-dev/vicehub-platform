@@ -8,6 +8,7 @@ import type {
     AccessTokenPayload,
     AuthenticatedUser,
 } from '../types/auth.types.js';
+import { normalizeEmail } from './email.js';
 import type { PasswordService } from './password.service.js';
 import type { TokenService } from './token.service.js';
 
@@ -88,17 +89,25 @@ export class AuthService {
      */
     async register(input: RegisterInput): Promise<AuthResult> {
         /**
+         * O email é normalizado antes de qualquer verificação: sem isso,
+         * quem se registasse com outra caixa passava a verificação de
+         * unicidade e ficava com uma segunda conta para a mesma caixa de
+         * correio.
+         */
+        const email = normalizeEmail(input.email);
+
+        /**
          * Email e username têm ambos restrição de unicidade, por isso
          * ambos são verificados. Sem a verificação do username, o conflito
          * só aparecia como erro da base de dados e o registo respondia 500.
          */
         const existingIdentity = await this.authRepository.findExistingIdentity(
-            input.email,
+            email,
             input.username,
         );
 
         if (existingIdentity) {
-            throw existingIdentity.email === input.email
+            throw existingIdentity.email === email
                 ? new AuthError(
                     'EMAIL_ALREADY_EXISTS',
                     'Já existe uma conta com este email.',
@@ -114,7 +123,7 @@ export class AuthService {
         const passwordHash = await this.passwordService.hash(input.password);
 
         const user = await this.createLocalUser({
-            email: input.email,
+            email,
             username: input.username,
             passwordHash,
             defaultRoleId,
@@ -131,7 +140,14 @@ export class AuthService {
      * Login local com email e password.
      */
     async login(input: LoginInput): Promise<AuthResult> {
-        const user = await this.authRepository.findUserByEmail(input.email);
+        /**
+         * A mesma normalização do registo, pela mesma razão: quem
+         * escrevesse o próprio email com outra caixa não se conseguia
+         * autenticar na conta que criou.
+         */
+        const user = await this.authRepository.findUserByEmail(
+            normalizeEmail(input.email),
+        );
 
         /**
          * A credencial é uma relação separada e tem soft delete próprio,

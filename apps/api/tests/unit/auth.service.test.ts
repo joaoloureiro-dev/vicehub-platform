@@ -86,6 +86,55 @@ describe('AuthService', () => {
             password: 'password-forte-123',
         };
 
+        /**
+         * O email identifica a conta, e a caixa das letras não faz parte
+         * dessa identidade. Sem normalizar, quem se registasse com
+         * `Player@` passava a verificação de unicidade e ficava com uma
+         * segunda conta para a mesma caixa de correio.
+         */
+        describe('a caixa das letras do email não é identidade', () => {
+            beforeEach(() => {
+                repository.createLocalUser.mockResolvedValue(buildUserRow());
+            });
+
+            it('procura a identidade já normalizada', async () => {
+                await service.register({
+                    ...newAccount,
+                    email: '  PLAYER@ViceHub.com ',
+                });
+
+                expect(repository.findExistingIdentity).toHaveBeenCalledWith(
+                    'player@vicehub.com',
+                    'player',
+                );
+            });
+
+            it('grava o email normalizado', async () => {
+                await service.register({
+                    ...newAccount,
+                    email: 'Player@ViceHub.com',
+                });
+
+                expect(repository.createLocalUser).toHaveBeenCalledWith(
+                    expect.objectContaining({ email: 'player@vicehub.com' }),
+                );
+            });
+
+            it('recusa quem se registe com a mesma caixa noutra grafia', async () => {
+                repository.findExistingIdentity.mockResolvedValue({
+                    email: 'player@vicehub.com',
+                    username: 'outro-nome',
+                });
+
+                await expectAuthError(
+                    service.register({ ...newAccount, email: 'PLAYER@vicehub.com' }),
+                    'EMAIL_ALREADY_EXISTS',
+                );
+
+                expect(repository.createLocalUser).not.toHaveBeenCalled();
+            });
+        });
+
         it('recusa um email já registado', async () => {
             repository.findExistingIdentity.mockResolvedValue({
                 email: 'player@vicehub.com',
@@ -254,6 +303,21 @@ describe('AuthService', () => {
             email: 'player@vicehub.com',
             password: 'password-forte-123',
         };
+
+        /**
+         * Sem normalizar também no login, quem escrevesse o próprio
+         * email com outra caixa não entrava na conta que criou — e nada
+         * na resposta explicava porquê.
+         */
+        it('encontra a conta escrevendo o email com outra caixa', async () => {
+            await service
+                .login({ ...credentials, email: '  PLAYER@ViceHub.com ' })
+                .catch(() => undefined);
+
+            expect(repository.findUserByEmail).toHaveBeenCalledWith(
+                'player@vicehub.com',
+            );
+        });
 
         it('devolve o mesmo erro quando o email não existe', async () => {
             repository.findUserByEmail.mockResolvedValue(null);
