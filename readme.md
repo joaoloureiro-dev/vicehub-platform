@@ -209,6 +209,30 @@ pode o quê lê-se na tabela `UserRole`. Por isso o `db:seed` é um passo
 obrigatório da instalação — sem os cargos, o registo recusa criar contas
 em vez de as deixar sem autorização nenhuma.
 
+### Nomear administradores
+
+A permissão `system:manage` guarda a concessão de subscrições, e **não se
+alcança pela API**. Nenhuma rota a pode conceder: a primeira conta capaz
+de nomear administradores seria a própria porta que o cargo existe para
+guardar.
+
+A porta é o acesso à base de dados. Quem corre estes comandos já tem o
+`DATABASE_URL` — ou seja, já pode fazer tudo o que o cargo permite; o
+cargo apenas o passa a fazer pela API, e com rasto.
+
+```bash
+npm run admin:grant  -- pessoa@exemplo.com   # promove
+npm run admin:revoke -- pessoa@exemplo.com   # retira
+npm run admin:list                           # quem é administrador
+```
+
+A conta tem de existir: o comando não a cria. Promover duas vezes não
+duplica nada, e voltar a promover quem foi retirado reaproveita a
+atribuição anterior em vez de multiplicar o histórico.
+
+Sem isto, `POST /api/v1/subscriptions/grant` responde **403** a toda a
+gente, com `missingPermissions: ["system:manage"]`.
+
 ### Perfis de utilizador
 
 | Rota | Autenticação | Devolve |
