@@ -591,10 +591,59 @@ A conversão é global, feita num hook `preSerialization`, pelo que nenhuma
 rota precisa de se lembrar dela. Quando forem adicionados schemas de
 resposta, os campos `BigInt` devem ser declarados como `type: 'string'`.
 
+### O frontend
+
+`apps/web` — React com Vite. Arranca com `npm run dev --workspace=@vicehub/web`
+e serve em `http://localhost:5173`.
+
+O servidor de desenvolvimento **encaminha `/api` para a API**. Não é
+conveniência: o refresh token vive num cookie `HttpOnly` com `SameSite`, e um
+cookie posto por `localhost:3000` não segue num pedido feito a partir de
+`localhost:5173`. Servir as duas coisas na mesma origem faz o browser tratá-las
+como o mesmo sítio, que é o que acontece em produção.
+
+Por agora só existe a superfície de autenticação: entrar, criar conta,
+recuperar a password e confirmar o email. Crews, servidores e tesouraria
+existem na API e ainda não têm ecrã.
+
+**Mobile-first.** As regras base do CSS servem o telemóvel; as media queries só
+acrescentam à medida que há largura. Os campos têm 16px de texto — abaixo disso
+o Safari do iPhone dá zoom ao campo mal lhe tocam — e os alvos de toque têm 48px
+de altura.
+
+**O access token vive em memória, e só em memória.** No `localStorage` ou num
+cookie legível por script ficaria ao alcance de qualquer coisa que a página
+venha a carregar: uma biblioteca comprometida, uma extensão, um XSS. Em memória
+morre com o separador. O que sobrevive a um F5 é o refresh token, que está num
+cookie `HttpOnly` que o JavaScript não lê — ao arrancar, a aplicação troca-o por
+um access token novo.
+
+**A renovação da sessão nunca corre duas vezes em paralelo.** A API roda o
+refresh token a cada utilização e trata uma segunda utilização do mesmo token
+como roubo: derruba a sessão inteira. Um ecrã com três pedidos ao mesmo tempo e
+o access token expirado levaria três 401 — e três renovações com o mesmo cookie
+fariam o próprio utilizador parecer um atacante. O cliente guarda a renovação em
+curso e faz os outros pedidos esperar por ela.
+
+**O segredo dos links de email não fica na barra de endereços.** As páginas de
+recuperação leem o token da query string e apagam-no logo com `replaceState`.
+Um token no endereço fica no histórico, aparece numa captura de ecrã, e seguiria
+no `Referer` de qualquer recurso que a página fosse buscar lá fora — o
+`index.html` declara `referrer: no-referrer` pela mesma razão.
+
+**O ecrã não pode desfazer o que o servidor garante.** O pedido de recuperação
+mostra sempre a mesma confirmação, exista ou não a conta, e engole o erro de
+propósito: distinguir os dois casos na interface daria a qualquer pessoa a lista
+de quem está registado.
+
+`/recuperar-password` serve as duas metades: com código no link pede a password
+nova, sem código pede o email. É por isso que é esse o endereço que segue nos
+emails.
+
 ### Nota sobre as optionalDependencies da raiz
 
 O `package.json` da raiz declara explicitamente os binários de plataforma do
-`esbuild` e do `rolldown`. **Não os remover.**
+`esbuild`, do `rolldown` e do `lightningcss`. **Não os remover.**
 
 O npm só escreve no `package-lock.json` o binário da plataforma onde o
 install é executado. Sem esta declaração, um lockfile gerado em Windows
@@ -602,8 +651,14 @@ deixa o `npm ci` em Linux sem os binários necessários, e o `tsx` e o
 `vitest` passam a falhar no CI com um erro de módulo em falta. Declará-los
 garante que o lockfile fica completo, seja gerada em que plataforma for.
 
-Ao atualizar o `vitest` ou o `tsx`, confirmar se as versões do `esbuild` e do
-`rolldown` mudaram e acertar estas versões em conformidade.
+O `lightningcss` entrou com o `vite`, que o usa para minificar CSS. Sem o
+binário da plataforma o `npm run build` do `apps/web` falha com um módulo
+`.node` em falta — e falha só no build, o que o torna fácil de não notar
+em desenvolvimento.
+
+Ao atualizar o `vitest`, o `tsx` ou o `vite`, confirmar se as versões do
+`esbuild`, do `rolldown` e do `lightningcss` mudaram e acertar estas versões em
+conformidade.
 
 ---
 
@@ -613,7 +668,9 @@ Ao atualizar o `vitest` ou o `tsx`, confirmar se as versões do `esbuild` e do
 ✔ Database core architecture implemented  
 ✔ Authentication implemented: sessões validadas na base de dados, refresh
 token com rotação e deteção de reutilização, cookie HttpOnly e logout global  
-🚀 Gestão de utilizadores e RBAC a seguir  
+✔ Recuperação de password e confirmação de email  
+✔ Frontend arrancado: `apps/web`, com a superfície de autenticação  
+🚀 Ecrãs de crews, servidores e tesouraria a seguir  
 
 ---
 
