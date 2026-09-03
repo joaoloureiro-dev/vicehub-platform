@@ -603,8 +603,19 @@ cookie posto por `localhost:3000` não segue num pedido feito a partir de
 como o mesmo sítio, que é o que acontece em produção.
 
 Ecrãs existentes: autenticação completa, o diretório de crews e de
-servidores, o perfil de cada um, criar/registar, e as minhas crews.
-Tesouraria e eventos existem na API e ainda não têm ecrã.
+servidores, o perfil de cada um, criar/registar, as minhas crews, o meu
+perfil e o perfil público de um jogador. Tesouraria e eventos existem na
+API e ainda não têm ecrã.
+
+**A personalização premium aparece a toda a gente**, e não só a quem tem
+plano. Escondê-la faria com que quem recebe o premium não soubesse que
+ganhou alguma coisa — e é precisamente isso que os primeiros
+utilizadores vão receber. Sem plano, a API responde **402**, que o ecrã
+lê como "isto é do plano" e não como avaria: um 402 diz que falta o
+pagamento, não que algo correu mal.
+
+**Um plano sem data de fim é vitalício.** A ausência da data é o que
+distingue os dois casos, e por isso não é tratada como dado em falta.
 
 **A mecânica de adesão vive num sítio só**, em `lib/membership.ts`.
 Crews e servidores partilham-na por inteiro — candidatar, retirar, sair,

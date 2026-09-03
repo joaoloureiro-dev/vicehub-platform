@@ -1092,3 +1092,62 @@ button.link:hover {
         color: var(--ink);
     }
 }
+
+/* ---------- perfil ---------- */
+
+.pill.confirmado {
+    color: var(--ok);
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.32);
+}
+
+/*
+ * A secção premium aparece a toda a gente. Escondê-la faria com que
+ * quem recebesse o plano não soubesse que ganhou alguma coisa — e quem
+ * não o tem não faz ideia do que está a perder.
+ */
+.grupo.premium {
+    padding: 20px;
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.grupo.premium.ativo {
+    border-color: rgba(233, 60, 239, 0.4);
+}
+
+.premium-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.premium-head h2 {
+    margin: 0;
+}
+
+.cor-linha {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cor-linha input {
+    flex: 1;
+    min-width: 0;
+}
+
+.amostra {
+    width: var(--tap);
+    height: var(--tap);
+    flex: none;
+    border-radius: var(--radius);
+    border: 1px solid var(--edge-lit);
+    /* Xadrez, para uma cor por definir não se confundir com preto. */
+    background:
+        linear-gradient(45deg, var(--edge) 25%, transparent 25%) 0 0 / 12px 12px,
+        linear-gradient(-45deg, var(--edge) 25%, transparent 25%) 0 6px / 12px 12px,
+        var(--surface-high);
+}

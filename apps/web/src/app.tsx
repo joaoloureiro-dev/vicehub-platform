@@ -21,7 +21,8 @@ import { MyCrewsPage } from './crews/pages/my-crews.page.js';
 import { CreateServerPage } from './servers/pages/create-server.page.js';
 import { ServerDirectoryPage } from './servers/pages/server-directory.page.js';
 import { ServerPage } from './servers/pages/server.page.js';
-import { HomePage } from './pages/home.page.js';
+import { MyProfilePage } from './profile/pages/my-profile.page.js';
+import { PublicProfilePage } from './profile/pages/public-profile.page.js';
 
 /** Onde o convite a entrar seria uma repetição do que está no ecrã. */
 const SEM_CONVITE = new Set(['/entrar', '/registo']);
@@ -37,6 +38,7 @@ const DESTINOS = [
     { to: '/crews', label: 'Crews' },
     { to: '/servidores', label: 'Servidores' },
     { to: '/eu/crews', label: 'As minhas' },
+    { to: '/eu', label: 'Perfil' },
 ];
 
 const Shell = () => {
@@ -157,8 +159,15 @@ export const App = () => (
             <Route path="/crews" element={<CrewDirectoryPage />} />
             <Route path="/servidores" element={<ServerDirectoryPage />} />
 
+            <Route path="/u/:username" element={<PublicProfilePage />} />
+
             <Route element={<RequireAuth />}>
-                <Route path="/" element={<HomePage />} />
+                {/*
+                  Depois de entrar, o destino é o perfil: é onde a
+                  conta se vê e onde a personalização se edita.
+                */}
+                <Route path="/" element={<Navigate to="/eu" replace />} />
+                <Route path="/eu" element={<MyProfilePage />} />
                 <Route path="/crews/nova" element={<CreateCrewPage />} />
                 <Route path="/servidores/novo" element={<CreateServerPage />} />
                 <Route path="/eu/crews" element={<MyCrewsPage />} />
