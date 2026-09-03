@@ -602,10 +602,20 @@ cookie posto por `localhost:3000` não segue num pedido feito a partir de
 `localhost:5173`. Servir as duas coisas na mesma origem faz o browser tratá-las
 como o mesmo sítio, que é o que acontece em produção.
 
-Ecrãs existentes: entrar, criar conta, recuperar a password, confirmar o
-email, o diretório de crews, o perfil de uma crew, criar uma crew, e as
-minhas crews. Servidores, tesouraria e eventos existem na API e ainda não
-têm ecrã.
+Ecrãs existentes: autenticação completa, o diretório de crews e de
+servidores, o perfil de cada um, criar/registar, e as minhas crews.
+Tesouraria e eventos existem na API e ainda não têm ecrã.
+
+**A mecânica de adesão vive num sítio só**, em `lib/membership.ts`.
+Crews e servidores partilham-na por inteiro — candidatar, retirar, sair,
+responder a candidaturas, remover, mudar cargo — e o que difere é o
+prefixo do endereço. Está lá em vez de copiada porque **decide
+permissões**: duas cópias de lógica de permissões acabam por divergir, e
+a que divergir em silêncio é a que abre a porta errada.
+
+**No telemóvel os destinos vivem numa barra em baixo.** Três links não
+cabem no topo de um ecrã de 390px sem cortar o último, e em baixo estão
+ao alcance do polegar. A partir dos 640px sobem para o topo.
 
 O diretório e o perfil de uma crew são **públicos** — é assim que alguém
 de fora descobre a plataforma. O que exige sessão é agir sobre eles.

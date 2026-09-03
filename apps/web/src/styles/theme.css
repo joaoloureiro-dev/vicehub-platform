@@ -973,3 +973,122 @@ button.link:hover {
     padding: 7px 14px;
     font-size: 14px;
 }
+
+/* ---------- servidores ---------- */
+
+/*
+ * O ponto de estado é decoração: quem não vê cores, ou não vê de todo,
+ * lê "Online" ou "Offline" no texto ao lado. A cor acrescenta, não
+ * substitui.
+ */
+.estado {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+    display: inline-block;
+    background: var(--faint);
+}
+
+.estado.online {
+    background: var(--ok);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.16);
+}
+
+.estadotexto {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.estadotexto.online {
+    color: var(--ok);
+}
+
+.filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14.5px;
+    color: var(--muted);
+    min-height: 44px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.filtro input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--cyan);
+    cursor: pointer;
+}
+
+/* ---------- navegação ---------- */
+
+/*
+ * Três destinos não cabem no topo de um ecrã de 390px sem cortar o
+ * último. No telemóvel descem para uma barra em baixo, que além de
+ * caber está onde o polegar chega; a partir dos 640px sobem para o
+ * topo, onde há largura para eles.
+ */
+.so-largo {
+    display: none;
+}
+
+.barra-baixo {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    border-top: 1px solid var(--edge);
+    background: rgba(8, 6, 15, 0.94);
+    backdrop-filter: blur(12px);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.barra-baixo a {
+    flex: 1;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--faint);
+    text-decoration: none;
+    /* A linha de cima marca o destino atual sem mexer na altura. */
+    border-top: 2px solid transparent;
+    margin-top: -1px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.barra-baixo a:hover {
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.barra-baixo a.active {
+    color: var(--cyan);
+    border-top-color: var(--cyan);
+}
+
+@media (min-width: 640px) {
+    .barra-baixo {
+        display: none;
+    }
+
+    .so-largo {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .so-largo a.active {
+        color: var(--ink);
+    }
+}
