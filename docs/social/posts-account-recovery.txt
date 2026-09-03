@@ -1,0 +1,23 @@
+==========================================
+X  —  English  —  colar tal e qual
+==========================================
+
+Added password reset and email verification to ViceHub, the SaaS I'm building for gaming communities.
+
+Sounds like a solved problem. It is, right up until you write down what each part is actually defending.
+
+Recovering an account destroys every open session. This is the one that matters. People reset a password because they suspect someone else got in, and changing the password without evicting that person fixes the wrong half of the problem. The half that wasn't hurting anyone.
+
+The request never says who has an account. An address that exists and one that doesn't get the identical 202. Answering differently would hand anyone a list of registered users, one guess at a time, and that list is worth money to whoever runs phishing. Same reason a missing link, a spent one and an expired one all return the same error.
+
+The write that spends a token carries the condition itself instead of trusting an earlier read. Two requests on the same link would both pass a check made a moment before, and the second would write a password nobody chose.
+
+The database never sees the secret. The mail carries 32 random bytes; the table keeps a SHA-256 of them. Not argon2, because there is nothing here for a dictionary to guess, unlike a password a person picked. The digest exists so that reading the table leaves you with the key to no account at all.
+
+Then I mutated the code to find out whether the tests were real. Two got through the first pass.
+
+Deleting the single-use condition from the write changed nothing, because the lookup already excludes spent tokens. That guard only earns its keep under a genuine race, and my tests weren't racing. Now they are.
+
+Deleting the expiry filter was the instructive one. An expired link then really does reset the password, and the following test can no longer log in with the old one. The failure describes the damage better than any assertion I would have written.
+
+884 tests green against real Postgres. Stripe and deploy next.
