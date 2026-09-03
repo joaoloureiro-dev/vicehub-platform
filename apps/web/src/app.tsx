@@ -6,6 +6,10 @@ import { LoginPage } from './auth/pages/login.page.js';
 import { RegisterPage } from './auth/pages/register.page.js';
 import { RecoverPasswordPage } from './auth/pages/recover-password.page.js';
 import { VerifyEmailPage } from './auth/pages/verify-email.page.js';
+import { CreateCrewPage } from './crews/pages/create-crew.page.js';
+import { CrewDirectoryPage } from './crews/pages/crew-directory.page.js';
+import { CrewPage } from './crews/pages/crew.page.js';
+import { MyCrewsPage } from './crews/pages/my-crews.page.js';
 import { HomePage } from './pages/home.page.js';
 
 /** Onde o convite a entrar seria uma repetição do que está no ecrã. */
@@ -26,6 +30,8 @@ const Shell = () => {
                 <nav>
                     {user ? (
                         <>
+                            <Link to="/crews">Crews</Link>
+                            <Link to="/eu/crews">As minhas</Link>
                             <span className="who">{user.email}</span>
                             <button
                                 className="link"
@@ -99,9 +105,24 @@ export const App = () => (
                 <Route path="/registo" element={<RegisterPage />} />
             </Route>
 
+            {/*
+              O diretório e o perfil de uma crew são públicos: é assim
+              que alguém de fora descobre a plataforma. O que exige
+              sessão é agir sobre eles.
+            */}
+            <Route path="/crews" element={<CrewDirectoryPage />} />
+
             <Route element={<RequireAuth />}>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/crews/nova" element={<CreateCrewPage />} />
+                <Route path="/eu/crews" element={<MyCrewsPage />} />
             </Route>
+
+            {/*
+              Depois de /crews/nova, para que "nova" não seja lido como
+              o identificador de uma crew.
+            */}
+            <Route path="/crews/:crewId" element={<CrewPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

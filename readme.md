@@ -602,9 +602,22 @@ cookie posto por `localhost:3000` não segue num pedido feito a partir de
 `localhost:5173`. Servir as duas coisas na mesma origem faz o browser tratá-las
 como o mesmo sítio, que é o que acontece em produção.
 
-Por agora só existe a superfície de autenticação: entrar, criar conta,
-recuperar a password e confirmar o email. Crews, servidores e tesouraria
-existem na API e ainda não têm ecrã.
+Ecrãs existentes: entrar, criar conta, recuperar a password, confirmar o
+email, o diretório de crews, o perfil de uma crew, criar uma crew, e as
+minhas crews. Servidores, tesouraria e eventos existem na API e ainda não
+têm ecrã.
+
+O diretório e o perfil de uma crew são **públicos** — é assim que alguém
+de fora descobre a plataforma. O que exige sessão é agir sobre eles.
+
+**As candidaturas pendentes aparecem em "As minhas crews"** de propósito:
+sem isso, quem pede entrada não tem forma de saber se já foi respondido, e
+é essa pergunta que faz a pessoa voltar ao site.
+
+**Quem gere membros descobre-se perguntando à API.** O ecrã de uma crew
+pede a lista de candidaturas e trata o 403 como "não és tu que geres
+isto", em vez de deduzir o cargo de outro sítio. Assim o que aparece é
+sempre a permissão real, e um 403 esperado não é mostrado como avaria.
 
 **Mobile-first.** As regras base do CSS servem o telemóvel; as media queries só
 acrescentam à medida que há largura. Os campos têm 16px de texto — abaixo disso
@@ -634,7 +647,15 @@ no `Referer` de qualquer recurso que a página fosse buscar lá fora — o
 **O ecrã não pode desfazer o que o servidor garante.** O pedido de recuperação
 mostra sempre a mesma confirmação, exista ou não a conta, e engole o erro de
 propósito: distinguir os dois casos na interface daria a qualquer pessoa a lista
-de quem está registado.
+de quem está registado. Pela mesma razão, o diretório não envia uma pesquisa
+vazia — a API só devolve destaques quando não há pesquisa, e um `search=` vazio
+fá-los-ia desaparecer sem ninguém ter pesquisado nada.
+
+**Dois carregamentos que se cruzem não trocam de resultado.** Mudar de crew antes
+de a primeira responder cruza dois pedidos; sem proteção, a resposta lenta do
+primeiro chega depois e substitui a do segundo, e o ecrã fica a mostrar a crew
+errada sem nada a indicar que está errada. O `useAsync` guarda o número do pedido
+e só deixa o último escrever no estado.
 
 `/recuperar-password` serve as duas metades: com código no link pede a password
 nova, sem código pede o email. É por isso que é esse o endereço que segue nos

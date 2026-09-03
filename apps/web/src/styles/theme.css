@@ -306,6 +306,30 @@ form {
     color: var(--muted);
 }
 
+.field textarea {
+    font: inherit;
+    font-size: 16px;
+    width: 100%;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    resize: vertical;
+    min-height: 96px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field textarea:hover {
+    border-color: var(--edge-lit);
+}
+
+.field textarea:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
+    outline: none;
+}
+
 .field input {
     font: inherit;
     /*
@@ -545,7 +569,17 @@ button.link:hover {
 .actions {
     display: flex;
     flex-direction: column;
+    /*
+     * Sem isto, o `stretch` do flex estica também as pílulas e os
+     * botões secundários pela largura toda — e uma pílula esticada
+     * deixa de se ler como pílula.
+     */
+    align-items: flex-start;
     gap: 12px;
+}
+
+.actions button.primary {
+    width: 100%;
 }
 
 @media (min-width: 480px) {
@@ -560,6 +594,10 @@ button.link:hover {
         width: auto;
         min-width: 220px;
     }
+
+    .stats dd {
+        font-size: 22px;
+    }
 }
 
 .centered {
@@ -567,4 +605,371 @@ button.link:hover {
     color: var(--muted);
     font-size: 15px;
     padding-top: 15vh;
+}
+
+/* ================= crews ================= */
+
+.panel.wide {
+    max-width: 900px;
+}
+
+.panel-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+@media (min-width: 560px) {
+    .panel-head {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+}
+
+.btn-secondary {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    min-height: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--edge-lit);
+    border-radius: var(--radius);
+    cursor: pointer;
+    touch-action: manipulation;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    text-decoration: none;
+}
+
+.btn-secondary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.btn-secondary.perigo:hover:not(:disabled) {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* ---------- pesquisa ---------- */
+
+.searchbar {
+    flex-direction: column;
+    gap: 12px;
+}
+
+.searchbar input {
+    font: inherit;
+    font-size: 16px;
+    min-height: var(--tap);
+    width: 100%;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchbar input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+    outline: none;
+}
+
+@media (min-width: 560px) {
+    .searchbar {
+        flex-direction: row;
+    }
+
+    .searchbar button.primary {
+        width: auto;
+        min-width: 140px;
+        flex: none;
+    }
+}
+
+/* ---------- grelha de crews ---------- */
+
+.grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.grupo h2 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+}
+
+.crewgrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+@media (min-width: 620px) {
+    .crewgrid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
+.crewcard {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    /* A cor da crew entra por aqui, quando ela tem uma. */
+    border-left: 3px solid var(--edge-lit);
+    border-radius: var(--radius);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.crewcard:hover {
+    background: var(--surface-high);
+    text-decoration: none;
+}
+
+.crewcard.destaque {
+    border-left-color: var(--magenta);
+}
+
+.crewcard-top {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
+.crewcard-top b {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+}
+
+.crewcard p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+    /* Uma descrição longa não pode esticar o cartão para fora da fila. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.crewcard-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    font-size: 12.5px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.crewtag {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--cyan);
+}
+
+.crewtag.grande {
+    font-size: 14px;
+}
+
+.pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    color: var(--magenta);
+    background: rgba(233, 60, 239, 0.12);
+    border: 1px solid rgba(233, 60, 239, 0.32);
+    white-space: nowrap;
+}
+
+.pill.aguarda {
+    color: var(--muted);
+    background: rgba(167, 159, 196, 0.1);
+    border-color: var(--edge-lit);
+}
+
+.paginacao {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--muted);
+    padding-top: 4px;
+}
+
+.vazio {
+    margin: 0;
+    font-size: 15px;
+    color: var(--muted);
+    padding: 22px 0;
+    text-wrap: pretty;
+}
+
+/* ---------- cabeçalho da crew ---------- */
+
+.crewhead {
+    border: 1px solid var(--edge-lit);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+}
+
+.crewhead .banner {
+    display: block;
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+}
+
+@media (min-width: 640px) {
+    .crewhead .banner {
+        height: 180px;
+    }
+}
+
+.crewhead-body {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 20px;
+}
+
+.crewhead-body h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: clamp(25px, 6.5vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+.crewhead-body p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    text-wrap: pretty;
+}
+
+/* ---------- estatísticas ---------- */
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    gap: 14px 16px;
+    margin: 0;
+    padding: 18px 20px;
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+}
+
+.stats div {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.stats dt {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.stats dd {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- listas de pessoas ---------- */
+
+.pessoas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--edge);
+}
+
+.pessoas li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--edge);
+}
+
+.pessoas .nome {
+    font-size: 15.5px;
+    font-weight: 500;
+    /* Empurra tudo o resto para a direita, e encolhe primeiro. */
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.pessoas .cargo {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+    white-space: nowrap;
+}
+
+.linha-acoes {
+    display: flex;
+    gap: 10px;
+    flex: none;
+}
+
+.linha-acoes .btn-secondary {
+    min-height: 40px;
+    padding: 7px 14px;
+    font-size: 14px;
 }
