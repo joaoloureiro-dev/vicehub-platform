@@ -5,6 +5,9 @@ import {
     authenticatedUserSchema,
     loginSchema,
     registerSchema,
+    requestPasswordResetSchema,
+    resetPasswordSchema,
+    verifyEmailSchema,
 } from '../schemas/auth.schemas.js';
 
 /**
@@ -21,3 +24,9 @@ export type LoginDto = z.infer<typeof loginSchema>;
 export type AuthenticatedUserDto = z.infer<typeof authenticatedUserSchema>;
 
 export type AuthResponseDto = z.infer<typeof authResponseSchema>;
+
+export type RequestPasswordResetDto = z.infer<typeof requestPasswordResetSchema>;
+
+export type ResetPasswordDto = z.infer<typeof resetPasswordSchema>;
+
+export type VerifyEmailDto = z.infer<typeof verifyEmailSchema>;

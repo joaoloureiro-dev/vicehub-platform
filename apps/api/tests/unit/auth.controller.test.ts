@@ -3,6 +3,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AuthController } from '../../src/modules/auth/controllers/auth.controller.js';
 import { AuthError } from '../../src/modules/auth/errors/auth.errors.js';
+import type { AccountRecoveryService } from '../../src/modules/auth/services/account-recovery.service.js';
 import type { AuthService } from '../../src/modules/auth/services/auth.service.js';
 
 /**
@@ -20,6 +21,7 @@ describe('AuthController', () => {
         logout: ReturnType<typeof vi.fn>;
         logoutAll: ReturnType<typeof vi.fn>;
     };
+    let accountRecoveryService: Record<string, ReturnType<typeof vi.fn>>;
     let controller: AuthController;
     let reply: {
         code: ReturnType<typeof vi.fn>;
@@ -59,7 +61,17 @@ describe('AuthController', () => {
             clearCookie: vi.fn().mockReturnThis(),
         };
 
-        controller = new AuthController(authService as unknown as AuthService);
+        accountRecoveryService = {
+            requestPasswordReset: vi.fn().mockResolvedValue(undefined),
+            resetPassword: vi.fn().mockResolvedValue(undefined),
+            requestEmailVerification: vi.fn().mockResolvedValue(undefined),
+            verifyEmail: vi.fn().mockResolvedValue(undefined),
+        };
+
+        controller = new AuthController(
+            authService as unknown as AuthService,
+            accountRecoveryService as unknown as AccountRecoveryService,
+        );
     });
 
     const asReply = () => reply as unknown as FastifyReply;

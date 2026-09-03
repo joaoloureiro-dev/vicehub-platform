@@ -1,7 +1,15 @@
 import type { FastifyPluginAsync } from 'fastify';
 
+import { env } from '../../config/env.js';
+
 import type { AuthController } from './controllers/auth.controller.js';
-import { loginSchema, registerSchema } from './schemas/auth.schemas.js';
+import {
+    loginSchema,
+    registerSchema,
+    requestPasswordResetSchema,
+    resetPasswordSchema,
+    verifyEmailSchema,
+} from './schemas/auth.schemas.js';
 
 interface AuthRoutesOptions {
     controller: AuthController;
@@ -35,6 +43,56 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
         '/login',
         { schema: { body: loginSchema } },
         controller.login.bind(controller),
+    );
+
+    /**
+     * Recuperar a password.
+     *
+     * Estas rotas levam um limite muito mais apertado do que o global.
+     * Pedir recuperações em massa é a forma barata de usar a plataforma
+     * para encher a caixa de correio de outra pessoa, e de arder a quota
+     * do fornecedor de email a caminho disso. Adivinhar tokens às cegas
+     * tem o mesmo remédio.
+     *
+     * O limite é por IP, como o global. Não chega para um atacante
+     * distribuído, mas trava o caso comum — um guião a correr de um
+     * sítio só.
+     */
+    const strictLimit = {
+        rateLimit: {
+            max: env.AUTH_RECOVERY_RATE_LIMIT_MAX,
+            timeWindow: env.AUTH_RECOVERY_RATE_LIMIT_WINDOW,
+        },
+    };
+
+    fastify.post(
+        '/password-reset',
+        { config: strictLimit, schema: { body: requestPasswordResetSchema } },
+        controller.requestPasswordReset.bind(controller),
+    );
+
+    fastify.post(
+        '/password-reset/confirm',
+        { config: strictLimit, schema: { body: resetPasswordSchema } },
+        controller.resetPassword.bind(controller),
+    );
+
+    /**
+     * Confirmar o email.
+     *
+     * O pedido exige sessão — é para a própria conta. A confirmação não,
+     * porque quem clica vem do email e pode estar noutro dispositivo.
+     */
+    fastify.post(
+        '/email-verification',
+        { config: strictLimit, preHandler: [fastify.authenticate] },
+        controller.requestEmailVerification.bind(controller),
+    );
+
+    fastify.post(
+        '/email-verification/confirm',
+        { config: strictLimit, schema: { body: verifyEmailSchema } },
+        controller.verifyEmail.bind(controller),
     );
 
     /**

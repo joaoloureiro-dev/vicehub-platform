@@ -1,5 +1,6 @@
 import {
     AuthProviderType,
+    AccountTokenPurpose,
     AuthSessionStatus,
     RefreshTokenStatus,
     RoleScope,
@@ -570,6 +571,137 @@ export class AuthRepository {
                 version: {
                     increment: 1,
                 },
+            },
+        });
+    }
+
+    /**
+     * Grava um token de conta.
+     */
+    createAccountToken(input: {
+        userId: string;
+        purpose: AccountTokenPurpose;
+        tokenHash: string;
+        expiresAt: Date;
+        requestedIp?: string | null | undefined;
+        requestedVia?: string | null | undefined;
+    }) {
+        return this.database.accountToken.create({
+            data: {
+                userId: input.userId,
+                purpose: input.purpose,
+                token_hash: input.tokenHash,
+                expires_at: input.expiresAt,
+                requested_ip: input.requestedIp ?? null,
+                requested_via: input.requestedVia ?? null,
+                source: SourceType.api,
+                created_by: input.userId,
+            },
+        });
+    }
+
+    /**
+     * Procura um token que ainda sirva.
+     *
+     * Por usar, por invalidar e por expirar — as três condições na
+     * consulta, e não repartidas entre a consulta e o código, para que
+     * não haja um caminho que verifique duas e se esqueça da terceira.
+     */
+    findUsableAccountToken(tokenHash: string, purpose: AccountTokenPurpose) {
+        return this.database.accountToken.findFirst({
+            where: {
+                token_hash: tokenHash,
+                purpose,
+                used_at: null,
+                invalidated_at: null,
+                is_deleted: false,
+                expires_at: { gt: new Date() },
+            },
+            select: { id: true, userId: true },
+        });
+    }
+
+    /**
+     * Marca um token como usado, **e só se ainda não o estiver**.
+     *
+     * A condição vai no where e não numa leitura anterior: dois pedidos
+     * a usar o mesmo link ao mesmo tempo passariam ambos a verificação, e
+     * o segundo mudaria a password outra vez — com um valor que quem
+     * recuperou a conta não escolheu. Assim o segundo não encontra linha
+     * e sabe que chegou tarde.
+     */
+    async consumeAccountToken(tokenId: string): Promise<boolean> {
+        const resultado = await this.database.accountToken.updateMany({
+            where: { id: tokenId, used_at: null, invalidated_at: null },
+            data: { used_at: new Date(), version: { increment: 1 } },
+        });
+
+        return resultado.count === 1;
+    }
+
+    /**
+     * Invalida os tokens que ainda estavam em aberto.
+     *
+     * Pedir um link novo tem de matar o anterior: de outra forma, um
+     * email antigo continuaria a abrir a conta muito depois de a pessoa
+     * ter pedido outro por desconfiar do primeiro.
+     */
+    invalidateOpenAccountTokens(userId: string, purpose: AccountTokenPurpose) {
+        return this.database.accountToken.updateMany({
+            where: {
+                userId,
+                purpose,
+                used_at: null,
+                invalidated_at: null,
+                is_deleted: false,
+            },
+            data: { invalidated_at: new Date(), version: { increment: 1 } },
+        });
+    }
+
+    /**
+     * Troca a password gravada.
+     */
+    updatePasswordHash(userId: string, passwordHash: string) {
+        return this.database.userCredential.update({
+            where: { userId },
+            data: {
+                password_hash: passwordHash,
+                password_updated_at: new Date(),
+                /**
+                 * Recuperar a conta destranca-a: quem chegou aqui provou
+                 * ter acesso à caixa de correio, e manter o bloqueio de
+                 * tentativas falhadas deixaria a pessoa de fora da conta
+                 * que acabou de recuperar.
+                 */
+                failed_login_attempts: 0,
+                locked_until: null,
+                updated_by: userId,
+                version: { increment: 1 },
+            },
+        });
+    }
+
+    markEmailVerified(userId: string) {
+        return this.database.user.update({
+            where: { id: userId },
+            data: {
+                email_verified_at: new Date(),
+                updated_by: userId,
+                version: { increment: 1 },
+            },
+        });
+    }
+
+    findUserForRecovery(email: string) {
+        return this.database.user.findFirst({
+            where: { email, is_deleted: false },
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                email_verified_at: true,
+                credentials: { select: { id: true, is_deleted: true } },
             },
         });
     }

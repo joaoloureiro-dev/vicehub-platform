@@ -127,6 +127,18 @@ enum AuthSessionStatus {
   expired
 }
 
+/// Para que serve um token de conta enviado por email.
+///
+/// Os dois casos partilham a mesma mecânica — segredo aleatório, guardado
+/// em resumo, de uso único e com prazo — e por isso partilham a mesma
+/// tabela. O propósito fica na linha para que um token pedido para
+/// recuperar a password nunca sirva para confirmar um email, nem o
+/// contrário.
+enum AccountTokenPurpose {
+  password_reset
+  email_verification
+}
+
 enum RefreshTokenStatus {
   active
   rotated
@@ -221,6 +233,7 @@ model User {
   userRoles         UserRole[]
   subscriptions     Subscription[]
   eventParticipants EventParticipant[]
+  accountTokens     AccountToken[]
 }
 
 model Crew {
@@ -939,4 +952,56 @@ model WebhookEvent {
 
   @@index([provider, type])
   @@index([received_at(sort: Desc)])
+}
+
+/// Um token enviado por email para recuperar a password ou confirmar o
+/// endereço.
+///
+/// O que segue para o email é um segredo aleatório; o que fica gravado é
+/// o seu resumo. Quem puser os olhos na base de dados encontra tokens que
+/// não consegue usar — a mesma razão por que as passwords não se guardam
+/// em claro.
+model AccountToken {
+  id String @id @default(uuid())
+
+  userId  String
+  purpose AccountTokenPurpose
+
+  /// SHA-256 do segredo, em hexadecimal.
+  ///
+  /// Não é argon2, ao contrário das passwords e dos refresh tokens, e a
+  /// diferença é deliberada: um segredo de 32 bytes aleatórios não tem
+  /// nada que se adivinhe, por isso uma função lenta não compra
+  /// segurança nenhuma. Compra, isso sim, uma leitura direta por índice
+  /// em vez de percorrer candidatos.
+  token_hash String @unique
+
+  expires_at DateTime
+
+  /// Quando foi usado. Um token serve uma vez.
+  used_at DateTime?
+
+  /// Quando foi invalidado sem ter sido usado — por exemplo, porque a
+  /// pessoa pediu outro.
+  invalidated_at DateTime?
+
+  /// De onde veio o pedido, para o caso de ser preciso investigar.
+  requested_ip  String?
+  requested_via String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expires_at])
+  @@index([userId, purpose, used_at, invalidated_at])
 }

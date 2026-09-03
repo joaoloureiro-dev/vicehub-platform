@@ -7,7 +7,9 @@ export type AuthErrorCode =
     | 'INVALID_REFRESH_TOKEN'
     | 'REFRESH_TOKEN_REUSED'
     | 'SESSION_NOT_FOUND'
-    | 'USER_NOT_FOUND';
+    | 'USER_NOT_FOUND'
+    | 'INVALID_ACCOUNT_TOKEN'
+    | 'EMAIL_ALREADY_VERIFIED';
 
 /**
  * Erro de domínio do módulo Auth.

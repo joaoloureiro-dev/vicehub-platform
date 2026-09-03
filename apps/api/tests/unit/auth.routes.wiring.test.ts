@@ -41,6 +41,10 @@ describe('ligação das rotas de autenticação ao middleware', () => {
             logout: vi.fn(),
             logoutAll: vi.fn(),
             me: vi.fn(),
+            requestPasswordReset: vi.fn(),
+            resetPassword: vi.fn(),
+            requestEmailVerification: vi.fn(),
+            verifyEmail: vi.fn(),
         } as unknown as AuthController;
 
         await app.register(authRoutes, { controller });
@@ -87,5 +91,67 @@ describe('ligação das rotas de autenticação ao middleware', () => {
 
     it('refresh não declara corpo, porque lê o cookie', () => {
         expect(registered.get('POST /refresh')?.schema?.body).toBeUndefined();
+    });
+
+    /**
+     * As rotas de recuperação levam um limite próprio, muito mais
+     * apertado do que o global de 100 pedidos por minuto.
+     *
+     * Pedir recuperações em massa é a forma barata de usar a plataforma
+     * para encher a caixa de correio de outra pessoa, e de arder a quota
+     * do fornecedor de email a caminho disso. Adivinhar tokens às cegas
+     * tem o mesmo remédio.
+     *
+     * Nos testes de integração o limite é levantado por configuração,
+     * para que a suite meça o fluxo e não o limitador — razão a mais
+     * para que a sua existência fique fixada aqui.
+     */
+    describe('as rotas de recuperação têm limite próprio', () => {
+        const rotas = [
+            'POST /password-reset',
+            'POST /password-reset/confirm',
+            'POST /email-verification',
+            'POST /email-verification/confirm',
+        ];
+
+        it.each(rotas)('%s declara um limite de pedidos', (key) => {
+            const config = registered.get(key)?.config as
+                | { rateLimit?: { max?: number; timeWindow?: string } }
+                | undefined;
+
+            expect(config?.rateLimit).toBeDefined();
+            expect(config?.rateLimit?.max).toBeGreaterThan(0);
+            expect(config?.rateLimit?.timeWindow).toBeTruthy();
+        });
+
+        /**
+         * O global permite 100 por minuto. Um limite de recuperação que
+         * fosse igual ou mais folgado não estaria a limitar nada.
+         */
+        it.each(rotas)('%s é mais apertado do que o global', (key) => {
+            const config = registered.get(key)?.config as
+                | { rateLimit?: { max?: number } }
+                | undefined;
+
+            expect(config?.rateLimit?.max).toBeLessThan(100);
+        });
+
+        it('confirmar a recuperação não exige sessão', () => {
+            expect(preHandlersOf('POST /password-reset/confirm')).toHaveLength(0);
+        });
+
+        /**
+         * Quem clica no link de confirmação vem do email, e pode estar
+         * noutro dispositivo. Exigir sessão faria falhar o caso comum.
+         */
+        it('confirmar o email não exige sessão', () => {
+            expect(
+                preHandlersOf('POST /email-verification/confirm'),
+            ).toHaveLength(0);
+        });
+
+        it('pedir a confirmação exige sessão, por ser da própria conta', () => {
+            expect(preHandlersOf('POST /email-verification')).toHaveLength(1);
+        });
     });
 });

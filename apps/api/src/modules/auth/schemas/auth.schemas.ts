@@ -58,3 +58,30 @@ export const authResponseSchema = z.object({
     accessToken: z.string(),
     user: authenticatedUserSchema,
 });
+
+/**
+ * Pedido de recuperação de password.
+ *
+ * Só o email. A resposta é sempre a mesma, exista a conta ou não.
+ */
+export const requestPasswordResetSchema = z.object({
+    email: z.string().trim().email(),
+});
+
+/**
+ * Definição da password nova a partir do link.
+ *
+ * A password nova passa pelas mesmas regras do registo: uma conta
+ * recuperada não deve ficar mais fraca do que era.
+ */
+export const resetPasswordSchema = z.object({
+    token: z.string().min(1).max(512),
+    password: passwordSchema,
+});
+
+/**
+ * Confirmação do endereço de email a partir do link.
+ */
+export const verifyEmailSchema = z.object({
+    token: z.string().min(1).max(512),
+});

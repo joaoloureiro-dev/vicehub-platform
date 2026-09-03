@@ -6,6 +6,9 @@ import type {
     AuthenticatedUserDto,
     LoginDto,
     RegisterDto,
+    RequestPasswordResetDto,
+    ResetPasswordDto,
+    VerifyEmailDto,
 } from '../dto/auth.dto.js';
 import { AuthError } from '../errors/auth.errors.js';
 import { requireAuthContext } from '../http/auth-context.guard.js';
@@ -13,6 +16,7 @@ import {
     clearRefreshTokenCookie,
     setRefreshTokenCookie,
 } from '../http/auth-cookie.js';
+import type { AccountRecoveryService } from '../services/account-recovery.service.js';
 import type { AuthService } from '../services/auth.service.js';
 import type { AuthenticatedUser } from '../types/auth.types.js';
 
@@ -23,7 +27,10 @@ import type { AuthenticatedUser } from '../types/auth.types.js';
  * resposta. Toda a lógica permanece no AuthService.
  */
 export class AuthController {
-    constructor(private readonly authService: AuthService) { }
+    constructor(
+        private readonly authService: AuthService,
+        private readonly accountRecoveryService: AccountRecoveryService,
+    ) { }
 
     /**
      * POST /auth/register
@@ -157,6 +164,104 @@ export class AuthController {
         const { user } = requireAuthContext(request);
 
         reply.send(this.toUserResponse(user));
+    }
+
+    /**
+     * POST /auth/password-reset
+     *
+     * Responde sempre 202, exista a conta ou não. Distinguir os dois
+     * casos daria a qualquer pessoa uma forma de descobrir quem está
+     * registado — basta experimentar endereços.
+     */
+    async requestPasswordReset(
+        request: FastifyRequest<{ Body: RequestPasswordResetDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.accountRecoveryService.requestPasswordReset(
+            request.body.email,
+            this.contextOf(request),
+        );
+
+        reply.code(202).send({
+            message:
+                'Se existir uma conta com este email, o link de recuperação foi enviado.',
+        });
+    }
+
+    /**
+     * POST /auth/password-reset/confirm
+     *
+     * Não devolve sessão: quem acabou de definir a password entra pelo
+     * login, como qualquer pessoa. Emitir tokens aqui faria de um link
+     * de email um caminho de entrada — precisamente o que se acaba de
+     * fechar a quem o tivesse intercetado.
+     */
+    async resetPassword(
+        request: FastifyRequest<{ Body: ResetPasswordDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.accountRecoveryService.resetPassword(
+            request.body.token,
+            request.body.password,
+        );
+
+        /**
+         * O cookie de refresh deste browser é limpo: a recuperação
+         * revogou todas as sessões, e deixar o cookie lá só daria erros
+         * confusos no pedido seguinte.
+         */
+        clearRefreshTokenCookie(reply);
+
+        reply.status(204).send();
+    }
+
+    /**
+     * POST /auth/email-verification
+     */
+    async requestEmailVerification(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        await this.accountRecoveryService.requestEmailVerification(
+            user.id,
+            this.contextOf(request),
+        );
+
+        reply.code(202).send({ message: 'Email de confirmação enviado.' });
+    }
+
+    /**
+     * POST /auth/email-verification/confirm
+     *
+     * Sem autenticação: quem clica no link vem do email, e exigir sessão
+     * aberta faria falhar o caso mais comum — abrir o email noutro
+     * dispositivo.
+     */
+    async verifyEmail(
+        request: FastifyRequest<{ Body: VerifyEmailDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.accountRecoveryService.verifyEmail(request.body.token);
+
+        reply.status(204).send();
+    }
+
+    /**
+     * De onde veio o pedido, para o caso de ser preciso investigar um
+     * abuso.
+     */
+    private contextOf(request: FastifyRequest): {
+        ipAddress: string | null;
+        userAgent: string | null;
+    } {
+        const userAgent = request.headers['user-agent'];
+
+        return {
+            ipAddress: request.ip ?? null,
+            userAgent: typeof userAgent === 'string' ? userAgent : null,
+        };
     }
 
     /**

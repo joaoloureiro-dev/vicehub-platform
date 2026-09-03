@@ -61,6 +61,55 @@ const envSchema = z.object({
     AUTH_LOCKOUT_DURATION_SECONDS: z.coerce.number().int().positive().default(900),
 
     /**
+     * Limite das rotas de recuperação de conta.
+     *
+     * Muito mais apertado do que o global: pedir recuperações em massa é
+     * a forma barata de usar a plataforma para encher a caixa de correio
+     * de outra pessoa, e de arder a quota do fornecedor de email a
+     * caminho disso.
+     *
+     * É configurável para poder ser levantado nos testes, que exercitam
+     * o fluxo dezenas de vezes seguidas a partir do mesmo endereço.
+     */
+    AUTH_RECOVERY_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+    AUTH_RECOVERY_RATE_LIMIT_WINDOW: z.string().min(1).default('15 minutes'),
+
+    /**
+     * Envio de email.
+     *
+     * Sem SMTP_URL a plataforma arranca na mesma e os emails ficam no
+     * log — o que serve para desenvolver e para os testes, e não serve
+     * para utilizadores a sério: um link de recuperação escrito no log é
+     * um link ao alcance de quem lê logs.
+     */
+    SMTP_URL: z.string().min(1).optional(),
+    MAIL_FROM: z.string().min(1).default('ViceHub <no-reply@vicehub.local>'),
+
+    /**
+     * Onde vivem as páginas para onde os emails apontam.
+     *
+     * É daqui que sai o link de recuperação. Enquanto não houver
+     * interface, aponta para o sítio onde ela há de estar.
+     */
+    APP_PUBLIC_URL: z.string().url().default('http://localhost:5173'),
+
+    /**
+     * Validade dos tokens enviados por email, em segundos.
+     *
+     * A recuperação é curta de propósito: é uma chave para entrar na
+     * conta, e uma caixa de correio comprometida ontem não deve abrir
+     * nada hoje. A confirmação de email não abre nada, e por isso dura
+     * mais — obrigar alguém a repetir o pedido por ter demorado a ver o
+     * email seria atrito sem ganho.
+     */
+    PASSWORD_RESET_TTL_SECONDS: z.coerce.number().int().positive().default(3_600),
+    EMAIL_VERIFICATION_TTL_SECONDS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(86_400),
+
+    /**
      * Configuração do Stripe.
      *
      * Os três campos são opcionais e andam juntos: sem eles a plataforma
