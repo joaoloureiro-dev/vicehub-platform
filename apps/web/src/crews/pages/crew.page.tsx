@@ -185,6 +185,12 @@ export const CrewPage = () => {
                             <span className="pill">
                                 {nomeDoCargo(minhaAdesao.role)}
                             </span>
+                            <Link
+                                className="btn-secondary"
+                                to={`/crews/${perfil.id}/tesouraria`}
+                            >
+                                Tesouraria
+                            </Link>
                             <button
                                 className="btn-secondary"
                                 type="button"

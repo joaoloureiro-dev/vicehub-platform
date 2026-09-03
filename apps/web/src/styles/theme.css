@@ -1151,3 +1151,192 @@ button.link:hover {
         linear-gradient(-45deg, var(--edge) 25%, transparent 25%) 0 6px / 12px 12px,
         var(--surface-high);
 }
+
+/* ---------- tesouraria ---------- */
+
+/*
+ * Quatro saldos, e não um. O disponível é o que interessa a quem vai
+ * gastar, por isso é o único em tamanho grande; os outros três explicam
+ * de onde ele vem.
+ */
+/*
+ * Um saldo por linha no telemóvel.
+ *
+ * Estes valores são moeda de jogo e podem ter dezanove dígitos. Em duas
+ * colunas de 390px não há largura para eles, e o número parte-se — o que
+ * é precisamente o que o espaço inquebrável existe para impedir.
+ */
+.saldos {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px 20px;
+    margin: 0;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+}
+
+.saldos div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.saldos .principal {
+    grid-column: 1 / -1;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--edge);
+}
+
+@media (min-width: 560px) {
+    .saldos {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.saldos dt {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.saldos dd {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    /*
+     * `anywhere` aqui anularia o espaço inquebrável e partia o número a
+     * meio de um grupo — "9 007 199 2 / 54 740 993" lê-se como outro
+     * valor qualquer. Se não couber, transborda e a célula rola.
+     */
+    overflow-wrap: normal;
+    overflow-x: auto;
+}
+
+/* O tamanho vem do componente: acompanha o comprimento do número. */
+.saldos .principal dd {
+    letter-spacing: -0.02em;
+    background: var(--brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.saldos dd.credit {
+    color: var(--ok);
+}
+
+.saldos dd.debit {
+    color: var(--sunset);
+}
+
+.field select {
+    font: inherit;
+    font-size: 16px;
+    min-height: var(--tap);
+    width: 100%;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    cursor: pointer;
+}
+
+.field select:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
+    outline: none;
+}
+
+/* ---------- extrato ---------- */
+
+.movimentos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--edge);
+}
+
+.movimentos li {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--edge);
+}
+
+/* Um movimento decidido pesa menos do que um por decidir. */
+.movimento.rejected,
+.movimento.canceled {
+    opacity: 0.55;
+}
+
+.mov-principal {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.mov-valor {
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mov-valor.credit {
+    color: var(--ok);
+}
+
+.mov-valor.debit {
+    color: var(--sunset);
+}
+
+.mov-desc {
+    font-size: 15px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.mov-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    font-size: 12.5px;
+    color: var(--faint);
+}
+
+/*
+ * O estado vai sempre em texto dentro da pílula: a cor acrescenta, não
+ * substitui.
+ */
+.pill.estado-pending {
+    color: var(--muted);
+    background: rgba(167, 159, 196, 0.1);
+    border-color: var(--edge-lit);
+}
+
+.pill.estado-approved {
+    color: var(--ok);
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.32);
+}
+
+.pill.estado-rejected,
+.pill.estado-canceled {
+    color: var(--danger);
+    background: rgba(255, 92, 122, 0.09);
+    border-color: rgba(255, 92, 122, 0.3);
+}

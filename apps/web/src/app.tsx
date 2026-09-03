@@ -21,6 +21,7 @@ import { MyCrewsPage } from './crews/pages/my-crews.page.js';
 import { CreateServerPage } from './servers/pages/create-server.page.js';
 import { ServerDirectoryPage } from './servers/pages/server-directory.page.js';
 import { ServerPage } from './servers/pages/server.page.js';
+import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
 
@@ -171,6 +172,10 @@ export const App = () => (
                 <Route path="/crews/nova" element={<CreateCrewPage />} />
                 <Route path="/servidores/novo" element={<CreateServerPage />} />
                 <Route path="/eu/crews" element={<MyCrewsPage />} />
+                <Route
+                    path="/crews/:crewId/tesouraria"
+                    element={<TreasuryPage />}
+                />
             </Route>
 
             {/*
