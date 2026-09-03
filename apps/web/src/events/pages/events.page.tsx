@@ -5,7 +5,8 @@ import { ApiError } from '../../lib/api.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { createEvent, listEvents, type Dono } from '../event.api.js';
-import { nomeDoEstado, quando } from '../event.types.js';
+import { useIdioma, useT } from '../../i18n/i18n.js';
+import { criarTools } from '../../i18n/tools.js';
 
 /**
  * O calendário de uma crew.
@@ -15,6 +16,9 @@ import { nomeDoEstado, quando } from '../event.types.js';
  * leitura é a resposta, e não uma avaria.
  */
 export const EventsPage = () => {
+    const t = useT();
+    const { idioma } = useIdioma();
+    const { quando } = criarTools(idioma);
     const { crewId } = useParams<{ crewId: string }>();
     const dono: Dono = { tipo: 'crews', id: crewId as string };
 
@@ -44,17 +48,15 @@ export const EventsPage = () => {
     );
 
     if (eventos.loading && !eventos.data) {
-        return <p className="centered">A carregar…</p>;
+        return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
     if (eventos.data === null) {
         return (
             <div className="panel">
-                <Alert kind="bad">
-                    O calendário de uma crew só é visível a quem pertence a ela.
-                </Alert>
+                <Alert kind="bad">{t.eventos.soParaMembros}</Alert>
                 <div className="foot">
-                    <Link to={`/crews/${crewId}`}>Ver a crew</Link>
+                    <Link to={`/crews/${crewId}`}>{t.eventos.verCrew}</Link>
                 </div>
             </div>
         );
@@ -78,7 +80,7 @@ export const EventsPage = () => {
                 capacity: lugares ? Number(lugares) : null,
             });
 
-            setMensagem({ tipo: 'good', texto: 'Evento marcado.' });
+            setMensagem({ tipo: 'good', texto: t.eventos.marcado });
             setNome('');
             setQuandoComeca('');
             setLugares('');
@@ -89,10 +91,10 @@ export const EventsPage = () => {
                 tipo: 'bad',
                 texto:
                     falha instanceof ApiError && falha.status === 403
-                        ? 'Marcar eventos é de quem gere a crew.'
+                        ? t.eventos.soQuemGere
                         : falha instanceof ApiError
                           ? falha.message
-                          : 'Não foi possível marcar o evento.',
+                          : t.eventos.naoFoiPossivelMarcar,
             });
         } finally {
             setACriar(false);
@@ -102,9 +104,9 @@ export const EventsPage = () => {
     return (
         <div className="panel wide">
             <div className="panel-head">
-                <h1>Eventos</h1>
+                <h1>{t.eventos.titulo}</h1>
                 <Link className="btn-secondary" to={`/crews/${crewId}`}>
-                    Ver a crew
+                    {t.eventos.verCrew}
                 </Link>
             </div>
 
@@ -116,21 +118,19 @@ export const EventsPage = () => {
                         setPassados(event.target.checked);
                     }}
                 />
-                Mostrar também os que já passaram
+                {t.eventos.mostrarPassados}
             </label>
 
             {mensagem ? <Alert kind={mensagem.tipo}>{mensagem.texto}</Alert> : null}
 
             <section className="grupo">
                 <h2>
-                    {passados ? 'Todos os eventos' : 'O que está para vir'}
+                    {passados ? t.eventos.todos : t.eventos.oQueVem}
                 </h2>
 
                 {eventos.data.length === 0 ? (
                     <p className="vazio">
-                        {passados
-                            ? 'Esta crew ainda não teve eventos.'
-                            : 'Nada marcado. Marca o primeiro aqui em baixo.'}
+                        {passados ? t.eventos.semHistorico : t.eventos.semEventos}
                     </p>
                 ) : (
                     <ul className="movimentos">
@@ -146,20 +146,22 @@ export const EventsPage = () => {
                                 </div>
                                 <div className="mov-meta">
                                     <span className={`pill evento-${evento.status}`}>
-                                        {nomeDoEstado(evento.status)}
+                                        {t.estadosEvento[
+                                            evento.status as keyof typeof t.estadosEvento
+                                        ] ?? evento.status}
                                     </span>
                                     <span>{quando(evento.startsAt)}</span>
                                     <span>
-                                        {evento.signedUpCount} inscrito
-                                        {evento.signedUpCount === 1 ? '' : 's'}
+                                        {t.eventos.inscritos(evento.signedUpCount)}
                                         {evento.capacity
-                                            ? ` de ${evento.capacity}`
+                                            ? t.eventos.deLugares(evento.capacity)
                                             : ''}
                                     </span>
                                     {evento.confirmedCount > 0 ? (
                                         <span className="confirmados">
-                                            {evento.confirmedCount} com presença
-                                            confirmada
+                                            {t.eventos.comPresenca(
+                                                evento.confirmedCount,
+                                            )}
                                         </span>
                                     ) : null}
                                 </div>
@@ -170,11 +172,11 @@ export const EventsPage = () => {
             </section>
 
             <section className="grupo">
-                <h2>Marcar um evento</h2>
+                <h2>{t.eventos.marcarTitulo}</h2>
 
                 <form onSubmit={criar}>
                     <div className="field">
-                        <label htmlFor="nome">Nome</label>
+                        <label htmlFor="nome">{t.eventos.nome}</label>
                         <input
                             id="nome"
                             type="text"
@@ -186,7 +188,7 @@ export const EventsPage = () => {
                     </div>
 
                     <div className="field">
-                        <label htmlFor="comeca">Começa</label>
+                        <label htmlFor="comeca">{t.eventos.comeca}</label>
                         <input
                             id="comeca"
                             type="datetime-local"
@@ -198,7 +200,7 @@ export const EventsPage = () => {
                     </div>
 
                     <div className="field">
-                        <label htmlFor="lugares">Lugares</label>
+                        <label htmlFor="lugares">{t.eventos.lugares}</label>
                         <input
                             id="lugares"
                             type="number"
@@ -211,12 +213,12 @@ export const EventsPage = () => {
                             }}
                         />
                         <p className="hint" id="lugares-hint">
-                            Deixa vazio para não haver limite.
+                            {t.eventos.lugaresAjuda}
                         </p>
                     </div>
 
                     <div className="field">
-                        <label htmlFor="descricao">Descrição</label>
+                        <label htmlFor="descricao">{t.eventos.descricao}</label>
                         <textarea
                             id="descricao"
                             rows={3}
@@ -233,7 +235,7 @@ export const EventsPage = () => {
                         type="submit"
                         disabled={aCriar || !nome.trim() || !quandoComeca}
                     >
-                        {aCriar ? 'A marcar…' : 'Marcar o evento'}
+                        {aCriar ? t.eventos.aMarcar : t.eventos.marcar}
                     </button>
                 </form>
             </section>

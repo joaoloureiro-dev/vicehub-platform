@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api.js';
 import { Alert } from '../../auth/components/alert.js';
 import { Field } from '../../auth/components/field.js';
 import { createCrew } from '../crew.api.js';
+import { useT } from '../../i18n/i18n.js';
 
 /**
  * As mesmas regras que a API aplica, ditas antes de o pedido sair.
@@ -16,6 +17,7 @@ const TAG_VALIDA = /^[A-Za-z0-9]+$/;
 
 export const CreateCrewPage = () => {
     const navigate = useNavigate();
+    const t = useT();
 
     const [nome, setNome] = useState('');
     const [tag, setTag] = useState('');
@@ -42,14 +44,14 @@ export const CreateCrewPage = () => {
             void navigate(`/crews/${crew.id}`, { replace: true });
         } catch (falha) {
             if (falha instanceof ApiError && falha.code === 'CREW_NAME_TAKEN') {
-                setErro('Já existe uma crew com este nome.');
+                setErro(t.crews.nomeOcupado);
             } else if (falha instanceof ApiError && falha.code === 'CREW_TAG_TAKEN') {
-                setErro('Esta tag já está ocupada. Escolhe outra.');
+                setErro(t.crews.tagOcupada);
             } else {
                 setErro(
                     falha instanceof ApiError
                         ? falha.message
-                        : 'Não foi possível criar a crew.',
+                        : t.crews.naoFoiPossivelCriar,
                 );
             }
 
@@ -60,8 +62,8 @@ export const CreateCrewPage = () => {
     return (
         <div className="card">
             <header>
-                <h1>Criar crew</h1>
-                <p>Ficas líder, e podes convidar quem quiseres a seguir.</p>
+                <h1>{t.crews.criarTitulo}</h1>
+                <p>{t.crews.criarSub}</p>
             </header>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
@@ -69,25 +71,25 @@ export const CreateCrewPage = () => {
             <form onSubmit={submeter}>
                 <Field
                     id="nome"
-                    label="Nome"
+                    label={t.crews.nome}
                     type="text"
                     value={nome}
                     onChange={setNome}
                     invalid={nomeCurto}
-                    hint="Entre 3 e 48 caracteres."
+                    hint={t.crews.nomeAjuda}
                 />
                 <Field
                     id="tag"
-                    label="Tag"
+                    label={t.crews.tag}
                     type="text"
                     value={tag}
                     onChange={setTag}
                     invalid={tagMa}
-                    hint="Entre 2 e 8 letras ou números. Aparece ao lado do nome, assim: [VICE]."
+                    hint={t.crews.tagAjuda}
                 />
 
                 <div className="field">
-                    <label htmlFor="descricao">Descrição</label>
+                    <label htmlFor="descricao">{t.crews.descricao}</label>
                     <textarea
                         id="descricao"
                         name="descricao"
@@ -100,7 +102,7 @@ export const CreateCrewPage = () => {
                         }}
                     />
                     <p className="hint" id="descricao-hint">
-                        Opcional. {500 - descricao.length} caracteres disponíveis.
+                        {t.crews.caracteresDisponiveis(500 - descricao.length)}
                     </p>
                 </div>
 
@@ -109,12 +111,12 @@ export const CreateCrewPage = () => {
                     type="submit"
                     disabled={aEnviar || nomeCurto || tagMa || !nome || !tag}
                 >
-                    {aEnviar ? 'A criar…' : 'Criar a crew'}
+                    {aEnviar ? t.auth.aCriar : t.crews.criarBotao}
                 </button>
             </form>
 
             <div className="foot">
-                <Link to="/crews">Voltar ao diretório</Link>
+                <Link to="/crews">{t.crews.voltarDiretorio}</Link>
             </div>
         </div>
     );

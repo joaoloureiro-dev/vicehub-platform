@@ -5,9 +5,11 @@ import { ApiError } from '../../lib/api.js';
 import { Alert } from '../../auth/components/alert.js';
 import { Field } from '../../auth/components/field.js';
 import { createServer } from '../server.api.js';
+import { useT } from '../../i18n/i18n.js';
 
 export const CreateServerPage = () => {
     const navigate = useNavigate();
+    const t = useT();
 
     const [nome, setNome] = useState('');
     const [regiao, setRegiao] = useState('');
@@ -33,10 +35,10 @@ export const CreateServerPage = () => {
         } catch (falha) {
             setErro(
                 falha instanceof ApiError && falha.code === 'SERVER_NAME_TAKEN'
-                    ? 'Já existe um servidor com este nome.'
+                    ? t.servidores.nomeOcupado
                     : falha instanceof ApiError
                       ? falha.message
-                      : 'Não foi possível registar o servidor.',
+                      : t.servidores.naoFoiPossivelRegistar,
             );
             setAEnviar(false);
         }
@@ -45,8 +47,8 @@ export const CreateServerPage = () => {
     return (
         <div className="card">
             <header>
-                <h1>Registar servidor</h1>
-                <p>Ficas dono, e podes aceitar quem se candidatar.</p>
+                <h1>{t.servidores.registarTitulo}</h1>
+                <p>{t.servidores.registarSub}</p>
             </header>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
@@ -54,25 +56,25 @@ export const CreateServerPage = () => {
             <form onSubmit={submeter}>
                 <Field
                     id="nome"
-                    label="Nome"
+                    label={t.crews.nome}
                     type="text"
                     value={nome}
                     onChange={setNome}
                     invalid={nomeCurto}
-                    hint="Entre 3 e 48 caracteres."
+                    hint={t.crews.nomeAjuda}
                 />
                 <Field
                     id="regiao"
-                    label="Região"
+                    label={t.servidores.regiao}
                     type="text"
                     value={regiao}
                     onChange={setRegiao}
                     required={false}
-                    hint="Opcional. Ajuda quem procura latência baixa, por exemplo Europa."
+                    hint={t.servidores.regiaoAjuda}
                 />
 
                 <div className="field">
-                    <label htmlFor="descricao">Descrição</label>
+                    <label htmlFor="descricao">{t.crews.descricao}</label>
                     <textarea
                         id="descricao"
                         name="descricao"
@@ -85,7 +87,7 @@ export const CreateServerPage = () => {
                         }}
                     />
                     <p className="hint" id="descricao-hint">
-                        Opcional. {500 - descricao.length} caracteres disponíveis.
+                        {t.crews.caracteresDisponiveis(500 - descricao.length)}
                     </p>
                 </div>
 
@@ -94,12 +96,12 @@ export const CreateServerPage = () => {
                     type="submit"
                     disabled={aEnviar || nomeCurto || !nome}
                 >
-                    {aEnviar ? 'A registar…' : 'Registar o servidor'}
+                    {aEnviar ? t.comum.aGuardar : t.servidores.registarBotao}
                 </button>
             </form>
 
             <div className="foot">
-                <Link to="/servidores">Voltar ao diretório</Link>
+                <Link to="/servidores">{t.crews.voltarDiretorio}</Link>
             </div>
         </div>
     );

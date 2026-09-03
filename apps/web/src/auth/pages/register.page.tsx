@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api.js';
 import { Alert } from '../components/alert.js';
 import { Field } from '../components/field.js';
 import { register } from '../auth.api.js';
+import { useT } from '../../i18n/i18n.js';
 
 /**
  * As mesmas regras que o servidor aplica, ditas antes de o pedido sair.
@@ -16,6 +17,7 @@ const MINIMO_PASSWORD = 12;
 
 export const RegisterPage = () => {
     const navigate = useNavigate();
+    const t = useT();
 
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
@@ -36,17 +38,17 @@ export const RegisterPage = () => {
             void navigate('/', { replace: true });
         } catch (falha) {
             if (falha instanceof ApiError && falha.code === 'EMAIL_ALREADY_EXISTS') {
-                setErro('Já existe uma conta com este email.');
+                setErro(t.auth.emailOcupado);
             } else if (
                 falha instanceof ApiError &&
                 falha.code === 'USERNAME_ALREADY_EXISTS'
             ) {
-                setErro('Este nome já está ocupado. Escolhe outro.');
+                setErro(t.auth.nomeOcupado);
             } else {
                 setErro(
                     falha instanceof ApiError
                         ? falha.message
-                        : 'Não foi possível criar a conta.',
+                        : t.auth.naoFoiPossivelCriar,
                 );
             }
 
@@ -57,8 +59,8 @@ export const RegisterPage = () => {
     return (
         <div className="card">
             <header>
-                <h1>Criar conta</h1>
-                <p>Leva menos de um minuto.</p>
+                <h1>{t.auth.registoTitulo}</h1>
+                <p>{t.auth.registoSub}</p>
             </header>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
@@ -66,7 +68,7 @@ export const RegisterPage = () => {
             <form onSubmit={submeter}>
                 <Field
                     id="email"
-                    label="Email"
+                    label={t.auth.email}
                     type="email"
                     value={email}
                     onChange={setEmail}
@@ -74,7 +76,7 @@ export const RegisterPage = () => {
                 />
                 <Field
                     id="username"
-                    label="Nome de jogador"
+                    label={t.auth.nomeJogador}
                     type="text"
                     value={username}
                     onChange={setUsername}
@@ -82,26 +84,26 @@ export const RegisterPage = () => {
                 />
                 <Field
                     id="password"
-                    label="Password"
+                    label={t.auth.password}
                     type="password"
                     value={password}
                     onChange={setPassword}
                     autoComplete="new-password"
                     invalid={curta}
-                    hint={`Pelo menos ${MINIMO_PASSWORD} caracteres.`}
+                    hint={t.auth.passwordMinima(MINIMO_PASSWORD)}
                 />
                 <button
                     className="primary"
                     type="submit"
                     disabled={aEnviar || curta}
                 >
-                    {aEnviar ? 'A criar…' : 'Criar conta'}
+                    {aEnviar ? t.auth.aCriar : t.auth.registoTitulo}
                 </button>
             </form>
 
             <div className="foot">
-                <span>Já tens conta?</span>
-                <Link to="/entrar">Entrar</Link>
+                <span>{t.auth.jaTensConta}</span>
+                <Link to="/entrar">{t.auth.entrarTitulo}</Link>
             </div>
         </div>
     );

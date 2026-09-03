@@ -410,9 +410,14 @@ button.primary:disabled {
     cursor: not-allowed;
 }
 
+/*
+ * Um rótulo não pode partir-se em duas linhas no topo: o francês é o
+ * idioma mais comprido dos quatro, e é sempre ele que revela isto.
+ */
 button.link {
     font: inherit;
     font-size: 14.5px;
+    white-space: nowrap;
     min-height: 44px;
     color: var(--cyan);
     background: none;
@@ -1419,4 +1424,34 @@ button.link:hover {
 .peso input:focus {
     border-color: var(--cyan);
     outline: none;
+}
+
+/* ---------- seletor de idioma ---------- */
+
+.idioma select {
+    font: inherit;
+    font-size: 13px;
+    max-width: 8.5rem;
+    min-height: 40px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.idioma select:hover {
+    border-color: var(--edge-lit);
+    color: var(--ink);
+}
+
+.idioma select:focus {
+    border-color: var(--cyan);
+    outline: none;
+}
+
+.idioma option {
+    background: var(--surface);
+    color: var(--ink);
 }

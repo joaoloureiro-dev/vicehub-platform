@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { listMyMemberships } from '../crew.api.js';
-import { nomeDoCargo } from '../crew.types.js';
+import { useT } from '../../i18n/i18n.js';
 
 /**
  * As minhas crews, candidaturas pendentes incluídas.
@@ -13,6 +13,7 @@ import { nomeDoCargo } from '../crew.types.js';
  * pergunta que faz a pessoa voltar ao site.
  */
 export const MyCrewsPage = () => {
+    const t = useT();
     const { data, loading, error } = useAsync(() => listMyMemberships(), []);
 
     const pendentes = data?.filter((adesao) => adesao.status === 'pending') ?? [];
@@ -21,29 +22,29 @@ export const MyCrewsPage = () => {
     return (
         <div className="panel wide">
             <div className="panel-head">
-                <h1>As minhas crews</h1>
+                <h1>{t.crews.asMinhasTitulo}</h1>
                 <Link className="btn-secondary" to="/crews">
-                    Ver o diretório
+                    {t.crews.verDiretorio}
                 </Link>
             </div>
 
             {error ? (
-                <Alert kind="bad">Não foi possível carregar as tuas crews.</Alert>
+                <Alert kind="bad">{t.crews.naoCarregouMinhas}</Alert>
             ) : null}
 
-            {loading && !data ? <p className="hint">A carregar…</p> : null}
+            {loading && !data ? <p className="hint">{t.comum.aCarregar}</p> : null}
 
             {data && data.length === 0 ? (
                 <p className="vazio">
-                    Ainda não pertences a nenhuma crew.{' '}
-                    <Link to="/crews">Procura uma</Link> ou{' '}
-                    <Link to="/crews/nova">cria a tua</Link>.
+                    {t.crews.semCrews}{' '}
+                    <Link to="/crews">{t.crews.procuraUma}</Link>{' '}
+                    <Link to="/crews/nova">{t.crews.ouCriaTua}</Link>.
                 </p>
             ) : null}
 
             {pendentes.length > 0 ? (
                 <section className="grupo">
-                    <h2>À espera de resposta</h2>
+                    <h2>{t.crews.aEsperaResposta}</h2>
                     <ul className="pessoas">
                         {pendentes.map((adesao) => (
                             <li key={adesao.crewId}>
@@ -51,7 +52,7 @@ export const MyCrewsPage = () => {
                                     <span className="crewtag">[{adesao.tag}]</span>{' '}
                                     {adesao.name}
                                 </Link>
-                                <span className="pill aguarda">Candidatura enviada</span>
+                                <span className="pill aguarda">{t.crews.candidaturaEnviada}</span>
                             </li>
                         ))}
                     </ul>
@@ -60,7 +61,7 @@ export const MyCrewsPage = () => {
 
             {ativas.length > 0 ? (
                 <section className="grupo">
-                    <h2>Onde já entrei</h2>
+                    <h2>{t.crews.ondeEntrei}</h2>
                     <ul className="pessoas">
                         {ativas.map((adesao) => (
                             <li key={adesao.crewId}>
@@ -68,7 +69,12 @@ export const MyCrewsPage = () => {
                                     <span className="crewtag">[{adesao.tag}]</span>{' '}
                                     {adesao.name}
                                 </Link>
-                                <span className="cargo">{nomeDoCargo(adesao.role)}</span>
+                                <span className="cargo">
+                                    {t.cargos[
+                                        (adesao.role ??
+                                            'crew_member') as keyof typeof t.cargos
+                                    ] ?? adesao.role}
+                                </span>
                             </li>
                         ))}
                     </ul>

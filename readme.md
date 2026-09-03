@@ -664,6 +664,33 @@ pede a lista de candidaturas e trata o 403 como "não és tu que geres
 isto", em vez de deduzir o cargo de outro sítio. Assim o que aparece é
 sempre a permissão real, e um 403 esperado não é mostrado como avaria.
 
+**A interface fala quatro idiomas**: inglês, português, espanhol e
+francês. O inglês é a fonte de verdade — é dele que sai o tipo
+`Messages`, e os outros três são tipados contra ele, por isso **uma
+chave em falta é erro de compilação** em vez de texto em falta no ecrã.
+
+O idioma de quem chega vem da preferência do browser (`pt-BR` vale tanto
+como `pt`) e cai no inglês quando não reconhece nenhum. A escolha do
+seletor fica guardada neste browser, e não na conta: quem usa o telemóvel
+em francês e o portátil em inglês tem razão nos dois.
+
+**Os plurais vêm do `Intl.PluralRules`, e não de um `n === 1 ? a : b`.**
+Zero não se comporta da mesma maneira nos quatro: em português e em
+francês usa a forma singular, em inglês e em espanhol a plural. Escrito à
+mão, acerta em dois idiomas e falha nos outros dois em silêncio. É também
+por isso que as formas singulares de pt e fr interpolam o número em vez
+de escreverem "1" — nesses idiomas, a forma singular também tem de saber
+dizer zero.
+
+O separador de milhares dos montantes é o do idioma — vírgula em inglês,
+ponto em português e espanhol, espaço fino em francês — e vem do `Intl`
+sem que o montante lhe toque: pede-se ao `Intl` como agruparia um
+milhão, lê-se o carácter que ele usou, e é só o carácter que se pede
+emprestado. O valor continua a ser texto do princípio ao fim.
+
+**O código continua em português** — identificadores e comentários. O que
+mudou de idioma foi a interface, não a equipa que a escreve.
+
 **Mobile-first.** As regras base do CSS servem o telemóvel; as media queries só
 acrescentam à medida que há largura. Os campos têm 16px de texto — abaixo disso
 o Safari do iPhone dá zoom ao campo mal lhe tocam — e os alvos de toque têm 48px

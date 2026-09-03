@@ -10,6 +10,8 @@ import {
 
 import { useAuth } from './auth/auth.context.js';
 import { logout } from './auth/auth.api.js';
+import { useT } from './i18n/i18n.js';
+import { LanguagePicker } from './i18n/language-picker.js';
 import { LoginPage } from './auth/pages/login.page.js';
 import { RegisterPage } from './auth/pages/register.page.js';
 import { RecoverPasswordPage } from './auth/pages/recover-password.page.js';
@@ -27,6 +29,13 @@ import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
 
+/** Um "a carregar" que já sabe falar o idioma escolhido. */
+const Carregando = () => {
+    const t = useT();
+
+    return <p className="centered">{t.comum.aCarregar}</p>;
+};
+
 /** Onde o convite a entrar seria uma repetição do que está no ecrã. */
 const SEM_CONVITE = new Set(['/entrar', '/registo']);
 
@@ -38,13 +47,14 @@ const SEM_CONVITE = new Set(['/entrar', '/registo']);
  * partir dos 640px sobem para o topo, onde há largura.
  */
 const DESTINOS = [
-    { to: '/crews', label: 'Crews' },
-    { to: '/servidores', label: 'Servidores' },
-    { to: '/eu/crews', label: 'As minhas' },
-    { to: '/eu', label: 'Perfil' },
-];
+    { to: '/crews', chave: 'crews' },
+    { to: '/servidores', chave: 'servidores' },
+    { to: '/eu/crews', chave: 'asMinhas' },
+    { to: '/eu', chave: 'perfil' },
+] as const;
 
 const Shell = () => {
+    const t = useT();
     const { user } = useAuth();
     const { pathname } = useLocation();
 
@@ -67,7 +77,7 @@ const Shell = () => {
                             <span className="so-largo">
                                 {DESTINOS.map((destino) => (
                                     <NavLink key={destino.to} to={destino.to} end>
-                                        {destino.label}
+                                        {t.nav[destino.chave]}
                                     </NavLink>
                                 ))}
                             </span>
@@ -77,12 +87,13 @@ const Shell = () => {
                                 type="button"
                                 onClick={() => void logout()}
                             >
-                                Sair
+                                {t.nav.sair}
                             </button>
                         </>
                     ) : SEM_CONVITE.has(pathname) ? null : (
-                        <Link to="/entrar">Entrar</Link>
+                        <Link to="/entrar">{t.nav.entrar}</Link>
                     )}
+                    <LanguagePicker />
                 </nav>
             </header>
 
@@ -94,7 +105,7 @@ const Shell = () => {
                 <nav className="barra-baixo" aria-label="Navegação principal">
                     {DESTINOS.map((destino) => (
                         <NavLink key={destino.to} to={destino.to} end>
-                            {destino.label}
+                            {t.nav[destino.chave]}
                         </NavLink>
                     ))}
                 </nav>
@@ -115,7 +126,7 @@ const RequireAuth = () => {
     const location = useLocation();
 
     if (loading) {
-        return <p className="centered">A carregar…</p>;
+        return <Carregando />;
     }
 
     return user ? (
@@ -132,7 +143,7 @@ const RequireAnonymous = () => {
     const { user, loading } = useAuth();
 
     if (loading) {
-        return <p className="centered">A carregar…</p>;
+        return <Carregando />;
     }
 
     return user ? <Navigate to="/" replace /> : <Outlet />;

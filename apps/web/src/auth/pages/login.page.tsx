@@ -5,9 +5,11 @@ import { ApiError } from '../../lib/api.js';
 import { Alert } from '../components/alert.js';
 import { Field } from '../components/field.js';
 import { login } from '../auth.api.js';
+import { useT } from '../../i18n/i18n.js';
 
 export const LoginPage = () => {
     const navigate = useNavigate();
+    const t = useT();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -31,8 +33,8 @@ export const LoginPage = () => {
              */
             setErro(
                 falha instanceof ApiError && falha.code === 'ACCOUNT_LOCKED'
-                    ? 'Demasiadas tentativas falhadas. Tenta daqui a pouco.'
-                    : 'Email ou password que não conferem.',
+                    ? t.auth.contaBloqueada
+                    : t.auth.credenciaisErradas,
             );
             setAEnviar(false);
         }
@@ -41,8 +43,8 @@ export const LoginPage = () => {
     return (
         <div className="card">
             <header>
-                <h1>Entrar</h1>
-                <p>Bem-vindo de volta ao ViceHub.</p>
+                <h1>{t.auth.entrarTitulo}</h1>
+                <p>{t.auth.entrarSub}</p>
             </header>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
@@ -50,7 +52,7 @@ export const LoginPage = () => {
             <form onSubmit={submeter}>
                 <Field
                     id="email"
-                    label="Email"
+                    label={t.auth.email}
                     type="email"
                     value={email}
                     onChange={setEmail}
@@ -58,21 +60,21 @@ export const LoginPage = () => {
                 />
                 <Field
                     id="password"
-                    label="Password"
+                    label={t.auth.password}
                     type="password"
                     value={password}
                     onChange={setPassword}
                     autoComplete="current-password"
                 />
                 <button className="primary" type="submit" disabled={aEnviar}>
-                    {aEnviar ? 'A entrar…' : 'Entrar'}
+                    {aEnviar ? t.auth.aEntrar : t.auth.entrarTitulo}
                 </button>
             </form>
 
             <div className="foot">
-                <Link to="/recuperar-password">Esqueci-me da password</Link>
+                <Link to="/recuperar-password">{t.auth.esqueciPassword}</Link>
                 <span className="sep">·</span>
-                <Link to="/registo">Criar conta</Link>
+                <Link to="/registo">{t.auth.criarConta}</Link>
             </div>
         </div>
     );

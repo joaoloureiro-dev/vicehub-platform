@@ -5,6 +5,7 @@ import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { listCrews } from '../crew.api.js';
 import { CrewCard } from '../components/crew-card.js';
+import { useT } from '../../i18n/i18n.js';
 
 /**
  * O diretório.
@@ -15,6 +16,7 @@ import { CrewCard } from '../components/crew-card.js';
  * decisão em vez de a contrariar.
  */
 export const CrewDirectoryPage = () => {
+    const t = useT();
     const [termo, setTermo] = useState('');
     const [pesquisa, setPesquisa] = useState('');
     const [pagina, setPagina] = useState(1);
@@ -33,9 +35,9 @@ export const CrewDirectoryPage = () => {
     return (
         <div className="panel wide">
             <div className="panel-head">
-                <h1>Crews</h1>
+                <h1>{t.crews.titulo}</h1>
                 <Link className="btn-secondary" to="/crews/nova">
-                    Criar crew
+                    {t.crews.criar}
                 </Link>
             </div>
 
@@ -43,26 +45,26 @@ export const CrewDirectoryPage = () => {
                 <input
                     type="search"
                     value={termo}
-                    aria-label="Pesquisar crews"
-                    placeholder="Procurar pelo nome ou pela tag"
+                    aria-label={t.crews.procurarLabel}
+                    placeholder={t.crews.procurar}
                     onChange={(event) => {
                         setTermo(event.target.value);
                     }}
                 />
                 <button className="primary" type="submit">
-                    Procurar
+                    {t.crews.botaoProcurar}
                 </button>
             </form>
 
             {error ? (
-                <Alert kind="bad">Não foi possível carregar o diretório.</Alert>
+                <Alert kind="bad">{t.crews.naoCarregou}</Alert>
             ) : null}
 
-            {loading && !data ? <p className="hint">A carregar…</p> : null}
+            {loading && !data ? <p className="hint">{t.comum.aCarregar}</p> : null}
 
             {data && data.featured.length > 0 ? (
                 <section className="grupo">
-                    <h2>Em destaque</h2>
+                    <h2>{t.crews.emDestaque}</h2>
                     <div className="crewgrid">
                         {data.featured.map((crew) => (
                             <CrewCard key={crew.id} crew={crew} destaque />
@@ -74,14 +76,12 @@ export const CrewDirectoryPage = () => {
             {data ? (
                 <section className="grupo">
                     <h2>
-                        {pesquisa ? `Resultados para "${pesquisa}"` : 'Todas as crews'}
+                        {pesquisa ? t.crews.resultados(pesquisa) : t.crews.todas}
                     </h2>
 
                     {data.items.length === 0 ? (
                         <p className="vazio">
-                            {pesquisa
-                                ? 'Nenhuma crew com esse nome. Experimenta outro termo.'
-                                : 'Ainda não há crews. Cria a primeira.'}
+                            {pesquisa ? t.crews.semResultados : t.crews.aindaNaoHa}
                         </p>
                     ) : (
                         <div className="crewgrid">
@@ -101,10 +101,10 @@ export const CrewDirectoryPage = () => {
                                     setPagina((valor) => valor - 1);
                                 }}
                             >
-                                Anterior
+                                {t.crews.anterior}
                             </button>
                             <span>
-                                Página {data.page} de {data.totalPages}
+                                {t.crews.paginaDe(data.page, data.totalPages)}
                             </span>
                             <button
                                 className="btn-secondary"
@@ -114,7 +114,7 @@ export const CrewDirectoryPage = () => {
                                     setPagina((valor) => valor + 1);
                                 }}
                             >
-                                Seguinte
+                                {t.crews.seguinte}
                             </button>
                         </div>
                     ) : null}

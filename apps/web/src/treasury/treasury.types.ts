@@ -112,10 +112,34 @@ export const nomeDaBase = (valor: string): string => NOME_DA_BASE[valor] ?? valo
 /** Espaço inquebrável (U+00A0), escrito assim para não ser invisível no código. */
 export const SEPARADOR = '\u00A0';
 
+/**
+ * O separador de milhares deste idioma, **sem converter nada**.
+ *
+ * Pergunta-se ao `Intl` como ele agruparia um número pequeno e lê-se o
+ * separador que ele usou. O montante a sério nunca passa por aqui: é
+ * `BigInt` e ficaria estragado. O que se pede emprestado é só o
+ * carácter — vírgula em inglês, ponto em português e em espanhol, e um
+ * espaço fino inquebrável em francês.
+ */
+export const separadorDoIdioma = (locale: string): string => {
+    /**
+     * Um milhão, e não mil: o espanhol não agrupa números de quatro
+     * dígitos, e com `1000` não haveria separador nenhum para ler.
+     */
+    const grupo = new Intl.NumberFormat(locale)
+        .formatToParts(1_000_000)
+        .find((parte) => parte.type === 'group');
+
+    return grupo ? grupo.value : SEPARADOR;
+};
+
 /** Sinal de menos (U+2212), que não é o hífen do teclado. */
 export const MENOS = '\u2212';
 
-export const formatarMontante = (valor: string): string => {
+export const formatarMontante = (
+    valor: string,
+    separador: string = SEPARADOR,
+): string => {
     const negativo = valor.startsWith('-');
     const digitos = negativo ? valor.slice(1) : valor;
 
@@ -124,7 +148,7 @@ export const formatarMontante = (valor: string): string => {
      * montante partido ao meio no fim de uma linha lê-se como dois
      * números diferentes.
      */
-    const agrupado = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, SEPARADOR);
+    const agrupado = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, separador);
 
     return negativo ? `${MENOS}${agrupado}` : agrupado;
 };

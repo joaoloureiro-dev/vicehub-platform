@@ -4,6 +4,7 @@ import {
     MENOS,
     SEPARADOR,
     formatarMontante,
+    separadorDoIdioma,
     tamanhoDoSaldo,
 } from '../src/treasury/treasury.types.js';
 
@@ -90,5 +91,56 @@ describe('o tamanho do saldo em destaque', () => {
 
     it('nunca deixa o maior montante no tamanho grande', () => {
         expect(tamanhoDoSaldo('9'.repeat(19))).not.toContain('40px');
+    });
+});
+
+/**
+ * O separador muda de idioma para idioma — e é a única coisa que muda.
+ * Os dígitos continuam a ser os que vieram: o montante nunca passa por
+ * `Number`, seja qual for o idioma.
+ */
+describe('o separador de cada idioma', () => {
+    it('vírgula em inglês, ponto em português e em espanhol', () => {
+        expect(separadorDoIdioma('en')).toBe(',');
+        expect(separadorDoIdioma('pt')).toBe('.');
+        expect(separadorDoIdioma('es')).toBe('.');
+    });
+
+    /**
+     * O francês agrupa com um espaço — e é um espaço fino inquebrável,
+     * não o espaço da barra. Vem do `Intl` precisamente para não ser
+     * adivinhado.
+     */
+    it('um espaço inquebrável em francês', () => {
+        const separador = separadorDoIdioma('fr');
+
+        expect(separador.trim()).toBe('');
+        expect(separador).not.toBe(' ');
+    });
+
+    /**
+     * O espanhol não agrupa números de quatro dígitos. Se a amostra
+     * usada para descobrir o separador fosse mil, não haveria separador
+     * nenhum para ler e o espanhol caía no valor por omissão.
+     */
+    it('descobre o separador mesmo onde mil não é agrupado', () => {
+        expect(separadorDoIdioma('es')).not.toBe(SEPARADOR);
+    });
+
+    it('agrupa com o separador que lhe derem', () => {
+        expect(formatarMontante('1234567', ',')).toBe('1,234,567');
+        expect(formatarMontante('1234567', '.')).toBe('1.234.567');
+    });
+
+    it('preserva os dígitos em qualquer idioma', () => {
+        const enorme = '9007199254740993';
+
+        for (const idioma of ['en', 'pt', 'es', 'fr']) {
+            const separador = separadorDoIdioma(idioma);
+
+            expect(
+                formatarMontante(enorme, separador).split(separador).join(''),
+            ).toBe(enorme);
+        }
     });
 });

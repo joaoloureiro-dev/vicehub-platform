@@ -14,25 +14,25 @@ import {
     rejectMovement,
     type Dono,
 } from '../treasury.api.js';
+import { useIdioma, useT } from '../../i18n/i18n.js';
 import {
     formatarMontante,
-    nomeDaBase,
-    nomeDoEstado,
+    separadorDoIdioma,
     tamanhoDoSaldo,
     type MovementCategory,
     type MovementDirection,
 } from '../treasury.types.js';
 import { MovementRow } from '../components/movement-row.js';
 
-const CATEGORIAS: { valor: MovementCategory; nome: string }[] = [
-    { valor: 'contribution', nome: 'Contribuição' },
-    { valor: 'server_costs', nome: 'Custos do servidor' },
-    { valor: 'marketing', nome: 'Marketing' },
-    { valor: 'event', nome: 'Evento' },
-    { valor: 'prize', nome: 'Prémio' },
-    { valor: 'service', nome: 'Serviço' },
-    { valor: 'payout', nome: 'Pagamento' },
-    { valor: 'other', nome: 'Outro' },
+const CATEGORIAS: MovementCategory[] = [
+    'contribution',
+    'server_costs',
+    'marketing',
+    'event',
+    'prize',
+    'service',
+    'payout',
+    'other',
 ];
 
 /** O que a API aceita: inteiro positivo, até 19 dígitos. */
@@ -46,6 +46,9 @@ const MONTANTE_VALIDO = /^[1-9][0-9]{0,18}$/;
  * gente é paga, ou não é paga ninguém.
  */
 export const TreasuryPage = () => {
+    const t = useT();
+    const { idioma } = useIdioma();
+    const separador = separadorDoIdioma(idioma);
     const { crewId } = useParams<{ crewId: string }>();
     const dono: Dono = { tipo: 'crews', id: crewId as string };
 
@@ -108,7 +111,7 @@ export const TreasuryPage = () => {
                 texto:
                     falha instanceof ApiError
                         ? falha.message
-                        : 'Não foi possível completar a operação.',
+                        : t.tesouraria.naoFoiPossivel,
             });
         } finally {
             setAAgir(false);
@@ -116,15 +119,13 @@ export const TreasuryPage = () => {
     };
 
     if (tesouraria.loading && !tesouraria.data) {
-        return <p className="centered">A carregar…</p>;
+        return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
     if (tesouraria.data === null) {
         return (
             <div className="panel">
-                <Alert kind="bad">
-                    As contas de uma crew só são visíveis a quem pertence a ela.
-                </Alert>
+                <Alert kind="bad">{t.tesouraria.soParaMembros}</Alert>
                 <div className="foot">
                     <Link to={`/crews/${crewId}`}>Ver a crew</Link>
                 </div>
@@ -137,9 +138,9 @@ export const TreasuryPage = () => {
     return (
         <div className="panel wide">
             <div className="panel-head">
-                <h1>Tesouraria</h1>
+                <h1>{t.tesouraria.titulo}</h1>
                 <Link className="btn-secondary" to={`/crews/${crewId}`}>
-                    {crew.data ? crew.data.name : 'Ver a crew'}
+                    {crew.data ? crew.data.name : t.tesouraria.verCrew}
                 </Link>
             </div>
 
@@ -151,45 +152,38 @@ export const TreasuryPage = () => {
             */}
             <dl className="saldos">
                 <div className="principal">
-                    <dt>Disponível</dt>
+                    <dt>{t.tesouraria.disponivel}</dt>
                     <dd style={{ fontSize: tamanhoDoSaldo(contas.balances.available) }}>
-                        {formatarMontante(contas.balances.available)}
+                        {formatarMontante(contas.balances.available, separador)}
                     </dd>
                 </div>
                 <div>
-                    <dt>Liquidado</dt>
-                    <dd>{formatarMontante(contas.balances.settled)}</dd>
+                    <dt>{t.tesouraria.liquidado}</dt>
+                    <dd>{formatarMontante(contas.balances.settled, separador)}</dd>
                 </div>
                 <div>
-                    <dt>A entrar</dt>
+                    <dt>{t.tesouraria.aEntrar}</dt>
                     <dd className="credit">
-                        {formatarMontante(contas.balances.pendingIn)}
+                        {formatarMontante(contas.balances.pendingIn, separador)}
                     </dd>
                 </div>
                 <div>
-                    <dt>A sair</dt>
+                    <dt>{t.tesouraria.aSair}</dt>
                     <dd className="debit">
-                        {formatarMontante(contas.balances.pendingOut)}
+                        {formatarMontante(contas.balances.pendingOut, separador)}
                     </dd>
                 </div>
             </dl>
 
-            <p className="hint">
-                O disponível já desconta as saídas por decidir. É esse o número
-                que diz quanto se pode comprometer sem contar duas vezes o mesmo
-                dinheiro.
-            </p>
+            <p className="hint">{t.tesouraria.explicacaoDisponivel}</p>
 
             {mensagem ? (
                 <Alert kind={mensagem.tipo}>{mensagem.texto}</Alert>
             ) : null}
 
             <section className="grupo">
-                <h2>Propor um movimento</h2>
-                <p className="hint">
-                    Nada se move ao propor. Fica por decidir até alguém com
-                    autoridade aprovar.
-                </p>
+                <h2>{t.tesouraria.proporTitulo}</h2>
+                <p className="hint">{t.tesouraria.proporAviso}</p>
 
                 <form
                     onSubmit={(event) => {
@@ -203,7 +197,7 @@ export const TreasuryPage = () => {
                                     category: categoria,
                                     description: descricao.trim(),
                                 }),
-                            'Movimento proposto. Fica à espera de decisão.',
+                            t.tesouraria.proposto,
                         ).then(() => {
                             setMontante('');
                             setDescricao('');
@@ -211,7 +205,7 @@ export const TreasuryPage = () => {
                     }}
                 >
                     <div className="field">
-                        <label htmlFor="montante">Montante</label>
+                        <label htmlFor="montante">{t.tesouraria.montante}</label>
                         <input
                             id="montante"
                             type="text"
@@ -224,12 +218,12 @@ export const TreasuryPage = () => {
                             }}
                         />
                         <p className="hint" id="montante-hint">
-                            Em unidades inteiras da moeda do jogo.
+                            {t.tesouraria.montanteAjuda}
                         </p>
                     </div>
 
                     <div className="field">
-                        <label htmlFor="direcao">Direção</label>
+                        <label htmlFor="direcao">{t.tesouraria.direcao}</label>
                         <select
                             id="direcao"
                             value={direcao}
@@ -237,13 +231,13 @@ export const TreasuryPage = () => {
                                 setDirecao(event.target.value as MovementDirection);
                             }}
                         >
-                            <option value="credit">Entrada</option>
-                            <option value="debit">Saída</option>
+                            <option value="credit">{t.tesouraria.entrada}</option>
+                            <option value="debit">{t.tesouraria.saida}</option>
                         </select>
                     </div>
 
                     <div className="field">
-                        <label htmlFor="categoria">Categoria</label>
+                        <label htmlFor="categoria">{t.tesouraria.categoria}</label>
                         <select
                             id="categoria"
                             value={categoria}
@@ -251,16 +245,16 @@ export const TreasuryPage = () => {
                                 setCategoria(event.target.value as MovementCategory);
                             }}
                         >
-                            {CATEGORIAS.map((opcao) => (
-                                <option key={opcao.valor} value={opcao.valor}>
-                                    {opcao.nome}
+                            {CATEGORIAS.map((valor) => (
+                                <option key={valor} value={valor}>
+                                    {t.categorias[valor]}
                                 </option>
                             ))}
                         </select>
                     </div>
 
                     <div className="field">
-                        <label htmlFor="descricao">Descrição</label>
+                        <label htmlFor="descricao">{t.tesouraria.descricao}</label>
                         <input
                             id="descricao"
                             type="text"
@@ -279,16 +273,16 @@ export const TreasuryPage = () => {
                             aAgir || montanteMau || !montante || !descricao.trim()
                         }
                     >
-                        {aAgir ? 'A propor…' : 'Propor o movimento'}
+                        {aAgir ? t.tesouraria.aPropor : t.tesouraria.propor}
                     </button>
                 </form>
             </section>
 
             <section className="grupo">
-                <h2>Extrato</h2>
+                <h2>{t.tesouraria.extrato}</h2>
 
                 {contas.movements.length === 0 ? (
-                    <p className="vazio">Ainda não há movimentos.</p>
+                    <p className="vazio">{t.tesouraria.semMovimentos}</p>
                 ) : (
                     <ul className="movimentos">
                         {contas.movements.map((movimento) => (
@@ -309,11 +303,11 @@ export const TreasuryPage = () => {
                                                                 dono,
                                                                 movimento.id,
                                                             ),
-                                                        'Movimento aprovado.',
+                                                        t.tesouraria.aprovado,
                                                     )
                                                 }
                                             >
-                                                Aprovar
+                                                {t.tesouraria.aprovar}
                                             </button>
                                             <button
                                                 className="btn-secondary perigo"
@@ -326,11 +320,11 @@ export const TreasuryPage = () => {
                                                                 dono,
                                                                 movimento.id,
                                                             ),
-                                                        'Movimento recusado.',
+                                                        t.tesouraria.recusado,
                                                     )
                                                 }
                                             >
-                                                Recusar
+                                                {t.tesouraria.recusar}
                                             </button>
                                             <button
                                                 className="btn-secondary"
@@ -343,11 +337,11 @@ export const TreasuryPage = () => {
                                                                 dono,
                                                                 movimento.id,
                                                             ),
-                                                        'Proposta cancelada.',
+                                                        t.tesouraria.cancelado,
                                                     )
                                                 }
                                             >
-                                                Cancelar
+                                                {t.tesouraria.cancelar}
                                             </button>
                                         </>
                                     ) : undefined
@@ -360,27 +354,28 @@ export const TreasuryPage = () => {
 
             {divisoes.data && divisoes.data.length > 0 ? (
                 <section className="grupo">
-                    <h2>Divisões de ganhos</h2>
+                    <h2>{t.tesouraria.divisoes}</h2>
                     <ul className="movimentos">
                         {divisoes.data.map((divisao) => (
                             <li key={divisao.id} className="divisao">
                                 <div className="mov-principal">
                                     <span className="mov-valor credit">
-                                        {formatarMontante(divisao.total)}
+                                        {formatarMontante(divisao.total, separador)}
                                     </span>
                                     <span className="mov-desc">
-                                        {nomeDaBase(divisao.basis)}
+                                        {t.bases[divisao.basis as keyof typeof t.bases] ?? divisao.basis}
                                     </span>
                                 </div>
                                 <div className="mov-meta">
                                     <span className={`pill estado-${divisao.status}`}>
-                                        {nomeDoEstado(divisao.status)}
+                                        {t.estadosMovimento[
+                                            divisao.status as keyof typeof t.estadosMovimento
+                                        ] ?? divisao.status}
                                     </span>
                                     <span>
-                                        {divisao.lines.length}{' '}
-                                        {divisao.lines.length === 1
-                                            ? 'pessoa'
-                                            : 'pessoas'}
+                                        {t.tesouraria.pessoas(
+                                            divisao.lines.length,
+                                        )}
                                     </span>
                                 </div>
                                 {divisao.note ? (

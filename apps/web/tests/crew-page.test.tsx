@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { screen, waitFor } from '@testing-library/react';
+import { Route, Routes } from 'react-router';
 
 import { AuthProvider } from '../src/auth/auth.context.js';
 import { CrewPage } from '../src/crews/pages/crew.page.js';
+import { montarEcra, t } from './helpers.js';
 
 const perfil = {
     id: 'crew-1',
@@ -79,14 +80,13 @@ const servidor = (opcoes: {
     });
 
 const montar = () =>
-    render(
-        <MemoryRouter initialEntries={['/crews/crew-1']}>
-            <AuthProvider>
-                <Routes>
-                    <Route path="/crews/:crewId" element={<CrewPage />} />
-                </Routes>
-            </AuthProvider>
-        </MemoryRouter>,
+    montarEcra(
+        <AuthProvider>
+            <Routes>
+                <Route path="/crews/:crewId" element={<CrewPage />} />
+            </Routes>
+        </AuthProvider>,
+        '/crews/crew-1',
     );
 
 describe('o ecrã de uma crew', () => {
@@ -111,8 +111,8 @@ describe('o ecrã de uma crew', () => {
                 expect(screen.getByText('Vice Kings')).toBeDefined();
             });
 
-            expect(screen.queryByRole('button', { name: 'Remover' })).toBeNull();
-            expect(screen.queryByText('Candidaturas por responder')).toBeNull();
+            expect(screen.queryByRole('button', { name: t.crews.remover })).toBeNull();
+            expect(screen.queryByText(t.crews.candidaturasPorResponder)).toBeNull();
         });
 
         /**
@@ -136,7 +136,7 @@ describe('o ecrã de uma crew', () => {
                 expect(screen.getByText('outro')).toBeDefined();
             });
 
-            expect(screen.getByText('Líder')).toBeDefined();
+            expect(screen.getByText(t.cargos.crew_leader)).toBeDefined();
         });
     });
 
@@ -174,8 +174,8 @@ describe('o ecrã de uma crew', () => {
                 expect(screen.getByText('candidato')).toBeDefined();
             });
 
-            expect(screen.getByRole('button', { name: 'Aceitar' })).toBeDefined();
-            expect(screen.getByRole('button', { name: 'Recusar' })).toBeDefined();
+            expect(screen.getByRole('button', { name: t.crews.aceitar })).toBeDefined();
+            expect(screen.getByRole('button', { name: t.crews.recusar })).toBeDefined();
         });
 
         /**
@@ -189,7 +189,7 @@ describe('o ecrã de uma crew', () => {
                 expect(screen.getByText('outro')).toBeDefined();
             });
 
-            expect(screen.getAllByRole('button', { name: 'Remover' })).toHaveLength(1);
+            expect(screen.getAllByRole('button', { name: t.crews.remover })).toHaveLength(1);
         });
     });
 

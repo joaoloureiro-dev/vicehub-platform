@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router';
 
 import { App } from './app.js';
 import { AuthProvider } from './auth/auth.context.js';
+import { I18nProvider } from './i18n/i18n.js';
 import './styles/theme.css';
 
 const root = document.getElementById('root');
@@ -14,10 +15,12 @@ if (!root) {
 
 createRoot(root).render(
     <StrictMode>
-        <BrowserRouter>
-            <AuthProvider>
-                <App />
-            </AuthProvider>
-        </BrowserRouter>
+        <I18nProvider>
+            <BrowserRouter>
+                <AuthProvider>
+                    <App />
+                </AuthProvider>
+            </BrowserRouter>
+        </I18nProvider>
     </StrictMode>,
 );

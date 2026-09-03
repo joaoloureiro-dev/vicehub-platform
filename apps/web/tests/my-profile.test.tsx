@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
 
 import { MyProfilePage } from '../src/profile/pages/my-profile.page.js';
+import { montarEcra, t } from './helpers.js';
 
 const perfil = (overrides: Record<string, unknown> = {}) => ({
     id: 'u1',
@@ -30,12 +30,7 @@ const json = (status: number, body: unknown): Response =>
         json: () => Promise.resolve(body),
     }) as Response;
 
-const montar = () =>
-    render(
-        <MemoryRouter>
-            <MyProfilePage />
-        </MemoryRouter>,
-    );
+const montar = () => montarEcra(<MyProfilePage />);
 
 describe('o meu perfil', () => {
     let fetchMock: ReturnType<typeof vi.fn>;
@@ -74,17 +69,17 @@ describe('o meu perfil', () => {
         montar();
 
         await waitFor(() => {
-            expect(screen.getByLabelText('Cor de destaque')).toBeDefined();
+            expect(screen.getByLabelText(t.perfil.cor)).toBeDefined();
         });
 
-        expect(screen.getByLabelText('Banner')).toBeDefined();
+        expect(screen.getByLabelText(t.perfil.banner)).toBeDefined();
     });
 
     it('diz que a personalização é do plano a quem não o tem', async () => {
         montar();
 
         await waitFor(() => {
-            expect(screen.getByText(/fazem parte do plano premium/i)).toBeDefined();
+            expect(screen.getByText(t.perfil.precisaDePlano)).toBeDefined();
         });
     });
 
@@ -94,10 +89,10 @@ describe('o meu perfil', () => {
         montar();
 
         await waitFor(() => {
-            expect(screen.getByLabelText('Banner')).toBeDefined();
+            expect(screen.getByLabelText(t.perfil.banner)).toBeDefined();
         });
 
-        expect(screen.queryByText(/fazem parte do plano premium/i)).toBeNull();
+        expect(screen.queryByText(t.perfil.precisaDePlano)).toBeNull();
     });
 
     /**
@@ -119,17 +114,17 @@ describe('o meu perfil', () => {
         montar();
 
         await waitFor(() => {
-            expect(screen.getByLabelText('Cor de destaque')).toBeDefined();
+            expect(screen.getByLabelText(t.perfil.cor)).toBeDefined();
         });
 
-        await utilizadora.type(screen.getByLabelText('Cor de destaque'), '#E93CEF');
+        await utilizadora.type(screen.getByLabelText(t.perfil.cor), '#E93CEF');
         await utilizadora.click(
-            screen.getByRole('button', { name: /guardar personalização/i }),
+            screen.getByRole('button', { name: t.perfil.guardarPersonalizacao }),
         );
 
         await waitFor(() => {
             expect(
-                screen.getByText('A personalização faz parte do plano premium.'),
+                screen.getByText(t.perfil.ehPremium),
             ).toBeDefined();
         });
     });
@@ -140,14 +135,14 @@ describe('o meu perfil', () => {
         montar();
 
         await waitFor(() => {
-            expect(screen.getByLabelText('Cor de destaque')).toBeDefined();
+            expect(screen.getByLabelText(t.perfil.cor)).toBeDefined();
         });
 
-        await utilizadora.type(screen.getByLabelText('Cor de destaque'), '#ABC');
+        await utilizadora.type(screen.getByLabelText(t.perfil.cor), '#ABC');
 
         expect(
             screen
-                .getByRole('button', { name: /guardar personalização/i })
+                .getByRole('button', { name: t.perfil.guardarPersonalizacao })
                 .hasAttribute('disabled'),
         ).toBe(true);
     });
@@ -163,7 +158,7 @@ describe('o meu perfil', () => {
             montar();
 
             await waitFor(() => {
-                expect(screen.getByText('Premium vitalício')).toBeDefined();
+                expect(screen.getByText(t.perfil.premiumVitalicio)).toBeDefined();
             });
         });
 
@@ -178,7 +173,7 @@ describe('o meu perfil', () => {
             montar();
 
             await waitFor(() => {
-                expect(screen.getByText(/Premium até/)).toBeDefined();
+                expect(screen.getByText(/Premium until/)).toBeDefined();
             });
         });
 
@@ -186,7 +181,7 @@ describe('o meu perfil', () => {
             montar();
 
             await waitFor(() => {
-                expect(screen.getByText('Sem plano')).toBeDefined();
+                expect(screen.getByText(t.perfil.semPlano)).toBeDefined();
             });
         });
     });

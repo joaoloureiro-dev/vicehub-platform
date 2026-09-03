@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { ApiError } from '../../lib/api.js';
 import { Alert } from '../components/alert.js';
 import { verifyEmail } from '../auth.api.js';
+import { useT } from '../../i18n/i18n.js';
 import { useLinkToken } from '../use-link-token.js';
 
 type Estado = 'a-confirmar' | 'confirmado' | 'invalido' | 'sem-token';
@@ -16,6 +17,7 @@ type Estado = 'a-confirmar' | 'confirmado' | 'invalido' | 'sem-token';
  * que confirmasse a confirmação.
  */
 export const VerifyEmailPage = () => {
+    const t = useT();
     const token = useLinkToken();
     const [estado, setEstado] = useState<Estado>(
         token ? 'a-confirmar' : 'sem-token',
@@ -59,34 +61,27 @@ export const VerifyEmailPage = () => {
     return (
         <div className="card">
             <header>
-                <h1>Confirmar o email</h1>
+                <h1>{t.auth.confirmarEmailTitulo}</h1>
             </header>
 
             {estado === 'a-confirmar' ? (
-                <p className="hint">A confirmar…</p>
+                <p className="hint">{t.auth.aConfirmar}</p>
             ) : null}
 
             {estado === 'confirmado' ? (
-                <Alert kind="good">
-                    Endereço confirmado. Já podes usar a conta sem restrições.
-                </Alert>
+                <Alert kind="good">{t.auth.emailConfirmado}</Alert>
             ) : null}
 
             {estado === 'invalido' ? (
-                <Alert kind="bad">
-                    Este link já não serve. Entra na conta e pede outro.
-                </Alert>
+                <Alert kind="bad">{t.auth.linkNaoServe}</Alert>
             ) : null}
 
             {estado === 'sem-token' ? (
-                <Alert kind="bad">
-                    Este endereço não traz nenhum código. Abre o link tal como
-                    veio no email.
-                </Alert>
+                <Alert kind="bad">{t.auth.linkSemCodigo}</Alert>
             ) : null}
 
             <div className="foot">
-                <Link to="/">Ir para o ViceHub</Link>
+                <Link to="/">{t.auth.irParaViceHub}</Link>
             </div>
         </div>
     );

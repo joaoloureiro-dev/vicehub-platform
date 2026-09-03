@@ -15,12 +15,9 @@ import {
     withdraw,
     type Dono,
 } from '../event.api.js';
-import {
-    nomeDaParticipacao,
-    nomeDoEstado,
-    quando,
-    transicoesDe,
-} from '../event.types.js';
+import { useIdioma, useT } from '../../i18n/i18n.js';
+import { criarTools } from '../../i18n/tools.js';
+import { transicoesDe } from '../event.types.js';
 
 /**
  * Um evento, e quem lá esteve.
@@ -30,18 +27,10 @@ import {
  * não a inscrição — que dá direito a receber quando a crew dividir os
  * ganhos por participação. O ecrã separa as duas de propósito.
  */
-/**
- * O que dizer quando já há presenças confirmadas.
- *
- * Montado antes de entrar no `Alert`, que recebe texto: é o que o faz
- * ser lido de uma vez por um leitor de ecrã, em vez de aos pedaços.
- */
-const convite = (confirmados: number): string =>
-    confirmados === 1
-        ? '1 presença confirmada. A crew já pode dividir ganhos por participação a partir deste evento.'
-        : `${confirmados} presenças confirmadas. A crew já pode dividir ganhos por participação a partir deste evento.`;
-
 export const EventPage = () => {
+    const t = useT();
+    const { idioma } = useIdioma();
+    const { quando } = criarTools(idioma);
     const { crewId, eventId } = useParams<{ crewId: string; eventId: string }>();
     const dono: Dono = { tipo: 'crews', id: crewId as string };
     const { user } = useAuth();
@@ -78,10 +67,10 @@ export const EventPage = () => {
                 tipo: 'bad',
                 texto:
                     falha instanceof ApiError && falha.status === 403
-                        ? 'Isso é de quem organiza o evento.'
+                        ? t.eventos.soQuemOrganiza
                         : falha instanceof ApiError
                           ? falha.message
-                          : 'Não foi possível completar a ação.',
+                          : t.comum.naoFoiPossivel,
             });
         } finally {
             setAAgir(false);
@@ -89,15 +78,15 @@ export const EventPage = () => {
     };
 
     if (evento.loading && !evento.data) {
-        return <p className="centered">A carregar…</p>;
+        return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
     if (evento.error || !evento.data) {
         return (
             <div className="panel">
-                <Alert kind="bad">Não encontrámos este evento.</Alert>
+                <Alert kind="bad">{t.eventos.naoEncontrado}</Alert>
                 <div className="foot">
-                    <Link to={`/crews/${crewId}/eventos`}>Voltar aos eventos</Link>
+                    <Link to={`/crews/${crewId}/eventos`}>{t.eventos.todosOsEventos}</Link>
                 </div>
             </div>
         );
@@ -123,28 +112,32 @@ export const EventPage = () => {
             <div className="panel-head">
                 <h1>{detalhe.name}</h1>
                 <Link className="btn-secondary" to={`/crews/${crewId}/eventos`}>
-                    Todos os eventos
+                    {t.eventos.todosOsEventos}
                 </Link>
             </div>
 
             <dl className="stats">
                 <div>
-                    <dt>Estado</dt>
-                    <dd className="pequeno">{nomeDoEstado(detalhe.status)}</dd>
+                    <dt>{t.eventos.estado}</dt>
+                    <dd className="pequeno">
+                        {t.estadosEvento[
+                            detalhe.status as keyof typeof t.estadosEvento
+                        ] ?? detalhe.status}
+                    </dd>
                 </div>
                 <div>
-                    <dt>Começa</dt>
+                    <dt>{t.eventos.comeca}</dt>
                     <dd className="pequeno">{quando(detalhe.startsAt)}</dd>
                 </div>
                 <div>
-                    <dt>Inscritos</dt>
+                    <dt>{t.eventos.contagemInscritos}</dt>
                     <dd>
                         {detalhe.signedUpCount}
                         {detalhe.capacity ? ` / ${detalhe.capacity}` : ''}
                     </dd>
                 </div>
                 <div>
-                    <dt>Confirmados</dt>
+                    <dt>{t.eventos.confirmados}</dt>
                     <dd>{detalhe.confirmedCount}</dd>
                 </div>
             </dl>
@@ -164,17 +157,17 @@ export const EventPage = () => {
                         onClick={() =>
                             void agir(
                                 () => signUp(dono, detalhe.id),
-                                'Inscrição feita. A presença é confirmada por quem organiza.',
+                                t.eventos.inscricaoFeita,
                             )
                         }
                     >
-                        Inscrever-me
+                        {t.eventos.inscreverMe}
                     </button>
                 ) : null}
 
                 {inscrito ? (
                     <>
-                        <span className="pill aguarda">Inscrito</span>
+                        <span className="pill aguarda">{t.eventos.inscrito}</span>
                         <button
                             className="btn-secondary"
                             type="button"
@@ -182,18 +175,18 @@ export const EventPage = () => {
                             onClick={() =>
                                 void agir(
                                     () => withdraw(dono, detalhe.id),
-                                    'Inscrição retirada.',
+                                    t.eventos.inscricaoRetirada,
                                 )
                             }
                         >
-                            Retirar inscrição
+                            {t.eventos.retirarInscricao}
                         </button>
                     </>
                 ) : null}
 
                 {eu?.status === 'confirmed' ? (
                     <span className="pill confirmado">
-                        Presença confirmada · peso {eu.weight}
+                        {t.eventos.presencaConfirmada(eu.weight)}
                     </span>
                 ) : null}
 
@@ -218,26 +211,27 @@ export const EventPage = () => {
                                         detalhe.id,
                                         transicao.status,
                                     ),
-                                `Evento: ${nomeDoEstado(transicao.status).toLowerCase()}.`,
+                                t.eventos.estadoMudou(
+                                    t.estadosEvento[transicao.status],
+                                ),
                             )
                         }
                     >
-                        {transicao.nome}
+                        {transicao.status === 'ongoing'
+                            ? t.eventos.comecar
+                            : transicao.status === 'completed'
+                              ? t.eventos.terminar
+                              : t.eventos.cancelarEvento}
                     </button>
                 ))}
             </div>
 
             <section className="grupo">
-                <h2>Quem se inscreveu</h2>
-                <p className="hint">
-                    Inscrever-se e ter presença confirmada são coisas diferentes.
-                    Só quem organiza pode afirmar que alguém esteve lá, e é essa
-                    afirmação — não a inscrição — que dá direito a receber na
-                    divisão por participação.
-                </p>
+                <h2>{t.eventos.quemSeInscreveu}</h2>
+                <p className="hint">{t.eventos.diferenca}</p>
 
                 {participantes.data && participantes.data.length === 0 ? (
-                    <p className="vazio">Ainda não há inscrições.</p>
+                    <p className="vazio">{t.eventos.semInscricoes}</p>
                 ) : null}
 
                 <ul className="pessoas">
@@ -245,17 +239,18 @@ export const EventPage = () => {
                         <li key={pessoa.userId}>
                             <span className="nome">{pessoa.username}</span>
                             <span className="cargo">
-                                {nomeDaParticipacao(pessoa.status)}
                                 {pessoa.status === 'confirmed'
-                                    ? ` · peso ${pessoa.weight}`
-                                    : ''}
+                                    ? t.eventos.presencaConfirmada(pessoa.weight)
+                                    : (t.participacao[
+                                          pessoa.status as keyof typeof t.participacao
+                                      ] ?? pessoa.status)}
                             </span>
 
                             {pessoa.status === 'signed_up' ? (
                                 <div className="linha-acoes">
                                     <label className="peso">
                                         <span className="sr-only">
-                                            Peso de {pessoa.username}
+                                            {t.eventos.pesoDe(pessoa.username)}
                                         </span>
                                         <input
                                             type="number"
@@ -263,7 +258,7 @@ export const EventPage = () => {
                                             max={100}
                                             placeholder="1"
                                             value={pesos[pessoa.userId] ?? ''}
-                                            aria-label={`Peso de ${pessoa.username}`}
+                                            aria-label={t.eventos.pesoDe(pessoa.username)}
                                             onChange={(event) => {
                                                 setPesos((anterior) => ({
                                                     ...anterior,
@@ -296,11 +291,11 @@ export const EventPage = () => {
                                                             ? Number(escrito)
                                                             : undefined,
                                                     ),
-                                                `Presença de ${pessoa.username} confirmada.`,
+                                                t.eventos.presencaDe(pessoa.username),
                                             );
                                         }}
                                     >
-                                        Confirmar presença
+                                        {t.eventos.confirmarPresenca}
                                     </button>
                                     <button
                                         className="btn-secondary perigo"
@@ -314,11 +309,11 @@ export const EventPage = () => {
                                                         detalhe.id,
                                                         pessoa.userId,
                                                     ),
-                                                `${pessoa.username} marcado como ausente.`,
+                                                t.eventos.ausente(pessoa.username),
                                             )
                                         }
                                     >
-                                        Não apareceu
+                                        {t.eventos.naoApareceu}
                                     </button>
                                 </div>
                             ) : null}
@@ -328,7 +323,9 @@ export const EventPage = () => {
             </section>
 
             {detalhe.confirmedCount > 0 ? (
-                <Alert kind="good">{convite(detalhe.confirmedCount)}</Alert>
+                <Alert kind="good">
+                    {t.eventos.jaPodeDividir(detalhe.confirmedCount)}
+                </Alert>
             ) : null}
         </div>
     );
