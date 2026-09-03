@@ -604,8 +604,22 @@ como o mesmo sítio, que é o que acontece em produção.
 
 Ecrãs existentes: autenticação completa, o diretório de crews e de
 servidores, o perfil de cada um, criar/registar, as minhas crews, o meu
-perfil e o perfil público de um jogador. Tesouraria e eventos existem na
-API e ainda não têm ecrã.
+perfil, o perfil público de um jogador, e a tesouraria de uma crew. Os
+eventos existem na API e ainda não têm ecrã.
+
+**Os montantes são texto do princípio ao fim.** São `BigInt` na base de
+dados e a API manda-os em texto de propósito; convertê-los no cliente
+para os somar ou formatar apagaria o cuidado que a API teve. A função
+que os formata recebe texto e devolve texto — nada de `Number`, nada de
+`toLocaleString` — e o separador de milhares é um espaço inquebrável,
+porque um montante partido ao meio lê-se como outro montante. O tamanho
+do saldo em destaque acompanha o comprimento do número, para que
+dezanove dígitos caibam num telemóvel em vez de ficarem cortados.
+
+**A tesouraria mostra quatro saldos, e não um.** Sem os outros três
+ninguém sabe quanto pode gastar: o liquidado não desconta o que já foi
+autorizado a sair, e comprometer duas vezes o mesmo dinheiro é o erro
+que se segue.
 
 **A personalização premium aparece a toda a gente**, e não só a quem tem
 plano. Escondê-la faria com que quem recebe o premium não soubesse que
