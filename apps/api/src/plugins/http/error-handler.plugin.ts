@@ -54,6 +54,15 @@ const authErrorStatusCodes: Record<AuthErrorCode, number> = {
     REFRESH_TOKEN_REUSED: 401,
     SESSION_NOT_FOUND: 404,
     USER_NOT_FOUND: 404,
+
+    /**
+     * 400: o link não confere. Um inexistente, um já usado e um expirado
+     * dão todos o mesmo — separá-los diria a quem tenta às cegas qual
+     * dos casos acertou.
+     */
+    INVALID_ACCOUNT_TOKEN: 400,
+    /** Já está confirmado: não é erro de quem pede, é estado. */
+    EMAIL_ALREADY_VERIFIED: 409,
 };
 
 /**

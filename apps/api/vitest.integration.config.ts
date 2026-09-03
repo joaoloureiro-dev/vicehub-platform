@@ -22,6 +22,16 @@ export default defineConfig({
                 'test-refresh-secret-com-mais-de-sessenta-e-quatro-caracteres-0123456789',
             CORS_ALLOWED_ORIGINS: 'https://app.vicehub.com',
             AUTH_COOKIE_SECURE: 'false',
+
+            /**
+             * As rotas de recuperação têm um limite apertado em
+             * produção, e estes testes exercitam-nas dezenas de vezes a
+             * partir do mesmo endereço. O limite é levantado aqui para
+             * que a suite meça o fluxo e não o limitador; que o limite
+             * existe e é mais apertado do que o global fica fixado no
+             * teste de ligação das rotas.
+             */
+            AUTH_RECOVERY_RATE_LIMIT_MAX: '1000',
         },
 
         include: ['tests/integration/**/*.test.ts'],

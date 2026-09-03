@@ -510,6 +510,69 @@ conseguir, manda outro evento e o acesso volta sozinho.
 já tem acesso que não termina: receber dinheiro por uma coisa que já foi
 oferecida é a espécie de erro que ninguém repara e toda a gente acha mal.
 
+### Recuperar a password e confirmar o email
+
+| Rota | Quem pode |
+|---|---|
+| `POST /api/v1/auth/password-reset` | qualquer pessoa |
+| `POST /api/v1/auth/password-reset/confirm` | quem tiver o link |
+| `POST /api/v1/auth/email-verification` | a própria conta |
+| `POST /api/v1/auth/email-verification/confirm` | quem tiver o link |
+
+```bash
+SMTP_URL=smtp://utilizador:password@host:587   # opcional
+MAIL_FROM="ViceHub <no-reply@vicehub.com>"
+APP_PUBLIC_URL=https://app.vicehub.com         # base dos links do email
+PASSWORD_RESET_TTL_SECONDS=3600
+EMAIL_VERIFICATION_TTL_SECONDS=86400
+```
+
+Os dois fluxos partilham a mesma mecânica — um segredo aleatório que
+segue por email, guardado apenas em **resumo**, de uso único e com prazo
+— e diferem no que autorizam: um abre a conta, o outro só confirma que o
+endereço é mesmo daquela pessoa.
+
+**O pedido não diz quem tem conta.** Pedir a recuperação de um endereço
+que não existe responde exatamente como um que existe. Distinguir os dois
+casos daria a qualquer pessoa uma forma de listar quem está registado
+— basta experimentar endereços — e essa lista vale dinheiro a quem faz
+phishing. Pela mesma razão, um link inexistente, um já usado e um fora do
+prazo dão todos o mesmo erro.
+
+**Recuperar a conta derruba as sessões abertas.** Quem recupera uma conta
+costuma fazê-lo por desconfiar de que outra pessoa lá entrou; trocar a
+password sem expulsar essa pessoa resolveria a metade errada do problema.
+A `tokenVersion` sobe (os access tokens já emitidos deixam de valer) e as
+sessões são revogadas. Confirmar um email não faz nada disto: não abre a
+conta a ninguém.
+
+**O token é gasto antes de a password mudar**, e a escrita que o gasta
+leva a condição no `where`. Dois pedidos com o mesmo link ao mesmo tempo
+passariam ambos por uma verificação feita numa leitura anterior, e o
+segundo escreveria uma password que quem recuperou a conta não escolheu.
+
+**Pedir um link novo mata o anterior.** De outra forma, um email antigo
+continuaria a abrir a conta muito depois de a pessoa ter pedido outro
+precisamente por desconfiar do primeiro.
+
+**O resumo é SHA-256, não argon2.** O que protege estes tokens são os 32
+bytes aleatórios de que são feitos, não o custo de os calcular: não há
+aqui nada para adivinhar por dicionário, ao contrário de uma password
+escolhida por uma pessoa. O resumo existe para que quem leia a tabela não
+saia de lá com a chave de nenhuma conta.
+
+**Estas rotas têm um limite próprio**, muito mais apertado do que o
+global (`AUTH_RECOVERY_RATE_LIMIT_MAX`, cinco em quinze minutos). Pedir
+recuperações em massa é a forma barata de usar a plataforma para encher a
+caixa de correio de outra pessoa, e de arder a quota do fornecedor de
+email a caminho disso.
+
+**Sem `SMTP_URL` os emails ficam no log** e a plataforma arranca na mesma
+— o que serve para desenvolver e para os testes, e é como se segue o
+fluxo até ao fim sem servidor de correio nenhum. Não serve para
+utilizadores a sério: um link de recuperação escrito no log é um link ao
+alcance de quem lê logs. O arranque avisa quando é esse o caso.
+
 ### Valores BigInt nas respostas
 
 O `xp` e o `balance` são `BigInt` no schema Prisma. O JSON não tem inteiros
