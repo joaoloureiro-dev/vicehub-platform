@@ -31,7 +31,7 @@ export interface AuthPayload {
 const BASE = '/api/v1';
 
 interface RequestOptions {
-    method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     /**
      * Um pedido que não deve tentar renovar a sessão quando leva 401.
