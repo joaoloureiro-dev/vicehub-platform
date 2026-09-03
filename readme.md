@@ -604,8 +604,18 @@ como o mesmo sítio, que é o que acontece em produção.
 
 Ecrãs existentes: autenticação completa, o diretório de crews e de
 servidores, o perfil de cada um, criar/registar, as minhas crews, o meu
-perfil, o perfil público de um jogador, e a tesouraria de uma crew. Os
-eventos existem na API e ainda não têm ecrã.
+perfil, o perfil público de um jogador, a tesouraria de uma crew, e os eventos.
+
+**Inscrever-se e ter presença confirmada são coisas diferentes**, e o
+ecrã separa-as de propósito. Só quem organiza pode afirmar que alguém
+esteve lá, e é essa afirmação — não a inscrição — que dá direito a
+receber quando a crew divide os ganhos por participação. O peso vai ao
+lado da confirmação: quem lidera um assalto costuma levar mais.
+
+O ecrã só oferece as transições que o estado atual aceita. Um evento
+terminado não volta a decorrer, e oferecer o botão daria um erro que se
+lê como avaria em vez de como "isso não se faz". Pela mesma razão, o
+convite a inscrever-se não reaparece a quem já tem lugar.
 
 **Os montantes são texto do princípio ao fim.** São `BigInt` na base de
 dados e a API manda-os em texto de propósito; convertê-los no cliente

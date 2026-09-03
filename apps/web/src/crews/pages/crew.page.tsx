@@ -191,6 +191,12 @@ export const CrewPage = () => {
                             >
                                 Tesouraria
                             </Link>
+                            <Link
+                                className="btn-secondary"
+                                to={`/crews/${perfil.id}/eventos`}
+                            >
+                                Eventos
+                            </Link>
                             <button
                                 className="btn-secondary"
                                 type="button"

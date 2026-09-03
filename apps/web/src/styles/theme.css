@@ -1340,3 +1340,83 @@ button.link:hover {
     background: rgba(255, 92, 122, 0.09);
     border-color: rgba(255, 92, 122, 0.3);
 }
+
+/* ---------- eventos ---------- */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.mov-desc.forte {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.mov-desc.forte:hover {
+    color: var(--cyan);
+    text-decoration: none;
+}
+
+/* Datas e estados não precisam do tamanho de um número. */
+.stats dd.pequeno {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.confirmados {
+    color: var(--ok);
+}
+
+.pill.evento-scheduled {
+    color: var(--cyan);
+    background: rgba(34, 211, 238, 0.1);
+    border-color: rgba(34, 211, 238, 0.32);
+}
+
+.pill.evento-ongoing {
+    color: var(--magenta);
+    background: rgba(233, 60, 239, 0.12);
+    border-color: rgba(233, 60, 239, 0.34);
+}
+
+.pill.evento-completed {
+    color: var(--ok);
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.32);
+}
+
+.pill.evento-canceled {
+    color: var(--danger);
+    background: rgba(255, 92, 122, 0.09);
+    border-color: rgba(255, 92, 122, 0.3);
+}
+
+/* O peso escreve-se ao lado do botão que o usa. */
+.peso input {
+    font: inherit;
+    font-size: 16px;
+    width: 72px;
+    min-height: 40px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    text-align: center;
+}
+
+.peso input:focus {
+    border-color: var(--cyan);
+    outline: none;
+}
