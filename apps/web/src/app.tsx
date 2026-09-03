@@ -1,4 +1,12 @@
-import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
+import {
+    Link,
+    Navigate,
+    NavLink,
+    Outlet,
+    Route,
+    Routes,
+    useLocation,
+} from 'react-router';
 
 import { useAuth } from './auth/auth.context.js';
 import { logout } from './auth/auth.api.js';
@@ -10,10 +18,26 @@ import { CreateCrewPage } from './crews/pages/create-crew.page.js';
 import { CrewDirectoryPage } from './crews/pages/crew-directory.page.js';
 import { CrewPage } from './crews/pages/crew.page.js';
 import { MyCrewsPage } from './crews/pages/my-crews.page.js';
+import { CreateServerPage } from './servers/pages/create-server.page.js';
+import { ServerDirectoryPage } from './servers/pages/server-directory.page.js';
+import { ServerPage } from './servers/pages/server.page.js';
 import { HomePage } from './pages/home.page.js';
 
 /** Onde o convite a entrar seria uma repetição do que está no ecrã. */
 const SEM_CONVITE = new Set(['/entrar', '/registo']);
+
+/**
+ * Os destinos principais.
+ *
+ * No telemóvel vivem numa barra em baixo, ao alcance do polegar — três
+ * links no topo não cabem num ecrã de 390px sem cortar o último. A
+ * partir dos 640px sobem para o topo, onde há largura.
+ */
+const DESTINOS = [
+    { to: '/crews', label: 'Crews' },
+    { to: '/servidores', label: 'Servidores' },
+    { to: '/eu/crews', label: 'As minhas' },
+];
 
 const Shell = () => {
     const { user } = useAuth();
@@ -30,8 +54,18 @@ const Shell = () => {
                 <nav>
                     {user ? (
                         <>
-                            <Link to="/crews">Crews</Link>
-                            <Link to="/eu/crews">As minhas</Link>
+                            {/*
+                              Os destinos repetem-se na barra de baixo,
+                              que é a que serve no telemóvel. Aqui ficam
+                              escondidos até haver largura para eles.
+                            */}
+                            <span className="so-largo">
+                                {DESTINOS.map((destino) => (
+                                    <NavLink key={destino.to} to={destino.to} end>
+                                        {destino.label}
+                                    </NavLink>
+                                ))}
+                            </span>
                             <span className="who">{user.email}</span>
                             <button
                                 className="link"
@@ -50,6 +84,16 @@ const Shell = () => {
             <main>
                 <Outlet />
             </main>
+
+            {user ? (
+                <nav className="barra-baixo" aria-label="Navegação principal">
+                    {DESTINOS.map((destino) => (
+                        <NavLink key={destino.to} to={destino.to} end>
+                            {destino.label}
+                        </NavLink>
+                    ))}
+                </nav>
+            ) : null}
         </div>
     );
 };
@@ -111,10 +155,12 @@ export const App = () => (
               sessão é agir sobre eles.
             */}
             <Route path="/crews" element={<CrewDirectoryPage />} />
+            <Route path="/servidores" element={<ServerDirectoryPage />} />
 
             <Route element={<RequireAuth />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/crews/nova" element={<CreateCrewPage />} />
+                <Route path="/servidores/novo" element={<CreateServerPage />} />
                 <Route path="/eu/crews" element={<MyCrewsPage />} />
             </Route>
 
@@ -123,6 +169,7 @@ export const App = () => (
               o identificador de uma crew.
             */}
             <Route path="/crews/:crewId" element={<CrewPage />} />
+            <Route path="/servidores/:serverId" element={<ServerPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
