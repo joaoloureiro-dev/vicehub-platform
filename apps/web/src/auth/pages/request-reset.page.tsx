@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { Alert } from '../components/alert.js';
 import { Field } from '../components/field.js';
 import { requestPasswordReset } from '../auth.api.js';
+import { useT } from '../../i18n/i18n.js';
 
 /**
  * Pedir o link de recuperação.
@@ -17,6 +18,7 @@ import { requestPasswordReset } from '../auth.api.js';
  * pedido falha por outra razão qualquer.
  */
 export const RequestResetPage = () => {
+    const t = useT();
     const [email, setEmail] = useState('');
     const [enviado, setEnviado] = useState(false);
     const [aEnviar, setAEnviar] = useState(false);
@@ -42,15 +44,11 @@ export const RequestResetPage = () => {
         return (
             <div className="card">
                 <header>
-                    <h1>Verifica o teu email</h1>
+                    <h1>{t.auth.verificaEmail}</h1>
                 </header>
-                <Alert kind="good">
-                    Se existir uma conta com esse endereço, o link de
-                    recuperação já vai a caminho. Serve uma vez e expira dentro
-                    de uma hora.
-                </Alert>
+                <Alert kind="good">{t.auth.seExistir}</Alert>
                 <div className="foot">
-                    <Link to="/entrar">Voltar ao início de sessão</Link>
+                    <Link to="/entrar">{t.auth.voltarAoLogin}</Link>
                 </div>
             </div>
         );
@@ -59,29 +57,26 @@ export const RequestResetPage = () => {
     return (
         <div className="card">
             <header>
-                <h1>Recuperar a password</h1>
-                <p>
-                    Diz-nos o endereço da conta e enviamos um link para definir
-                    uma password nova.
-                </p>
+                <h1>{t.auth.recuperarTitulo}</h1>
+                <p>{t.auth.recuperarSub}</p>
             </header>
 
             <form onSubmit={submeter}>
                 <Field
                     id="email"
-                    label="Email"
+                    label={t.auth.email}
                     type="email"
                     value={email}
                     onChange={setEmail}
                     autoComplete="email"
                 />
                 <button className="primary" type="submit" disabled={aEnviar}>
-                    {aEnviar ? 'A enviar…' : 'Enviar o link'}
+                    {aEnviar ? t.auth.aEnviar : t.auth.enviarLink}
                 </button>
             </form>
 
             <div className="foot">
-                <Link to="/entrar">Afinal já me lembro</Link>
+                <Link to="/entrar">{t.auth.jaMeLembro}</Link>
             </div>
         </div>
     );

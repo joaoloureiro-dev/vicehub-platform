@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
 
 import { RecoverPasswordPage } from '../src/auth/pages/recover-password.page.js';
+import { montarEcra, t } from './helpers.js';
 
 const responde = (status: number, body: unknown = {}): Response =>
     ({
@@ -12,12 +12,7 @@ const responde = (status: number, body: unknown = {}): Response =>
         json: () => Promise.resolve(body),
     }) as Response;
 
-const montar = () =>
-    render(
-        <MemoryRouter>
-            <RecoverPasswordPage />
-        </MemoryRouter>,
-    );
+const montar = () => montarEcra(<RecoverPasswordPage />);
 
 const irPara = (url: string) => {
     window.history.replaceState(null, '', url);
@@ -50,13 +45,13 @@ describe('recuperar a password', () => {
             montar();
 
             await utilizadora.type(
-                screen.getByLabelText('Email'),
+                screen.getByLabelText(t.auth.email),
                 'ninguem@vicehub.test',
             );
-            await utilizadora.click(screen.getByRole('button', { name: /enviar/i }));
+            await utilizadora.click(screen.getByRole('button', { name: t.auth.enviarLink }));
 
             await waitFor(() => {
-                expect(screen.getByText(/se existir uma conta/i)).toBeDefined();
+                expect(screen.getByText(t.auth.seExistir)).toBeDefined();
             });
         });
 
@@ -66,13 +61,13 @@ describe('recuperar a password', () => {
             montar();
 
             await utilizadora.type(
-                screen.getByLabelText('Email'),
+                screen.getByLabelText(t.auth.email),
                 'player@vicehub.test',
             );
-            await utilizadora.click(screen.getByRole('button', { name: /enviar/i }));
+            await utilizadora.click(screen.getByRole('button', { name: t.auth.enviarLink }));
 
             await waitFor(() => {
-                expect(screen.getByText(/se existir uma conta/i)).toBeDefined();
+                expect(screen.getByText(t.auth.seExistir)).toBeDefined();
             });
         });
 
@@ -84,16 +79,16 @@ describe('recuperar a password', () => {
             montar();
 
             await utilizadora.type(
-                screen.getByLabelText('Email'),
+                screen.getByLabelText(t.auth.email),
                 'ninguem@vicehub.test',
             );
-            await utilizadora.click(screen.getByRole('button', { name: /enviar/i }));
+            await utilizadora.click(screen.getByRole('button', { name: t.auth.enviarLink }));
 
             await waitFor(() => {
-                expect(screen.getByText(/se existir uma conta/i)).toBeDefined();
+                expect(screen.getByText(t.auth.seExistir)).toBeDefined();
             });
 
-            expect(document.body.textContent).not.toMatch(/não existe|não encontr/i);
+            expect(document.body.textContent).not.toMatch(/not found|does not exist/i);
             expect(screen.queryByRole('alert')).toBeNull();
         });
     });
@@ -104,7 +99,7 @@ describe('recuperar a password', () => {
 
             montar();
 
-            expect(screen.getByLabelText('Password nova')).toBeDefined();
+            expect(screen.getByLabelText(t.auth.novaPassword)).toBeDefined();
         });
 
         it('envia o token que veio no link, e não o endereço', async () => {
@@ -116,10 +111,10 @@ describe('recuperar a password', () => {
             montar();
 
             await utilizadora.type(
-                screen.getByLabelText('Password nova'),
+                screen.getByLabelText(t.auth.novaPassword),
                 'password-nova-forte',
             );
-            await utilizadora.click(screen.getByRole('button', { name: /guardar/i }));
+            await utilizadora.click(screen.getByRole('button', { name: t.auth.guardarPassword }));
 
             await waitFor(() => {
                 expect(fetchMock).toHaveBeenCalled();
@@ -145,10 +140,10 @@ describe('recuperar a password', () => {
 
             montar();
 
-            await utilizadora.type(screen.getByLabelText('Password nova'), 'curta');
+            await utilizadora.type(screen.getByLabelText(t.auth.novaPassword), 'curta');
 
             expect(
-                screen.getByRole('button', { name: /guardar/i }).hasAttribute('disabled'),
+                screen.getByRole('button', { name: t.auth.guardarPassword }).hasAttribute('disabled'),
             ).toBe(true);
             expect(fetchMock).not.toHaveBeenCalled();
         });
@@ -164,14 +159,14 @@ describe('recuperar a password', () => {
             montar();
 
             await utilizadora.type(
-                screen.getByLabelText('Password nova'),
+                screen.getByLabelText(t.auth.novaPassword),
                 'password-nova-forte',
             );
-            await utilizadora.click(screen.getByRole('button', { name: /guardar/i }));
+            await utilizadora.click(screen.getByRole('button', { name: t.auth.guardarPassword }));
 
             await waitFor(() => {
-                expect(screen.getByRole('alert').textContent).toMatch(
-                    /já não serve/i,
+                expect(screen.getByRole('alert').textContent).toBe(
+                    t.auth.linkNaoServe,
                 );
             });
         });

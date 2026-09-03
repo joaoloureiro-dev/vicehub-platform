@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 
+import { useT } from '../../i18n/i18n.js';
 import type { CrewDirectoryEntry } from '../crew.types.js';
 
 /**
@@ -15,7 +16,10 @@ export const CrewCard = ({
 }: {
     crew: CrewDirectoryEntry;
     destaque?: boolean;
-}) => (
+}) => {
+    const t = useT();
+
+    return (
     <Link
         className={`crewcard${destaque ? ' destaque' : ''}`}
         to={`/crews/${crew.id}`}
@@ -33,12 +37,10 @@ export const CrewCard = ({
         {crew.description ? <p>{crew.description}</p> : null}
 
         <div className="crewcard-foot">
-            <span>Nível {crew.level}</span>
-            <span>
-                {crew.memberCount}{' '}
-                {crew.memberCount === 1 ? 'membro' : 'membros'}
-            </span>
-            {destaque ? <span className="pill">Destaque</span> : null}
+            <span>{t.crews.nivel(crew.level)}</span>
+            <span>{t.crews.membros(crew.memberCount)}</span>
+            {destaque ? <span className="pill">{t.crews.destaque}</span> : null}
         </div>
     </Link>
-);
+    );
+};

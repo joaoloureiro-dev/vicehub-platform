@@ -18,7 +18,7 @@ import {
     requestToJoinServer,
     withdrawServerJoinRequest,
 } from '../server.api.js';
-import { nomeDoCargo } from '../server.types.js';
+import { useT } from '../../i18n/i18n.js';
 
 /**
  * O perfil de um servidor.
@@ -28,6 +28,7 @@ import { nomeDoCargo } from '../server.types.js';
  * `lib/membership.ts` para que as duas não possam divergir.
  */
 export const ServerPage = () => {
+    const t = useT();
     const { serverId } = useParams<{ serverId: string }>();
     const { user } = useAuth();
 
@@ -74,7 +75,7 @@ export const ServerPage = () => {
             setErroAcao(
                 falha instanceof ApiError
                     ? falha.message
-                    : 'Não foi possível completar a ação.',
+                    : t.comum.naoFoiPossivel,
             );
         } finally {
             setAAgir(false);
@@ -82,15 +83,15 @@ export const ServerPage = () => {
     };
 
     if (servidor.loading && !servidor.data) {
-        return <p className="centered">A carregar…</p>;
+        return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
     if (servidor.error || !servidor.data) {
         return (
             <div className="panel">
-                <Alert kind="bad">Não encontrámos este servidor.</Alert>
+                <Alert kind="bad">{t.servidores.naoEncontrado}</Alert>
                 <div className="foot">
-                    <Link to="/servidores">Voltar ao diretório</Link>
+                    <Link to="/servidores">{t.crews.voltarDiretorio}</Link>
                 </div>
             </div>
         );
@@ -118,7 +119,7 @@ export const ServerPage = () => {
                             className={`estado ${perfil.isOnline ? 'online' : 'offline'}`}
                             aria-hidden="true"
                         />
-                        {perfil.isOnline ? 'Online' : 'Offline'}
+                        {perfil.isOnline ? t.servidores.online : t.servidores.offline}
                         {perfil.region ? ` · ${perfil.region}` : ''}
                     </span>
                     <h1>{perfil.name}</h1>
@@ -139,13 +140,13 @@ export const ServerPage = () => {
                                 void agir(() => requestToJoinServer(perfil.id))
                             }
                         >
-                            Pedir para entrar
+                            {t.crews.pedirEntrada}
                         </button>
                     ) : null}
 
                     {souCandidato ? (
                         <>
-                            <span className="pill aguarda">Candidatura enviada</span>
+                            <span className="pill aguarda">{t.crews.candidaturaEnviada}</span>
                             <button
                                 className="btn-secondary"
                                 type="button"
@@ -156,35 +157,40 @@ export const ServerPage = () => {
                                     )
                                 }
                             >
-                                Retirar candidatura
+                                {t.crews.retirarCandidatura}
                             </button>
                         </>
                     ) : null}
 
                     {souMembro ? (
                         <>
-                            <span className="pill">{nomeDoCargo(minhaAdesao.role)}</span>
+                            <span className="pill">
+                                {t.cargos[
+                                    (minhaAdesao.role ??
+                                        'server_member') as keyof typeof t.cargos
+                                ] ?? minhaAdesao.role}
+                            </span>
                             <button
                                 className="btn-secondary"
                                 type="button"
                                 disabled={aAgir}
                                 onClick={() => void agir(() => leaveServer(perfil.id))}
                             >
-                                Sair do servidor
+                                {t.servidores.sair}
                             </button>
                         </>
                     ) : null}
                 </div>
             ) : (
                 <p className="hint">
-                    <Link to="/entrar">Entra</Link> para te candidatares a este
-                    servidor.
+                    <Link to="/entrar">{t.crews.entraLink}</Link>{' '}
+                    {t.servidores.entraParaCandidatar}
                 </p>
             )}
 
             {giroCandidaturas && candidaturas.data && candidaturas.data.length > 0 ? (
                 <section className="grupo">
-                    <h2>Candidaturas por responder</h2>
+                    <h2>{t.crews.candidaturasPorResponder}</h2>
                     <ul className="pessoas">
                         {candidaturas.data.map((pedido) => (
                             <li key={pedido.userId}>
@@ -203,7 +209,7 @@ export const ServerPage = () => {
                                             )
                                         }
                                     >
-                                        Aceitar
+                                        {t.crews.aceitar}
                                     </button>
                                     <button
                                         className="btn-secondary perigo"
@@ -218,7 +224,7 @@ export const ServerPage = () => {
                                             )
                                         }
                                     >
-                                        Recusar
+                                        {t.crews.recusar}
                                     </button>
                                 </div>
                             </li>
@@ -228,17 +234,22 @@ export const ServerPage = () => {
             ) : null}
 
             <section className="grupo">
-                <h2>Membros ({perfil.memberCount})</h2>
+                <h2>{t.crews.membros(perfil.memberCount)}</h2>
 
                 {membros.loading && !membros.data ? (
-                    <p className="hint">A carregar…</p>
+                    <p className="hint">{t.comum.aCarregar}</p>
                 ) : null}
 
                 <ul className="pessoas">
                     {membros.data?.map((membro) => (
                         <li key={membro.userId}>
                             <span className="nome">{membro.username}</span>
-                            <span className="cargo">{nomeDoCargo(membro.role)}</span>
+                            <span className="cargo">
+                                {t.cargos[
+                                    (membro.role ??
+                                        'server_member') as keyof typeof t.cargos
+                                ] ?? membro.role}
+                            </span>
 
                             {giroCandidaturas && membro.userId !== user?.id ? (
                                 <div className="linha-acoes">
@@ -255,7 +266,7 @@ export const ServerPage = () => {
                                             )
                                         }
                                     >
-                                        Remover
+                                        {t.crews.remover}
                                     </button>
                                 </div>
                             ) : null}

@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api.js';
 import { Alert } from '../components/alert.js';
 import { Field } from '../components/field.js';
 import { resetPassword } from '../auth.api.js';
+import { useT } from '../../i18n/i18n.js';
 
 const MINIMO_PASSWORD = 12;
 
@@ -18,6 +19,7 @@ const MINIMO_PASSWORD = 12;
  */
 export const ResetPasswordPage = ({ token }: { token: string }) => {
     const navigate = useNavigate();
+    const t = useT();
 
     const [password, setPassword] = useState('');
     const [erro, setErro] = useState<string | null>(null);
@@ -38,8 +40,8 @@ export const ResetPasswordPage = ({ token }: { token: string }) => {
             setErro(
                 falha instanceof ApiError &&
                     falha.code === 'INVALID_ACCOUNT_TOKEN'
-                    ? 'Este link já não serve. Pede outro.'
-                    : 'Não foi possível definir a password.',
+                    ? t.auth.linkNaoServe
+                    : t.auth.naoFoiPossivelPassword,
             );
             setAEnviar(false);
         }
@@ -48,11 +50,8 @@ export const ResetPasswordPage = ({ token }: { token: string }) => {
     return (
         <div className="card">
             <header>
-                <h1>Nova password</h1>
-                <p>
-                    Ao guardar, todas as sessões abertas nesta conta são
-                    terminadas — incluindo a de quem não devia lá estar.
-                </p>
+                <h1>{t.auth.novaPasswordTitulo}</h1>
+                <p>{t.auth.novaPasswordSub}</p>
             </header>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
@@ -60,25 +59,25 @@ export const ResetPasswordPage = ({ token }: { token: string }) => {
             <form onSubmit={submeter}>
                 <Field
                     id="password"
-                    label="Password nova"
+                    label={t.auth.novaPassword}
                     type="password"
                     value={password}
                     onChange={setPassword}
                     autoComplete="new-password"
                     invalid={curta}
-                    hint={`Pelo menos ${MINIMO_PASSWORD} caracteres.`}
+                    hint={t.auth.passwordMinima(MINIMO_PASSWORD)}
                 />
                 <button
                     className="primary"
                     type="submit"
                     disabled={aEnviar || curta}
                 >
-                    {aEnviar ? 'A guardar…' : 'Guardar a password'}
+                    {aEnviar ? t.comum.aGuardar : t.auth.guardarPassword}
                 </button>
             </form>
 
             <div className="foot">
-                <Link to="/recuperar-password">Pedir outro link</Link>
+                <Link to="/recuperar-password">{t.auth.pedirOutroLink}</Link>
             </div>
         </div>
     );

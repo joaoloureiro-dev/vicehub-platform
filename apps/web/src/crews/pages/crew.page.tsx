@@ -18,7 +18,7 @@ import {
     requestToJoin,
     withdrawJoinRequest,
 } from '../crew.api.js';
-import { nomeDoCargo } from '../crew.types.js';
+import { useT } from '../../i18n/i18n.js';
 
 /**
  * O perfil de uma crew.
@@ -34,6 +34,7 @@ import { nomeDoCargo } from '../crew.types.js';
  * sempre a permissão real.
  */
 export const CrewPage = () => {
+    const t = useT();
     const { crewId } = useParams<{ crewId: string }>();
     const { user } = useAuth();
 
@@ -81,7 +82,7 @@ export const CrewPage = () => {
             setErroAcao(
                 falha instanceof ApiError
                     ? falha.message
-                    : 'Não foi possível completar a ação.',
+                    : t.comum.naoFoiPossivel,
             );
         } finally {
             setAAgir(false);
@@ -89,15 +90,15 @@ export const CrewPage = () => {
     };
 
     if (crew.loading && !crew.data) {
-        return <p className="centered">A carregar…</p>;
+        return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
     if (crew.error || !crew.data) {
         return (
             <div className="panel">
-                <Alert kind="bad">Não encontrámos esta crew.</Alert>
+                <Alert kind="bad">{t.crews.naoEncontrada}</Alert>
                 <div className="foot">
-                    <Link to="/crews">Voltar ao diretório</Link>
+                    <Link to="/crews">{t.crews.voltarDiretorio}</Link>
                 </div>
             </div>
         );
@@ -128,23 +129,23 @@ export const CrewPage = () => {
 
             <dl className="stats">
                 <div>
-                    <dt>Nível</dt>
+                    <dt>{t.perfil.nivel}</dt>
                     <dd>{perfil.level}</dd>
                 </div>
                 <div>
-                    <dt>XP</dt>
+                    <dt>{t.crews.xp}</dt>
                     <dd>{perfil.xp}</dd>
                 </div>
                 <div>
-                    <dt>Influência</dt>
+                    <dt>{t.crews.influencia}</dt>
                     <dd>{perfil.influence}</dd>
                 </div>
                 <div>
-                    <dt>Prestígio</dt>
+                    <dt>{t.crews.prestigio}</dt>
                     <dd>{perfil.prestige}</dd>
                 </div>
                 <div>
-                    <dt>Membros</dt>
+                    <dt>{t.crews.contagemMembros}</dt>
                     <dd>{perfil.memberCount}</dd>
                 </div>
             </dl>
@@ -160,13 +161,13 @@ export const CrewPage = () => {
                             disabled={aAgir}
                             onClick={() => void agir(() => requestToJoin(perfil.id))}
                         >
-                            Pedir para entrar
+                            {t.crews.pedirEntrada}
                         </button>
                     ) : null}
 
                     {souCandidato ? (
                         <>
-                            <span className="pill aguarda">Candidatura enviada</span>
+                            <span className="pill aguarda">{t.crews.candidaturaEnviada}</span>
                             <button
                                 className="btn-secondary"
                                 type="button"
@@ -175,7 +176,7 @@ export const CrewPage = () => {
                                     void agir(() => withdrawJoinRequest(perfil.id))
                                 }
                             >
-                                Retirar candidatura
+                                {t.crews.retirarCandidatura}
                             </button>
                         </>
                     ) : null}
@@ -183,19 +184,22 @@ export const CrewPage = () => {
                     {souMembro ? (
                         <>
                             <span className="pill">
-                                {nomeDoCargo(minhaAdesao.role)}
+                                {t.cargos[
+                                    (minhaAdesao.role ??
+                                        'crew_member') as keyof typeof t.cargos
+                                ] ?? minhaAdesao.role}
                             </span>
                             <Link
                                 className="btn-secondary"
                                 to={`/crews/${perfil.id}/tesouraria`}
                             >
-                                Tesouraria
+                                {t.crews.tesouraria}
                             </Link>
                             <Link
                                 className="btn-secondary"
                                 to={`/crews/${perfil.id}/eventos`}
                             >
-                                Eventos
+                                {t.crews.eventos}
                             </Link>
                             <button
                                 className="btn-secondary"
@@ -203,20 +207,21 @@ export const CrewPage = () => {
                                 disabled={aAgir}
                                 onClick={() => void agir(() => leaveCrew(perfil.id))}
                             >
-                                Sair da crew
+                                {t.crews.sair}
                             </button>
                         </>
                     ) : null}
                 </div>
             ) : (
                 <p className="hint">
-                    <Link to="/entrar">Entra</Link> para te candidatares a esta crew.
+                    <Link to="/entrar">{t.crews.entraLink}</Link>{' '}
+                    {t.crews.entraParaCandidatar}
                 </p>
             )}
 
             {giroCandidaturas && candidaturas.data && candidaturas.data.length > 0 ? (
                 <section className="grupo">
-                    <h2>Candidaturas por responder</h2>
+                    <h2>{t.crews.candidaturasPorResponder}</h2>
                     <ul className="pessoas">
                         {candidaturas.data.map((pedido) => (
                             <li key={pedido.userId}>
@@ -235,7 +240,7 @@ export const CrewPage = () => {
                                             )
                                         }
                                     >
-                                        Aceitar
+                                        {t.crews.aceitar}
                                     </button>
                                     <button
                                         className="btn-secondary perigo"
@@ -250,7 +255,7 @@ export const CrewPage = () => {
                                             )
                                         }
                                     >
-                                        Recusar
+                                        {t.crews.recusar}
                                     </button>
                                 </div>
                             </li>
@@ -260,17 +265,22 @@ export const CrewPage = () => {
             ) : null}
 
             <section className="grupo">
-                <h2>Membros</h2>
+                <h2>{t.crews.listaMembros}</h2>
 
                 {membros.loading && !membros.data ? (
-                    <p className="hint">A carregar…</p>
+                    <p className="hint">{t.comum.aCarregar}</p>
                 ) : null}
 
                 <ul className="pessoas">
                     {membros.data?.map((membro) => (
                         <li key={membro.userId}>
                             <span className="nome">{membro.username}</span>
-                            <span className="cargo">{nomeDoCargo(membro.role)}</span>
+                            <span className="cargo">
+                                {t.cargos[
+                                    (membro.role ??
+                                        'crew_member') as keyof typeof t.cargos
+                                ] ?? membro.role}
+                            </span>
 
                             {giroCandidaturas && membro.userId !== user?.id ? (
                                 <div className="linha-acoes">
@@ -284,7 +294,7 @@ export const CrewPage = () => {
                                             )
                                         }
                                     >
-                                        Remover
+                                        {t.crews.remover}
                                     </button>
                                 </div>
                             ) : null}

@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { requestEmailVerification } from '../../auth/auth.api.js';
+import { useIdioma, useT } from '../../i18n/i18n.js';
 import {
     getMyProfile,
     updateMyAppearance,
@@ -21,19 +22,23 @@ const COR_VALIDA = /^#[0-9A-Fa-f]{6}$/;
  * dado em falta.
  */
 const descreverPlano = (
+    t: ReturnType<typeof useT>,
     isPremium: boolean,
     premiumUntil: string | null,
+    comoData: (iso: string) => string,
 ): string => {
     if (!isPremium) {
-        return 'Sem plano';
+        return t.perfil.semPlano;
     }
 
     return premiumUntil === null
-        ? 'Premium vitalício'
-        : `Premium até ${new Date(premiumUntil).toLocaleDateString('pt-PT')}`;
+        ? t.perfil.premiumVitalicio
+        : t.perfil.premiumAte(comoData(premiumUntil));
 };
 
 export const MyProfilePage = () => {
+    const t = useT();
+    const { idioma } = useIdioma();
     const perfil = useAsync(() => getMyProfile(), []);
 
     const [bio, setBio] = useState('');
@@ -74,13 +79,13 @@ export const MyProfilePage = () => {
     }, [perfil.data]);
 
     if (perfil.loading && !perfil.data) {
-        return <p className="centered">A carregar…</p>;
+        return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
     if (!perfil.data) {
         return (
             <div className="panel">
-                <Alert kind="bad">Não foi possível carregar o teu perfil.</Alert>
+                <Alert kind="bad">{t.perfil.naoCarregou}</Alert>
             </div>
         );
     }
@@ -102,7 +107,7 @@ export const MyProfilePage = () => {
             setMensagem({
                 onde: 'perfil',
                 tipo: 'good',
-                texto: 'Perfil guardado.',
+                texto: t.perfil.perfilGuardado,
             });
             perfil.reload();
         } catch (falha) {
@@ -112,7 +117,7 @@ export const MyProfilePage = () => {
                 texto:
                     falha instanceof ApiError
                         ? falha.message
-                        : 'Não foi possível guardar o perfil.',
+                        : t.perfil.naoFoiPossivelPerfil,
             });
         } finally {
             setAGuardar(false);
@@ -133,7 +138,7 @@ export const MyProfilePage = () => {
             setMensagem({
                 onde: 'aparencia',
                 tipo: 'good',
-                texto: 'Personalização guardada.',
+                texto: t.perfil.personalizacaoGuardada,
             });
             perfil.reload();
         } catch (falha) {
@@ -147,10 +152,10 @@ export const MyProfilePage = () => {
                 tipo: 'bad',
                 texto:
                     falha instanceof ApiError && falha.status === 402
-                        ? 'A personalização faz parte do plano premium.'
+                        ? t.perfil.ehPremium
                         : falha instanceof ApiError
                           ? falha.message
-                          : 'Não foi possível guardar a personalização.',
+                          : t.perfil.naoFoiPossivelPersonalizacao,
             });
         } finally {
             setAGuardar(false);
@@ -160,50 +165,52 @@ export const MyProfilePage = () => {
     return (
         <div className="panel wide">
             <div className="panel-head">
-                <h1>O meu perfil</h1>
+                <h1>{t.perfil.titulo}</h1>
                 <Link className="btn-secondary" to={`/u/${eu.username}`}>
-                    Ver como público
+                    {t.perfil.verPublico}
                 </Link>
             </div>
 
             <dl className="stats">
                 <div>
-                    <dt>Jogador</dt>
+                    <dt>{t.perfil.jogador}</dt>
                     <dd>{eu.username}</dd>
                 </div>
                 <div>
-                    <dt>Nível</dt>
+                    <dt>{t.perfil.nivel}</dt>
                     <dd>{eu.level}</dd>
                 </div>
                 <div>
-                    <dt>XP</dt>
+                    <dt>{t.crews.xp}</dt>
                     <dd>{eu.xp}</dd>
                 </div>
                 <div>
-                    <dt>Reputação</dt>
+                    <dt>{t.perfil.reputacao}</dt>
                     <dd>{eu.reputation}</dd>
                 </div>
             </dl>
 
             <section className="grupo">
-                <h2>Conta</h2>
+                <h2>{t.perfil.conta}</h2>
                 <dl className="rows">
                     <div>
-                        <dt>Email</dt>
+                        <dt>{t.auth.email}</dt>
                         <dd>
                             {eu.email}{' '}
                             {eu.emailVerifiedAt ? (
-                                <span className="pill confirmado">Confirmado</span>
+                                <span className="pill confirmado">{t.perfil.confirmado}</span>
                             ) : (
-                                <span className="pill aguarda">Por confirmar</span>
+                                <span className="pill aguarda">{t.perfil.porConfirmar}</span>
                             )}
                         </dd>
                     </div>
                     <div>
-                        <dt>Plano</dt>
+                        <dt>{t.perfil.plano}</dt>
                         <dd>
                             <span className={eu.isPremium ? 'pill' : undefined}>
-                                {descreverPlano(eu.isPremium, eu.premiumUntil)}
+                                {descreverPlano(t, eu.isPremium, eu.premiumUntil, (iso) =>
+                                    new Date(iso).toLocaleDateString(idioma),
+                                )}
                             </span>
                         </dd>
                     </div>
@@ -224,21 +231,21 @@ export const MyProfilePage = () => {
                                         setMensagem({
                                             onde: 'perfil',
                                             tipo: 'bad',
-                                            texto: 'Não foi possível enviar o email de confirmação.',
+                                            texto: t.perfil.naoFoiPossivelEmail,
                                         });
                                     });
                             }}
                         >
                             {emailPedido
-                                ? 'Email enviado'
-                                : 'Enviar email de confirmação'}
+                                ? t.perfil.emailEnviado
+                                : t.perfil.enviarConfirmacao}
                         </button>
                     </div>
                 ) : null}
             </section>
 
             <section className="grupo">
-                <h2>Apresentação</h2>
+                <h2>{t.perfil.apresentacao}</h2>
 
                 {mensagem?.onde === 'perfil' ? (
                     <Alert kind={mensagem.tipo}>{mensagem.texto}</Alert>
@@ -246,7 +253,7 @@ export const MyProfilePage = () => {
 
                 <form onSubmit={guardarPerfil}>
                     <div className="field">
-                        <label htmlFor="bio">Sobre ti</label>
+                        <label htmlFor="bio">{t.perfil.sobreTi}</label>
                         <textarea
                             id="bio"
                             rows={4}
@@ -258,12 +265,12 @@ export const MyProfilePage = () => {
                             }}
                         />
                         <p className="hint" id="bio-hint">
-                            {500 - bio.length} caracteres disponíveis.
+                            {t.crews.caracteresDisponiveis(500 - bio.length)}
                         </p>
                     </div>
 
                     <div className="field">
-                        <label htmlFor="avatar">Avatar</label>
+                        <label htmlFor="avatar">{t.perfil.avatar}</label>
                         <input
                             id="avatar"
                             type="url"
@@ -276,7 +283,7 @@ export const MyProfilePage = () => {
                     </div>
 
                     <button className="primary" type="submit" disabled={aGuardar}>
-                        {aGuardar ? 'A guardar…' : 'Guardar'}
+                        {aGuardar ? t.comum.aGuardar : t.comum.guardar}
                     </button>
                 </form>
             </section>
@@ -289,20 +296,14 @@ export const MyProfilePage = () => {
             */}
             <section className={`grupo premium${eu.isPremium ? ' ativo' : ''}`}>
                 <div className="premium-head">
-                    <h2>Personalização</h2>
-                    <span className="pill">Premium</span>
+                    <h2>{t.perfil.personalizacao}</h2>
+                    <span className="pill">{t.perfil.premium}</span>
                 </div>
 
                 {eu.isPremium ? (
-                    <p className="hint">
-                        O teu plano está ativo. O banner e a cor aparecem no teu
-                        perfil público.
-                    </p>
+                    <p className="hint">{t.perfil.planoAtivo}</p>
                 ) : (
-                    <Alert kind="bad">
-                        Estes campos fazem parte do plano premium. Podes escrevê-los,
-                        mas só são guardados com um plano ativo.
-                    </Alert>
+                    <Alert kind="bad">{t.perfil.precisaDePlano}</Alert>
                 )}
 
                 {mensagem?.onde === 'aparencia' ? (
@@ -311,7 +312,7 @@ export const MyProfilePage = () => {
 
                 <form onSubmit={guardarAparencia}>
                     <div className="field">
-                        <label htmlFor="banner">Banner</label>
+                        <label htmlFor="banner">{t.perfil.banner}</label>
                         <input
                             id="banner"
                             type="url"
@@ -324,7 +325,7 @@ export const MyProfilePage = () => {
                     </div>
 
                     <div className="field">
-                        <label htmlFor="cor">Cor de destaque</label>
+                        <label htmlFor="cor">{t.perfil.cor}</label>
                         <div className="cor-linha">
                             <input
                                 id="cor"
@@ -348,7 +349,7 @@ export const MyProfilePage = () => {
                             />
                         </div>
                         <p className="hint" id="cor-hint">
-                            Hexadecimal de seis dígitos, como #E93CEF.
+                            {t.perfil.corAjuda}
                         </p>
                     </div>
 
@@ -357,7 +358,7 @@ export const MyProfilePage = () => {
                         type="submit"
                         disabled={aGuardar || corMa}
                     >
-                        {aGuardar ? 'A guardar…' : 'Guardar personalização'}
+                        {aGuardar ? t.comum.aGuardar : t.perfil.guardarPersonalizacao}
                     </button>
                 </form>
             </section>

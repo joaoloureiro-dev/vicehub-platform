@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { listServers } from '../server.api.js';
+import { useT } from '../../i18n/i18n.js';
 import type { ServerDirectoryEntry } from '../server.types.js';
 
 const ServerCard = ({
@@ -12,7 +13,10 @@ const ServerCard = ({
 }: {
     servidor: ServerDirectoryEntry;
     destaque?: boolean;
-}) => (
+}) => {
+    const t = useT();
+
+    return (
     <Link
         className={`crewcard${destaque ? ' destaque' : ''}`}
         to={`/servidores/${servidor.id}`}
@@ -34,18 +38,19 @@ const ServerCard = ({
         {servidor.description ? <p>{servidor.description}</p> : null}
 
         <div className="crewcard-foot">
-            <span>{servidor.isOnline ? 'Online' : 'Offline'}</span>
-            {servidor.region ? <span>{servidor.region}</span> : null}
             <span>
-                {servidor.memberCount}{' '}
-                {servidor.memberCount === 1 ? 'membro' : 'membros'}
+                {servidor.isOnline ? t.servidores.online : t.servidores.offline}
             </span>
-            {destaque ? <span className="pill">Destaque</span> : null}
+            {servidor.region ? <span>{servidor.region}</span> : null}
+            <span>{t.crews.membros(servidor.memberCount)}</span>
+            {destaque ? <span className="pill">{t.crews.destaque}</span> : null}
         </div>
     </Link>
-);
+    );
+};
 
 export const ServerDirectoryPage = () => {
+    const t = useT();
     const [termo, setTermo] = useState('');
     const [pesquisa, setPesquisa] = useState('');
     const [soOnline, setSoOnline] = useState(false);
@@ -70,9 +75,9 @@ export const ServerDirectoryPage = () => {
     return (
         <div className="panel wide">
             <div className="panel-head">
-                <h1>Servidores</h1>
+                <h1>{t.servidores.titulo}</h1>
                 <Link className="btn-secondary" to="/servidores/novo">
-                    Registar servidor
+                    {t.servidores.registar}
                 </Link>
             </div>
 
@@ -80,14 +85,14 @@ export const ServerDirectoryPage = () => {
                 <input
                     type="search"
                     value={termo}
-                    aria-label="Pesquisar servidores"
-                    placeholder="Procurar pelo nome"
+                    aria-label={t.servidores.procurarLabel}
+                    placeholder={t.servidores.procurar}
                     onChange={(event) => {
                         setTermo(event.target.value);
                     }}
                 />
                 <button className="primary" type="submit">
-                    Procurar
+                    {t.crews.botaoProcurar}
                 </button>
             </form>
 
@@ -100,18 +105,18 @@ export const ServerDirectoryPage = () => {
                         setPagina(1);
                     }}
                 />
-                Mostrar apenas os que estão online
+                {t.servidores.soOnline}
             </label>
 
             {error ? (
-                <Alert kind="bad">Não foi possível carregar os servidores.</Alert>
+                <Alert kind="bad">{t.servidores.naoCarregou}</Alert>
             ) : null}
 
-            {loading && !data ? <p className="hint">A carregar…</p> : null}
+            {loading && !data ? <p className="hint">{t.comum.aCarregar}</p> : null}
 
             {data && data.featured.length > 0 ? (
                 <section className="grupo">
-                    <h2>Em destaque</h2>
+                    <h2>{t.crews.emDestaque}</h2>
                     <div className="crewgrid">
                         {data.featured.map((servidor) => (
                             <ServerCard key={servidor.id} servidor={servidor} destaque />
@@ -123,16 +128,14 @@ export const ServerDirectoryPage = () => {
             {data ? (
                 <section className="grupo">
                     <h2>
-                        {pesquisa
-                            ? `Resultados para "${pesquisa}"`
-                            : 'Todos os servidores'}
+                        {pesquisa ? t.crews.resultados(pesquisa) : t.servidores.todos}
                     </h2>
 
                     {data.items.length === 0 ? (
                         <p className="vazio">
                             {pesquisa || soOnline
-                                ? 'Nenhum servidor com estes filtros.'
-                                : 'Ainda não há servidores. Regista o primeiro.'}
+                                ? t.servidores.semResultados
+                                : t.servidores.aindaNaoHa}
                         </p>
                     ) : (
                         <div className="crewgrid">
@@ -152,10 +155,10 @@ export const ServerDirectoryPage = () => {
                                     setPagina((valor) => valor - 1);
                                 }}
                             >
-                                Anterior
+                                {t.crews.anterior}
                             </button>
                             <span>
-                                Página {data.page} de {data.totalPages}
+                                {t.crews.paginaDe(data.page, data.totalPages)}
                             </span>
                             <button
                                 className="btn-secondary"
@@ -165,7 +168,7 @@ export const ServerDirectoryPage = () => {
                                     setPagina((valor) => valor + 1);
                                 }}
                             >
-                                Seguinte
+                                {t.crews.seguinte}
                             </button>
                         </div>
                     ) : null}

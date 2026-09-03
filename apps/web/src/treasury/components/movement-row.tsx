@@ -1,7 +1,7 @@
+import { useIdioma, useT } from '../../i18n/i18n.js';
 import {
     formatarMontante,
-    nomeDaCategoria,
-    nomeDoEstado,
+    separadorDoIdioma,
     sinalDoMovimento,
     type TreasuryMovement,
 } from '../treasury.types.js';
@@ -18,28 +18,42 @@ export const MovementRow = ({
 }: {
     movimento: TreasuryMovement;
     acoes?: React.ReactNode;
-}) => (
+}) => {
+    const t = useT();
+    const { idioma } = useIdioma();
+
+    return (
     <li className={`movimento ${movimento.status}`}>
         <div className="mov-principal">
             <span className={`mov-valor ${movimento.direction}`}>
                 {sinalDoMovimento(movimento.direction)}
-                {formatarMontante(movimento.amount)}
+                {formatarMontante(movimento.amount, separadorDoIdioma(idioma))}
             </span>
             <span className="mov-desc">
-                {movimento.description ?? nomeDaCategoria(movimento.category)}
+                {movimento.description ??
+                    (t.categorias[
+                        movimento.category as keyof typeof t.categorias
+                    ] ?? movimento.category)}
             </span>
         </div>
 
         <div className="mov-meta">
             <span className={`pill estado-${movimento.status}`}>
-                {nomeDoEstado(movimento.status)}
+                {t.estadosMovimento[
+                    movimento.status as keyof typeof t.estadosMovimento
+                ] ?? movimento.status}
             </span>
-            <span>{nomeDaCategoria(movimento.category)}</span>
             <span>
-                {new Date(movimento.createdAt).toLocaleDateString('pt-PT')}
+                {t.categorias[
+                    movimento.category as keyof typeof t.categorias
+                ] ?? movimento.category}
+            </span>
+            <span>
+                {new Date(movimento.createdAt).toLocaleDateString(idioma)}
             </span>
         </div>
 
         {acoes ? <div className="linha-acoes">{acoes}</div> : null}
     </li>
-);
+    );
+};
