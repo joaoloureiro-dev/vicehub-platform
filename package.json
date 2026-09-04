@@ -14,7 +14,9 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "npm run dev --workspace=@vicehub/api",
+    "dev:web": "npm run dev --workspace=@vicehub/web",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
