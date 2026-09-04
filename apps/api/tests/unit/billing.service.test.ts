@@ -109,6 +109,66 @@ describe('BillingService', () => {
                 semStripe.verifyEvent(Buffer.from('{}'), 'assinatura'),
             ).toThrow(BillingError);
         });
+
+        /**
+         * O catálogo continua a responder, e diz que a compra não está
+         * aberta. É o que deixa o ecrã avisar antes do clique: um 503
+         * depois de alguém decidir pagar lê-se como avaria, e é a pior
+         * altura para parecer avariado.
+         */
+        it('diz o preço na mesma, e que ainda não se compra', () => {
+            const semStripe = new BillingService(
+                repository as unknown as BillingRepository,
+                null,
+            );
+
+            const catalogo = semStripe.listPurchasablePlans();
+
+            expect(catalogo.available).toBe(false);
+            expect(catalogo.plans.length).toBeGreaterThan(0);
+        });
+    });
+
+    describe('o catálogo do que se compra', () => {
+        it('diz que a compra está aberta quando há Stripe', () => {
+            expect(service.listPurchasablePlans().available).toBe(true);
+        });
+
+        it('traz o premium com o preço em vigor', () => {
+            const premium = service
+                .listPurchasablePlans()
+                .plans.find((plano) => plano.key === 'premium');
+
+            expect(premium).toMatchObject({
+                priceCents: 1_000,
+                currency: 'USD',
+                intervalMonths: 1,
+            });
+        });
+
+        /**
+         * O vitalício é concedido à mão, um a um. Anunciá-lo a zero numa
+         * lista de preços seria prometer de graça o que é um gesto — e
+         * quem clicasse não teria nada para pagar.
+         */
+        it('não anuncia o vitalício', () => {
+            const chaves = service
+                .listPurchasablePlans()
+                .plans.map((plano) => plano.key);
+
+            expect(chaves).not.toContain('lifetime');
+        });
+
+        /**
+         * O que sai daqui é o que o ecrã mostra. Um plano sem período não
+         * pode ser cobrado todos os meses, e mostrá-lo como se pudesse
+         * seria prometer uma cobrança que não existe.
+         */
+        it('nunca traz um plano sem período', () => {
+            for (const plano of service.listPurchasablePlans().plans) {
+                expect(plano.intervalMonths).toBeGreaterThan(0);
+            }
+        });
     });
 
     describe('começar uma compra', () => {

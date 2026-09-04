@@ -16,6 +16,7 @@ import { LoginPage } from './auth/pages/login.page.js';
 import { RegisterPage } from './auth/pages/register.page.js';
 import { RecoverPasswordPage } from './auth/pages/recover-password.page.js';
 import { VerifyEmailPage } from './auth/pages/verify-email.page.js';
+import { PremiumPage } from './billing/pages/premium.page.js';
 import { CreateCrewPage } from './crews/pages/create-crew.page.js';
 import { CrewDirectoryPage } from './crews/pages/crew-directory.page.js';
 import { CrewPage } from './crews/pages/crew.page.js';
@@ -189,6 +190,13 @@ export const App = () => (
               que alguém de fora descobre a plataforma. O que exige
               sessão é agir sobre eles.
             */}
+            {/*
+              O preço vê-se sem sessão de propósito: quem ainda não tem
+              conta é precisamente quem precisa de saber quanto custa
+              antes de a criar.
+            */}
+            <Route path="/premium" element={<PremiumPage />} />
+
             <Route path="/crews" element={<CrewDirectoryPage />} />
             <Route path="/servidores" element={<ServerDirectoryPage />} />
 

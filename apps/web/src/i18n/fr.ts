@@ -48,6 +48,7 @@ export const fr = (p: Tools): Messages => ({
         eventosTexto:
             'Vous faites le travail, on confirme qui était là, et on partage selon la présence — avec des poids, parce que celui qui mène un braquage prend souvent plus.',
 
+        verPremium: 'Ce que donne le premium',
         honesto: 'Encore au début',
         honestoTexto:
             'ViceHub se construit à découvert, en commençant par GTA VI. Certaines choses sont prêtes, d’autres non, et le plus rapide pour changer ça est de nous dire ce qui manque.',
@@ -225,6 +226,7 @@ export const fr = (p: Tools): Messages => ({
         avatar: 'Avatar',
         perfilGuardado: 'Profil enregistré.',
         naoFoiPossivelPerfil: 'Le profil n’a pas pu être enregistré.',
+        verPremium: 'Voir ce que donne le premium',
         personalizacao: 'Personnalisation',
         premium: 'Premium',
         planoAtivo:
@@ -242,6 +244,32 @@ export const fr = (p: Tools): Messages => ({
         naoEncontrado: 'Nous n’avons pas trouvé ce joueur.',
         desde: 'Depuis',
         irParaCrews: 'Aller aux crews',
+    },
+
+    premium: {
+        etiqueta: 'Premium',
+        titulo: 'Soutiens la plateforme, prends les extras',
+        subtitulo:
+            "ViceHub fonctionne sans rien payer. Le premium est pour celles et ceux qui veulent que ça continue d'être construit — et qui aiment que leur profil leur ressemble.",
+        porMes: 'par mois',
+        oQueDaPersonalizacao:
+            'Personnalise ton profil : bannière et couleur d’accent sur ta page publique.',
+        oQueDaCrew: 'Le premium peut être acheté pour une crew ou un serveur, pas seulement pour toi.',
+        oQueDaApoio: 'Il paie les serveurs, et le temps que tout ça demande.',
+        comprar: 'Passer en premium',
+        aAbrir: 'Ouverture du paiement…',
+        cancelarQuando: 'Annule quand tu veux. Ça court jusqu’à la fin du mois payé.',
+        criarConta: 'Créer un compte',
+        jaTenhoConta: 'J’ai déjà un compte',
+        tensPlano: 'Ton offre est active.',
+        tensPlanoAte: (data: string) => `Ton offre est active jusqu’au ${data}.`,
+        tensVitalicio: 'Tu as le premium à vie. Il ne se termine pas, et il n’est jamais facturé.',
+        irParaPerfil: 'Aller à mon profil',
+        aindaNaoAbriu:
+            "L'achat n'est pas encore ouvert — il ouvre bientôt. En attendant, tout le reste de ViceHub fonctionne normalement.",
+        naoFoiPossivelComprar: 'Le paiement n’a pas pu s’ouvrir. Réessaie dans un moment.',
+        notaVitalicio:
+            'Le premium à vie n’est pas en vente. Il est donné à la main, un par un, à celles et ceux qui ont soutenu ViceHub au début.',
     },
 
     tesouraria: {

@@ -471,6 +471,7 @@ incluindo as que ainda não foram escritas.
 
 | Rota | Quem pode |
 |---|---|
+| `GET /api/v1/billing/plans` | toda a gente, com conta ou sem ela |
 | `POST /api/v1/billing/checkout` | qualquer conta |
 | `POST /api/v1/billing/webhook` | o Stripe, provado pela assinatura |
 
@@ -489,6 +490,12 @@ rotas respondem **503** a dizê-lo. Uma configuração meia-feita é recusada
 ao arrancar: ter a chave e não ter o segredo do webhook seria pior do que
 não ter nada, porque a compra funcionava, o Stripe cobrava, e a
 plataforma nunca chegava a saber que alguém tinha pago.
+
+**O catálogo diz o preço e se a compra está sequer aberta.** O
+`available` sai daí e não do clique: sem ele, o ecrã oferecia um botão
+que responde 503, e um 503 depois de alguém decidir pagar lê-se como
+avaria — a pior altura para parecer avariado. O vitalício fica de fora da
+lista: anunciá-lo a zero seria prometer de graça o que é um gesto.
 
 **Quem cobra é que sabe.** Enquanto o plano é concedido à mão, os
 períodos são calculados aqui. A partir do momento em que o Stripe cobra,
@@ -642,6 +649,24 @@ aplicação é servida recusa estilos escritos dentro da página.
 ninguém sabe quanto pode gastar: o liquidado não desconta o que já foi
 autorizado a sair, e comprometer duas vezes o mesmo dinheiro é o erro
 que se segue.
+
+**O ecrã do premium vê-se sem conta.** Quem ainda não a tem é
+precisamente quem precisa de saber o preço antes de a criar. O que muda
+com a sessão é o que se pode fazer: sem conta, o convite a criá-la; com
+conta e sem plano, o botão de compra; com vitalício, nem um nem outro —
+pedir dinheiro por uma coisa que já foi oferecida é a espécie de erro que
+ninguém repara e toda a gente acha mal.
+
+**Com a compra fechada, o aviso vem antes do convite a criar conta.** A
+compra não estar aberta é um facto da instalação, e não da pessoa: pela
+ordem contrária, quem chegasse de fora criava conta para comprar uma coisa
+que ainda não se vende, e só descobria isso depois de dar o email.
+
+**O preço divide por cem, e a tesouraria nunca divide nada.** O que muda é
+o que está a ser contado: a moeda do jogo vai a dezanove dígitos e viaja
+como texto do princípio ao fim, porque `Number` a partiria; o preço do
+plano é dinheiro a sério em cêntimos, vindo do Stripe, e nunca chega perto
+do limite.
 
 **A personalização premium aparece a toda a gente**, e não só a quem tem
 plano. Escondê-la faria com que quem recebe o premium não soubesse que

@@ -46,6 +46,7 @@ export const en = (p: Tools) => ({
         eventosTexto:
             'Run the job, confirm who was there, and split the take by attendance — with weights, because whoever leads a heist usually takes more.',
 
+        verPremium: 'What premium gives you',
         honesto: 'Early days',
         honestoTexto:
             'ViceHub is being built in the open, starting with GTA VI. Some of it is finished, some of it is not, and the fastest way to change that is to tell us what is missing.',
@@ -223,6 +224,7 @@ export const en = (p: Tools) => ({
         avatar: 'Avatar',
         perfilGuardado: 'Profile saved.',
         naoFoiPossivelPerfil: 'Your profile could not be saved.',
+        verPremium: 'See what premium gives you',
         personalizacao: 'Customisation',
         premium: 'Premium',
         planoAtivo:
@@ -239,6 +241,32 @@ export const en = (p: Tools) => ({
         naoEncontrado: 'We could not find this player.',
         desde: 'Since',
         irParaCrews: 'Go to crews',
+    },
+
+    premium: {
+        etiqueta: 'Premium',
+        titulo: 'Back the platform, get the extras',
+        subtitulo:
+            'ViceHub works without paying. Premium is for people who want the platform to keep being built — and who like their profile looking like theirs.',
+        porMes: 'per month',
+        oQueDaPersonalizacao:
+            'Customise your profile: banner and accent colour on your public page.',
+        oQueDaCrew: 'Premium can be bought for a crew or a server, not just for you.',
+        oQueDaApoio: 'It pays for the servers, and for the time that goes into this.',
+        comprar: 'Get premium',
+        aAbrir: 'Opening checkout…',
+        cancelarQuando: 'Cancel whenever you like. It runs to the end of the month you paid for.',
+        criarConta: 'Create your account',
+        jaTenhoConta: 'I already have an account',
+        tensPlano: 'Your plan is active.',
+        tensPlanoAte: (data: string) => `Your plan is active until ${data}.`,
+        tensVitalicio: 'You have lifetime premium. It does not end, and it is never charged.',
+        irParaPerfil: 'Go to my profile',
+        aindaNaoAbriu:
+            'Buying is not open yet — it opens shortly. Everything else on ViceHub works as normal in the meantime.',
+        naoFoiPossivelComprar: 'Checkout could not be opened. Try again shortly.',
+        notaVitalicio:
+            'Lifetime premium is not for sale. It is given by hand, one at a time, to people who backed ViceHub early.',
     },
 
     tesouraria: {

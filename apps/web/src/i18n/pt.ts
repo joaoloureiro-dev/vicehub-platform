@@ -47,6 +47,7 @@ export const pt = (p: Tools): Messages => ({
         eventosTexto:
             'Fazem o trabalho, confirma-se quem lá esteve, e divide-se por presença — com pesos, porque quem lidera um assalto costuma levar mais.',
 
+        verPremium: 'O que o premium dá',
         honesto: 'Ainda no princípio',
         honestoTexto:
             'O ViceHub está a ser construído às claras, a começar pelo GTA VI. Há coisas prontas e outras não, e a forma mais rápida de mudar isso é dizeres o que falta.',
@@ -224,6 +225,7 @@ export const pt = (p: Tools): Messages => ({
         avatar: 'Avatar',
         perfilGuardado: 'Perfil guardado.',
         naoFoiPossivelPerfil: 'Não foi possível guardar o perfil.',
+        verPremium: 'Ver o que o premium dá',
         personalizacao: 'Personalização',
         premium: 'Premium',
         planoAtivo:
@@ -241,6 +243,32 @@ export const pt = (p: Tools): Messages => ({
         naoEncontrado: 'Não encontrámos este jogador.',
         desde: 'Desde',
         irParaCrews: 'Ir para as crews',
+    },
+
+    premium: {
+        etiqueta: 'Premium',
+        titulo: 'Apoia a plataforma, leva os extras',
+        subtitulo:
+            'O ViceHub funciona sem pagar nada. O premium é para quem quer que isto continue a ser construído — e para quem gosta que o perfil tenha a cara dele.',
+        porMes: 'por mês',
+        oQueDaPersonalizacao:
+            'Personaliza o perfil: banner e cor de destaque na tua página pública.',
+        oQueDaCrew: 'O premium pode ser comprado para uma crew ou um servidor, e não só para ti.',
+        oQueDaApoio: 'Paga os servidores, e o tempo que isto leva.',
+        comprar: 'Ficar premium',
+        aAbrir: 'A abrir o pagamento…',
+        cancelarQuando: 'Cancelas quando quiseres. Corre até ao fim do mês que pagaste.',
+        criarConta: 'Criar conta',
+        jaTenhoConta: 'Já tenho conta',
+        tensPlano: 'O teu plano está ativo.',
+        tensPlanoAte: (data: string) => `O teu plano está ativo até ${data}.`,
+        tensVitalicio: 'Tens premium vitalício. Não termina, e nunca é cobrado.',
+        irParaPerfil: 'Ir para o meu perfil',
+        aindaNaoAbriu:
+            'A compra ainda não está aberta — abre em breve. Até lá, tudo o resto no ViceHub funciona como sempre.',
+        naoFoiPossivelComprar: 'Não foi possível abrir o pagamento. Tenta daqui a pouco.',
+        notaVitalicio:
+            'O vitalício não está à venda. É dado à mão, um a um, a quem apoiou o ViceHub no princípio.',
     },
 
     tesouraria: {

@@ -18,6 +18,15 @@ const billingRoutes: FastifyPluginAsync<BillingRoutesOptions> = async (
     const { controller } = options;
 
     /**
+     * O que se pode comprar, e a que preço.
+     *
+     * Sem sessão: quem ainda não tem conta é precisamente quem precisa
+     * de ver o preço antes de a criar. Não expõe nada de ninguém — é o
+     * catálogo, o mesmo para toda a gente.
+     */
+    fastify.get('/plans', controller.listPlans.bind(controller));
+
+    /**
      * Comprar o plano para si próprio, para uma crew ou para um servidor.
      *
      * Exige conta, e mais nada a este nível: quem pode comprometer uma
