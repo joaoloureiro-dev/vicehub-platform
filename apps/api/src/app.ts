@@ -1,4 +1,5 @@
 import Fastify, {
+    LogController,
     type FastifyBaseLogger,
     type FastifyHttpOptions,
     type FastifyInstance,
@@ -53,9 +54,13 @@ const createFastifyOptions = (): ViceHubFastifyOptions => {
 
         /**
          * Garante um identificador único para cada pedido.
+         *
+         * O nome do campo no log passa pelo `logController`: em topo, a
+         * opção está a caminho de desaparecer no Fastify 6 e avisa em
+         * cada arranque. O campo continua a chamar-se `requestId`.
          */
         requestIdHeader: 'x-request-id',
-        requestIdLogLabel: 'requestId',
+        logController: new LogController({ requestIdLogLabel: 'requestId' }),
 
         /**
          * Desativa confiança automática em proxies.
