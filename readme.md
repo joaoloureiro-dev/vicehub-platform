@@ -662,8 +662,13 @@ a que divergir em silêncio é a que abre a porta errada.
 cabem no topo de um ecrã de 390px sem cortar o último, e em baixo estão
 ao alcance do polegar. A partir dos 640px sobem para o topo.
 
-O diretório e o perfil de uma crew são **públicos** — é assim que alguém
-de fora descobre a plataforma. O que exige sessão é agir sobre eles.
+**A raiz é pública.** É o endereço que se dá a alguém, e essa alguém
+ainda não tem conta — antes disto caía numa caixa de início de sessão sem
+nada que dissesse o que isto é. Quem já entrou não precisa da
+apresentação e vai direto ao perfil.
+
+O diretório e o perfil de uma crew são públicos pela mesma razão. O que
+exige sessão é agir sobre eles.
 
 **As candidaturas pendentes aparecem em "As minhas crews"** de propósito:
 sem isso, quem pede entrada não tem forma de saber se já foi respondido, e
