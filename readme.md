@@ -655,9 +655,12 @@ ao alcance do polegar. A partir dos 640px sobem para o topo.
 O diretório e o perfil de uma crew são **públicos** — é assim que alguém
 de fora descobre a plataforma. O que exige sessão é agir sobre eles.
 
-**As candidaturas pendentes aparecem em "As minhas crews"** de propósito:
+**As candidaturas pendentes aparecem em "Onde pertenço"** de propósito:
 sem isso, quem pede entrada não tem forma de saber se já foi respondido, e
-é essa pergunta que faz a pessoa voltar ao site.
+é essa pergunta que faz a pessoa voltar ao site. Esse ecrã mostra crews e
+servidores juntos — a função que ia buscar as adesões a servidores já
+existia e não era chamada por ninguém, o que costuma ser sinal de um ecrã
+que ficou por fazer.
 
 **Quem gere membros descobre-se perguntando à API.** O ecrã de uma crew
 pede a lista de candidaturas e trata o 403 como "não és tu que geres
@@ -673,6 +676,12 @@ O idioma de quem chega vem da preferência do browser (`pt-BR` vale tanto
 como `pt`) e cai no inglês quando não reconhece nenhum. A escolha do
 seletor fica guardada neste browser, e não na conta: quem usa o telemóvel
 em francês e o portátil em inglês tem razão nos dois.
+
+**Uma chave de tradução que ninguém usa também é erro.** O TypeScript
+apanha as que faltam; um teste apanha as que sobram, lendo o dicionário
+inglês e o código que o consome. Sem ele, uma tradução para um ecrã
+apagado ficava lá a ser traduzida para quatro idiomas de cada vez que
+alguém passasse por ela.
 
 **Os plurais vêm do `Intl.PluralRules`, e não de um `n === 1 ? a : b`.**
 Zero não se comporta da mesma maneira nos quatro: em português e em
