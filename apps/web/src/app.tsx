@@ -25,6 +25,7 @@ import { ServerDirectoryPage } from './servers/pages/server-directory.page.js';
 import { ServerPage } from './servers/pages/server.page.js';
 import { EventPage } from './events/pages/event.page.js';
 import { EventsPage } from './events/pages/events.page.js';
+import { LandingPage } from './pages/landing.page.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
@@ -35,6 +36,24 @@ const Carregando = () => {
 
     return <p className="centered">{t.comum.aCarregar}</p>;
 };
+
+/**
+ * O que está na raiz depende de quem lá chega.
+ *
+ * Enquanto a sessão é recuperada do cookie não decide nada: mostrar a
+ * apresentação a quem já tem conta, mesmo que por um instante, é um
+ * salto no ecrã a cada F5.
+ */
+const Raiz = () => {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return <Carregando />;
+    }
+
+    return user ? <Navigate to="/eu" replace /> : <LandingPage />;
+};
+
 
 /** Onde o convite a entrar seria uma repetição do que está no ecrã. */
 const SEM_CONVITE = new Set(['/entrar', '/registo']);
@@ -175,12 +194,14 @@ export const App = () => (
 
             <Route path="/u/:username" element={<PublicProfilePage />} />
 
+            {/*
+              A raiz é pública: é o endereço que se dá a alguém, e essa
+              alguém ainda não tem conta. Quem já entrou não precisa da
+              apresentação e vai direto ao perfil.
+            */}
+            <Route path="/" element={<Raiz />} />
+
             <Route element={<RequireAuth />}>
-                {/*
-                  Depois de entrar, o destino é o perfil: é onde a
-                  conta se vê e onde a personalização se edita.
-                */}
-                <Route path="/" element={<Navigate to="/eu" replace />} />
                 <Route path="/eu" element={<MyProfilePage />} />
                 <Route path="/crews/nova" element={<CreateCrewPage />} />
                 <Route path="/servidores/novo" element={<CreateServerPage />} />

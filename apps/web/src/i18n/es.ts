@@ -22,6 +22,30 @@ export const es = (p: Tools): Messages => ({
         sair: 'Salir',
     },
 
+    landing: {
+        titulo: 'Tu crew. Tu servidor. Tu parte.',
+        subtitulo:
+            'ViceHub es donde las comunidades de juego se organizan: dirige tu crew, mueve lo que ganáis y demuestra quién apareció de verdad.',
+        criarConta: 'Crear mi cuenta',
+        verCrews: 'Ver las crews',
+        jaTenhoConta: 'Ya tengo cuenta',
+
+        crewsTitulo: 'Crews y servidores',
+        crewsTexto:
+            'Reúne a tu gente con rangos que significan algo. Las solicitudes se responden, no se ignoran.',
+
+        tesourariaTitulo: 'Una tesorería que cuadra',
+        tesourariaTexto:
+            'Movimientos por propuesta y aprobación, con cuatro saldos para que nadie comprometa dos veces el mismo dinero. O cobran todos, o no cobra nadie.',
+
+        eventosTitulo: 'Se cobra por aparecer',
+        eventosTexto:
+            'Hacéis el trabajo, se confirma quién estuvo, y se reparte por asistencia — con pesos, porque quien lidera un golpe suele llevarse más.',
+
+        honesto: 'Todavía al principio',
+        honestoTexto:
+            'ViceHub se está construyendo a la vista, empezando por GTA VI. Hay cosas listas y otras no, y la forma más rápida de cambiarlo es que nos digas qué falta.',
+    },
     auth: {
         entrarTitulo: 'Entrar',
         entrarSub: 'Bienvenido de vuelta a ViceHub.',

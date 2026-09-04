@@ -29,6 +29,30 @@ export const en = (p: Tools) => ({
         sair: 'Sign out',
     },
 
+    landing: {
+        titulo: 'Your crew. Your server. Your cut.',
+        subtitulo:
+            'ViceHub is where gaming communities get organised: run your crew, move what you earn, and prove who actually turned up.',
+        criarConta: 'Create your account',
+        verCrews: 'Browse the crews',
+        jaTenhoConta: 'I already have an account',
+
+        crewsTitulo: 'Crews and servers',
+        crewsTexto:
+            'Bring your people together under ranks that mean something. Applications get answered, not ignored.',
+
+        tesourariaTitulo: 'A treasury that adds up',
+        tesourariaTexto:
+            'Move in-game earnings by proposal and approval, with four balances so nobody commits the same money twice. Everyone is paid at once, or nobody is.',
+
+        eventosTitulo: 'Paid for turning up',
+        eventosTexto:
+            'Run the job, confirm who was there, and split the take by attendance — with weights, because whoever leads a heist usually takes more.',
+
+        honesto: 'Early days',
+        honestoTexto:
+            'ViceHub is being built in the open, starting with GTA VI. Some of it is finished, some of it is not, and the fastest way to change that is to tell us what is missing.',
+    },
     auth: {
         entrarTitulo: 'Sign in',
         entrarSub: 'Welcome back to ViceHub.',
