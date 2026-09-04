@@ -1,4 +1,5 @@
 import Fastify, {
+    LogController,
     type FastifyBaseLogger,
     type FastifyHttpOptions,
     type FastifyInstance,
@@ -52,9 +53,15 @@ const createFastifyOptions = (): ViceHubFastifyOptions => {
 
         /**
          * Garante um identificador único para cada pedido.
+         *
+         * O rótulo do identificador no log passou a viver no
+         * `LogController`: a opção de topo `requestIdLogLabel` está
+         * depreciada desde o Fastify 5.12 e desaparece no 6. Mantê-la
+         * era um aviso em cada arranque e trabalho adiado para o dia em
+         * que deixasse de existir.
          */
         requestIdHeader: 'x-request-id',
-        requestIdLogLabel: 'requestId',
+        logController: new LogController({ requestIdLogLabel: 'requestId' }),
 
         /**
          * Desativa confiança automática em proxies.
