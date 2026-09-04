@@ -13,9 +13,6 @@ export const en = (p: Tools) => ({
         aCarregar: 'Loading…',
         aGuardar: 'Saving…',
         guardar: 'Save',
-        cancelar: 'Cancel',
-        voltar: 'Back',
-        opcional: 'Optional.',
         naoFoiPossivel: 'That did not work. Try again.',
         idioma: 'Language',
     },
@@ -160,14 +157,14 @@ export const en = (p: Tools) => ({
         remover: 'Remove',
         listaMembros: 'Members',
 
-        asMinhasTitulo: 'My crews',
-        verDiretorio: 'See the directory',
+        asMinhasTitulo: 'What I belong to',
+        minhasCrews: 'Crews',
+        meusServidores: 'Servers',
+        semComunidades: 'You do not belong to any crew or server yet.',
         naoCarregouMinhas: 'Your crews could not be loaded.',
-        semCrews: 'You do not belong to any crew yet.',
         procuraUma: 'Find one',
         ouCriaTua: 'or create your own',
         aEsperaResposta: 'Awaiting an answer',
-        ondeEntrei: 'Where I am in',
     },
 
     cargos: {

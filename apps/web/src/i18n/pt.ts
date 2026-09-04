@@ -14,9 +14,6 @@ export const pt = (p: Tools): Messages => ({
         aCarregar: 'A carregar…',
         aGuardar: 'A guardar…',
         guardar: 'Guardar',
-        cancelar: 'Cancelar',
-        voltar: 'Voltar',
-        opcional: 'Opcional.',
         naoFoiPossivel: 'Não resultou. Tenta outra vez.',
         idioma: 'Idioma',
     },
@@ -161,14 +158,14 @@ export const pt = (p: Tools): Messages => ({
         remover: 'Remover',
         listaMembros: 'Membros',
 
-        asMinhasTitulo: 'As minhas crews',
-        verDiretorio: 'Ver o diretório',
+        asMinhasTitulo: 'Onde pertenço',
+        minhasCrews: 'Crews',
+        meusServidores: 'Servidores',
+        semComunidades: 'Ainda não pertences a nenhuma crew nem servidor.',
         naoCarregouMinhas: 'Não foi possível carregar as tuas crews.',
-        semCrews: 'Ainda não pertences a nenhuma crew.',
         procuraUma: 'Procura uma',
         ouCriaTua: 'ou cria a tua',
         aEsperaResposta: 'À espera de resposta',
-        ondeEntrei: 'Onde já entrei',
     },
 
     cargos: {

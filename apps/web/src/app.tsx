@@ -19,7 +19,7 @@ import { VerifyEmailPage } from './auth/pages/verify-email.page.js';
 import { CreateCrewPage } from './crews/pages/create-crew.page.js';
 import { CrewDirectoryPage } from './crews/pages/crew-directory.page.js';
 import { CrewPage } from './crews/pages/crew.page.js';
-import { MyCrewsPage } from './crews/pages/my-crews.page.js';
+import { MyCommunitiesPage } from './pages/my-communities.page.js';
 import { CreateServerPage } from './servers/pages/create-server.page.js';
 import { ServerDirectoryPage } from './servers/pages/server-directory.page.js';
 import { ServerPage } from './servers/pages/server.page.js';
@@ -68,7 +68,7 @@ const SEM_CONVITE = new Set(['/entrar', '/registo']);
 const DESTINOS = [
     { to: '/crews', chave: 'crews' },
     { to: '/servidores', chave: 'servidores' },
-    { to: '/eu/crews', chave: 'asMinhas' },
+    { to: '/eu/comunidades', chave: 'asMinhas' },
     { to: '/eu', chave: 'perfil' },
 ] as const;
 
@@ -205,7 +205,7 @@ export const App = () => (
                 <Route path="/eu" element={<MyProfilePage />} />
                 <Route path="/crews/nova" element={<CreateCrewPage />} />
                 <Route path="/servidores/novo" element={<CreateServerPage />} />
-                <Route path="/eu/crews" element={<MyCrewsPage />} />
+                <Route path="/eu/comunidades" element={<MyCommunitiesPage />} />
                 <Route
                     path="/crews/:crewId/tesouraria"
                     element={<TreasuryPage />}

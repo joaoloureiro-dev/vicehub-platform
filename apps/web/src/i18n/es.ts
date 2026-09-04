@@ -6,9 +6,6 @@ export const es = (p: Tools): Messages => ({
         aCarregar: 'Cargando…',
         aGuardar: 'Guardando…',
         guardar: 'Guardar',
-        cancelar: 'Cancelar',
-        voltar: 'Volver',
-        opcional: 'Opcional.',
         naoFoiPossivel: 'No ha funcionado. Inténtalo de nuevo.',
         idioma: 'Idioma',
     },
@@ -153,14 +150,14 @@ export const es = (p: Tools): Messages => ({
         remover: 'Expulsar',
         listaMembros: 'Miembros',
 
-        asMinhasTitulo: 'Mis crews',
-        verDiretorio: 'Ver el directorio',
+        asMinhasTitulo: 'Dónde pertenezco',
+        minhasCrews: 'Crews',
+        meusServidores: 'Servidores',
+        semComunidades: 'Todavía no perteneces a ninguna crew ni servidor.',
         naoCarregouMinhas: 'No se han podido cargar tus crews.',
-        semCrews: 'Todavía no perteneces a ninguna crew.',
         procuraUma: 'Busca una',
         ouCriaTua: 'o crea la tuya',
         aEsperaResposta: 'Esperando respuesta',
-        ondeEntrei: 'Donde ya estoy',
     },
 
     cargos: {
