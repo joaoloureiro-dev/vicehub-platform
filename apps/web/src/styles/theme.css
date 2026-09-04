@@ -1230,7 +1230,23 @@ button.link:hover {
     overflow-x: auto;
 }
 
-/* O tamanho vem do componente: acompanha o comprimento do número. */
+/*
+ * Os três degraus do saldo em destaque. Qual deles serve decide-se no
+ * componente, pelo comprimento do número; o tamanho vive aqui para que
+ * nenhuma página precise de um atributo `style`.
+ */
+.saldos .principal dd.saldo-largo {
+    font-size: clamp(30px, 9vw, 40px);
+}
+
+.saldos .principal dd.saldo-medio {
+    font-size: clamp(24px, 7vw, 34px);
+}
+
+.saldos .principal dd.saldo-estreito {
+    font-size: clamp(17px, 5vw, 27px);
+}
+
 .saldos .principal dd {
     letter-spacing: -0.02em;
     background: var(--brand);

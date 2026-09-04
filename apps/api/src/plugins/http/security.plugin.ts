@@ -6,6 +6,58 @@ import fp from 'fastify-plugin';
 import { env } from '../../config/env.js';
 
 /**
+ * A política de conteúdo, que depende de quem serve a interface.
+ *
+ * Enquanto a API só devolve JSON, o mais restritivo que existe é o que
+ * serve: nada de scripts, nada de estilos, nada de nada. Quando é ela a
+ * servir também o `apps/web` — que é o que `WEB_DIST_PATH` significa —
+ * essa política aplicar-se-ia também à página, e uma página onde nada
+ * pode carregar não abre. A alternativa fácil seria desligá-la; em vez
+ * disso, alarga-se exatamente ao que a aplicação usa.
+ *
+ * Repara no que continua de fora: `'unsafe-inline'` nos scripts, que
+ * transformaria um XSS numa execução, e `'unsafe-eval'`. O `style-src`
+ * também não o leva — é por isso que nenhum componente escreve no
+ * atributo `style`.
+ */
+const politicaDeConteudo = (): Record<string, string[]> => {
+    if (env.WEB_DIST_PATH === undefined) {
+        return {
+            defaultSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+        };
+    }
+
+    return {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+
+        /**
+         * O tipo de letra vem do Google Fonts: a folha de estilo dele, e
+         * os ficheiros que ela pede, vêm de dois domínios diferentes.
+         */
+        styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+
+        /** Os avatares e as capas ainda são `data:` gerados no cliente. */
+        imgSrc: ["'self'", 'data:'],
+
+        /** A API é a própria origem — é esse o objetivo de tudo isto. */
+        connectSrc: ["'self'"],
+
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+
+        /**
+         * Sem isto, um `<base>` injetado bastava para mandar todos os
+         * caminhos relativos da página para outro servidor.
+         */
+        baseUri: ["'none'"],
+        formAction: ["'self'"],
+    };
+};
+
+/**
  * Regista as proteções HTTP globais da API.
  *
  * Este plugin centraliza:
@@ -18,15 +70,8 @@ const securityPlugin = fp(
         await app.register(helmet, {
             global: true,
 
-            /**
-             * A API devolve JSON e não serve páginas HTML.
-             * Mantemos uma política restritiva como proteção adicional.
-             */
             contentSecurityPolicy: {
-                directives: {
-                    defaultSrc: ["'none'"],
-                    frameAncestors: ["'none'"],
-                },
+                directives: politicaDeConteudo(),
             },
 
             /**

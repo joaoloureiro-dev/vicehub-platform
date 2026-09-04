@@ -18,7 +18,7 @@ import { useIdioma, useT } from '../../i18n/i18n.js';
 import {
     formatarMontante,
     separadorDoIdioma,
-    tamanhoDoSaldo,
+    classeDoSaldo,
     type MovementCategory,
     type MovementDirection,
 } from '../treasury.types.js';
@@ -153,7 +153,7 @@ export const TreasuryPage = () => {
             <dl className="saldos">
                 <div className="principal">
                     <dt>{t.tesouraria.disponivel}</dt>
-                    <dd style={{ fontSize: tamanhoDoSaldo(contas.balances.available) }}>
+                    <dd className={classeDoSaldo(contas.balances.available)}>
                         {formatarMontante(contas.balances.available, separador)}
                     </dd>
                 </div>

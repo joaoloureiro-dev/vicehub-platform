@@ -634,7 +634,9 @@ que os formata recebe texto e devolve texto — nada de `Number`, nada de
 `toLocaleString` — e o separador de milhares é um espaço inquebrável,
 porque um montante partido ao meio lê-se como outro montante. O tamanho
 do saldo em destaque acompanha o comprimento do número, para que
-dezanove dígitos caibam num telemóvel em vez de ficarem cortados.
+dezanove dígitos caibam num telemóvel em vez de ficarem cortados — e é
+uma classe, não um `style`, porque a política de conteúdo com que a
+aplicação é servida recusa estilos escritos dentro da página.
 
 **A tesouraria mostra quatro saldos, e não um.** Sem os outros três
 ninguém sabe quanto pode gastar: o liquidado não desconta o que já foi
@@ -720,6 +722,12 @@ acrescentam à medida que há largura. Os campos têm 16px de texto — abaixo d
 o Safari do iPhone dá zoom ao campo mal lhe tocam — e os alvos de toque têm 48px
 de altura.
 
+**Nenhuma página escreve no atributo `style` nem traz scripts dentro de
+si.** A política de conteúdo com que a API serve a aplicação não leva
+`'unsafe-inline'` nem `'unsafe-eval'`: é o que separa um XSS de uma
+execução. Abre-se exatamente ao que a aplicação usa — a própria origem,
+mais os dois domínios do Google Fonts — e nada além disso.
+
 **O access token vive em memória, e só em memória.** No `localStorage` ou num
 cookie legível por script ficaria ao alcance de qualquer coisa que a página
 venha a carregar: uma biblioteca comprometida, uma extensão, um XSS. Em memória
@@ -757,6 +765,89 @@ e só deixa o último escrever no estado.
 nova, sem código pede o email. É por isso que é esse o endereço que segue nos
 emails.
 
+### Pôr em produção
+
+Nada disto foi automatizado de propósito: quem faz o deploy é uma pessoa, uma
+vez, e o que interessa é que as armadilhas estejam identificadas.
+
+```bash
+npm ci
+npm run build                    # database, api e web
+npm run db:migrate:deploy        # aplica as migrações pendentes
+npm run db:seed                  # só na primeira vez
+npm start                        # node apps/api/dist/server.js
+```
+
+**Sem o `db:seed` numa base de dados vazia, o registo responde 500.** O cargo
+base de jogador é atribuído a quem se regista, e não pode ser atribuído se não
+existir. É o primeiro erro que aparece, e não se lê como configuração em falta.
+
+#### A aplicação e a API têm de estar no mesmo domínio
+
+Não é preferência de arrumação. O refresh token vive num cookie
+`SameSite=strict`, e um cookie posto por `api.vicehub.com` **não segue** num
+pedido feito a partir de `vicehub.com`. Separados, a sessão morre a cada F5 e
+nada no ecrã explica porquê — o login funciona, o refresh devolve 401, e parece
+avaria.
+
+Há duas formas de os juntar, e a mais simples é a API servir a interface:
+
+```bash
+WEB_DIST_PATH="apps/web/dist"    # relativo à pasta onde o processo corre
+```
+
+Com isto, um processo só serve tudo: `/api/*` é a API, a raiz e os endereços do
+router são a página, e `/assets/*` são os ficheiros com o resumo do conteúdo no
+nome — guardados para sempre, porque um deploy novo pede nomes novos. O
+`index.html` nunca é guardado: o nome é o mesmo entre deploys, e um em cache
+continuaria a pedir os ficheiros do anterior.
+
+Um caminho errado aqui **impede a API de arrancar**. É deliberado: sem isso, a
+API subia bem e o site respondia 404 a toda a gente, e o pior sítio para
+descobrir um erro de configuração é o browser de quem chega.
+
+A outra forma é um proxy à frente — nginx, Caddy, o que for — a mandar `/api`
+para a API e tudo o resto para o `apps/web/dist`, **com o `index.html` a
+responder por tudo o que não é ficheiro**. Sem essa regra, um F5 em
+`/crews/alguma-coisa` dá 404: esse endereço só existe dentro do router do
+browser. Nesse caso, deixa-se o `WEB_DIST_PATH` por definir.
+
+#### A configuração que a API recusa em produção
+
+Duas variáveis são perigosas precisamente por terem um valor por omissão que
+funciona. Com `NODE_ENV=production`, a API **recusa arrancar** sem elas:
+
+| Variável | Porquê |
+| --- | --- |
+| `AUTH_COOKIE_SECURE="true"` | Sem isto o cookie da sessão não é marcado como `Secure` e viaja também em ligações não cifradas. |
+| `APP_PUBLIC_URL="https://…"` | É daqui que sai o endereço dos emails de recuperação. No valor por omissão, manda toda a gente para o `localhost` de quem fez o deploy — e o pedido parece ter corrido bem. |
+
+O `CORS_ALLOWED_ORIGINS` continua obrigatório em qualquer ambiente. Servindo
+tudo na mesma origem, não há pedido entre origens para autorizar; fica lá o
+domínio a sério na mesma, porque é ele que aparece nos pedidos com `Origin`.
+
+**Sem `SMTP_URL` os emails ficam no log.** Em desenvolvimento serve; em
+produção, um link de recuperação escrito no log é um link ao alcance de quem lê
+logs, e ninguém recebe nada. A API não recusa arrancar por causa disto — avisa —
+porque há um deploy legítimo sem email: o primeiro, antes de haver domínio.
+
+#### O que não tem dono automático
+
+- **A limpeza dos tokens e das sessões expiradas** não corre sozinha. Nada
+  quebra por isso — um token expirado é recusado na mesma —, mas as tabelas
+  crescem.
+- **O primeiro administrador nasce da base de dados**, e não da API: nenhuma
+  rota concede `system:manage`, porque a primeira conta a poder nomear
+  administradores seria a porta que o cargo existe para guardar.
+
+  ```bash
+  npm run admin:grant -- eu@exemplo.com
+  ```
+
+- **Os planos vitalícios são dados à mão**, um a um, por quem tem
+  `system:manage`, em `POST /api/v1/subscriptions/grant`. Não há caminho
+  automático para eles, e é assim de propósito.
+
 ### Nota sobre as optionalDependencies da raiz
 
 O `package.json` da raiz declara explicitamente os binários de plataforma do
@@ -787,7 +878,11 @@ conformidade.
 token com rotação e deteção de reutilização, cookie HttpOnly e logout global  
 ✔ Recuperação de password e confirmação de email  
 ✔ Frontend arrancado: `apps/web`, com a superfície de autenticação  
-🚀 Ecrãs de crews, servidores e tesouraria a seguir  
+✔ Ecrãs de crews, servidores, tesouraria e eventos  
+✔ Interface em quatro idiomas, com o inglês por omissão  
+✔ Caminho de produção verificado: a API serve a interface na sua própria
+origem e recusa arrancar com a configuração que só faz mal em produção  
+🚀 Stripe e deploy a seguir  
 
 ---
 
