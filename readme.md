@@ -95,25 +95,35 @@ To become the central platform where gaming communities interact, grow, compete 
 
 ```bash
 npm ci
-cp apps/api/.env.example .env   # preencher DATABASE_URL e os segredos JWT
-npm run db:generate             # gera o Prisma Client
-npm run build                   # compila os packages
-npm run db:migrate:dev
-npm run db:seed                 # cargos e permissões base
 npm run dev
 ```
 
-O `.env` é lido a partir da raiz do monorepo.
+`npm run dev` arranca a API e a aplicação ao mesmo tempo, com a origem de
+cada linha à frente, e na primeira vez constrói o pacote `database`
+sozinho. Se preferires um em cada terminal: `npm run dev:api` e
+`npm run dev:web`.
 
-**O `npm run build` não é opcional.** A API importa `@vicehub/database`, que
-resolve para `packages/database/dist`, e esse diretório não é versionado. A
-ordem também conta: o `db:generate` vem antes, porque a compilação do package
-`database` precisa dos tipos do Prisma Client.
+**Porque é que o `dev` é um guião e não `npm run dev --workspaces`:** o
+npm corre os workspaces **em sequência**. A API arrancava, ficava a
+correr, e a aplicação nunca chegava a começar — sem nada no ecrã que
+explicasse porquê.
 
-Depois de um `git pull` que traga alterações a `packages/database`, volta a
-correr `npm run db:generate && npm run build`. O sinal de que falta é o
-TypeScript queixar-se de que `@vicehub/database` não exporta algo que
-claramente lá está — está, mas no código-fonte, não no `dist` compilado.
+**E porque é que ele constrói o `database` primeiro:** em execução,
+`@vicehub/database` resolve para `dist/`, que não é versionado. Num clone
+acabado de fazer não existe, e como o `tsx` compila o código da API ao
+vivo, o erro que aparecia era um export em falta num ficheiro que ninguém
+tinha tocado.
+
+A primeira vez precisa ainda da base de dados preparada:
+
+```bash
+npm run db:migrate:deploy
+npm run db:seed
+```
+
+O `db:seed` é obrigatório e não é opcional: sem ele o cargo base `player`
+não existe, e **o registo responde 500**. É idempotente, por isso pode
+correr-se sempre.
 
 ### Verificação
 
