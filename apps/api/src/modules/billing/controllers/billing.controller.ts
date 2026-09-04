@@ -13,6 +13,15 @@ export class BillingController {
     ) { }
 
     /**
+     * GET /billing/plans
+     *
+     * Pública: uma lista de preços é para ser vista antes de haver conta.
+     */
+    listPlans(_request: FastifyRequest, reply: FastifyReply): void {
+        reply.send(this.billingService.listPurchasablePlans());
+    }
+
+    /**
      * POST /billing/checkout
      */
     async startCheckout(

@@ -1664,3 +1664,172 @@ button.link:hover {
     max-width: 62ch;
     text-wrap: pretty;
 }
+
+/* ---------- a página do premium ---------- */
+
+.premium-pagina {
+    gap: 26px;
+}
+
+.premium-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.premium-hero h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: clamp(27px, 7.5vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    text-wrap: balance;
+    background: var(--brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.premium-hero .hint {
+    max-width: 58ch;
+}
+
+/*
+ * O preço é a informação por que se veio. Fica com o tamanho de um
+ * título, ao lado do período, para que "10" e "por mês" se leiam de uma
+ * vez — separados, o número sozinho podia ser qualquer coisa.
+ */
+.preco {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.preco strong {
+    font-family: var(--display);
+    font-size: clamp(38px, 12vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.preco span {
+    font-size: 15px;
+    color: var(--muted);
+}
+
+.premium-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.premium-lista li {
+    position: relative;
+    padding-left: 26px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 58ch;
+    text-wrap: pretty;
+}
+
+.premium-lista li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--brand);
+}
+
+.premium-estado {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    padding: 20px;
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.premium-estado.ativo {
+    border-color: rgba(52, 211, 153, 0.4);
+}
+
+.premium-estado p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--muted);
+    text-wrap: pretty;
+}
+
+/*
+ * Um link a fazer de ação principal tem de ter o tamanho de um botão: no
+ * telemóvel o que decide se algo se acerta com o polegar é a altura do
+ * alvo, e não o que a etiqueta diz.
+ */
+.premium-estado .primary {
+    min-height: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.premium-estado a:not(.primary) {
+    align-self: center;
+    font-size: 14.5px;
+    color: var(--muted);
+}
+
+.vitalicio-nota {
+    max-width: 58ch;
+    border-top: 1px solid var(--edge);
+    padding-top: 18px;
+}
+
+.link-premium {
+    align-self: flex-start;
+    font-size: 14.5px;
+    color: var(--magenta);
+}
+
+.landing-premium {
+    margin: 0;
+    text-align: center;
+}
+
+@media (min-width: 560px) {
+    .premium-estado {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    /*
+     * O botão ocupa a largura toda no telemóvel, que é onde isso ajuda a
+     * acertar-lhe. Havendo largura, encolhe ao seu texto — um botão de
+     * uma ponta à outra do ecrã já não parece um botão.
+     */
+    .premium-estado .primary {
+        flex: 0 0 auto;
+        width: auto;
+        padding-inline: 28px;
+    }
+
+    .premium-estado a:not(.primary) {
+        align-self: auto;
+    }
+}

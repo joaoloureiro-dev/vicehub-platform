@@ -1,6 +1,11 @@
 import type Stripe from 'stripe';
 
-import { SubscriptionStatus } from '@vicehub/database';
+import {
+    PLANS,
+    PLAN_KEYS,
+    SubscriptionStatus,
+    isPerpetualPlan,
+} from '@vicehub/database';
 
 import { BillingError } from '../errors/billing.errors.js';
 import type { BillingRepository } from '../repositories/billing.repository.js';
@@ -14,6 +19,26 @@ interface StartCheckoutInput {
     ownerKind: SubscriptionOwnerKind;
     ownerId: string;
     buyerId: string;
+}
+
+/**
+ * Um plano tal como aparece a quem ainda não o tem.
+ */
+export interface PurchasablePlan {
+    key: string;
+    name: string;
+    description: string;
+    priceCents: number;
+    currency: string;
+    intervalMonths: number;
+}
+
+/**
+ * O que se pode comprar, e se a compra está sequer aberta.
+ */
+export interface PlanCatalogue {
+    available: boolean;
+    plans: PurchasablePlan[];
 }
 
 /**
@@ -71,6 +96,49 @@ export class BillingService {
         private readonly billingRepository: BillingRepository,
         private readonly stripe: StripeGateway | null,
     ) { }
+
+    /**
+     * O catálogo do que se compra, com o preço em vigor.
+     *
+     * O `available` diz se a cobrança está configurada nesta instalação.
+     * Sai daqui, e não do clique, para que o ecrã possa dizer "ainda não
+     * abriu" em vez de oferecer um botão que responde 503 — um 503 depois
+     * de alguém decidir pagar lê-se como avaria, e é a pior altura para
+     * parecer avariado.
+     *
+     * Os planos perpétuos ficam de fora: o vitalício é concedido à mão, e
+     * anunciá-lo a zero numa lista de preços seria prometer de graça o
+     * que é um gesto.
+     */
+    listPurchasablePlans(): PlanCatalogue {
+        return {
+            available: this.stripe !== null,
+            plans: PLAN_KEYS.flatMap((key) => {
+                const plano = PLANS[key];
+
+                /**
+                 * Sem período não há o que cobrar todos os meses. As duas
+                 * condições dizem a mesma coisa por caminhos diferentes, e
+                 * ambas ficam: a segunda é o que dá o tipo sem período
+                 * nulo, sem ter de o inventar mais abaixo.
+                 */
+                if (isPerpetualPlan(plano.plan) || plano.intervalMonths === null) {
+                    return [];
+                }
+
+                return [
+                    {
+                        key,
+                        name: plano.name,
+                        description: plano.description,
+                        priceCents: plano.priceCents,
+                        currency: plano.currency,
+                        intervalMonths: plano.intervalMonths,
+                    },
+                ];
+            }),
+        };
+    }
 
     /**
      * Começa uma compra e devolve para onde encaminhar quem a fez.

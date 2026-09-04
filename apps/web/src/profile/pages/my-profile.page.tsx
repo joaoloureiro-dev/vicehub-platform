@@ -303,7 +303,18 @@ export const MyProfilePage = () => {
                 {eu.isPremium ? (
                     <p className="hint">{t.perfil.planoAtivo}</p>
                 ) : (
-                    <Alert kind="bad">{t.perfil.precisaDePlano}</Alert>
+                    <>
+                        <Alert kind="bad">{t.perfil.precisaDePlano}</Alert>
+                        {/*
+                          Dizer o que falta sem dizer onde se arranja é
+                          meia informação: era aqui que a pessoa ficava a
+                          saber que lhe falta alguma coisa, e sem caminho
+                          nenhum para a ter.
+                        */}
+                        <Link className="link-premium" to="/premium">
+                            {t.perfil.verPremium}
+                        </Link>
+                    </>
                 )}
 
                 {mensagem?.onde === 'aparencia' ? (

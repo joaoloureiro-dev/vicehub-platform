@@ -61,6 +61,15 @@ export const LandingPage = () => {
                 <b>{t.landing.honesto}</b>
                 <p>{t.landing.honestoTexto}</p>
             </aside>
+
+            {/*
+              O preço tem de ser alcançável a partir daqui. Uma página de
+              preços que só se encontra por dentro da conta chega tarde a
+              quem está a decidir se cria conta.
+            */}
+            <p className="landing-premium">
+                <Link to="/premium">{t.landing.verPremium}</Link>
+            </p>
         </div>
     );
 };
