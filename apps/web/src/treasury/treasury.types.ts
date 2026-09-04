@@ -160,19 +160,24 @@ export const formatarMontante = (
  * não cabe num telemóvel — ficava cortado, que é a pior das saídas: um
  * montante cortado lê-se como outro montante. O tamanho acompanha o
  * comprimento, para que o valor caiba sempre por inteiro.
+ *
+ * Devolve uma classe e não um tamanho porque o tamanho escrito no
+ * atributo `style` é código a executar dentro da página, e a política
+ * de conteúdo que serve a aplicação em produção recusa-o. Os três
+ * degraus vivem no CSS; aqui decide-se apenas qual deles serve.
  */
-export const tamanhoDoSaldo = (valor: string): string => {
+export const classeDoSaldo = (valor: string): string => {
     const largura = formatarMontante(valor).length;
 
     if (largura <= 9) {
-        return 'clamp(30px, 9vw, 40px)';
+        return 'saldo-largo';
     }
 
     if (largura <= 14) {
-        return 'clamp(24px, 7vw, 34px)';
+        return 'saldo-medio';
     }
 
-    return 'clamp(17px, 5vw, 27px)';
+    return 'saldo-estreito';
 };
 
 /** O sinal que se mostra ao lado de um movimento. */

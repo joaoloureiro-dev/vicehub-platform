@@ -94,6 +94,18 @@ const envSchema = z.object({
     APP_PUBLIC_URL: z.string().url().default('http://localhost:5173'),
 
     /**
+     * A pasta com o `apps/web` já compilado, para a API a servir.
+     *
+     * Opcional, e é opcional de propósito: em desenvolvimento o Vite
+     * serve a aplicação, e quem tiver um proxy à frente prefere que seja
+     * ele a servi-la. Definida, a API passa a servir a interface na sua
+     * própria origem — que é o que o cookie do refresh token exige, por
+     * ser `SameSite=strict`. Duas origens diferentes e o cookie nunca
+     * chega à API: a sessão morre a cada F5 sem nada a indicar porquê.
+     */
+    WEB_DIST_PATH: z.string().min(1).optional(),
+
+    /**
      * Validade dos tokens enviados por email, em segundos.
      *
      * A recuperação é curta de propósito: é uma chave para entrar na
@@ -154,6 +166,64 @@ if (!parsedEnvironment.success) {
     );
 
     throw new Error('A configuração de ambiente da API é inválida.');
+}
+
+/**
+ * O que é aceitável em desenvolvimento e inaceitável em produção.
+ *
+ * Estas duas são perigosas precisamente por terem um valor por omissão
+ * que funciona: nada falha, nada avisa, e o estrago só aparece quando
+ * alguém a sério tenta usar a plataforma. Mais vale recusar arrancar.
+ *
+ * Exportada para ser testada sem mexer no ambiente do processo.
+ */
+export const problemasDeProducao = (
+    valores: Pick<
+        z.infer<typeof envSchema>,
+        'NODE_ENV' | 'AUTH_COOKIE_SECURE' | 'APP_PUBLIC_URL'
+    >,
+): string[] => {
+    if (valores.NODE_ENV !== 'production') {
+        return [];
+    }
+
+    const problemas: string[] = [];
+
+    /**
+     * Sem a marca `Secure`, o cookie do refresh token viaja também em
+     * ligações não cifradas. É o token que mantém a sessão aberta.
+     */
+    if (!valores.AUTH_COOKIE_SECURE) {
+        problemas.push(
+            'AUTH_COOKIE_SECURE tem de ser true em produção: sem isso o cookie da sessão não é marcado como Secure.',
+        );
+    }
+
+    /**
+     * O endereço que segue nos emails de recuperação sai daqui. Deixá-lo
+     * no valor por omissão manda toda a gente para o localhost de quem
+     * fez o deploy — e o pedido parece ter corrido bem.
+     */
+    const publico = new URL(valores.APP_PUBLIC_URL).hostname;
+
+    if (publico === 'localhost' || publico === '127.0.0.1') {
+        problemas.push(
+            `APP_PUBLIC_URL aponta para ${publico} em produção: os links de recuperação enviados por email não levariam a lado nenhum.`,
+        );
+    }
+
+    return problemas;
+};
+
+const problemas = problemasDeProducao(parsedEnvironment.data);
+
+if (problemas.length > 0) {
+    console.error(
+        '[ViceHub API] Configuração inaceitável em produção:\n' +
+            problemas.map((problema) => `  - ${problema}`).join('\n'),
+    );
+
+    throw new Error('A configuração de ambiente não serve para produção.');
 }
 
 /**

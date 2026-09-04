@@ -28,6 +28,7 @@ import securityPlugin from './plugins/http/security.plugin.js';
 import errorHandlerPlugin from './plugins/http/error-handler.plugin.js';
 import validationPlugin from './plugins/http/validation.plugin.js';
 import bigIntSerializationPlugin from './plugins/http/bigint-serialization.plugin.js';
+import spaPlugin from './plugins/http/spa.plugin.js';
 
 import healthRoutes from './routes/health/health.routes.js';
 
@@ -176,6 +177,17 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Módulo de cobrança
     void app.register(billingModule);
+
+    /**
+     * A interface, quando é a API a servi-la.
+     *
+     * Fica em último porque é ela que trata do que mais nenhuma rota
+     * reclamou: um endereço que só existe dentro do router do browser
+     * tem de chegar aqui como não encontrado para poder ser respondido
+     * com a página. Registada antes dos módulos, apanhava pedidos que
+     * são deles.
+     */
+    void app.register(spaPlugin);
 
     return app;
 };

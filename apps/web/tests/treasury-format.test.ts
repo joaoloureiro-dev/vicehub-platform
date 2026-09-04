@@ -5,7 +5,7 @@ import {
     SEPARADOR,
     formatarMontante,
     separadorDoIdioma,
-    tamanhoDoSaldo,
+    classeDoSaldo,
 } from '../src/treasury/treasury.types.js';
 
 /**
@@ -78,19 +78,31 @@ describe('formatar um montante', () => {
  */
 describe('o tamanho do saldo em destaque', () => {
     it('dá o tamanho grande a um valor curto', () => {
-        expect(tamanhoDoSaldo('4200')).toContain('40px');
+        expect(classeDoSaldo('4200')).toBe('saldo-largo');
     });
 
     it('encolhe à medida que o número cresce', () => {
-        const curto = tamanhoDoSaldo('4200');
-        const medio = tamanhoDoSaldo('1234567890');
-        const enorme = tamanhoDoSaldo('9'.repeat(19));
+        const curto = classeDoSaldo('4200');
+        const medio = classeDoSaldo('1234567890');
+        const enorme = classeDoSaldo('9'.repeat(19));
 
         expect(new Set([curto, medio, enorme]).size).toBe(3);
     });
 
     it('nunca deixa o maior montante no tamanho grande', () => {
-        expect(tamanhoDoSaldo('9'.repeat(19))).not.toContain('40px');
+        expect(classeDoSaldo('9'.repeat(19))).not.toBe('saldo-largo');
+    });
+
+    /**
+     * O que sai daqui vai para o `class`, não para o `style`: um tamanho
+     * escrito no atributo `style` é código dentro da página, e a política
+     * de conteúdo com que a aplicação é servida recusa-o. Um valor com
+     * unidades aqui seria a regressão que só aparece em produção.
+     */
+    it('devolve uma classe, e não um tamanho', () => {
+        for (const valor of ['4200', '1234567890', '9'.repeat(19)]) {
+            expect(classeDoSaldo(valor)).toMatch(/^saldo-[a-z]+$/);
+        }
     });
 });
 
