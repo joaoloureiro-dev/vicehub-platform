@@ -75,3 +75,20 @@ export const setMemberRole = (
     userId: string,
     role: CrewRole,
 ): Promise<void> => adesao.setMemberRole(crewId, userId, role);
+
+/**
+ * Personalização da crew: banner e cor de destaque.
+ *
+ * Exige mandar na crew **e** a crew ter plano ativo, que são duas
+ * condições distintas. Sem plano a API responde **402**, e não 403: o
+ * pedido é legítimo e quem o faz tem autorização — o que falta é o
+ * pagamento.
+ */
+export const updateCrewAppearance = (
+    crewId: string,
+    input: { bannerUrl: string | null; accentColor: string | null },
+): Promise<CrewProfile> =>
+    api<CrewProfile>(`/crews/${encodeURIComponent(crewId)}/appearance`, {
+        method: 'PATCH',
+        body: input,
+    });

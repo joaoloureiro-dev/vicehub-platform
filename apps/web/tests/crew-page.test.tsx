@@ -41,6 +41,7 @@ const json = (status: number, body: unknown): Response =>
 const servidor = (opcoes: {
     requests: Response;
     memberships?: unknown;
+    premium?: boolean;
 }) =>
     vi.fn((url: string) => {
         const endereco = String(url);
@@ -76,7 +77,9 @@ const servidor = (opcoes: {
             return Promise.resolve(json(200, opcoes.memberships ?? []));
         }
 
-        return Promise.resolve(json(200, perfil));
+        return Promise.resolve(
+            json(200, { ...perfil, isPremium: opcoes.premium === true }),
+        );
     });
 
 const montar = () =>
@@ -137,6 +140,65 @@ describe('o ecrã de uma crew', () => {
             });
 
             expect(screen.getByText(t.cargos.crew_leader)).toBeDefined();
+        });
+    });
+
+    /**
+     * A personalização é o que o plano da crew desbloqueia. Aparece a
+     * quem a gere com plano ou sem ele: escondê-la sem plano faria com
+     * que quem viesse a tê-lo não soubesse que ganhou alguma coisa.
+     */
+    describe('a personalização da crew', () => {
+        it('não aparece a quem não gere a crew', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('Vice Kings')).toBeDefined();
+            });
+
+            expect(screen.queryByLabelText(t.perfil.banner)).toBeNull();
+        });
+
+        it('aparece a quem gere, mesmo sem plano', async () => {
+            vi.stubGlobal('fetch', servidor({ requests: json(200, []) }));
+
+            montar();
+
+            expect(await screen.findByLabelText(t.perfil.banner)).toBeDefined();
+            expect(screen.getByText(t.crews.precisaDePlano)).toBeDefined();
+        });
+
+        /**
+         * O plano é **da crew**, e não de quem a gere. Sem o
+         * identificador no endereço, quem carregasse comprava para si
+         * próprio e a crew continuava sem nada — e ninguém repararia até
+         * ir procurar a personalização, que continuava recusada.
+         */
+        it('manda comprar o plano para a crew, e não para quem gere', async () => {
+            vi.stubGlobal('fetch', servidor({ requests: json(200, []) }));
+
+            montar();
+
+            const link = await screen.findByText(t.crews.verPremium);
+
+            expect(link.getAttribute('href')).toBe('/premium?crew=crew-1');
+        });
+
+        it('com plano, não insiste em vendê-lo', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(200, []), premium: true }),
+            );
+
+            montar();
+
+            expect(await screen.findByText(t.crews.planoAtivo)).toBeDefined();
+            expect(screen.queryByText(t.crews.verPremium)).toBeNull();
         });
     });
 

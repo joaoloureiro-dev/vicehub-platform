@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { ApiError } from '../../lib/api.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
+import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { requestEmailVerification } from '../../auth/auth.api.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import {
@@ -11,8 +12,6 @@ import {
     updateMyAppearance,
     updateMyProfile,
 } from '../profile.api.js';
-
-const COR_VALIDA = /^#[0-9A-Fa-f]{6}$/;
 
 /**
  * Como se diz, a quem tem, o que tem.
@@ -43,8 +42,6 @@ export const MyProfilePage = () => {
 
     const [bio, setBio] = useState('');
     const [avatar, setAvatar] = useState('');
-    const [banner, setBanner] = useState('');
-    const [cor, setCor] = useState('');
 
     /**
      * A mensagem sabe de que formulário veio.
@@ -74,8 +71,6 @@ export const MyProfilePage = () => {
 
         setBio(perfil.data.bio ?? '');
         setAvatar(perfil.data.avatarUrl ?? '');
-        setBanner(perfil.data.appearance.bannerUrl ?? '');
-        setCor(perfil.data.appearance.accentColor ?? '');
     }, [perfil.data]);
 
     if (perfil.loading && !perfil.data) {
@@ -91,7 +86,6 @@ export const MyProfilePage = () => {
     }
 
     const eu = perfil.data;
-    const corMa = cor.length > 0 && !COR_VALIDA.test(cor);
 
     const guardarPerfil = async (event: FormEvent) => {
         event.preventDefault();
@@ -118,44 +112,6 @@ export const MyProfilePage = () => {
                     falha instanceof ApiError
                         ? falha.message
                         : t.perfil.naoFoiPossivelPerfil,
-            });
-        } finally {
-            setAGuardar(false);
-        }
-    };
-
-    const guardarAparencia = async (event: FormEvent) => {
-        event.preventDefault();
-        setMensagem(null);
-        setAGuardar(true);
-
-        try {
-            await updateMyAppearance({
-                bannerUrl: banner.trim() || null,
-                accentColor: cor.trim() || null,
-            });
-
-            setMensagem({
-                onde: 'aparencia',
-                tipo: 'good',
-                texto: t.perfil.personalizacaoGuardada,
-            });
-            perfil.reload();
-        } catch (falha) {
-            /**
-             * 402 não é avaria: é a API a dizer que isto é do plano.
-             * Distingui-lo dá uma mensagem útil em vez de um erro
-             * genérico que ninguém sabe o que fazer com ele.
-             */
-            setMensagem({
-                onde: 'aparencia',
-                tipo: 'bad',
-                texto:
-                    falha instanceof ApiError && falha.status === 402
-                        ? t.perfil.ehPremium
-                        : falha instanceof ApiError
-                          ? falha.message
-                          : t.perfil.naoFoiPossivelPersonalizacao,
             });
         } finally {
             setAGuardar(false);
@@ -317,61 +273,14 @@ export const MyProfilePage = () => {
                     </>
                 )}
 
-                {mensagem?.onde === 'aparencia' ? (
-                    <Alert kind={mensagem.tipo}>{mensagem.texto}</Alert>
-                ) : null}
-
-                <form onSubmit={guardarAparencia}>
-                    <div className="field">
-                        <label htmlFor="banner">{t.perfil.banner}</label>
-                        <input
-                            id="banner"
-                            type="url"
-                            value={banner}
-                            placeholder="https://…"
-                            onChange={(event) => {
-                                setBanner(event.target.value);
-                            }}
-                        />
-                    </div>
-
-                    <div className="field">
-                        <label htmlFor="cor">{t.perfil.cor}</label>
-                        <div className="cor-linha">
-                            <input
-                                id="cor"
-                                type="text"
-                                value={cor}
-                                placeholder="#E93CEF"
-                                aria-invalid={corMa}
-                                aria-describedby="cor-hint"
-                                onChange={(event) => {
-                                    setCor(event.target.value);
-                                }}
-                            />
-                            <span
-                                className="amostra"
-                                aria-hidden="true"
-                                style={
-                                    COR_VALIDA.test(cor)
-                                        ? { background: cor }
-                                        : undefined
-                                }
-                            />
-                        </div>
-                        <p className="hint" id="cor-hint">
-                            {t.perfil.corAjuda}
-                        </p>
-                    </div>
-
-                    <button
-                        className="primary"
-                        type="submit"
-                        disabled={aGuardar || corMa}
-                    >
-                        {aGuardar ? t.comum.aGuardar : t.perfil.guardarPersonalizacao}
-                    </button>
-                </form>
+                <AppearanceForm
+                    atual={eu.appearance}
+                    prefixo="eu"
+                    guardar={updateMyAppearance}
+                    aoGuardar={() => {
+                        perfil.reload();
+                    }}
+                />
             </section>
         </div>
     );

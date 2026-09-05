@@ -158,6 +158,11 @@ export const es = (p: Tools): Messages => ({
         naoCarregouMinhas: 'No se han podido cargar tus crews.',
         procuraUma: 'Busca una',
         ouCriaTua: 'o crea la tuya',
+        planoAtivo:
+            'El plan de la crew está activo. El banner y el color aparecen en su página pública.',
+        precisaDePlano:
+            'Estos campos son del plan premium, y el plan es de la crew, no tuyo. Puedes rellenarlos, pero solo se guardan mientras la crew tenga uno.',
+        verPremium: 'Ver qué le da el premium a la crew',
         aEsperaResposta: 'Esperando respuesta',
     },
 
@@ -242,10 +247,19 @@ export const es = (p: Tools): Messages => ({
         titulo: 'Apoya la plataforma y llévate los extras',
         subtitulo:
             'ViceHub funciona sin pagar nada. El premium es para quien quiere que esto se siga construyendo, y para quien prefiere que su perfil tenga su cara.',
+        tituloCrew: (nome: string) => `Premium para ${nome}`,
+        subtituloCrew:
+            'El plan es de la crew, no de quien lo paga. Mientras esté activo, quien gestiona la crew puede definir su banner y su color.',
+        crewTemPlano: 'Esta crew ya tiene un plan activo.',
+        irParaCrew: 'Ir a la crew',
         porMes: 'al mes',
         oQueDaPersonalizacao:
             'Personaliza tu perfil: banner y color de acento en tu página pública.',
         oQueDaCrew: 'El premium se puede comprar para una crew o un servidor, no solo para ti.',
+        crewDaPersonalizacao:
+            'Personaliza la crew: banner y color de acento en su página pública.',
+        crewDaEquipa:
+            'Un plan para toda la crew. Quien la gestiona puede cambiar el aspecto: no depende de quién pagó.',
         oQueDaApoio: 'Paga los servidores y el tiempo que esto lleva.',
         comprar: 'Hazte premium',
         aAbrir: 'Abriendo el pago…',

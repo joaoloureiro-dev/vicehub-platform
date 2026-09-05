@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { Alert } from '../../auth/components/alert.js';
 import { ApiError } from '../../lib/api.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
+import { getCrew } from '../../crews/crew.api.js';
 import { formatarPreco } from '../billing.format.js';
 import {
     getMySubscription,
@@ -27,7 +28,28 @@ export const PremiumPage = () => {
     const { idioma } = useIdioma();
     const { user } = useAuth();
 
+    /**
+     * O titular vem do endereço. `/premium` compra para quem está a ver;
+     * `/premium?crew=…` compra para essa crew, que é como a página da
+     * crew manda para aqui.
+     *
+     * Sem isto, quem viesse de uma crew comprava para si próprio e a
+     * crew continuava sem plano — e ninguém repararia até ir procurar a
+     * personalização que continuava recusada.
+     */
+    const [parametros] = useSearchParams();
+    const crewId = parametros.get('crew');
+
     const catalogo = useAsync(() => getPlans(), []);
+
+    /**
+     * De quem é a crew, para o ecrã poder dizer o nome em vez de um
+     * identificador. É pública: não exige sessão.
+     */
+    const crew = useAsync(
+        () => (crewId ? getCrew(crewId) : Promise.resolve(null)),
+        [crewId],
+    );
 
     /**
      * Sem sessão não há plano a consultar, e pedi-lo daria 401. O `null`
@@ -41,7 +63,7 @@ export const PremiumPage = () => {
     const [aComprar, setAComprar] = useState(false);
     const [falhou, setFalhou] = useState<string | null>(null);
 
-    if (catalogo.loading || plano.loading) {
+    if (catalogo.loading || plano.loading || crew.loading) {
         return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
@@ -55,7 +77,26 @@ export const PremiumPage = () => {
         );
     }
 
-    const meu = plano.data;
+    /**
+     * Qual plano interessa a este ecrã: o da crew, quando se veio de
+     * uma, e o de quem está a ver quando não.
+     */
+    const paraCrew = crew.data;
+
+    const meu = paraCrew
+        ? {
+            isPremium: paraCrew.isPremium,
+            /**
+             * O perfil público de uma crew diz se tem plano, e não que
+             * espécie de plano — expor isso diria a qualquer pessoa
+             * quais das crews receberam o vitalício. Um plano ativo
+             * basta para não oferecer a compra, que é a decisão em jogo.
+             */
+            isLifetime: false,
+            activeUntil: null,
+        }
+        : plano.data;
+
     const aberto = catalogo.data?.available === true;
 
     const comprar = async () => {
@@ -67,10 +108,11 @@ export const PremiumPage = () => {
         setFalhou(null);
 
         try {
-            const sessao = await startCheckout({
-                ownerKind: 'user',
-                ownerId: user.id,
-            });
+            const sessao = await startCheckout(
+                crewId
+                    ? { ownerKind: 'crew', ownerId: crewId }
+                    : { ownerKind: 'user', ownerId: user.id },
+            );
 
             /**
              * Sai-se do site para o Stripe. `replace` não serve: quem
@@ -98,8 +140,14 @@ export const PremiumPage = () => {
         <section className="panel premium-pagina">
             <header className="premium-hero">
                 <span className="pill">{t.premium.etiqueta}</span>
-                <h1>{t.premium.titulo}</h1>
-                <p className="hint">{t.premium.subtitulo}</p>
+                <h1>
+                    {paraCrew
+                        ? t.premium.tituloCrew(paraCrew.name)
+                        : t.premium.titulo}
+                </h1>
+                <p className="hint">
+                    {paraCrew ? t.premium.subtituloCrew : t.premium.subtitulo}
+                </p>
             </header>
 
             <div className="preco">
@@ -109,9 +157,19 @@ export const PremiumPage = () => {
                 <span>{t.premium.porMes}</span>
             </div>
 
+            {/*
+              O que o plano dá muda com o titular. Dizer "personaliza o
+              teu perfil" a quem está a comprar para uma crew, e "pode
+              ser comprado para uma crew, e não só para ti" na própria
+              página da crew, era falar do produto errado à pessoa certa.
+            */}
             <ul className="premium-lista">
-                <li>{t.premium.oQueDaPersonalizacao}</li>
-                <li>{t.premium.oQueDaCrew}</li>
+                <li>
+                    {paraCrew
+                        ? t.premium.crewDaPersonalizacao
+                        : t.premium.oQueDaPersonalizacao}
+                </li>
+                <li>{paraCrew ? t.premium.crewDaEquipa : t.premium.oQueDaCrew}</li>
                 <li>{t.premium.oQueDaApoio}</li>
             </ul>
 
@@ -133,16 +191,21 @@ export const PremiumPage = () => {
             ) : meu?.isPremium ? (
                 <div className="premium-estado ativo">
                     <p>
-                        {meu.activeUntil === null
-                            ? t.premium.tensPlano
-                            : t.premium.tensPlanoAte(
-                                new Date(meu.activeUntil).toLocaleDateString(
-                                    idioma,
-                                ),
-                            )}
+                        {paraCrew
+                            ? t.premium.crewTemPlano
+                            : meu.activeUntil === null
+                              ? t.premium.tensPlano
+                              : t.premium.tensPlanoAte(
+                                  new Date(meu.activeUntil).toLocaleDateString(
+                                      idioma,
+                                  ),
+                              )}
                     </p>
-                    <Link className="primary" to="/eu">
-                        {t.premium.irParaPerfil}
+                    <Link
+                        className="primary"
+                        to={paraCrew ? `/crews/${paraCrew.id}` : '/eu'}
+                    >
+                        {paraCrew ? t.premium.irParaCrew : t.premium.irParaPerfil}
                     </Link>
                 </div>
             ) : !aberto ? (
