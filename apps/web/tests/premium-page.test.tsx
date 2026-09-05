@@ -29,6 +29,18 @@ const CATALOGO = {
 
 const SEM_PLANO = { isPremium: false, isLifetime: false, activeUntil: null };
 
+const SERVIDOR = {
+    id: 'server-1',
+    name: 'Vice City RP',
+    region: 'EU',
+    description: null,
+    isOnline: true,
+    isPremium: false,
+    appearance: { bannerUrl: null, accentColor: null },
+    memberCount: 12,
+    createdAt: '2026-01-01T00:00:00.000Z',
+};
+
 const CREW = {
     id: 'crew-1',
     name: 'Vice Kings',
@@ -51,6 +63,7 @@ interface Cenario {
     comSessao?: boolean;
     checkout?: Response;
     crew?: unknown;
+    servidor?: unknown;
 }
 
 const servidor = (cenario: Cenario) =>
@@ -87,6 +100,10 @@ const servidor = (cenario: Cenario) =>
 
         if (endereco.includes('/crews/')) {
             return Promise.resolve(json(200, cenario.crew ?? CREW));
+        }
+
+        if (endereco.includes('/servers/')) {
+            return Promise.resolve(json(200, cenario.servidor ?? SERVIDOR));
         }
 
         if (endereco.endsWith('/billing/checkout')) {
@@ -309,7 +326,7 @@ describe('comprar para uma crew', () => {
         montar('/premium?crew=crew-1');
 
         expect(
-            await screen.findByText(t.premium.tituloCrew('Vice Kings')),
+            await screen.findByText(t.premium.tituloComunidade('Vice Kings')),
         ).toBeTruthy();
     });
 
@@ -397,6 +414,67 @@ describe('comprar para uma crew', () => {
         montar('/premium?crew=crew-1');
 
         expect(await screen.findByText(t.premium.crewTemPlano)).toBeTruthy();
+        expect(screen.queryByText(t.premium.comprar)).toBeNull();
+    });
+});
+
+/**
+ * O mesmo caminho da crew, para o outro titular. O que muda é o
+ * substantivo — e é por isso que as frases são escritas por inteiro em
+ * cada idioma em vez de interpoladas: "o plano é **da** crew" e "**do**
+ * servidor" não se resolvem com uma palavra trocada.
+ */
+describe('comprar para um servidor', () => {
+    it('diz o nome do servidor', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar('/premium?servidor=server-1');
+
+        expect(
+            await screen.findByText(t.premium.tituloComunidade('Vice City RP')),
+        ).toBeTruthy();
+    });
+
+    it('compra para o servidor, e não para quem clica', async () => {
+        const fetchMock = servidor({});
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar('/premium?servidor=server-1');
+
+        await userEvent.click(await screen.findByText(t.premium.comprar));
+
+        await waitFor(() => {
+            expect(irPara).toHaveBeenCalled();
+        });
+
+        expect(corpoDoCheckout(fetchMock)).toEqual({
+            ownerKind: 'server',
+            ownerId: 'server-1',
+        });
+    });
+
+    it('fala do servidor, e não da crew nem do perfil', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar('/premium?servidor=server-1');
+
+        expect(
+            await screen.findByText(t.premium.servidorDaPersonalizacao),
+        ).toBeTruthy();
+        expect(screen.getByText(t.premium.servidorDaEquipa)).toBeTruthy();
+        expect(screen.queryByText(t.premium.crewDaPersonalizacao)).toBeNull();
+        expect(screen.queryByText(t.premium.oQueDaPersonalizacao)).toBeNull();
+    });
+
+    it('não oferece a compra a um servidor que já tem plano', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ servidor: { ...SERVIDOR, isPremium: true } }),
+        );
+
+        montar('/premium?servidor=server-1');
+
+        expect(await screen.findByText(t.premium.servidorTemPlano)).toBeTruthy();
         expect(screen.queryByText(t.premium.comprar)).toBeNull();
     });
 });

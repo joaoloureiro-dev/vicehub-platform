@@ -6,6 +6,7 @@ import { carregarCandidaturas } from '../../lib/membership.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
+import { AppearanceForm } from '../../appearance/appearance-form.js';
 import {
     acceptServerJoinRequest,
     getServer,
@@ -16,6 +17,7 @@ import {
     rejectServerJoinRequest,
     removeServerMember,
     requestToJoinServer,
+    updateServerAppearance,
     withdrawServerJoinRequest,
 } from '../server.api.js';
 import { useT } from '../../i18n/i18n.js';
@@ -274,6 +276,52 @@ export const ServerPage = () => {
                     ))}
                 </ul>
             </section>
+
+            {/*
+              O mesmo que na crew, e pela mesma razão: a personalização
+              aparece a quem gere o servidor com plano ou sem ele, para
+              que quem venha a tê-lo saiba que ganhou alguma coisa.
+            */}
+            {giroCandidaturas ? (
+                <section
+                    className={`grupo premium${perfil.isPremium ? ' ativo' : ''}`}
+                >
+                    <div className="premium-head">
+                        <h2>{t.perfil.personalizacao}</h2>
+                        <span className="pill">{t.perfil.premium}</span>
+                    </div>
+
+                    {perfil.isPremium ? (
+                        <p className="hint">{t.servidores.planoAtivo}</p>
+                    ) : (
+                        <>
+                            <Alert kind="bad">{t.servidores.precisaDePlano}</Alert>
+                            {/*
+                              O plano é **do servidor**, e não de quem o
+                              gere: por isso o link leva o identificador
+                              dele. Sem esse identificador, quem
+                              carregasse comprava para si próprio e o
+                              servidor continuava sem nada.
+                            */}
+                            <Link
+                                className="link-premium"
+                                to={`/premium?servidor=${encodeURIComponent(perfil.id)}`}
+                            >
+                                {t.servidores.verPremium}
+                            </Link>
+                        </>
+                    )}
+
+                    <AppearanceForm
+                        atual={perfil.appearance}
+                        prefixo="servidor"
+                        guardar={(input) => updateServerAppearance(perfil.id, input)}
+                        aoGuardar={() => {
+                            servidor.reload();
+                        }}
+                    />
+                </section>
+            ) : null}
         </div>
     );
 };

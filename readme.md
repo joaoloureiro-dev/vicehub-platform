@@ -686,14 +686,28 @@ como texto do princípio ao fim, porque `Number` a partiria; o preço do
 plano é dinheiro a sério em cêntimos, vindo do Stripe, e nunca chega perto
 do limite.
 
-**O plano de uma crew compra-se a partir da crew.** O ecrã do premium
-aceita `?crew=<id>` e é o titular do endereço que decide tudo: o nome no
-título, o plano que se consulta, e a quem vai a compra. Sem isso, quem
+**O plano de uma comunidade compra-se a partir dela.** O ecrã do premium
+aceita `?crew=<id>` e `?servidor=<id>`, e é o titular do endereço que
+decide tudo: o nome no título, o plano que se consulta, e a quem vai a
+compra. Sem isso, quem
 viesse da página de uma crew comprava para si próprio e a crew continuava
 sem nada — e ninguém repararia até ir procurar a personalização, que
 continuava recusada. O que o plano dá também muda: dizer "personaliza o
 teu perfil" a quem compra para uma crew é falar do produto errado à
 pessoa certa.
+
+**O titular é resolvido num sítio só.** Crews e servidores diferem no
+endereço que se consulta e no substantivo das frases, e mais nada — por
+isso a página resolve um titular à entrada (tipo, identificador, nome, se
+tem plano, para onde voltar) e o resto lê só isso. Perguntar "é crew? é
+servidor?" em cada linha faria um terceiro tipo de titular espalhar um
+terceiro ramo por toda a página.
+
+**As frases de cada titular são escritas por inteiro, e não montadas.**
+Interpolar o substantivo — "o plano é da {comunidade}" — parte a
+concordância de género assim que sai do inglês: diz-se "da crew" e "do
+servidor". Cada idioma escreve as duas versões, e o ecrã escolhe qual
+serve.
 
 **O que a crew mostra do plano é se o tem, e não qual.** O perfil público
 não diz a espécie de plano — isso diria a qualquer pessoa quais das crews

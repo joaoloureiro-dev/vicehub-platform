@@ -197,6 +197,11 @@ export const es = (p: Tools): Messages => ({
         naoFoiPossivelRegistar: 'No se ha podido registrar el servidor.',
         naoEncontrado: 'No hemos encontrado este servidor.',
         sair: 'Salir del servidor',
+        planoAtivo:
+            'El plan del servidor está activo. El banner y el color aparecen en su página pública.',
+        precisaDePlano:
+            'Estos campos son del plan premium, y el plan es del servidor, no tuyo. Puedes rellenarlos, pero solo se guardan mientras el servidor tenga uno.',
+        verPremium: 'Ver qué le da el premium al servidor',
         entraParaCandidatar: 'para solicitar entrar en este servidor.',
     },
 
@@ -247,11 +252,19 @@ export const es = (p: Tools): Messages => ({
         titulo: 'Apoya la plataforma y llévate los extras',
         subtitulo:
             'ViceHub funciona sin pagar nada. El premium es para quien quiere que esto se siga construyendo, y para quien prefiere que su perfil tenga su cara.',
-        tituloCrew: (nome: string) => `Premium para ${nome}`,
+        tituloComunidade: (nome: string) => `Premium para ${nome}`,
         subtituloCrew:
             'El plan es de la crew, no de quien lo paga. Mientras esté activo, quien gestiona la crew puede definir su banner y su color.',
         crewTemPlano: 'Esta crew ya tiene un plan activo.',
         irParaCrew: 'Ir a la crew',
+        subtituloServidor:
+            'El plan es del servidor, no de quien lo paga. Mientras esté activo, quien gestiona el servidor puede definir su banner y su color.',
+        servidorDaPersonalizacao:
+            'Personaliza el servidor: banner y color de acento en su página pública.',
+        servidorDaEquipa:
+            'Un plan para todo el servidor. Quien lo gestiona puede cambiar el aspecto: no depende de quién pagó.',
+        servidorTemPlano: 'Este servidor ya tiene un plan activo.',
+        irParaServidor: 'Ir al servidor',
         porMes: 'al mes',
         oQueDaPersonalizacao:
             'Personaliza tu perfil: banner y color de acento en tu página pública.',
@@ -260,7 +273,8 @@ export const es = (p: Tools): Messages => ({
             'Personaliza la crew: banner y color de acento en su página pública.',
         crewDaEquipa:
             'Un plan para toda la crew. Quien la gestiona puede cambiar el aspecto: no depende de quién pagó.',
-        oQueDaApoio: 'Paga los servidores y el tiempo que esto lleva.',
+        oQueDaApoio:
+            'Es lo que mantiene la plataforma en pie, y paga el tiempo que esto lleva.',
         comprar: 'Hazte premium',
         aAbrir: 'Abriendo el pago…',
         cancelarQuando: 'Cancela cuando quieras. Sigue hasta el final del mes que pagaste.',
