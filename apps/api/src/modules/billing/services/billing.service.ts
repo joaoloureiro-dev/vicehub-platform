@@ -7,6 +7,8 @@ import {
     isPerpetualPlan,
 } from '@vicehub/database';
 
+import { AuthorizationError } from '../../authorization/errors/authorization.errors.js';
+import type { AuthorizationService } from '../../authorization/services/authorization.service.js';
 import { BillingError } from '../errors/billing.errors.js';
 import type { BillingRepository } from '../repositories/billing.repository.js';
 import type { StripeGateway, StripePeriod } from './stripe.gateway.js';
@@ -95,6 +97,7 @@ export class BillingService {
     constructor(
         private readonly billingRepository: BillingRepository,
         private readonly stripe: StripeGateway | null,
+        private readonly authorizationService: AuthorizationService,
     ) { }
 
     /**
@@ -144,6 +147,15 @@ export class BillingService {
      * Começa uma compra e devolve para onde encaminhar quem a fez.
      */
     async startCheckout(input: StartCheckoutInput): Promise<{ url: string }> {
+        /**
+         * Antes de olhar para a configuração: "não podes" é uma
+         * propriedade do pedido e não da instalação. Pela ordem
+         * contrária, um sítio sem chaves respondia 503 a toda a gente e
+         * a recusa por falta de autorização deixava de ser observável —
+         * incluindo para quem a quisesse testar.
+         */
+        await this.assertMayCommit(input);
+
         const stripe = this.requireStripe();
 
         const owner = this.buildOwner(input.ownerKind, input.ownerId);
@@ -407,6 +419,58 @@ export class BillingService {
      * Dizer isso claramente é melhor do que um 500 de uma biblioteca sem
      * configuração.
      */
+    /**
+     * Quem pode comprometer este titular a uma cobrança recorrente.
+     *
+     * A rota exige conta e mais nada porque a resposta depende do titular
+     * pedido no corpo, que o guard de autorização não sabe ler: para si
+     * próprio basta ser-se o próprio, para uma crew ou um servidor é
+     * preciso mandar lá dentro.
+     *
+     * Sem esta verificação, qualquer conta punha o seu cartão a pagar a
+     * crew de outra pessoa. Não é roubo — é pior de desfazer: fica uma
+     * cobrança recorrente presa a uma comunidade que quem paga não
+     * controla, e quem lá manda não a consegue cancelar, porque o cliente
+     * no Stripe não é dele. Bastava também um cartão contestado para
+     * arrastar uma crew alheia para uma disputa de pagamento que ela
+     * nunca fez.
+     *
+     * Os três casos recusam com o mesmo erro de propósito: um código
+     * diferente conforme a verificação que falhou diria a quem tenta às
+     * cegas qual delas passou.
+     */
+    private async assertMayCommit(input: StartCheckoutInput): Promise<void> {
+        if (input.ownerKind === 'user') {
+            if (input.ownerId !== input.buyerId) {
+                throw new AuthorizationError(
+                    'INSUFFICIENT_PERMISSIONS',
+                    'Não tens autorização para comprar um plano para este titular.',
+                    [],
+                );
+            }
+
+            return;
+        }
+
+        const necessaria =
+            input.ownerKind === 'crew' ? 'crew:manage' : 'server:manage';
+
+        const efetivas = await this.authorizationService.getEffectivePermissions(
+            input.buyerId,
+            input.ownerKind === 'crew'
+                ? { crewId: input.ownerId }
+                : { serverId: input.ownerId },
+        );
+
+        if (!this.authorizationService.hasPermissions(efetivas, [necessaria])) {
+            throw new AuthorizationError(
+                'INSUFFICIENT_PERMISSIONS',
+                'Não tens autorização para comprar um plano para este titular.',
+                [necessaria],
+            );
+        }
+    }
+
     private requireStripe(): StripeGateway {
         if (!this.stripe) {
             throw new BillingError(

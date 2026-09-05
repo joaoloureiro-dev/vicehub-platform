@@ -115,6 +115,107 @@ describe('cobrança pelo Stripe', () => {
             expect(response.json().code).toBe('BILLING_NOT_CONFIGURED');
         });
 
+        /**
+         * A recusa por autorização vem antes da configuração de propósito:
+         * "não podes" é do pedido e não da instalação. Sem esta ordem, um
+         * sítio por configurar respondia 503 a toda a gente e isto deixava
+         * de ser observável.
+         */
+        describe('comprar para titular alheio', () => {
+            let intrusoToken: string;
+            let crewDeOutrem: string;
+
+            beforeAll(async () => {
+                const intruso = await app.inject({
+                    method: 'POST',
+                    url: '/api/v1/auth/register',
+                    payload: {
+                        email: `${marca}intruso@vicehub.test`,
+                        username: `${marca}intruso`,
+                        password: 'Sup3rS3cret!Pass',
+                    },
+                });
+
+                expect(intruso.statusCode, intruso.body).toBe(201);
+                intrusoToken = intruso.json().accessToken as string;
+
+                /**
+                 * Uma crew que é do primeiro utilizador, e só dele.
+                 *
+                 * A tag tem oito caracteres e é única na base de dados.
+                 * Os primeiros dígitos de um `Date.now()` não mudam
+                 * durante anos, por isso a tag sai do *fim* do relógio
+                 * mais um sufixo ao acaso: derivada do princípio, colidia
+                 * com a de qualquer corrida anterior — verde no CI, que
+                 * arranca com a base vazia, e vermelha para quem corre a
+                 * suite duas vezes na sua máquina.
+                 */
+                const tag = `c${Date.now().toString(36).slice(-4)}${Math.random()
+                    .toString(36)
+                    .slice(2, 5)}`;
+
+                const crew = await app.inject({
+                    method: 'POST',
+                    url: '/api/v1/crews',
+                    headers: auth(),
+                    payload: { name: `Crew ${marca}`, tag },
+                });
+
+                expect(crew.statusCode, crew.body).toBe(201);
+                crewDeOutrem = crew.json().id as string;
+            });
+
+            const tentar = (
+                token: string,
+                payload: { ownerKind: string; ownerId: string },
+            ) =>
+                app.inject({
+                    method: 'POST',
+                    url: '/api/v1/billing/checkout',
+                    headers: { authorization: `Bearer ${token}` },
+                    payload,
+                });
+
+            /**
+             * Não é roubo — é pior de desfazer: fica uma cobrança
+             * recorrente presa a uma comunidade que quem paga não
+             * controla, e quem lá manda não a consegue cancelar porque o
+             * cliente no Stripe não é dele.
+             */
+            it('recusa comprar para a crew de outra pessoa', async () => {
+                const response = await tentar(intrusoToken, {
+                    ownerKind: 'crew',
+                    ownerId: crewDeOutrem,
+                });
+
+                expect(response.statusCode, response.body).toBe(403);
+            });
+
+            it('recusa comprar para a conta de outra pessoa', async () => {
+                const response = await tentar(intrusoToken, {
+                    ownerKind: 'user',
+                    ownerId: userId,
+                });
+
+                expect(response.statusCode, response.body).toBe(403);
+            });
+
+            /**
+             * A mesma crew, pedida por quem manda nela, passa a
+             * autorização e só depois esbarra na configuração em falta.
+             * Sem este caso, o teste acima passaria com uma recusa cega a
+             * toda a gente.
+             */
+            it('deixa passar quem manda na crew, que esbarra é na configuração', async () => {
+                const response = await tentar(token, {
+                    ownerKind: 'crew',
+                    ownerId: crewDeOutrem,
+                });
+
+                expect(response.statusCode, response.body).toBe(503);
+            });
+        });
+
         it('a compra continua a exigir conta', async () => {
             const response = await app.inject({
                 method: 'POST',

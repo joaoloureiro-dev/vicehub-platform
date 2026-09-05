@@ -6,6 +6,8 @@ import { AuditService } from '../audit/services/audit.service.js';
 import billingRoutes from './billing.routes.js';
 import { BillingController } from './controllers/billing.controller.js';
 import { BillingRepository } from './repositories/billing.repository.js';
+import { AuthorizationRepository } from '../authorization/repositories/authorization.repository.js';
+import { AuthorizationService } from '../authorization/services/authorization.service.js';
 import { BillingService } from './services/billing.service.js';
 import { createStripeGateway } from './services/stripe.gateway.js';
 
@@ -21,6 +23,12 @@ const billingModule: FastifyPluginAsync = async (fastify) => {
     const billingService = new BillingService(
         new BillingRepository(fastify.prisma),
         createStripeGateway(),
+        /**
+         * Quem pode comprometer uma crew a uma cobrança recorrente é uma
+         * pergunta de autorização, e é aqui que o serviço ganha com que
+         * a responder.
+         */
+        new AuthorizationService(new AuthorizationRepository(fastify.prisma)),
     );
 
     await fastify.register(billingRoutes, {
