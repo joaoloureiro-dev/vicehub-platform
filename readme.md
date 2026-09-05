@@ -531,6 +531,23 @@ serializar o JSON invalidaria-a. O interpretador em bruto está
 encapsulado no âmbito do webhook; registá-lo mais acima faria as
 restantes rotas deixarem de receber JSON interpretado.
 
+**O que a limpeza não pode apagar cedo é um refresh token rodado.** A
+regra óbvia — "já foi rodado, já não serve" — está errada: é precisamente
+a linha do token rodado que deteta um roubo. Se alguém apresentar um token
+já substituído, a API sabe que existem duas cópias em circulação e derruba
+a família inteira; sem a linha, o mesmo ataque dá apenas "token inválido"
+e a sessão a sério continua aberta.
+
+Por isso a condição é a expiração do **próprio token**, e não o seu
+estado. O mesmo vale para as sessões, por uma porta menos visível: apagar
+uma sessão leva os refresh tokens dela atrás por `onDelete: Cascade`, e
+uma sessão revogada há cinco minutos ainda tem tokens dentro do prazo.
+
+O que se perde é a deteção de um roubo mais velho do que o próprio token,
+e essa é a troca. As regras vivem em `packages/database/src/prune.ts`, e
+não no script, porque são a parte que pode estar errada — um `deleteMany`
+com uma condição a mais apaga em silêncio o que ainda fazia falta.
+
 **Um reenvio não cobra duas vezes.** O Stripe reenvia sempre que não
 recebe resposta a tempo. A tabela `WebhookEvent` tem o identificador do
 evento como chave primária, e é a *escrita* que serve de verificação:
@@ -918,9 +935,20 @@ porque há um deploy legítimo sem email: o primeiro, antes de haver domínio.
 
 #### O que não tem dono automático
 
-- **A limpeza dos tokens e das sessões expiradas** não corre sozinha. Nada
-  quebra por isso — um token expirado é recusado na mesma —, mas as tabelas
-  crescem.
+- **A limpeza dos tokens e das sessões expiradas** existe, mas não se
+  agenda sozinha. Nada quebra por não correr — um token expirado é recusado
+  na mesma —, mas são as três tabelas que mais crescem: cada login abre uma
+  sessão, cada renovação escreve um refresh token, e cada pedido de
+  recuperação escreve um token de conta.
+
+  ```bash
+  npm run db:prune            # apaga
+  npm run db:prune -- --seco  # só conta, não apaga
+  ```
+
+  Põe-se num cron, uma vez por dia. **Não corre dentro da API de propósito:**
+  com mais do que uma instância, um temporizador em processo correria em
+  todas ao mesmo tempo, e o que se quer é uma passagem, não N.
 - **O primeiro administrador nasce da base de dados**, e não da API: nenhuma
   rota concede `system:manage`, porque a primeira conta a poder nomear
   administradores seria a porta que o cargo existe para guardar.
