@@ -27,6 +27,7 @@
     "db:migrate:status": "prisma migrate status",
     "db:studio": "prisma studio",
     "db:seed": "tsx seed/index.ts",
+    "db:prune": "tsx scripts/prune.ts",
     "admin:grant": "tsx scripts/admin.ts grant",
     "admin:revoke": "tsx scripts/admin.ts revoke",
     "admin:list": "tsx scripts/admin.ts list"

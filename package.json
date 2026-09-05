@@ -29,6 +29,7 @@
     "db:migrate:deploy": "npm run db:migrate:deploy --workspace=@vicehub/database",
     "db:validate": "npm run db:validate --workspace=@vicehub/database",
     "db:seed": "npm run db:seed --workspace=@vicehub/database",
+    "db:prune": "npm run db:prune --workspace=@vicehub/database --",
     "db:studio": "npm run db:studio --workspace=@vicehub/database",
     "admin:grant": "npm run admin:grant --workspace=@vicehub/database --",
     "admin:revoke": "npm run admin:revoke --workspace=@vicehub/database --",
