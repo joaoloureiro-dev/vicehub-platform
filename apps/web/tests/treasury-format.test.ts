@@ -94,10 +94,9 @@ describe('o tamanho do saldo em destaque', () => {
     });
 
     /**
-     * O que sai daqui vai para o `class`, não para o `style`: um tamanho
-     * escrito no atributo `style` é código dentro da página, e a política
-     * de conteúdo com que a aplicação é servida recusa-o. Um valor com
-     * unidades aqui seria a regressão que só aparece em produção.
+     * Três degraus fixos pertencem ao CSS. Um valor com unidades a sair
+     * daqui seria o tamanho a voltar para dentro do componente, onde
+     * ninguém o encontra ao mudar o aspeto do ecrã.
      */
     it('devolve uma classe, e não um tamanho', () => {
         for (const valor of ['4200', '1234567890', '9'.repeat(19)]) {

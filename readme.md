@@ -472,7 +472,7 @@ incluindo as que ainda não foram escritas.
 | Rota | Quem pode |
 |---|---|
 | `GET /api/v1/billing/plans` | toda a gente, com conta ou sem ela |
-| `POST /api/v1/billing/checkout` | qualquer conta |
+| `POST /api/v1/billing/checkout` | conta com autoridade sobre o titular |
 | `POST /api/v1/billing/webhook` | o Stripe, provado pela assinatura |
 
 ```bash
@@ -490,6 +490,24 @@ rotas respondem **503** a dizê-lo. Uma configuração meia-feita é recusada
 ao arrancar: ter a chave e não ter o segredo do webhook seria pior do que
 não ter nada, porque a compra funcionava, o Stripe cobrava, e a
 plataforma nunca chegava a saber que alguém tinha pago.
+
+**Quem pode comprometer cada titular a uma cobrança é verificado no
+serviço, e não na rota.** O titular vem no corpo, e o guard de
+autorização lê o âmbito dos *parâmetros* da rota — não o saberia
+encontrar. Para si próprio basta ser-se o próprio; para uma crew ou um
+servidor exige-se `crew:manage` ou `server:manage`.
+
+Sem isto, qualquer conta punha o seu cartão a pagar a crew de outra
+pessoa. Não é roubo — é pior de desfazer: fica uma cobrança recorrente
+presa a uma comunidade que quem paga não controla, e quem lá manda não a
+consegue cancelar, porque o cliente no Stripe não é dele. E bastava um
+cartão contestado para arrastar uma crew alheia para uma disputa de
+pagamento que ela nunca fez.
+
+A verificação vem **antes** de olhar para a configuração do Stripe: "não
+podes" é uma propriedade do pedido e não da instalação. Pela ordem
+contrária, um sítio sem chaves respondia 503 a toda a gente e a recusa
+por falta de autorização deixava de ser observável.
 
 **O catálogo diz o preço e se a compra está sequer aberta.** O
 `available` sai daí e não do clique: sem ele, o ecrã oferecia um botão
@@ -747,11 +765,19 @@ acrescentam à medida que há largura. Os campos têm 16px de texto — abaixo d
 o Safari do iPhone dá zoom ao campo mal lhe tocam — e os alvos de toque têm 48px
 de altura.
 
-**Nenhuma página escreve no atributo `style` nem traz scripts dentro de
-si.** A política de conteúdo com que a API serve a aplicação não leva
-`'unsafe-inline'` nem `'unsafe-eval'`: é o que separa um XSS de uma
-execução. Abre-se exatamente ao que a aplicação usa — a própria origem,
-mais os dois domínios do Google Fonts — e nada além disso.
+**A política de conteúdo não leva `'unsafe-inline'` nem `'unsafe-eval'`**,
+que é o que separa um XSS de uma execução. Abre-se exatamente ao que a
+aplicação usa — a própria origem, mais os dois domínios do Google Fonts.
+
+Vale a pena saber onde a linha passa, porque não é onde parece: a
+política **não governa o CSSOM**. Um `style` do React — a cor de destaque
+de uma crew, que é dado de quem a criou — é aplicado propriedade a
+propriedade e passa. O que ela recusa é o atributo `style` que chega como
+*markup*: `setAttribute('style', …)` e, sobretudo, HTML injetado com
+`innerHTML`. Ou seja, trava exatamente o vetor de um XSS e não estorva a
+personalização, que é a distinção que interessa. Um teste garante que
+nenhum componente usa `dangerouslySetInnerHTML`, que é a porta por onde
+isso voltaria a entrar.
 
 **O access token vive em memória, e só em memória.** No `localStorage` ou num
 cookie legível por script ficaria ao alcance de qualquer coisa que a página

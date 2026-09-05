@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type Stripe from 'stripe';
 
+import { AuthorizationError } from '../../src/modules/authorization/errors/authorization.errors.js';
 import { BillingError } from '../../src/modules/billing/errors/billing.errors.js';
 import { BillingService } from '../../src/modules/billing/services/billing.service.js';
+import type { AuthorizationService } from '../../src/modules/authorization/services/authorization.service.js';
 import type { BillingRepository } from '../../src/modules/billing/repositories/billing.repository.js';
 import type {
     StripeGateway,
@@ -44,6 +46,18 @@ const createRepositoryMock = () => ({
     findUserEmail: vi.fn().mockResolvedValue({ email: 'player@vicehub.test' }),
 });
 
+/**
+ * Por omissão deixa passar, para que os testes que não são sobre
+ * autorização continuem a medir o que mediam. Os que são sobre ela
+ * mandam-no recusar.
+ */
+const createAuthorizationMock = () => ({
+    getEffectivePermissions: vi
+        .fn()
+        .mockResolvedValue({ userId: 'x', scope: {}, permissions: new Set() }),
+    hasPermissions: vi.fn().mockReturnValue(true),
+});
+
 const createGatewayMock = () => ({
     createCheckoutSession: vi
         .fn()
@@ -56,21 +70,35 @@ const createGatewayMock = () => ({
 describe('BillingService', () => {
     let repository: ReturnType<typeof createRepositoryMock>;
     let gateway: ReturnType<typeof createGatewayMock>;
+    let autorizacao: ReturnType<typeof createAuthorizationMock>;
     let service: BillingService;
+
+    /**
+     * Comprar para si próprio, que é o caso legítimo mais simples. O
+     * titular e o comprador são a mesma pessoa de propósito: eram
+     * diferentes, e isso passou a ser recusado — comprar para a conta de
+     * outra pessoa prende a cobrança recorrente de quem paga a uma conta
+     * que não é sua.
+     */
+    const EU = '22222222-2222-4222-8222-222222222222';
+    const OUTRA_PESSOA = '33333333-3333-4333-8333-333333333333';
+    const UMA_CREW = '11111111-1111-4111-8111-111111111111';
 
     const compra = {
         ownerKind: 'user' as const,
-        ownerId: '11111111-1111-4111-8111-111111111111',
-        buyerId: '22222222-2222-4222-8222-222222222222',
+        ownerId: EU,
+        buyerId: EU,
     };
 
     beforeEach(() => {
         repository = createRepositoryMock();
         gateway = createGatewayMock();
+        autorizacao = createAuthorizationMock();
 
         service = new BillingService(
             repository as unknown as BillingRepository,
             gateway as unknown as StripeGateway,
+            autorizacao as unknown as AuthorizationService,
         );
     });
 
@@ -91,6 +119,7 @@ describe('BillingService', () => {
             const semStripe = new BillingService(
                 repository as unknown as BillingRepository,
                 null,
+                createAuthorizationMock() as unknown as AuthorizationService,
             );
 
             await expectBillingError(
@@ -103,6 +132,7 @@ describe('BillingService', () => {
             const semStripe = new BillingService(
                 repository as unknown as BillingRepository,
                 null,
+                createAuthorizationMock() as unknown as AuthorizationService,
             );
 
             expect(() =>
@@ -120,6 +150,7 @@ describe('BillingService', () => {
             const semStripe = new BillingService(
                 repository as unknown as BillingRepository,
                 null,
+                createAuthorizationMock() as unknown as AuthorizationService,
             );
 
             const catalogo = semStripe.listPurchasablePlans();
@@ -168,6 +199,89 @@ describe('BillingService', () => {
             for (const plano of service.listPurchasablePlans().plans) {
                 expect(plano.intervalMonths).toBeGreaterThan(0);
             }
+        });
+    });
+
+    /**
+     * A rota exige conta e mais nada, porque o titular vem no corpo e o
+     * guard de autorização lê o âmbito dos parâmetros. Se não for aqui,
+     * não é em lado nenhum — e qualquer conta punha o seu cartão a pagar
+     * a crew de outra pessoa.
+     */
+    describe('quem pode comprometer o titular', () => {
+        const esperarRecusa = async (promise: Promise<unknown>) => {
+            const erro = await promise.catch((apanhado: unknown) => apanhado);
+
+            expect(erro).toBeInstanceOf(AuthorizationError);
+        };
+
+        it('deixa comprar para si próprio', async () => {
+            await expect(
+                service.startCheckout(compra),
+            ).resolves.toBeDefined();
+        });
+
+        /**
+         * Comprar para a conta de outra pessoa prendia a cobrança
+         * recorrente de quem paga a uma conta que não é sua.
+         */
+        it('recusa comprar para a conta de outra pessoa', async () => {
+            await esperarRecusa(
+                service.startCheckout({
+                    ownerKind: 'user',
+                    ownerId: OUTRA_PESSOA,
+                    buyerId: EU,
+                }),
+            );
+        });
+
+        it('exige crew:manage para comprar para uma crew', async () => {
+            autorizacao.hasPermissions.mockReturnValue(false);
+
+            await esperarRecusa(
+                service.startCheckout({ ownerKind: 'crew', ownerId: UMA_CREW, buyerId: EU }),
+            );
+
+            expect(autorizacao.getEffectivePermissions).toHaveBeenCalledWith(EU, {
+                crewId: UMA_CREW,
+            });
+            expect(autorizacao.hasPermissions).toHaveBeenCalledWith(
+                expect.anything(),
+                ['crew:manage'],
+            );
+        });
+
+        it('exige server:manage para comprar para um servidor', async () => {
+            autorizacao.hasPermissions.mockReturnValue(false);
+
+            await esperarRecusa(
+                service.startCheckout({ ownerKind: 'server', ownerId: UMA_CREW, buyerId: EU }),
+            );
+
+            expect(autorizacao.getEffectivePermissions).toHaveBeenCalledWith(EU, {
+                serverId: UMA_CREW,
+            });
+        });
+
+        it('deixa passar quem manda na crew', async () => {
+            await expect(
+                service.startCheckout({ ownerKind: 'crew', ownerId: UMA_CREW, buyerId: EU }),
+            ).resolves.toBeDefined();
+        });
+
+        /**
+         * A recusa vem antes de o Stripe ser sequer contactado: uma
+         * sessão de pagamento criada e depois recusada deixava lixo na
+         * conta do Stripe por cada tentativa.
+         */
+        it('recusa antes de falar com o Stripe', async () => {
+            autorizacao.hasPermissions.mockReturnValue(false);
+
+            await esperarRecusa(
+                service.startCheckout({ ownerKind: 'crew', ownerId: UMA_CREW, buyerId: EU }),
+            );
+
+            expect(gateway.createCheckoutSession).not.toHaveBeenCalled();
         });
     });
 

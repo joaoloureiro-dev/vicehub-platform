@@ -29,9 +29,10 @@ const billingRoutes: FastifyPluginAsync<BillingRoutesOptions> = async (
     /**
      * Comprar o plano para si próprio, para uma crew ou para um servidor.
      *
-     * Exige conta, e mais nada a este nível: quem pode comprometer uma
-     * crew a uma cobrança recorrente é decidido no serviço, que sabe
-     * qual é o titular do pedido.
+     * Exige conta, e mais nada **a este nível**: o titular vem no corpo, e
+     * o guard de autorização lê o âmbito dos parâmetros da rota — não o
+     * saberia encontrar. Quem pode comprometer cada titular é verificado
+     * no serviço, que recusa com 403 tal como este guard recusaria.
      */
     fastify.post<{ Body: StartCheckoutDto }>(
         '/checkout',

@@ -161,10 +161,10 @@ export const formatarMontante = (
  * montante cortado lê-se como outro montante. O tamanho acompanha o
  * comprimento, para que o valor caiba sempre por inteiro.
  *
- * Devolve uma classe e não um tamanho porque o tamanho escrito no
- * atributo `style` é código a executar dentro da página, e a política
- * de conteúdo que serve a aplicação em produção recusa-o. Os três
- * degraus vivem no CSS; aqui decide-se apenas qual deles serve.
+ * Devolve uma classe e não um tamanho porque são três degraus fixos, e
+ * três valores fixos pertencem ao CSS. Não é a política de conteúdo que
+ * o obriga: o `style` do React é aplicado pelo CSSOM, que a política não
+ * governa — o que ela trava é o atributo `style` escrito como markup.
  */
 export const classeDoSaldo = (valor: string): string => {
     const largura = formatarMontante(valor).length;
