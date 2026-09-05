@@ -63,6 +63,15 @@ export {
 export type { PlanDefinition, PlanKey } from './plans.js';
 
 export {
+    PRUNE_MARGEM_MS,
+    condicoesDePrune,
+    contarParaPrune,
+    prune,
+} from './prune.js';
+
+export type { PruneResultado } from './prune.js';
+
+export {
     DEFAULT_USER_ROLE,
     PERMISSIONS,
     PERMISSION_KEYS,
