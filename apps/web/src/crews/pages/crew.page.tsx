@@ -6,6 +6,7 @@ import { carregarCandidaturas } from '../../lib/membership.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
+import { AppearanceForm } from '../../appearance/appearance-form.js';
 import {
     acceptJoinRequest,
     getCrew,
@@ -16,6 +17,7 @@ import {
     rejectJoinRequest,
     removeMember,
     requestToJoin,
+    updateCrewAppearance,
     withdrawJoinRequest,
 } from '../crew.api.js';
 import { useT } from '../../i18n/i18n.js';
@@ -302,6 +304,52 @@ export const CrewPage = () => {
                     ))}
                 </ul>
             </section>
+
+            {/*
+              A personalização aparece a quem gere a crew, com plano ou
+              sem ele. Escondê-la sem plano faria com que quem viesse a
+              tê-lo não soubesse que ganhou alguma coisa — e quem não o
+              tem não faz ideia do que está a perder.
+            */}
+            {giroCandidaturas ? (
+                <section
+                    className={`grupo premium${perfil.isPremium ? ' ativo' : ''}`}
+                >
+                    <div className="premium-head">
+                        <h2>{t.perfil.personalizacao}</h2>
+                        <span className="pill">{t.perfil.premium}</span>
+                    </div>
+
+                    {perfil.isPremium ? (
+                        <p className="hint">{t.crews.planoAtivo}</p>
+                    ) : (
+                        <>
+                            <Alert kind="bad">{t.crews.precisaDePlano}</Alert>
+                            {/*
+                              O plano é **da crew**, e não de quem a gere:
+                              é por isso que o link leva o identificador
+                              dela. Sem ele, quem carregasse comprava para
+                              si próprio e a crew continuava sem nada.
+                            */}
+                            <Link
+                                className="link-premium"
+                                to={`/premium?crew=${encodeURIComponent(perfil.id)}`}
+                            >
+                                {t.crews.verPremium}
+                            </Link>
+                        </>
+                    )}
+
+                    <AppearanceForm
+                        atual={perfil.appearance}
+                        prefixo="crew"
+                        guardar={(input) => updateCrewAppearance(perfil.id, input)}
+                        aoGuardar={() => {
+                            crew.reload();
+                        }}
+                    />
+                </section>
+            ) : null}
         </div>
     );
 };

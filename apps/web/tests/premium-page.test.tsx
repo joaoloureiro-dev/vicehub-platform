@@ -29,12 +29,28 @@ const CATALOGO = {
 
 const SEM_PLANO = { isPremium: false, isLifetime: false, activeUntil: null };
 
+const CREW = {
+    id: 'crew-1',
+    name: 'Vice Kings',
+    tag: 'VICE',
+    description: null,
+    level: 1,
+    xp: '0',
+    influence: 0,
+    prestige: 0,
+    isPremium: false,
+    appearance: { bannerUrl: null, accentColor: null },
+    memberCount: 3,
+    createdAt: '2026-01-01T00:00:00.000Z',
+};
+
 interface Cenario {
     catalogo?: unknown;
     plano?: unknown;
     /** Quem está a ver, ou ninguém. */
     comSessao?: boolean;
     checkout?: Response;
+    crew?: unknown;
 }
 
 const servidor = (cenario: Cenario) =>
@@ -69,6 +85,10 @@ const servidor = (cenario: Cenario) =>
             return Promise.resolve(json(200, cenario.plano ?? SEM_PLANO));
         }
 
+        if (endereco.includes('/crews/')) {
+            return Promise.resolve(json(200, cenario.crew ?? CREW));
+        }
+
         if (endereco.endsWith('/billing/checkout')) {
             return Promise.resolve(
                 cenario.checkout ??
@@ -79,13 +99,24 @@ const servidor = (cenario: Cenario) =>
         return Promise.resolve(json(404, {}));
     });
 
-const montar = () =>
+const montar = (endereco = '/premium') =>
     montarEcra(
         <AuthProvider>
             <PremiumPage />
         </AuthProvider>,
-        '/premium',
+        endereco,
     );
+
+/** O corpo com que o checkout foi pedido, para ver a quem vai o plano. */
+const corpoDoCheckout = (fetchMock: ReturnType<typeof vi.fn>): unknown => {
+    const chamada = fetchMock.mock.calls.find((argumentos) =>
+        String(argumentos[0]).endsWith('/billing/checkout'),
+    );
+
+    return JSON.parse(
+        String((chamada?.[1] as { body?: string } | undefined)?.body ?? '{}'),
+    );
+};
 
 /**
  * O `window.location.assign` não existe no jsdom como coisa que se possa
@@ -262,5 +293,110 @@ describe('o ecrã do premium', () => {
 
         expect(await screen.findByText(t.premium.aindaNaoAbriu)).toBeTruthy();
         expect(irPara).not.toHaveBeenCalled();
+    });
+});
+
+/**
+ * Comprar para uma crew é o caso que sustenta o negócio: um líder paga
+ * uma vez pela comunidade toda, em vez de vinte pessoas pagarem cada uma
+ * a sua. O titular vem do endereço — sem isso, quem viesse da página de
+ * uma crew comprava para si próprio e a crew continuava sem nada.
+ */
+describe('comprar para uma crew', () => {
+    it('diz o nome da crew, e não o identificador', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar('/premium?crew=crew-1');
+
+        expect(
+            await screen.findByText(t.premium.tituloCrew('Vice Kings')),
+        ).toBeTruthy();
+    });
+
+    it('compra para a crew, e não para quem clica', async () => {
+        const fetchMock = servidor({});
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar('/premium?crew=crew-1');
+
+        await userEvent.click(await screen.findByText(t.premium.comprar));
+
+        await waitFor(() => {
+            expect(irPara).toHaveBeenCalled();
+        });
+
+        expect(corpoDoCheckout(fetchMock)).toEqual({
+            ownerKind: 'crew',
+            ownerId: 'crew-1',
+        });
+    });
+
+    it('sem crew no endereço, compra para quem clica', async () => {
+        const fetchMock = servidor({});
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        await userEvent.click(await screen.findByText(t.premium.comprar));
+
+        await waitFor(() => {
+            expect(irPara).toHaveBeenCalled();
+        });
+
+        expect(corpoDoCheckout(fetchMock)).toEqual({
+            ownerKind: 'user',
+            ownerId: 'u1',
+        });
+    });
+
+    /**
+     * O plano que conta é o da crew. Sem isto, quem já fosse premium não
+     * conseguia comprar para a crew: o ecrã via o plano *dele* e dizia
+     * que já estava tratado.
+     */
+    it('olha para o plano da crew, e não para o de quem está a ver', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                plano: { isPremium: true, isLifetime: true, activeUntil: null },
+                crew: { ...CREW, isPremium: false },
+            }),
+        );
+
+        montar('/premium?crew=crew-1');
+
+        expect(await screen.findByText(t.premium.comprar)).toBeTruthy();
+        expect(screen.queryByText(t.premium.tensVitalicio)).toBeNull();
+    });
+
+    /**
+     * O que o plano dá muda com o titular. "Personaliza o teu perfil" a
+     * quem compra para uma crew, e "pode ser comprado para uma crew, e
+     * não só para ti" na própria página da crew, era falar do produto
+     * errado à pessoa certa.
+     */
+    it('fala da crew, e não do perfil de quem está a ver', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar('/premium?crew=crew-1');
+
+        expect(
+            await screen.findByText(t.premium.crewDaPersonalizacao),
+        ).toBeTruthy();
+        expect(screen.getByText(t.premium.crewDaEquipa)).toBeTruthy();
+        expect(screen.queryByText(t.premium.oQueDaPersonalizacao)).toBeNull();
+        expect(screen.queryByText(t.premium.oQueDaCrew)).toBeNull();
+    });
+
+    it('não oferece a compra a uma crew que já tem plano', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ crew: { ...CREW, isPremium: true } }),
+        );
+
+        montar('/premium?crew=crew-1');
+
+        expect(await screen.findByText(t.premium.crewTemPlano)).toBeTruthy();
+        expect(screen.queryByText(t.premium.comprar)).toBeNull();
     });
 });

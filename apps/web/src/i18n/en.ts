@@ -165,6 +165,11 @@ export const en = (p: Tools) => ({
         naoCarregouMinhas: 'Your crews could not be loaded.',
         procuraUma: 'Find one',
         ouCriaTua: 'or create your own',
+        planoAtivo:
+            "The crew's plan is active. The banner and colour show on its public page.",
+        precisaDePlano:
+            'These fields are part of the premium plan — the plan belongs to the crew, not to you. You can fill them in, but they only save while the crew has one.',
+        verPremium: 'See what premium gives the crew',
         aEsperaResposta: 'Awaiting an answer',
     },
 
@@ -248,10 +253,19 @@ export const en = (p: Tools) => ({
         titulo: 'Back the platform, get the extras',
         subtitulo:
             'ViceHub works without paying. Premium is for people who want the platform to keep being built — and who like their profile looking like theirs.',
+        tituloCrew: (nome: string) => `Premium for ${nome}`,
+        subtituloCrew:
+            'The plan belongs to the crew, not to whoever pays for it. Anyone who runs the crew can set its banner and colour while it is active.',
+        crewTemPlano: 'This crew already has an active plan.',
+        irParaCrew: 'Go to the crew',
         porMes: 'per month',
         oQueDaPersonalizacao:
             'Customise your profile: banner and accent colour on your public page.',
         oQueDaCrew: 'Premium can be bought for a crew or a server, not just for you.',
+        crewDaPersonalizacao:
+            "Customise the crew: banner and accent colour on the crew's public page.",
+        crewDaEquipa:
+            'One plan for the whole crew. Anyone who runs it can change the look — it does not depend on who paid.',
         oQueDaApoio: 'It pays for the servers, and for the time that goes into this.',
         comprar: 'Get premium',
         aAbrir: 'Opening checkout…',

@@ -686,6 +686,26 @@ como texto do princípio ao fim, porque `Number` a partiria; o preço do
 plano é dinheiro a sério em cêntimos, vindo do Stripe, e nunca chega perto
 do limite.
 
+**O plano de uma crew compra-se a partir da crew.** O ecrã do premium
+aceita `?crew=<id>` e é o titular do endereço que decide tudo: o nome no
+título, o plano que se consulta, e a quem vai a compra. Sem isso, quem
+viesse da página de uma crew comprava para si próprio e a crew continuava
+sem nada — e ninguém repararia até ir procurar a personalização, que
+continuava recusada. O que o plano dá também muda: dizer "personaliza o
+teu perfil" a quem compra para uma crew é falar do produto errado à
+pessoa certa.
+
+**O que a crew mostra do plano é se o tem, e não qual.** O perfil público
+não diz a espécie de plano — isso diria a qualquer pessoa quais das crews
+receberam o vitalício. Para a decisão em jogo, ter plano ativo chega.
+
+**O formulário da personalização vive num sítio só**, em
+`appearance/appearance-form.tsx`, e serve pessoas, crews e servidores. As
+regras são as mesmas nos três: a cor é um hexadecimal de seis dígitos, o
+campo vazio limpa em vez de deixar como está, e um **402 não é avaria** —
+é a API a dizer que isto é do plano. Três cópias divergiriam, e a que
+divergisse mostrava um erro genérico onde devia dizer o que falta.
+
 **A personalização premium aparece a toda a gente**, e não só a quem tem
 plano. Escondê-la faria com que quem recebe o premium não soubesse que
 ganhou alguma coisa — e é precisamente isso que os primeiros
