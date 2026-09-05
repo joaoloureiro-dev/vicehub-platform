@@ -79,3 +79,20 @@ export const setServerMemberRole = (
     userId: string,
     role: ServerRole,
 ): Promise<void> => adesao.setMemberRole(id, userId, role);
+
+/**
+ * Personalização do servidor: banner e cor de destaque.
+ *
+ * Exige mandar no servidor **e** o servidor ter plano ativo, que são
+ * duas condições distintas. Sem plano a API responde **402**, e não 403:
+ * o pedido é legítimo e quem o faz tem autorização — o que falta é o
+ * pagamento.
+ */
+export const updateServerAppearance = (
+    serverId: string,
+    input: { bannerUrl: string | null; accentColor: string | null },
+): Promise<ServerProfile> =>
+    api<ServerProfile>(`/servers/${encodeURIComponent(serverId)}/appearance`, {
+        method: 'PATCH',
+        body: input,
+    });

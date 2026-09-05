@@ -206,6 +206,11 @@ export const fr = (p: Tools): Messages => ({
         naoFoiPossivelRegistar: 'Le serveur n’a pas pu être enregistré.',
         naoEncontrado: 'Nous n’avons pas trouvé ce serveur.',
         sair: 'Quitter le serveur',
+        planoAtivo:
+            'L’offre du serveur est active. La bannière et la couleur apparaissent sur sa page publique.',
+        precisaDePlano:
+            "Ces champs font partie de l'offre premium — et l'offre appartient au serveur, pas à toi. Tu peux les remplir, mais ils ne sont enregistrés que tant que le serveur en a une.",
+        verPremium: 'Voir ce que le premium donne au serveur',
         entraParaCandidatar: 'pour postuler à ce serveur.',
     },
 
@@ -256,11 +261,19 @@ export const fr = (p: Tools): Messages => ({
         titulo: 'Soutiens la plateforme, prends les extras',
         subtitulo:
             "ViceHub fonctionne sans rien payer. Le premium est pour celles et ceux qui veulent que ça continue d'être construit — et qui aiment que leur profil leur ressemble.",
-        tituloCrew: (nome: string) => `Premium pour ${nome}`,
+        tituloComunidade: (nome: string) => `Premium pour ${nome}`,
         subtituloCrew:
             "L'offre appartient à la crew, pas à celui qui la paie. Tant qu'elle est active, qui gère la crew peut définir sa bannière et sa couleur.",
         crewTemPlano: 'Cette crew a déjà une offre active.',
         irParaCrew: 'Aller à la crew',
+        subtituloServidor:
+            "L'offre appartient au serveur, pas à celui qui la paie. Tant qu'elle est active, qui gère le serveur peut définir sa bannière et sa couleur.",
+        servidorDaPersonalizacao:
+            'Personnalise le serveur : bannière et couleur d’accent sur sa page publique.',
+        servidorDaEquipa:
+            "Une offre pour tout le serveur. Qui le gère peut changer l'apparence — ça ne dépend pas de qui a payé.",
+        servidorTemPlano: 'Ce serveur a déjà une offre active.',
+        irParaServidor: 'Aller au serveur',
         porMes: 'par mois',
         oQueDaPersonalizacao:
             'Personnalise ton profil : bannière et couleur d’accent sur ta page publique.',
@@ -269,7 +282,8 @@ export const fr = (p: Tools): Messages => ({
             'Personnalise la crew : bannière et couleur d’accent sur sa page publique.',
         crewDaEquipa:
             "Une offre pour toute la crew. Qui la gère peut changer l'apparence — ça ne dépend pas de qui a payé.",
-        oQueDaApoio: 'Il paie les serveurs, et le temps que tout ça demande.',
+        oQueDaApoio:
+            "C'est ce qui fait tourner la plateforme, et ça paie le temps que tout ça demande.",
         comprar: 'Passer en premium',
         aAbrir: 'Ouverture du paiement…',
         cancelarQuando: 'Annule quand tu veux. Ça court jusqu’à la fin du mois payé.',

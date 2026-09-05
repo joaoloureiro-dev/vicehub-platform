@@ -7,6 +7,7 @@ import { useAuth } from '../../auth/auth.context.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import { getCrew } from '../../crews/crew.api.js';
+import { getServer } from '../../servers/server.api.js';
 import { formatarPreco } from '../billing.format.js';
 import {
     getMySubscription,
@@ -30,8 +31,8 @@ export const PremiumPage = () => {
 
     /**
      * O titular vem do endereço. `/premium` compra para quem está a ver;
-     * `/premium?crew=…` compra para essa crew, que é como a página da
-     * crew manda para aqui.
+     * `/premium?crew=…` e `/premium?servidor=…` compram para essa
+     * comunidade, que é como as páginas delas mandam para aqui.
      *
      * Sem isto, quem viesse de uma crew comprava para si próprio e a
      * crew continuava sem plano — e ninguém repararia até ir procurar a
@@ -39,16 +40,49 @@ export const PremiumPage = () => {
      */
     const [parametros] = useSearchParams();
     const crewId = parametros.get('crew');
+    const servidorId = parametros.get('servidor');
 
     const catalogo = useAsync(() => getPlans(), []);
 
     /**
-     * De quem é a crew, para o ecrã poder dizer o nome em vez de um
-     * identificador. É pública: não exige sessão.
+     * A comunidade a quem o plano se destina, quando há uma.
+     *
+     * Resolve-se aqui uma só vez, em vez de o resto do ecrã perguntar
+     * "é crew? é servidor?" em cada sítio: assim, o que muda entre as
+     * duas fica neste único ponto, e um terceiro tipo de titular não
+     * obriga a espalhar um terceiro ramo por toda a página.
+     *
+     * O perfil é público nos dois casos: não exige sessão.
      */
-    const crew = useAsync(
-        () => (crewId ? getCrew(crewId) : Promise.resolve(null)),
-        [crewId],
+    const comunidade = useAsync(
+        async () => {
+            if (crewId) {
+                const perfil = await getCrew(crewId);
+
+                return {
+                    kind: 'crew' as const,
+                    id: perfil.id,
+                    nome: perfil.name,
+                    isPremium: perfil.isPremium,
+                    voltarPara: `/crews/${perfil.id}`,
+                };
+            }
+
+            if (servidorId) {
+                const perfil = await getServer(servidorId);
+
+                return {
+                    kind: 'server' as const,
+                    id: perfil.id,
+                    nome: perfil.name,
+                    isPremium: perfil.isPremium,
+                    voltarPara: `/servidores/${perfil.id}`,
+                };
+            }
+
+            return null;
+        },
+        [crewId, servidorId],
     );
 
     /**
@@ -63,7 +97,7 @@ export const PremiumPage = () => {
     const [aComprar, setAComprar] = useState(false);
     const [falhou, setFalhou] = useState<string | null>(null);
 
-    if (catalogo.loading || plano.loading || crew.loading) {
+    if (catalogo.loading || plano.loading || comunidade.loading) {
         return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
@@ -78,19 +112,19 @@ export const PremiumPage = () => {
     }
 
     /**
-     * Qual plano interessa a este ecrã: o da crew, quando se veio de
-     * uma, e o de quem está a ver quando não.
+     * Qual plano interessa a este ecrã: o da comunidade, quando se veio
+     * de uma, e o de quem está a ver quando não.
      */
-    const paraCrew = crew.data;
+    const paraComunidade = comunidade.data;
 
-    const meu = paraCrew
+    const meu = paraComunidade
         ? {
-            isPremium: paraCrew.isPremium,
+            isPremium: paraComunidade.isPremium,
             /**
-             * O perfil público de uma crew diz se tem plano, e não que
-             * espécie de plano — expor isso diria a qualquer pessoa
-             * quais das crews receberam o vitalício. Um plano ativo
-             * basta para não oferecer a compra, que é a decisão em jogo.
+             * O perfil público de uma comunidade diz se tem plano, e não
+             * que espécie de plano — expor isso diria a qualquer pessoa
+             * quais das crews receberam o vitalício. Um plano ativo basta
+             * para não oferecer a compra, que é a decisão em jogo.
              */
             isLifetime: false,
             activeUntil: null,
@@ -98,6 +132,32 @@ export const PremiumPage = () => {
         : plano.data;
 
     const aberto = catalogo.data?.available === true;
+
+    /**
+     * As frases do titular, escolhidas de uma vez.
+     *
+     * Podia ser um substantivo interpolado numa frase só — "o plano é
+     * da {crew}" — mas isso partia a concordância de género assim que
+     * saísse do inglês: em português diz-se "da crew" e "do servidor".
+     * Cada idioma escreve as duas frases inteiras, e aqui escolhe-se
+     * qual serve, em vez de o JSX perguntar o tipo em cada linha.
+     */
+    const frases =
+        paraComunidade?.kind === 'server'
+            ? {
+                subtitulo: t.premium.subtituloServidor,
+                personalizacao: t.premium.servidorDaPersonalizacao,
+                umPlano: t.premium.servidorDaEquipa,
+                temPlano: t.premium.servidorTemPlano,
+                irPara: t.premium.irParaServidor,
+            }
+            : {
+                subtitulo: t.premium.subtituloCrew,
+                personalizacao: t.premium.crewDaPersonalizacao,
+                umPlano: t.premium.crewDaEquipa,
+                temPlano: t.premium.crewTemPlano,
+                irPara: t.premium.irParaCrew,
+            };
 
     const comprar = async () => {
         if (!user) {
@@ -109,8 +169,8 @@ export const PremiumPage = () => {
 
         try {
             const sessao = await startCheckout(
-                crewId
-                    ? { ownerKind: 'crew', ownerId: crewId }
+                paraComunidade
+                    ? { ownerKind: paraComunidade.kind, ownerId: paraComunidade.id }
                     : { ownerKind: 'user', ownerId: user.id },
             );
 
@@ -141,12 +201,12 @@ export const PremiumPage = () => {
             <header className="premium-hero">
                 <span className="pill">{t.premium.etiqueta}</span>
                 <h1>
-                    {paraCrew
-                        ? t.premium.tituloCrew(paraCrew.name)
+                    {paraComunidade
+                        ? t.premium.tituloComunidade(paraComunidade.nome)
                         : t.premium.titulo}
                 </h1>
                 <p className="hint">
-                    {paraCrew ? t.premium.subtituloCrew : t.premium.subtitulo}
+                    {paraComunidade ? frases.subtitulo : t.premium.subtitulo}
                 </p>
             </header>
 
@@ -165,11 +225,11 @@ export const PremiumPage = () => {
             */}
             <ul className="premium-lista">
                 <li>
-                    {paraCrew
-                        ? t.premium.crewDaPersonalizacao
+                    {paraComunidade
+                        ? frases.personalizacao
                         : t.premium.oQueDaPersonalizacao}
                 </li>
-                <li>{paraCrew ? t.premium.crewDaEquipa : t.premium.oQueDaCrew}</li>
+                <li>{paraComunidade ? frases.umPlano : t.premium.oQueDaCrew}</li>
                 <li>{t.premium.oQueDaApoio}</li>
             </ul>
 
@@ -191,8 +251,8 @@ export const PremiumPage = () => {
             ) : meu?.isPremium ? (
                 <div className="premium-estado ativo">
                     <p>
-                        {paraCrew
-                            ? t.premium.crewTemPlano
+                        {paraComunidade
+                            ? frases.temPlano
                             : meu.activeUntil === null
                               ? t.premium.tensPlano
                               : t.premium.tensPlanoAte(
@@ -203,9 +263,9 @@ export const PremiumPage = () => {
                     </p>
                     <Link
                         className="primary"
-                        to={paraCrew ? `/crews/${paraCrew.id}` : '/eu'}
+                        to={paraComunidade ? paraComunidade.voltarPara : '/eu'}
                     >
-                        {paraCrew ? t.premium.irParaCrew : t.premium.irParaPerfil}
+                        {paraComunidade ? frases.irPara : t.premium.irParaPerfil}
                     </Link>
                 </div>
             ) : !aberto ? (
