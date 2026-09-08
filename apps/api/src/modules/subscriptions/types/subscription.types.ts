@@ -30,4 +30,17 @@ export interface SubscriptionEntitlement {
     isLifetime: boolean;
     /** Fim do período em vigor, ou null quando não termina. */
     activeUntil: Date | null;
+    /**
+     * De onde vem o direito, quando não vem do próprio titular.
+     *
+     * O plano de um servidor cobre as crews que lá jogam. Esse direito é
+     * **derivado**: acaba quando o plano do servidor acabar, e acaba
+     * também se a crew sair de lá. Por isso `isLifetime` é sempre falso
+     * num direito derivado, mesmo que o plano do servidor não termine —
+     * o que não termina é o plano do servidor, não o acesso desta crew.
+     *
+     * Null quando o direito é do próprio titular, ou quando não há
+     * direito nenhum.
+     */
+    via: { kind: 'server'; id: string; name: string } | null;
 }

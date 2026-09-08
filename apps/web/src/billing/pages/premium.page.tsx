@@ -64,6 +64,13 @@ export const PremiumPage = () => {
                     id: perfil.id,
                     nome: perfil.name,
                     isPremium: perfil.isPremium,
+                    /**
+                     * Uma crew coberta pelo servidor onde joga já tem o
+                     * que este ecrã vende. Sem saber isso, dizia-lhe
+                     * apenas "já tens plano" — e quem gere a crew ficava
+                     * sem perceber de quem é, nem que sair de lá o leva.
+                     */
+                    via: perfil.premiumVia,
                     voltarPara: `/crews/${perfil.id}`,
                 };
             }
@@ -76,6 +83,8 @@ export const PremiumPage = () => {
                     id: perfil.id,
                     nome: perfil.name,
                     isPremium: perfil.isPremium,
+                    /** Um servidor não tem ninguém por cima de quem herdar. */
+                    via: null,
                     voltarPara: `/servidores/${perfil.id}`,
                 };
             }
@@ -251,7 +260,11 @@ export const PremiumPage = () => {
             ) : meu?.isPremium ? (
                 <div className="premium-estado ativo">
                     <p>
-                        {paraComunidade
+                        {paraComunidade?.via
+                            ? t.premium.crewCobertaPeloServidor(
+                                paraComunidade.via.name,
+                            )
+                            : paraComunidade
                             ? frases.temPlano
                             : meu.activeUntil === null
                               ? t.premium.tensPlano

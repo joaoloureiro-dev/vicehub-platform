@@ -170,6 +170,14 @@ export class SubscriptionController {
              */
             isLifetime: entitlement.isLifetime,
             activeUntil: this.toIso(entitlement.activeUntil),
+            /**
+             * De onde vem o direito, quando não vem do próprio titular.
+             *
+             * Sem isto, uma crew coberta pelo servidor onde joga via
+             * "tens plano" sem nada a dizer de quem é o plano — e ao
+             * sair de lá perdia-o sem perceber porquê.
+             */
+            via: entitlement.via,
             history: history.map((row) => this.toRow(row)),
         };
     }

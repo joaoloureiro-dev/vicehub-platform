@@ -48,12 +48,57 @@ export class SubscriptionService {
         const subscription =
             await this.subscriptionRepository.findEntitlingSubscription(owner);
 
+        if (subscription !== null) {
+            return {
+                owner,
+                isPremium: true,
+                isLifetime: isPerpetualPlan(subscription.plan),
+                activeUntil: subscription.current_period_end,
+                via: null,
+            };
+        }
+
+        /**
+         * Sem plano próprio, uma crew pode estar coberta pelo servidor
+         * onde joga. É esta a razão de ser da plataforma para um
+         * servidor: paga uma vez e as crews que lá jogam ficam com o que
+         * o plano dá.
+         *
+         * A ordem importa: o plano próprio ganha sempre. Uma crew que
+         * paga o seu não deve ver o direito descrito como vindo de outro
+         * sítio, nem perdê-lo ao sair do servidor.
+         */
+        if (owner.crewId !== undefined) {
+            const doServidor =
+                await this.subscriptionRepository.findServerSubscriptionForCrew(
+                    owner.crewId,
+                );
+
+            if (doServidor !== null) {
+                return {
+                    owner,
+                    isPremium: true,
+                    /**
+                     * Falso mesmo que o plano do servidor não termine: o
+                     * acesso desta crew termina quando ela sair de lá.
+                     */
+                    isLifetime: false,
+                    activeUntil: doServidor.current_period_end,
+                    via: {
+                        kind: 'server',
+                        id: doServidor.serverId as string,
+                        name: doServidor.server?.name ?? '',
+                    },
+                };
+            }
+        }
+
         return {
             owner,
-            isPremium: subscription !== null,
-            isLifetime:
-                subscription !== null && isPerpetualPlan(subscription.plan),
-            activeUntil: subscription?.current_period_end ?? null,
+            isPremium: false,
+            isLifetime: false,
+            activeUntil: null,
+            via: null,
         };
     }
 
@@ -254,6 +299,21 @@ export class SubscriptionService {
             const id = kind === 'crew' ? subscription.crewId : subscription.serverId;
 
             if (id !== null) {
+                entitled.add(id);
+            }
+        }
+
+        /**
+         * As crews cobertas pelo servidor onde jogam contam como as
+         * outras. Sem isto, o diretório dizia que uma crew não tem plano
+         * e o perfil dela dizia que tem — a mesma pergunta com duas
+         * respostas, conforme o sítio onde se faz.
+         */
+        if (kind === 'crew') {
+            const porServidor =
+                await this.subscriptionRepository.findCrewIdsEntitledByServer(ids);
+
+            for (const id of porServidor) {
                 entitled.add(id);
             }
         }
