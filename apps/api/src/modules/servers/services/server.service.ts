@@ -86,7 +86,14 @@ export class ServerService {
         await this.requireServer(serverId);
 
         if (input.name !== undefined) {
-            const existente = await this.serverRepository.findByName(input.name);
+            /**
+             * O próprio servidor não conta como conflito consigo mesmo:
+             * daí ir excluído da consulta.
+             */
+            const existente = await this.serverRepository.findByName(
+                input.name,
+                serverId,
+            );
 
             if (existente) {
                 throw new ServerError(

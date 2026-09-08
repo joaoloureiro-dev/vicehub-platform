@@ -166,6 +166,9 @@ export const pt = (p: Tools): Messages => ({
         naoCarregouMinhas: 'Não foi possível carregar as tuas crews.',
         procuraUma: 'Procura uma',
         ouCriaTua: 'ou cria a tua',
+        definicoes: 'Definições da crew',
+        definicoesGuardadas: 'Definições da crew guardadas.',
+        nomeJaExiste: 'Já existe uma crew com este nome.',
         planoAtivo:
             'O plano da crew está ativo. O banner e a cor aparecem na página pública dela.',
         precisaDePlano:
@@ -205,6 +208,12 @@ export const pt = (p: Tools): Messages => ({
         naoFoiPossivelRegistar: 'Não foi possível registar o servidor.',
         naoEncontrado: 'Não encontrámos este servidor.',
         sair: 'Sair do servidor',
+        definicoes: 'Definições do servidor',
+        definicoesGuardadas: 'Definições do servidor guardadas.',
+        nomeJaExiste: 'Já existe um servidor com este nome.',
+        nome: 'Nome',
+        descricao: 'Descrição',
+        estaOnline: 'O servidor está online neste momento',
         planoAtivo:
             'O plano do servidor está ativo. O banner e a cor aparecem na página pública dele.',
         precisaDePlano:

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router';
 
 import { AuthProvider } from '../src/auth/auth.context.js';
@@ -42,9 +43,15 @@ const servidor = (opcoes: {
     requests: Response;
     memberships?: unknown;
     premium?: boolean;
+    patch?: Response;
 }) =>
-    vi.fn((url: string) => {
+    vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
+
+        /** O que a alteração responde, quando o caso a quer a falhar. */
+        if (init?.method === 'PATCH' && opcoes.patch !== undefined) {
+            return Promise.resolve(opcoes.patch);
+        }
 
         /*
          * O AuthProvider troca o cookie por um access token ao arrancar.
@@ -81,6 +88,18 @@ const servidor = (opcoes: {
             json(200, { ...perfil, isPremium: opcoes.premium === true }),
         );
     });
+
+/** O corpo com que o perfil da crew foi alterado. */
+const corpoDoPatch = (fetchMock: ReturnType<typeof vi.fn>): unknown => {
+    const chamada = fetchMock.mock.calls.find(
+        (argumentos) =>
+            (argumentos[1] as { method?: string } | undefined)?.method === 'PATCH',
+    );
+
+    return JSON.parse(
+        String((chamada?.[1] as { body?: string } | undefined)?.body ?? '{}'),
+    );
+};
 
 const montar = () =>
     montarEcra(
@@ -140,6 +159,92 @@ describe('o ecrã de uma crew', () => {
             });
 
             expect(screen.getByText(t.cargos.crew_leader)).toBeDefined();
+        });
+    });
+
+    /**
+     * O `PATCH /crews/:crewId` existia na API desde o princípio e não
+     * havia por onde lá chegar. O nome é único: um mal escrito ficava
+     * mal escrito, e nem criar outra crew resolvia.
+     */
+    describe('as definições da crew', () => {
+        it('não aparecem a quem não gere a crew', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('Vice Kings')).toBeDefined();
+            });
+
+            expect(screen.queryByLabelText(t.crews.nome)).toBeNull();
+        });
+
+        it('aparecem a quem gere, já preenchidas', async () => {
+            vi.stubGlobal('fetch', servidor({ requests: json(200, []) }));
+
+            montar();
+
+            const nome = (await screen.findByLabelText(
+                t.crews.nome,
+            )) as HTMLInputElement;
+
+            expect(nome.value).toBe('Vice Kings');
+        });
+
+        /**
+         * Um campo vazio limpa o valor em vez de o deixar como estava.
+         * Sem essa distinção não havia forma de apagar uma descrição
+         * depois de a ter escrito.
+         */
+        it('manda a descrição vazia como null, e não como texto vazio', async () => {
+            const fetchMock = servidor({ requests: json(200, []) });
+            vi.stubGlobal('fetch', fetchMock);
+
+            montar();
+
+            const descricao = await screen.findByLabelText(t.crews.descricao);
+
+            await userEvent.clear(descricao);
+            await userEvent.click(
+                screen.getByRole('button', { name: t.comum.guardar }),
+            );
+
+            await waitFor(() => {
+                expect(corpoDoPatch(fetchMock)).toMatchObject({
+                    description: null,
+                });
+            });
+        });
+
+        /**
+         * O 409 mais provável neste formulário é o nome já existir. A
+         * mensagem da API vem numa língua só; quem lê noutra tem de
+         * receber a sua.
+         */
+        it('diz na língua de quem lê que o nome já existe', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(200, []),
+                    patch: json(409, { code: 'CREW_NAME_TAKEN', message: 'Já existe uma crew com este nome.' }),
+                }),
+            );
+
+            montar();
+
+            const nome = await screen.findByLabelText(t.crews.nome);
+
+            await userEvent.clear(nome);
+            await userEvent.type(nome, 'Outra Crew');
+            await userEvent.click(
+                screen.getByRole('button', { name: t.comum.guardar }),
+            );
+
+            expect(await screen.findByText(t.crews.nomeJaExiste)).toBeDefined();
         });
     });
 

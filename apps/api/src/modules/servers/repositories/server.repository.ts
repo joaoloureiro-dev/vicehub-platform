@@ -45,9 +45,24 @@ export class ServerRepository {
         });
     }
 
-    findByName(name: string) {
+    /**
+     * O servidor que já ocupa este nome, se houver.
+     *
+     * `excluirServerId` serve as alterações: aí a pergunta não é "alguém
+     * tem este nome?" — é "alguém *além deste servidor* tem este
+     * nome?". Sem isso, guardar um formulário sem tocar no nome era
+     * recusado pelo próprio servidor, porque um formulário envia sempre
+     * todos os campos.
+     */
+    findByName(name: string, excluirServerId?: string) {
         return this.database.server.findFirst({
-            where: { name, is_deleted: false },
+            where: {
+                name,
+                is_deleted: false,
+                ...(excluirServerId === undefined
+                    ? {}
+                    : { id: { not: excluirServerId } }),
+            },
             select: { name: true },
         });
     }

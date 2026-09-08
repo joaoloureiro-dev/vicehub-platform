@@ -96,3 +96,24 @@ export const updateServerAppearance = (
         method: 'PATCH',
         body: input,
     });
+
+/**
+ * Definições do servidor: nome, região, descrição e se está online.
+ *
+ * Exige `server:manage`. O `isOnline` aparece no perfil e é o que o
+ * filtro do diretório usa — sem esta rota alcançável, o estado ficava a
+ * dizer sempre o mesmo e ninguém o podia corrigir.
+ */
+export const updateServer = (
+    serverId: string,
+    input: {
+        name?: string;
+        region?: string | null;
+        description?: string | null;
+        isOnline?: boolean;
+    },
+): Promise<ServerProfile> =>
+    api<ServerProfile>(`/servers/${encodeURIComponent(serverId)}`, {
+        method: 'PATCH',
+        body: input,
+    });
