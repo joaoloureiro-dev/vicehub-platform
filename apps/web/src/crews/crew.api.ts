@@ -92,3 +92,20 @@ export const updateCrewAppearance = (
         method: 'PATCH',
         body: input,
     });
+
+/**
+ * Definições da crew: nome e descrição.
+ *
+ * Exige `crew:manage`. Os campos são opcionais e a descrição é anulável:
+ * não indicar um campo deixa-o como está, indicá-lo a null limpa-o —
+ * sem essa distinção não havia forma de apagar uma descrição depois de
+ * a ter escrito.
+ */
+export const updateCrew = (
+    crewId: string,
+    input: { name?: string; description?: string | null },
+): Promise<CrewProfile> =>
+    api<CrewProfile>(`/crews/${encodeURIComponent(crewId)}`, {
+        method: 'PATCH',
+        body: input,
+    });

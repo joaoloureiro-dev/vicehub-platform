@@ -165,6 +165,9 @@ export const en = (p: Tools) => ({
         naoCarregouMinhas: 'Your crews could not be loaded.',
         procuraUma: 'Find one',
         ouCriaTua: 'or create your own',
+        definicoes: 'Crew settings',
+        definicoesGuardadas: 'Crew settings saved.',
+        nomeJaExiste: 'A crew with this name already exists.',
         planoAtivo:
             "The crew's plan is active. The banner and colour show on its public page.",
         precisaDePlano:
@@ -204,6 +207,12 @@ export const en = (p: Tools) => ({
         naoFoiPossivelRegistar: 'The server could not be registered.',
         naoEncontrado: 'We could not find this server.',
         sair: 'Leave the server',
+        definicoes: 'Server settings',
+        definicoesGuardadas: 'Server settings saved.',
+        nomeJaExiste: 'A server with this name already exists.',
+        nome: 'Name',
+        descricao: 'Description',
+        estaOnline: 'The server is online right now',
         planoAtivo:
             "The server's plan is active. The banner and colour show on its public page.",
         precisaDePlano:

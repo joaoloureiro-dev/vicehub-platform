@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router';
 
 import { AuthProvider } from '../src/auth/auth.context.js';
@@ -30,9 +31,18 @@ const json = (status: number, body: unknown): Response =>
  * O ecrã pergunta à API em vez de deduzir o cargo de outro sítio, e é
  * essa resposta que decide o que aparece.
  */
-const servidor = (opcoes: { requests: Response; premium?: boolean }) =>
-    vi.fn((url: string) => {
+const servidor = (opcoes: {
+    requests: Response;
+    premium?: boolean;
+    patch?: Response;
+}) =>
+    vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
+
+        /** O que a alteração responde, quando o caso a quer a falhar. */
+        if (init?.method === 'PATCH' && opcoes.patch !== undefined) {
+            return Promise.resolve(opcoes.patch);
+        }
 
         if (endereco.endsWith('/auth/refresh')) {
             return Promise.resolve(
@@ -60,6 +70,17 @@ const servidor = (opcoes: { requests: Response; premium?: boolean }) =>
         );
     });
 
+const corpoDoPatch = (fetchMock: ReturnType<typeof vi.fn>): unknown => {
+    const chamada = fetchMock.mock.calls.find(
+        (argumentos) =>
+            (argumentos[1] as { method?: string } | undefined)?.method === 'PATCH',
+    );
+
+    return JSON.parse(
+        String((chamada?.[1] as { body?: string } | undefined)?.body ?? '{}'),
+    );
+};
+
 const montar = () =>
     montarEcra(
         <AuthProvider>
@@ -72,6 +93,109 @@ const montar = () =>
 
 afterEach(() => {
     vi.unstubAllGlobals();
+});
+
+/**
+ * O estado online aparece no perfil e é por ele que o diretório filtra.
+ * Sem estas definições alcançáveis, dizia sempre o mesmo e ninguém o
+ * podia corrigir — o filtro "só online" mostrava servidores offline e
+ * escondia os que estavam de pé.
+ */
+describe('as definições de um servidor', () => {
+    it('não aparecem a quem não gere o servidor', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+        );
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText('Vice City RP')).toBeDefined();
+        });
+
+        expect(screen.queryByLabelText(t.servidores.estaOnline)).toBeNull();
+    });
+
+    it('aparecem a quem gere, com o estado atual', async () => {
+        vi.stubGlobal('fetch', servidor({ requests: json(200, []) }));
+
+        montar();
+
+        const caixa = (await screen.findByLabelText(
+            t.servidores.estaOnline,
+        )) as HTMLInputElement;
+
+        expect(caixa.checked).toBe(true);
+    });
+
+    it('deixa marcar o servidor como offline', async () => {
+        const fetchMock = servidor({ requests: json(200, []) });
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        await userEvent.click(
+            await screen.findByLabelText(t.servidores.estaOnline),
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: t.comum.guardar }),
+        );
+
+        await waitFor(() => {
+            expect(corpoDoPatch(fetchMock)).toMatchObject({ isOnline: false });
+        });
+    });
+
+    /**
+     * A região vem vazia em muitos servidores, e vazia tem de significar
+     * "sem região" — não uma cadeia vazia que a API recusaria.
+     */
+    it('manda a região vazia como null', async () => {
+        const fetchMock = servidor({ requests: json(200, []) });
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        await userEvent.clear(await screen.findByLabelText(t.servidores.regiao));
+        await userEvent.click(
+            screen.getByRole('button', { name: t.comum.guardar }),
+        );
+
+        await waitFor(() => {
+            expect(corpoDoPatch(fetchMock)).toMatchObject({ region: null });
+        });
+    });
+
+    /**
+     * O 409 mais provável neste formulário é o nome já existir. A
+     * mensagem da API vem numa língua só; quem lê noutra tem de receber
+     * a sua.
+     */
+    it('diz na língua de quem lê que o nome já existe', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                patch: json(409, {
+                    code: 'SERVER_NAME_TAKEN',
+                    message: 'Já existe um servidor com este nome.',
+                }),
+            }),
+        );
+
+        montar();
+
+        const nome = await screen.findByLabelText(t.servidores.nome);
+
+        await userEvent.clear(nome);
+        await userEvent.type(nome, 'Outro Servidor');
+        await userEvent.click(
+            screen.getByRole('button', { name: t.comum.guardar }),
+        );
+
+        expect(await screen.findByText(t.servidores.nomeJaExiste)).toBeDefined();
+    });
 });
 
 /**

@@ -7,6 +7,7 @@ import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
+import { CrewSettings } from '../components/crew-settings.js';
 import {
     acceptJoinRequest,
     getCrew,
@@ -304,6 +305,21 @@ export const CrewPage = () => {
                     ))}
                 </ul>
             </section>
+
+            {/*
+              As definições aparecem a quem gere a crew. Existiam na API
+              desde o princípio sem por onde lá chegar: um nome mal
+              escrito ficava mal escrito, e o nome é único, por isso nem
+              criar outra crew resolvia.
+            */}
+            {giroCandidaturas ? (
+                <CrewSettings
+                    crew={perfil}
+                    aoGuardar={() => {
+                        crew.reload();
+                    }}
+                />
+            ) : null}
 
             {/*
               A personalização aparece a quem gere a crew, com plano ou

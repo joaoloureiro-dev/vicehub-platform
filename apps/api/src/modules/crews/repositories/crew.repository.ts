@@ -46,11 +46,23 @@ export class CrewRepository {
         });
     }
 
-    findByNameOrTag(name: string, tag: string) {
+    /**
+     * A crew que já ocupa este nome ou esta tag, se houver.
+     *
+     * `excluirCrewId` serve as alterações: aí a pergunta não é "alguém
+     * tem este nome?" — é "alguém *além desta crew* tem este nome?".
+     * Sem isso, guardar um formulário sem tocar no nome era recusado
+     * pela própria crew, porque um formulário envia sempre todos os
+     * campos.
+     */
+    findByNameOrTag(name: string, tag: string, excluirCrewId?: string) {
         return this.database.crew.findFirst({
             where: {
                 is_deleted: false,
                 OR: [{ name }, { tag }],
+                ...(excluirCrewId === undefined
+                    ? {}
+                    : { id: { not: excluirCrewId } }),
             },
             select: { name: true, tag: true },
         });

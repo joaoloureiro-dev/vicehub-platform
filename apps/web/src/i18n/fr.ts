@@ -167,6 +167,9 @@ export const fr = (p: Tools): Messages => ({
         naoCarregouMinhas: 'Tes crews n’ont pas pu être chargées.',
         procuraUma: 'Cherches-en une',
         ouCriaTua: 'ou crée la tienne',
+        definicoes: 'Réglages de la crew',
+        definicoesGuardadas: 'Réglages de la crew enregistrés.',
+        nomeJaExiste: 'Une crew porte déjà ce nom.',
         planoAtivo:
             'L’offre de la crew est active. La bannière et la couleur apparaissent sur sa page publique.',
         precisaDePlano:
@@ -206,6 +209,12 @@ export const fr = (p: Tools): Messages => ({
         naoFoiPossivelRegistar: 'Le serveur n’a pas pu être enregistré.',
         naoEncontrado: 'Nous n’avons pas trouvé ce serveur.',
         sair: 'Quitter le serveur',
+        definicoes: 'Réglages du serveur',
+        definicoesGuardadas: 'Réglages du serveur enregistrés.',
+        nomeJaExiste: 'Un serveur porte déjà ce nom.',
+        nome: 'Nom',
+        descricao: 'Description',
+        estaOnline: 'Le serveur est en ligne en ce moment',
         planoAtivo:
             'L’offre du serveur est active. La bannière et la couleur apparaissent sur sa page publique.',
         precisaDePlano:
