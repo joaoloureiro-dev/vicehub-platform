@@ -111,6 +111,44 @@ describe('CrewService', () => {
         });
     });
 
+    describe('alteração da crew', () => {
+        /**
+         * A pergunta que se faz à base de dados não é "alguém tem este
+         * nome?" — é "alguém *além desta crew* tem este nome?". Se
+         * voltar a ser a primeira, guardar um formulário sem lhe tocar
+         * no nome passa a ser recusado pela própria crew.
+         */
+        it('pergunta pelo nome excluindo a própria crew', async () => {
+            await service.updateCrew('crew-1', { name: 'Vice Kings' });
+
+            expect(repository.findByNameOrTag).toHaveBeenCalledWith(
+                'Vice Kings',
+                '',
+                'crew-1',
+            );
+        });
+
+        it('recusa um nome que outra crew já ocupa', async () => {
+            repository.findByNameOrTag.mockResolvedValue({
+                name: 'Outra',
+                tag: 'OU',
+            });
+
+            await expectCrewError(
+                service.updateCrew('crew-1', { name: 'Outra' }),
+                'CREW_NAME_TAKEN',
+            );
+
+            expect(repository.updateCrew).not.toHaveBeenCalled();
+        });
+
+        it('não verifica o nome quando ele não é alterado', async () => {
+            await service.updateCrew('crew-1', { description: 'só isto' });
+
+            expect(repository.findByNameOrTag).not.toHaveBeenCalled();
+        });
+    });
+
     describe('pedido de entrada', () => {
         it('cria pedido pendente', async () => {
             await service.requestToJoin('crew-1', 'user-2');

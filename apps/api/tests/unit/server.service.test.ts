@@ -141,6 +141,21 @@ describe('ServerService', () => {
     });
 
     describe('alteração do servidor', () => {
+        /**
+         * A pergunta que se faz à base de dados não é "alguém tem este
+         * nome?" — é "alguém *além deste servidor* tem este nome?". Se
+         * voltar a ser a primeira, guardar um formulário sem lhe tocar
+         * no nome passa a ser recusado pelo próprio servidor.
+         */
+        it('pergunta pelo nome excluindo o próprio servidor', async () => {
+            await service.updateServer('server-1', { name: 'Vice City RP' });
+
+            expect(repository.findByName).toHaveBeenCalledWith(
+                'Vice City RP',
+                'server-1',
+            );
+        });
+
         it('recusa um nome já usado por outro servidor', async () => {
             repository.findByName.mockResolvedValue({ name: 'Outro' });
 

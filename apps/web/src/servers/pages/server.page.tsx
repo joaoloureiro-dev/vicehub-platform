@@ -7,6 +7,7 @@ import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
+import { ServerSettings } from '../components/server-settings.js';
 import {
     acceptServerJoinRequest,
     getServer,
@@ -276,6 +277,20 @@ export const ServerPage = () => {
                     ))}
                 </ul>
             </section>
+
+            {/*
+              O estado online aparece no perfil e é por ele que o
+              diretório filtra. Sem estas definições alcançáveis, dizia
+              sempre o mesmo e ninguém o podia corrigir.
+            */}
+            {giroCandidaturas ? (
+                <ServerSettings
+                    servidor={perfil}
+                    aoGuardar={() => {
+                        servidor.reload();
+                    }}
+                />
+            ) : null}
 
             {/*
               O mesmo que na crew, e pela mesma razão: a personalização

@@ -87,12 +87,20 @@ export class CrewService {
         await this.requireCrew(crewId);
 
         if (input.name !== undefined) {
+            /**
+             * A própria crew não conta como conflito consigo mesma.
+             *
+             * A tag vai vazia porque aqui não se altera tags; o que
+             * interessa é só o nome, e a exclusão da própria crew é
+             * feita na consulta.
+             */
             const existente = await this.crewRepository.findByNameOrTag(
                 input.name,
                 '',
+                crewId,
             );
 
-            if (existente && existente.name === input.name) {
+            if (existente) {
                 throw new CrewError(
                     'CREW_NAME_TAKEN',
                     'Já existe uma crew com este nome.',
