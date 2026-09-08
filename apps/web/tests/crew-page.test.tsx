@@ -22,9 +22,24 @@ const perfil = {
     createdAt: '2026-01-01T00:00:00.000Z',
 };
 
+/**
+ * A lista de membros diz o cargo, e o cargo decide o que aparece.
+ *
+ * São duas listas porque gerir membros e mandar na crew são coisas
+ * diferentes: um oficial tem `crew:manage_members` e não tem
+ * `crew:manage`. Uma lista só, com u1 sempre líder, dizia ao ecrã que
+ * quem está a ver manda na crew mesmo nos casos escritos para provar o
+ * contrário.
+ */
 const membros = [
     { userId: 'u1', username: 'lider', avatarUrl: null, role: 'crew_leader', joinedAt: '2026-01-01T00:00:00.000Z' },
     { userId: 'u2', username: 'outro', avatarUrl: null, role: 'crew_member', joinedAt: '2026-01-02T00:00:00.000Z' },
+];
+
+/** A mesma crew vista por quem lá está sem mandar nela. */
+const membrosSemMandar = [
+    { userId: 'u2', username: 'lider', avatarUrl: null, role: 'crew_leader', joinedAt: '2026-01-01T00:00:00.000Z' },
+    { userId: 'u1', username: 'outro', avatarUrl: null, role: 'crew_member', joinedAt: '2026-01-02T00:00:00.000Z' },
 ];
 
 const json = (status: number, body: unknown): Response =>
@@ -76,8 +91,20 @@ const servidor = (opcoes: {
             return Promise.resolve(opcoes.requests);
         }
 
+        /**
+         * Quem lidera não pode levar 403 nas candidaturas — tem sempre
+         * `crew:manage_members`. Fazer as duas respostas sair da mesma
+         * opção impede um cenário impossível: um líder a quem a API
+         * recusa a lista dos candidatos.
+         */
         if (endereco.endsWith('/members')) {
-            return Promise.resolve(json(200, membros));
+            return Promise.resolve(
+                json(200, opcoes.requests.status === 200 ? membros : membrosSemMandar),
+            );
+        }
+
+        if (endereco.includes('/affiliation')) {
+            return Promise.resolve(json(200, { server: null, pending: null }));
         }
 
         if (endereco.endsWith('/me/memberships')) {

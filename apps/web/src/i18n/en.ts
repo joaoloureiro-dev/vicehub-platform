@@ -431,6 +431,24 @@ export const en = (p: Tools) => ({
             }),
     },
 
+    filiacao: {
+        titulo: 'Server',
+        jogaEm: 'This crew plays on',
+        semServidor: 'This crew does not play on any server yet.',
+        procurar: 'Search for a server',
+        semResultados: 'No server matches that.',
+        pedir: 'Ask to play here',
+        pedidoEnviado: 'Waiting for an answer from',
+        desistir: 'Withdraw the request',
+        sair: 'Leave the server',
+        crewsDoServidor: 'Crews',
+        semCrews: 'No crew plays on this server yet.',
+        pedidos: 'Crews asking to play here',
+        aceitar: 'Accept',
+        recusar: 'Reject',
+        remover: 'Remove',
+    },
+
     estadosEvento: {
         scheduled: 'Scheduled',
         ongoing: 'Under way',

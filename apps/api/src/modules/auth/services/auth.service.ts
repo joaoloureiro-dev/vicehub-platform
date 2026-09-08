@@ -2,7 +2,7 @@ import { DEFAULT_USER_ROLE, ROLES } from '@vicehub/database';
 
 import { env } from '../../../config/env.js';
 import { AuthError } from '../errors/auth.errors.js';
-import { getUniqueConstraintFields } from '../repositories/prisma-errors.js';
+import { getUniqueConstraintFields } from '../../../shared/prisma-errors.js';
 import type { AuthRepository } from '../repositories/auth.repository.js';
 import type {
     AccessTokenPayload,

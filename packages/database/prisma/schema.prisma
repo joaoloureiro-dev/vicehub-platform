@@ -271,6 +271,10 @@ model Crew {
   userRoles     UserRole[]
   subscriptions Subscription[]
   events        Event[]
+
+  /// O servidor onde a crew joga, quando existe. É uma lista porque o
+  /// histórico fica: pedidos recusados e saídas continuam gravados.
+  affiliations Affiliation[]
 }
 
 model Server {
@@ -308,6 +312,50 @@ model Server {
   userRoles     UserRole[]
   subscriptions Subscription[]
   events        Event[]
+
+  /// As crews que jogam neste servidor, e as que o pediram.
+  affiliations Affiliation[]
+}
+
+/// A ligação entre uma crew e o servidor onde ela joga.
+///
+/// Nasce como pedido e só passa a ativa quando alguém que manda no
+/// servidor a aceita: uma crew a declarar sozinha onde joga não pode
+/// valer nada, porque é daqui que vai sair o direito ao plano do
+/// servidor. As duas pontas consentem.
+///
+/// Duas regras vivem em índices parciais, escritos à mão na migração
+/// porque o Prisma não os sabe exprimir: uma crew tem no máximo uma
+/// filiação ativa, e no máximo um pedido aberto a cada servidor.
+model Affiliation {
+  id String @id @default(uuid())
+
+  crewId   String
+  serverId String
+
+  status MembershipStatus @default(pending)
+
+  /// Quem pediu e quem respondeu. Sem isto, uma crew posta fora não
+  /// tinha como distinguir isso de ter saído por vontade própria.
+  requested_by String
+  responded_at DateTime?
+  responded_by String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  crew   Crew   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId, status])
+  @@index([crewId, status])
 }
 
 model Membership {

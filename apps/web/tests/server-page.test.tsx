@@ -19,6 +19,22 @@ const perfil = {
     createdAt: '2026-01-01T00:00:00.000Z',
 };
 
+/**
+ * O cargo decide o que aparece: um moderador tem
+ * `server:manage_members` e não tem `server:manage`, e por isso não vê
+ * as definições nem responde a pedidos de filiação. As duas listas
+ * existem para que o cenário "não mando nisto" seja coerente com a
+ * resposta às candidaturas.
+ */
+const membros = [
+    { userId: 'u1', username: 'dono', avatarUrl: null, role: 'server_owner', joinedAt: '2026-01-01T00:00:00.000Z' },
+];
+
+const membrosSemMandar = [
+    { userId: 'u2', username: 'dono', avatarUrl: null, role: 'server_owner', joinedAt: '2026-01-01T00:00:00.000Z' },
+    { userId: 'u1', username: 'visita', avatarUrl: null, role: 'server_member', joinedAt: '2026-01-02T00:00:00.000Z' },
+];
+
 const json = (status: number, body: unknown): Response =>
     ({
         ok: status >= 200 && status < 300,
@@ -58,6 +74,12 @@ const servidor = (opcoes: {
         }
 
         if (endereco.endsWith('/members')) {
+            return Promise.resolve(
+                json(200, opcoes.requests.status === 200 ? membros : membrosSemMandar),
+            );
+        }
+
+        if (endereco.includes('/affiliations')) {
             return Promise.resolve(json(200, []));
         }
 

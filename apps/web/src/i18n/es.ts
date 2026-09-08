@@ -427,6 +427,24 @@ export const es = (p: Tools): Messages => ({
             }),
     },
 
+    filiacao: {
+        titulo: 'Servidor',
+        jogaEm: 'Esta crew juega en',
+        semServidor: 'Esta crew todavía no juega en ningún servidor.',
+        procurar: 'Buscar un servidor',
+        semResultados: 'Ningún servidor coincide con eso.',
+        pedir: 'Pedir jugar aquí',
+        pedidoEnviado: 'Esperando respuesta de',
+        desistir: 'Retirar la solicitud',
+        sair: 'Salir del servidor',
+        crewsDoServidor: 'Crews',
+        semCrews: 'Todavía no hay crews jugando en este servidor.',
+        pedidos: 'Crews que han pedido jugar aquí',
+        aceitar: 'Aceptar',
+        recusar: 'Rechazar',
+        remover: 'Quitar',
+    },
+
     estadosEvento: {
         scheduled: 'Programado',
         ongoing: 'En curso',

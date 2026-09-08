@@ -7,6 +7,8 @@ import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
+import { ServerCrews } from '../../affiliations/components/server-crews.js';
+import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ServerSettings } from '../components/server-settings.js';
 import {
     acceptServerJoinRequest,
@@ -62,6 +64,13 @@ export const ServerPage = () => {
     const souMembro = minhaAdesao?.status === 'active';
     const souCandidato = minhaAdesao?.status === 'pending';
     const giroCandidaturas = candidaturas.data !== null;
+
+    /**
+     * Pela mesma razão da crew: um moderador tem
+     * `server:manage_members` e não tem `server:manage`. As definições e
+     * a resposta aos pedidos de filiação exigem a segunda.
+     */
+    const souDono = mandaNisto(membros.data, user?.id, 'server_owner');
 
     const agir = async (acao: () => Promise<void>) => {
         setErroAcao(null);
@@ -283,7 +292,7 @@ export const ServerPage = () => {
               diretório filtra. Sem estas definições alcançáveis, dizia
               sempre o mesmo e ninguém o podia corrigir.
             */}
-            {giroCandidaturas ? (
+            {souDono ? (
                 <ServerSettings
                     servidor={perfil}
                     aoGuardar={() => {
@@ -293,11 +302,18 @@ export const ServerPage = () => {
             ) : null}
 
             {/*
+              As crews que jogam aqui são públicas; os pedidos por
+              responder são de quem manda no servidor, e a API já os
+              recusa a mais alguém.
+            */}
+            <ServerCrews serverId={perfil.id} podeGerir={souDono} />
+
+            {/*
               O mesmo que na crew, e pela mesma razão: a personalização
               aparece a quem gere o servidor com plano ou sem ele, para
               que quem venha a tê-lo saiba que ganhou alguma coisa.
             */}
-            {giroCandidaturas ? (
+            {souDono ? (
                 <section
                     className={`grupo premium${perfil.isPremium ? ' ativo' : ''}`}
                 >

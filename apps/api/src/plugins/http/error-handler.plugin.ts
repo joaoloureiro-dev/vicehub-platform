@@ -9,6 +9,10 @@ import {
 import { AuthorizationError } from '../../modules/authorization/errors/authorization.errors.js';
 import { UserError } from '../../modules/users/errors/user.errors.js';
 import {
+    AffiliationError,
+    type AffiliationErrorCode,
+} from '../../modules/affiliations/errors/affiliation.errors.js';
+import {
     CrewError,
     type CrewErrorCode,
 } from '../../modules/crews/errors/crew.errors.js';
@@ -96,6 +100,22 @@ const crewErrorStatusCodes: Record<CrewErrorCode, number> = {
     NOT_A_MEMBER: 404,
     MEMBERSHIP_NOT_PENDING: 409,
     CANNOT_MANAGE_SELF: 409,
+};
+
+/**
+ * Estatuto HTTP de cada erro das filiações.
+ */
+const affiliationErrorStatusCodes: Record<AffiliationErrorCode, number> = {
+    AFFILIATION_NOT_FOUND: 404,
+    CREW_NOT_FOUND: 404,
+    SERVER_NOT_FOUND: 404,
+    /**
+     * 409 e não 400: o pedido está bem escrito e quem o faz tem
+     * autorização. O que impede é o estado em que a crew está.
+     */
+    CREW_ALREADY_AFFILIATED: 409,
+    AFFILIATION_ALREADY_REQUESTED: 409,
+    AFFILIATION_NOT_PENDING: 409,
 };
 
 const serverErrorStatusCodes: Record<ServerErrorCode, number> = {
@@ -321,6 +341,23 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             request.log.warn(
                 { err: error, code: error.code },
                 'Pedido recusado pelo módulo de crews.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: error.code,
+                error: httpErrorNames[statusCode] ?? 'Error',
+                message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof AffiliationError) {
+            const statusCode = affiliationErrorStatusCodes[error.code];
+
+            request.log.warn(
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo das filiações.',
             );
 
             reply.status(statusCode).send({
