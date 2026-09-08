@@ -7,6 +7,8 @@ import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
+import { CrewAffiliation } from '../../affiliations/components/crew-affiliation.js';
+import { mandaNisto } from '../../lib/manda-nisto.js';
 import { CrewSettings } from '../components/crew-settings.js';
 import {
     acceptJoinRequest,
@@ -69,6 +71,15 @@ export const CrewPage = () => {
     const souMembro = minhaAdesao?.status === 'active';
     const souCandidato = minhaAdesao?.status === 'pending';
     const giroCandidaturas = candidaturas.data !== null;
+
+    /**
+     * Gerir membros e mandar na crew são coisas diferentes: um oficial
+     * tem `crew:manage_members` e não tem `crew:manage`. As definições e
+     * a filiação exigem a segunda, e mostrá-las a um oficial era
+     * mostrar-lhe botões que respondem 403 ao serem carregados. O cargo
+     * vem da lista de membros, que é a resposta da própria API.
+     */
+    const souLider = mandaNisto(membros.data, user?.id, 'crew_leader');
 
     const agir = async (acao: () => Promise<void>) => {
         setErroAcao(null);
@@ -312,7 +323,7 @@ export const CrewPage = () => {
               escrito ficava mal escrito, e o nome é único, por isso nem
               criar outra crew resolvia.
             */}
-            {giroCandidaturas ? (
+            {souLider ? (
                 <CrewSettings
                     crew={perfil}
                     aoGuardar={() => {
@@ -322,12 +333,20 @@ export const CrewPage = () => {
             ) : null}
 
             {/*
+              Onde a crew joga é público; pedir, desistir e sair é de
+              quem manda nela. A ligação a um servidor não é uma
+              declaração da crew: quem manda no servidor tem de a
+              aceitar.
+            */}
+            <CrewAffiliation crewId={perfil.id} podeGerir={souLider} />
+
+            {/*
               A personalização aparece a quem gere a crew, com plano ou
               sem ele. Escondê-la sem plano faria com que quem viesse a
               tê-lo não soubesse que ganhou alguma coisa — e quem não o
               tem não faz ideia do que está a perder.
             */}
-            {giroCandidaturas ? (
+            {souLider ? (
                 <section
                     className={`grupo premium${perfil.isPremium ? ' ativo' : ''}`}
                 >
