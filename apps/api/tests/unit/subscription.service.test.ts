@@ -8,6 +8,9 @@ import type { SubscriptionRepository } from '../../src/modules/subscriptions/rep
 describe('SubscriptionService', () => {
     let repository: {
         findEntitlingSubscription: ReturnType<typeof vi.fn>;
+        findServerSubscriptionForCrew: ReturnType<typeof vi.fn>;
+        findCrewIdsEntitledByServer: ReturnType<typeof vi.fn>;
+        findEntitledOwnerIds: ReturnType<typeof vi.fn>;
         listByOwner: ReturnType<typeof vi.fn>;
         ownerExists: ReturnType<typeof vi.fn>;
         findLatestPeriodEnd: ReturnType<typeof vi.fn>;
@@ -33,6 +36,9 @@ describe('SubscriptionService', () => {
     beforeEach(() => {
         repository = {
             findEntitlingSubscription: vi.fn().mockResolvedValue(null),
+            findServerSubscriptionForCrew: vi.fn().mockResolvedValue(null),
+            findCrewIdsEntitledByServer: vi.fn().mockResolvedValue([]),
+            findEntitledOwnerIds: vi.fn().mockResolvedValue([]),
             listByOwner: vi.fn().mockResolvedValue([]),
             ownerExists: vi.fn().mockResolvedValue(true),
             findLatestPeriodEnd: vi.fn().mockResolvedValue(null),
@@ -194,6 +200,7 @@ describe('SubscriptionService', () => {
                 isPremium: true,
                 isLifetime: false,
                 activeUntil: periodEnd,
+                via: null,
             });
         });
 
@@ -214,6 +221,7 @@ describe('SubscriptionService', () => {
                 isPremium: true,
                 isLifetime: true,
                 activeUntil: null,
+                via: null,
             });
         });
 
@@ -230,6 +238,95 @@ describe('SubscriptionService', () => {
 
             expect(entitlement.isPremium).toBe(false);
             expect(entitlement.activeUntil).toBeNull();
+        });
+
+        /**
+         * O plano de um servidor cobre as crews que lá jogam. É a razão
+         * de ser da plataforma para um servidor: paga uma vez, e as
+         * crews que o servidor aceitou ficam com o que o plano dá.
+         */
+        it('uma crew sem plano fica coberta pelo servidor onde joga', async () => {
+            repository.findServerSubscriptionForCrew.mockResolvedValue({
+                plan: 'premium',
+                current_period_end: periodEnd,
+                serverId: 'server-9',
+                server: { name: 'Vice City RP' },
+            });
+
+            await expect(
+                service.getEntitlement({ crewId: 'crew-1' }),
+            ).resolves.toEqual({
+                owner: { crewId: 'crew-1' },
+                isPremium: true,
+                isLifetime: false,
+                activeUntil: periodEnd,
+                via: { kind: 'server', id: 'server-9', name: 'Vice City RP' },
+            });
+        });
+
+        /**
+         * Um direito derivado acaba de duas maneiras: o plano do servidor
+         * acabar, ou a crew sair de lá. Chamar-lhe vitalício prometia
+         * uma coisa que a crew não tem, e alguém acabaria por decidir
+         * não o retirar por ser "vitalício".
+         */
+        it('o direito vindo do servidor nunca é vitalício, mesmo que o plano dele não termine', async () => {
+            repository.findServerSubscriptionForCrew.mockResolvedValue({
+                plan: 'lifetime',
+                current_period_end: null,
+                serverId: 'server-9',
+                server: { name: 'Vice City RP' },
+            });
+
+            const direito = await service.getEntitlement({ crewId: 'crew-1' });
+
+            expect(direito.isPremium).toBe(true);
+            expect(direito.isLifetime).toBe(false);
+            expect(direito.via).toEqual({
+                kind: 'server',
+                id: 'server-9',
+                name: 'Vice City RP',
+            });
+        });
+
+        /**
+         * O plano próprio ganha. Descrever o direito de uma crew que
+         * paga o seu como vindo de outro sítio fá-la-ia acreditar que o
+         * perde ao sair do servidor.
+         */
+        it('o plano da própria crew ganha ao do servidor', async () => {
+            repository.findEntitlingSubscription.mockResolvedValue({
+                plan: 'lifetime',
+                status: SubscriptionStatus.active,
+                current_period_end: null,
+            });
+            repository.findServerSubscriptionForCrew.mockResolvedValue({
+                plan: 'premium',
+                current_period_end: periodEnd,
+                serverId: 'server-9',
+                server: { name: 'Vice City RP' },
+            });
+
+            const direito = await service.getEntitlement({ crewId: 'crew-1' });
+
+            expect(direito.isLifetime).toBe(true);
+            expect(direito.via).toBeNull();
+            expect(
+                repository.findServerSubscriptionForCrew,
+            ).not.toHaveBeenCalled();
+        });
+
+        /**
+         * A cascata é das crews. Um servidor não tem por cima de si nada
+         * de onde herdar um plano, e um utilizador também não.
+         */
+        it('não procura servidor nenhum para um utilizador ou um servidor', async () => {
+            await service.getEntitlement({ userId: 'user-1' });
+            await service.getEntitlement({ serverId: 'server-1' });
+
+            expect(
+                repository.findServerSubscriptionForCrew,
+            ).not.toHaveBeenCalled();
         });
 
         it('funciona para crews e servidores', async () => {
@@ -284,6 +381,47 @@ describe('SubscriptionService', () => {
         });
     });
 
+    describe('apuramento em bloco', () => {
+        /**
+         * O diretório e o perfil respondem à mesma pergunta e têm de
+         * responder o mesmo. Sem a cascata aqui, uma crew coberta pelo
+         * servidor aparecia sem plano na lista e com plano na própria
+         * página.
+         */
+        it('inclui as crews cobertas pelo servidor onde jogam', async () => {
+            repository.findCrewIdsEntitledByServer.mockResolvedValue(['crew-2']);
+
+            const comPlano = await service.getEntitledIds('crew', [
+                'crew-1',
+                'crew-2',
+            ]);
+
+            expect([...comPlano]).toEqual(['crew-2']);
+        });
+
+        it('junta as que pagam o seu às que o servidor cobre', async () => {
+            repository.findEntitledOwnerIds.mockResolvedValue([
+                { crewId: 'crew-1', serverId: null },
+            ]);
+            repository.findCrewIdsEntitledByServer.mockResolvedValue(['crew-2']);
+
+            const comPlano = await service.getEntitledIds('crew', [
+                'crew-1',
+                'crew-2',
+            ]);
+
+            expect([...comPlano].sort()).toEqual(['crew-1', 'crew-2']);
+        });
+
+        it('não procura filiações quando os titulares são servidores', async () => {
+            await service.getEntitledIds('server', ['server-1']);
+
+            expect(
+                repository.findCrewIdsEntitledByServer,
+            ).not.toHaveBeenCalled();
+        });
+    });
+
     describe('assertPremium', () => {
         it('deixa passar quem tem plano ativo', () => {
             expect(() =>
@@ -292,6 +430,7 @@ describe('SubscriptionService', () => {
                     isPremium: true,
                     isLifetime: false,
                     activeUntil: periodEnd,
+                    via: null,
                 }),
             ).not.toThrow();
         });
@@ -308,6 +447,7 @@ describe('SubscriptionService', () => {
                     isPremium: true,
                     isLifetime: true,
                     activeUntil: null,
+                    via: null,
                 }),
             ).not.toThrow();
         });
@@ -319,6 +459,7 @@ describe('SubscriptionService', () => {
                     isPremium: false,
                     isLifetime: false,
                     activeUntil: null,
+                    via: null,
                 });
                 expect.unreachable('devia ter lançado');
             } catch (error: unknown) {

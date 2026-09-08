@@ -17,6 +17,7 @@ const perfil = {
     influence: 12,
     prestige: 3,
     isPremium: false,
+    premiumVia: null,
     appearance: { bannerUrl: null, accentColor: null },
     memberCount: 2,
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -59,6 +60,8 @@ const servidor = (opcoes: {
     memberships?: unknown;
     premium?: boolean;
     patch?: Response;
+    /** De onde vem o plano, quando não é da própria crew. */
+    via?: { kind: 'server'; id: string; name: string };
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -112,7 +115,11 @@ const servidor = (opcoes: {
         }
 
         return Promise.resolve(
-            json(200, { ...perfil, isPremium: opcoes.premium === true }),
+            json(200, {
+                ...perfil,
+                isPremium: opcoes.premium === true,
+                premiumVia: opcoes.via ?? null,
+            }),
         );
     });
 
@@ -272,6 +279,48 @@ describe('o ecrã de uma crew', () => {
             );
 
             expect(await screen.findByText(t.crews.nomeJaExiste)).toBeDefined();
+        });
+    });
+
+    describe('de onde vem o plano', () => {
+        /**
+         * Uma crew coberta pelo servidor onde joga tem de saber de quem
+         * é o plano: sem isso, o dia em que sair de lá perde a
+         * personalização sem explicação nenhuma.
+         */
+        it('diz que o plano vem do servidor onde a crew joga', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(200, []),
+                    premium: true,
+                    via: {
+                        kind: 'server',
+                        id: 'server-1',
+                        name: 'Vice City RP',
+                    },
+                }),
+            );
+
+            montar();
+
+            expect(
+                await screen.findByText(t.crews.planoVemDoServidor, {
+                    exact: false,
+                }),
+            ).toBeDefined();
+            expect(screen.queryByText(t.crews.planoAtivo)).toBeNull();
+        });
+
+        it('com plano próprio, não fala de servidor nenhum', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(200, []), premium: true }),
+            );
+
+            montar();
+
+            expect(await screen.findByText(t.crews.planoAtivo)).toBeDefined();
         });
     });
 

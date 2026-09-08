@@ -24,6 +24,16 @@ export interface CrewProfile {
     influence: number;
     prestige: number;
     isPremium: boolean;
+    /**
+     * De onde vem o plano, quando não é da própria crew.
+     *
+     * O plano de um servidor cobre as crews que lá jogam, e sem isto o
+     * perfil dizia "tem plano" sem dizer de quem — e ao sair do servidor
+     * a crew perdia-o sem perceber porquê. Não revela nada de novo: que
+     * a crew joga naquele servidor já é público, e que o servidor tem
+     * plano também.
+     */
+    premiumVia: { kind: 'server'; id: string; name: string } | null;
     /** Personalização, vazia para quem não tem plano ativo. */
     appearance: Appearance;
     memberCount: number;

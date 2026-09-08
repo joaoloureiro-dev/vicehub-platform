@@ -168,6 +168,7 @@ export const en = (p: Tools) => ({
         definicoes: 'Crew settings',
         definicoesGuardadas: 'Crew settings saved.',
         nomeJaExiste: 'A crew with this name already exists.',
+        planoVemDoServidor: 'The plan covering this crew comes from',
         planoAtivo:
             "The crew's plan is active. The banner and colour show on its public page.",
         precisaDePlano:
@@ -270,6 +271,8 @@ export const en = (p: Tools) => ({
         tituloComunidade: (nome: string) => `Premium for ${nome}`,
         subtituloCrew:
             'The plan belongs to the crew, not to whoever pays for it. Anyone who runs the crew can set its banner and colour while it is active.',
+        crewCobertaPeloServidor: (servidor: string) =>
+            `This crew is already covered by ${servidor}'s plan, the server it plays on. It keeps it while it plays there.`,
         crewTemPlano: 'This crew already has an active plan.',
         irParaCrew: 'Go to the crew',
         subtituloServidor:

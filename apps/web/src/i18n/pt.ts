@@ -169,6 +169,7 @@ export const pt = (p: Tools): Messages => ({
         definicoes: 'Definições da crew',
         definicoesGuardadas: 'Definições da crew guardadas.',
         nomeJaExiste: 'Já existe uma crew com este nome.',
+        planoVemDoServidor: 'O plano que cobre esta crew vem do servidor',
         planoAtivo:
             'O plano da crew está ativo. O banner e a cor aparecem na página pública dela.',
         precisaDePlano:
@@ -272,6 +273,8 @@ export const pt = (p: Tools): Messages => ({
         tituloComunidade: (nome: string) => `Premium para ${nome}`,
         subtituloCrew:
             'O plano é da crew, e não de quem o paga. Enquanto estiver ativo, quem gere a crew pode definir o banner e a cor dela.',
+        crewCobertaPeloServidor: (servidor: string) =>
+            `Esta crew já está coberta pelo plano do ${servidor}, o servidor onde joga. Fica com ele enquanto lá jogar.`,
         crewTemPlano: 'Esta crew já tem um plano ativo.',
         irParaCrew: 'Ir para a crew',
         subtituloServidor:

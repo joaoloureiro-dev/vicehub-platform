@@ -51,6 +51,7 @@ const CREW = {
     influence: 0,
     prestige: 0,
     isPremium: false,
+    premiumVia: null,
     appearance: { bannerUrl: null, accentColor: null },
     memberCount: 3,
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -476,5 +477,51 @@ describe('comprar para um servidor', () => {
 
         expect(await screen.findByText(t.premium.servidorTemPlano)).toBeTruthy();
         expect(screen.queryByText(t.premium.comprar)).toBeNull();
+    });
+    /**
+     * Uma crew coberta pelo servidor onde joga já tem o que este ecrã
+     * vende. Dizer-lhe apenas "já tens plano" escondia de quem é o plano
+     * — e o dia em que a crew saísse do servidor perdia-o sem explicação.
+     */
+    it('diz a uma crew coberta pelo servidor de onde lhe vem o plano', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                crew: {
+                    ...CREW,
+                    isPremium: true,
+                    premiumVia: {
+                        kind: 'server',
+                        id: 'server-1',
+                        name: 'Vice City RP',
+                    },
+                },
+            }),
+        );
+
+        montar('/premium?crew=crew-1');
+
+        expect(
+            await screen.findByText(
+                t.premium.crewCobertaPeloServidor('Vice City RP'),
+            ),
+        ).toBeTruthy();
+        expect(screen.queryByText(t.premium.comprar)).toBeNull();
+        expect(screen.queryByText(t.premium.crewTemPlano)).toBeNull();
+    });
+
+    /**
+     * O plano próprio não vem de lado nenhum, e a frase tem de o dizer:
+     * uma crew que paga o seu não o perde ao sair de um servidor.
+     */
+    it('a uma crew com plano próprio não fala de servidor nenhum', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ crew: { ...CREW, isPremium: true, premiumVia: null } }),
+        );
+
+        montar('/premium?crew=crew-1');
+
+        expect(await screen.findByText(t.premium.crewTemPlano)).toBeTruthy();
     });
 });

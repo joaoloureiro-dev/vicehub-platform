@@ -170,6 +170,7 @@ export const fr = (p: Tools): Messages => ({
         definicoes: 'Réglages de la crew',
         definicoesGuardadas: 'Réglages de la crew enregistrés.',
         nomeJaExiste: 'Une crew porte déjà ce nom.',
+        planoVemDoServidor: 'Le plan qui couvre cette crew vient du serveur',
         planoAtivo:
             'L’offre de la crew est active. La bannière et la couleur apparaissent sur sa page publique.',
         precisaDePlano:
@@ -273,6 +274,8 @@ export const fr = (p: Tools): Messages => ({
         tituloComunidade: (nome: string) => `Premium pour ${nome}`,
         subtituloCrew:
             "L'offre appartient à la crew, pas à celui qui la paie. Tant qu'elle est active, qui gère la crew peut définir sa bannière et sa couleur.",
+        crewCobertaPeloServidor: (servidor: string) =>
+            `Cette crew est déjà couverte par le plan de ${servidor}, le serveur où elle joue. Elle le garde tant qu'elle y joue.`,
         crewTemPlano: 'Cette crew a déjà une offre active.',
         irParaCrew: 'Aller à la crew',
         subtituloServidor:

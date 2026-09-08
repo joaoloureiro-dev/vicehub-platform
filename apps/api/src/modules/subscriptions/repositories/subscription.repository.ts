@@ -1,5 +1,6 @@
 import {
     ENTITLING_SUBSCRIPTION_STATUSES,
+    MembershipStatus,
     SourceType,
     entitlingSubscriptionFilter,
     SubscriptionPlan,
@@ -59,6 +60,72 @@ export class SubscriptionRepository {
             },
             select: { crewId: true, serverId: true },
         });
+    }
+
+    /**
+     * A subscrição do servidor onde esta crew joga, se houver.
+     *
+     * É esta consulta que faz o plano de um servidor cobrir as crews
+     * dele. A filiação tem de estar **ativa**: um pedido por responder
+     * não conta, senão bastava pedir para ficar coberto — e é por isso
+     * que a filiação existe como pedido e resposta em vez de uma
+     * declaração da crew.
+     *
+     * Vai numa consulta só, e não numa que descobre o servidor seguida
+     * de outra que lhe procura o plano: entre as duas a crew podia sair,
+     * e a resposta seria um direito vindo de um servidor onde ela já não
+     * joga.
+     */
+    findServerSubscriptionForCrew(crewId: string) {
+        return this.database.subscription.findFirst({
+            where: {
+                ...entitlingSubscriptionFilter(),
+                server: {
+                    is_deleted: false,
+                    affiliations: {
+                        some: {
+                            crewId,
+                            status: MembershipStatus.active,
+                            is_deleted: false,
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                current_period_end: { sort: 'desc', nulls: 'first' },
+            },
+            select: {
+                plan: true,
+                current_period_end: true,
+                serverId: true,
+                server: { select: { name: true } },
+            },
+        });
+    }
+
+    /**
+     * Quais destas crews estão cobertas pelo plano do servidor onde
+     * jogam.
+     *
+     * O equivalente em bloco da consulta acima, e existe pela mesma
+     * razão que a `findEntitledOwnerIds`: sem ela, um diretório de vinte
+     * crews custava vinte consultas.
+     */
+    async findCrewIdsEntitledByServer(crewIds: string[]): Promise<string[]> {
+        const filiacoes = await this.database.affiliation.findMany({
+            where: {
+                crewId: { in: crewIds },
+                status: MembershipStatus.active,
+                is_deleted: false,
+                server: {
+                    is_deleted: false,
+                    subscriptions: { some: entitlingSubscriptionFilter() },
+                },
+            },
+            select: { crewId: true },
+        });
+
+        return filiacoes.map((filiacao) => filiacao.crewId);
     }
 
     /**

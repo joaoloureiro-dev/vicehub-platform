@@ -356,7 +356,26 @@ export const CrewPage = () => {
                     </div>
 
                     {perfil.isPremium ? (
-                        <p className="hint">{t.crews.planoAtivo}</p>
+                        /*
+                          Dizer só "o plano está ativo" a uma crew coberta
+                          pelo servidor onde joga escondia de quem paga o
+                          quê — e o dia em que a crew saísse de lá, a
+                          personalização desaparecia sem explicação.
+                        */
+                        <p className="hint">
+                            {perfil.premiumVia ? (
+                                <>
+                                    {t.crews.planoVemDoServidor}{' '}
+                                    <Link
+                                        to={`/servidores/${perfil.premiumVia.id}`}
+                                    >
+                                        {perfil.premiumVia.name}
+                                    </Link>
+                                </>
+                            ) : (
+                                t.crews.planoAtivo
+                            )}
+                        </p>
                     ) : (
                         <>
                             <Alert kind="bad">{t.crews.precisaDePlano}</Alert>

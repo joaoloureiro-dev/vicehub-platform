@@ -37,6 +37,12 @@ export interface CrewProfile {
     influence: number;
     prestige: number;
     isPremium: boolean;
+    /**
+     * De onde vem o plano, quando não é da própria crew: o servidor onde
+     * a crew joga cobre-a com o dele. Null quando o plano é da crew, ou
+     * quando não há plano nenhum.
+     */
+    premiumVia: { kind: 'server'; id: string; name: string } | null;
     appearance: Appearance;
     memberCount: number;
     createdAt: string;

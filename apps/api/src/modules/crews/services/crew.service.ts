@@ -567,6 +567,7 @@ export class CrewService {
             influence: crew.influence,
             prestige: crew.prestige,
             isPremium: entitlement.isPremium,
+            premiumVia: entitlement.via,
             appearance: visibleAppearance(crew, entitlement.isPremium),
             memberCount,
             createdAt: crew.created_at,
