@@ -52,7 +52,7 @@ describe('AuthService', () => {
             tokenService,
         );
 
-        repository.findRoleIdBySlug.mockResolvedValue({ id: 'role-player' });
+        repository.findDefaultRoleId.mockResolvedValue('role-player');
         repository.createSession.mockResolvedValue({ id: 'session-1' });
         repository.createRefreshToken.mockResolvedValue({ id: 'refresh-2' });
         repository.updateLastLogin.mockResolvedValue(undefined);
@@ -240,21 +240,28 @@ describe('AuthService', () => {
             );
         });
 
-        it('procura o cargo base pelo slug e escopo do catálogo', async () => {
+        /**
+         * Qual é o cargo base é uma pergunta do repositório, e é lá que
+         * o slug e o escopo do catálogo são verificados. O que ao
+         * serviço compete é criar a conta com o cargo que lhe deram, e
+         * nunca sem nenhum.
+         */
+        it('cria a conta com o cargo base que o repositório indicou', async () => {
             repository.findExistingIdentity.mockResolvedValue(null);
             repository.createLocalUser.mockResolvedValue(buildUserRow());
 
             await service.register(newAccount);
 
-            expect(repository.findRoleIdBySlug).toHaveBeenCalledWith(
-                ROLES[DEFAULT_USER_ROLE].slug,
-                ROLES[DEFAULT_USER_ROLE].scope,
+            expect(repository.createLocalUser).toHaveBeenCalledWith(
+                expect.objectContaining({ defaultRoleId: 'role-player' }),
             );
         });
 
         it('recusa criar a conta quando o cargo base não existe', async () => {
             repository.findExistingIdentity.mockResolvedValue(null);
-            repository.findRoleIdBySlug.mockResolvedValue(null);
+            repository.findDefaultRoleId.mockRejectedValue(
+                new Error('[ViceHub Auth] O cargo base não existe. Corre "npm run db:seed".'),
+            );
 
             /**
              * Sem o seed, o registo falha em vez de criar contas sem
@@ -267,7 +274,9 @@ describe('AuthService', () => {
 
         it('não gasta um hash Argon2 quando o cargo base falta', async () => {
             repository.findExistingIdentity.mockResolvedValue(null);
-            repository.findRoleIdBySlug.mockResolvedValue(null);
+            repository.findDefaultRoleId.mockRejectedValue(
+                new Error('[ViceHub Auth] O cargo base não existe. Corre "npm run db:seed".'),
+            );
 
             await service.register(newAccount).catch(() => undefined);
 

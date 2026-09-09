@@ -52,6 +52,8 @@ export const en = (p: Tools) => ({
             'ViceHub is being built in the open, starting with GTA VI. Some of it is finished, some of it is not, and the fastest way to change that is to tell us what is missing.',
     },
     auth: {
+        ouEntao: 'or',
+        entrarComDiscord: 'Continue with Discord',
         entrarTitulo: 'Sign in',
         entrarSub: 'Welcome back to ViceHub.',
         email: 'Email',

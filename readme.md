@@ -467,6 +467,56 @@ teste (`tests/integration/route-scope.test.ts`) que percorre **todas** as
 rotas da aplicação e falha se alguma perder o seu âmbito na validação,
 incluindo as que ainda não foram escritas.
 
+### Entrar com Discord
+
+| Rota | O que faz |
+|---|---|
+| `GET /api/v1/auth/providers` | diz que formas de entrar esta instalação tem |
+| `GET /api/v1/auth/discord` | manda para o Discord, com `state` num cookie |
+| `GET /api/v1/auth/discord/callback` | o regresso: abre a sessão e encaminha |
+
+```bash
+DISCORD_CLIENT_ID=...
+DISCORD_CLIENT_SECRET=...
+DISCORD_REDIRECT_URI=https://.../api/v1/auth/discord/callback
+```
+
+As três são **opcionais e andam juntas**, como as do Stripe: sem elas a
+plataforma arranca na mesma, o botão não aparece e a rota responde
+**503**. Meia configuração é recusada ao arrancar — um identificador sem
+segredo daria um botão que leva ao Discord e volta com um erro que
+ninguém sabe ler.
+
+**A que conta pertence uma identidade do Discord** é a única decisão que
+aqui se toma, e tem três respostas por ordem:
+
+1. já há uma identidade ligada → entra nessa conta;
+2. não há, mas o email já tem conta → **liga-se a essa, e só se o
+   Discord confirmar o endereço**;
+3. nem uma coisa nem outra → cria conta.
+
+O *se* do ponto 2 é a regra que não se pode perder de vista. O Discord
+deixa mudar de email sem confirmar: sem exigir a confirmação, registar lá
+o email de outra pessoa dava entrada na conta dela aqui, com um clique e
+sem password nenhuma.
+
+**Nenhum token passa pela barra de endereços.** O regresso do Discord
+acaba num encaminhamento com o cookie do refresh token — que é HttpOnly —
+e a aplicação arranca e pede `/auth/refresh` como já fazia. O que fosse
+no endereço ficava no histórico do browser, no referer e nos logs de
+tudo o que estivesse pelo meio.
+
+O `state` liga a ida ao regresso e vive num cookie de dez minutos. Sem
+ele, bastava mandar a alguém um endereço de retorno com o código de outra
+pessoa para a deixar a usar a plataforma na conta dessa outra sem dar por
+nada. O cookie é `SameSite=Lax` de propósito: quem volta do Discord vem
+de outro sítio, e um `strict` não seria enviado nessa chegada.
+
+Uma conta criada pelo Discord **não tem password**. A recuperação de
+conta continua a responder o mesmo a toda a gente — quem não tem
+credenciais simplesmente não recebe email —, e quem quiser uma password
+define-a por aí.
+
 ### Cobrança pelo Stripe
 
 | Rota | Quem pode |

@@ -118,7 +118,7 @@ export class AuthService {
                 );
         }
 
-        const defaultRoleId = await this.resolveDefaultRoleId();
+        const defaultRoleId = await this.authRepository.findDefaultRoleId();
 
         const passwordHash = await this.passwordService.hash(input.password);
 
@@ -423,21 +423,6 @@ export class AuthService {
      * autorização nenhuma é um estado difícil de detetar depois, e mais
      * difícil ainda de corrigir em massa.
      */
-    private async resolveDefaultRoleId(): Promise<string> {
-        const role = await this.authRepository.findRoleIdBySlug(
-            ROLES[DEFAULT_USER_ROLE].slug,
-            ROLES[DEFAULT_USER_ROLE].scope,
-        );
-
-        if (!role) {
-            throw new Error(
-                `[ViceHub Auth] O cargo base "${ROLES[DEFAULT_USER_ROLE].slug}" não existe na base de dados. Corre "npm run db:seed".`,
-            );
-        }
-
-        return role.id;
-    }
-
     private async createLocalUser(input: {
         email: string;
         username: string;
@@ -463,6 +448,32 @@ export class AuthService {
                     'Já existe uma conta com este email.',
                 );
         }
+    }
+
+    /**
+     * Abre uma sessão para uma conta já identificada.
+     *
+     * Existe para as formas de entrar que não são email e password: aí
+     * quem confirma a identidade é outro — o Discord —, e o que falta
+     * fazer é exatamente o que o registo e o login fazem no fim. Sem
+     * isto, entrar pelo Discord teria de repetir a criação da sessão e a
+     * emissão dos tokens, e as duas cópias divergiam.
+     */
+    async startSessionFor(
+        userId: string,
+        metadata: SessionMetadataInput = {},
+    ): Promise<AuthResult> {
+        const user = await this.authRepository.findUserById(userId);
+
+        if (!user) {
+            throw new AuthError('USER_NOT_FOUND', 'Utilizador não encontrado.');
+        }
+
+        const session = await this.authRepository.createSession(
+            this.buildCreateSessionInput(user.id, metadata),
+        );
+
+        return this.issueTokens(session.id, user);
     }
 
     /**

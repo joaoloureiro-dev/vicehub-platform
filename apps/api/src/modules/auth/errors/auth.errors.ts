@@ -9,7 +9,23 @@ export type AuthErrorCode =
     | 'SESSION_NOT_FOUND'
     | 'USER_NOT_FOUND'
     | 'INVALID_ACCOUNT_TOKEN'
-    | 'EMAIL_ALREADY_VERIFIED';
+    | 'EMAIL_ALREADY_VERIFIED'
+    /** Entrar com Discord não está configurado nesta instalação. */
+    | 'DISCORD_NOT_CONFIGURED'
+    /** O Discord não respondeu, ou demorou demasiado. */
+    | 'DISCORD_UNAVAILABLE'
+    /** O Discord recusou o código, ou respondeu o que não se esperava. */
+    | 'DISCORD_EXCHANGE_FAILED'
+    /** O `state` não corresponde ao que saiu daqui: o pedido não é nosso. */
+    | 'DISCORD_STATE_MISMATCH'
+    /**
+     * O Discord não deu email, ou deu um por confirmar.
+     *
+     * Sem endereço confirmado não se liga a conta a nenhuma que já
+     * exista: bastava registar no Discord o email de outra pessoa para
+     * lhe entrar na conta daqui.
+     */
+    | 'DISCORD_EMAIL_UNUSABLE';
 
 /**
  * Erro de domínio do módulo Auth.
