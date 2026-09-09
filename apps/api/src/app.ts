@@ -9,6 +9,7 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { env } from './config/env.js';
 
 import authModule from './modules/auth/auth.module.js';
+import friendModule from './modules/friends/friend.module.js';
 import userModule from './modules/users/user.module.js';
 import affiliationModule from './modules/affiliations/affiliation.module.js';
 import crewModule from './modules/crews/crew.module.js';
@@ -167,6 +168,8 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Módulo de utilizadores
     void app.register(userModule);
+
+    void app.register(friendModule);
 
     // Módulo de crews
     void app.register(crewModule);

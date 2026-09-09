@@ -486,6 +486,21 @@ export const fr = (p: Tools): Messages => ({
             quantos === 1 ? '1 joueur en ligne' : `${quantos} joueurs en ligne`,
     },
 
+    amigos: {
+        titulo: 'Amis',
+        adicionar: 'Ajouter',
+        aceitar: 'Accepter',
+        recusar: 'Refuser',
+        retirar: 'Retirer',
+        desfazer: 'Supprimer',
+        saoAmigos: 'Amis',
+        pedidoEnviado: 'Demande envoyée',
+        pedidos: 'En attente de toi',
+        aindaNenhum: 'Pas encore d’amis. Ouvre le profil de quelqu’un et demande.',
+        desde: (quando: string) => `Amis depuis ${quando}`,
+        naoCarregou: 'Impossible de charger tes amis.',
+    },
+
     progressao: {
         nivelAtual: (nivel: number) => `Niveau ${nivel}`,
         faltam: (xp: string, proximo: number) =>

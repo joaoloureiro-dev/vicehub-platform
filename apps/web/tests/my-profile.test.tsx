@@ -25,6 +25,28 @@ const perfil = (overrides: Record<string, unknown> = {}) => ({
     ...overrides,
 });
 
+/** Os amigos e os pedidos que a API devolve, por omissão. */
+const amigos = [
+    {
+        userId: 'u-2',
+        username: 'bruno',
+        avatarUrl: null,
+        level: 3,
+        since: '2026-02-01T00:00:00.000Z',
+    },
+];
+
+const pedidos = [
+    {
+        userId: 'u-3',
+        username: 'carla',
+        avatarUrl: null,
+        level: 1,
+        since: '2026-02-02T00:00:00.000Z',
+        direction: 'incoming' as const,
+    },
+];
+
 const json = (status: number, body: unknown): Response =>
     ({
         ok: status >= 200 && status < 300,
@@ -44,6 +66,20 @@ describe('o meu perfil', () => {
         fetchMock = vi.fn((url: string, opcoes?: RequestInit) => {
             if (String(url).endsWith('/appearance')) {
                 return Promise.resolve(aoGuardarAparencia);
+            }
+
+            /*
+              O perfil pede também os amigos e os pedidos por responder.
+              Sem estas rotas, a lista recebia o perfil onde esperava um
+              array — e o ecrã ia abaixo por uma razão que não é a do
+              teste.
+            */
+            if (String(url).endsWith('/friends')) {
+                return Promise.resolve(json(200, amigos));
+            }
+
+            if (String(url).endsWith('/friends/requests')) {
+                return Promise.resolve(json(200, pedidos));
             }
 
             if (opcoes?.method === 'PATCH') {

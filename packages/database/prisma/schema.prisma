@@ -248,6 +248,13 @@ model User {
   eventParticipants EventParticipant[]
   accountTokens     AccountToken[]
   xpAwards          XpAward[]
+
+  /// As duas pontas da mesma tabela de amizades.
+  ///
+  /// São dois campos porque o par está ordenado e uma pessoa pode ser
+  /// qualquer uma das pontas — não são dois tipos de amizade.
+  friendshipsAsA Friendship[] @relation("FriendshipUserA")
+  friendshipsAsB Friendship[] @relation("FriendshipUserB")
 }
 
 model Crew {
@@ -1002,6 +1009,48 @@ model Event {
   @@index([serverId, status])
   @@index([starts_at])
   @@index([is_deleted])
+}
+
+/// A amizade entre duas pessoas.
+///
+/// Uma relação, e não duas linhas. Guardar "A é amigo de B" e "B é amigo
+/// de A" em separado é guardar a mesma coisa duas vezes, e duas cópias
+/// divergem sempre.
+///
+/// O par está ordenado — userAId é sempre o menor — e isso é imposto por
+/// um CHECK na base: (A,B) e (B,A) são a mesma linha, e ninguém pode ser
+/// amigo de si próprio, porque nenhum identificador é menor do que ele
+/// mesmo.
+model Friendship {
+  id String @id @default(uuid())
+
+  /// Sempre por esta ordem: userAId < userBId.
+  userAId String
+  userBId String
+
+  /// O mesmo vocabulário das adesões: pedido, aceite, recusado, desfeito.
+  status MembershipStatus @default(pending)
+
+  /// Quem pediu. Sem isto não se sabe a quem cabe responder — e quem
+  /// pede não pode aceitar-se a si próprio.
+  requested_by String
+  responded_at DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  userA User @relation("FriendshipUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("FriendshipUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@index([userAId, status])
+  @@index([userBId, status])
 }
 
 /// Um ganho de xp, gravado como facto e não como soma.
