@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { problemasDeProducao } from '../../src/config/env.js';
 
 /**
- * As duas configurações que só fazem mal em produção.
+ * As configurações que só fazem mal em produção.
  *
  * São perigosas precisamente por terem um valor por omissão que
  * funciona: nada falha, nada avisa, e o estrago só aparece quando alguém
@@ -15,6 +15,7 @@ const ambiente = (overrides: Record<string, unknown> = {}) =>
         NODE_ENV: 'production',
         AUTH_COOKIE_SECURE: true,
         APP_PUBLIC_URL: 'https://vicehub.com',
+        SMTP_URL: 'smtp://user:pass@mail.vicehub.com:587',
         ...overrides,
     }) as Parameters<typeof problemasDeProducao>[0];
 
@@ -56,15 +57,30 @@ describe('a configuração que não serve para produção', () => {
         }
     });
 
-    it('acusa os dois de uma vez, e não só o primeiro', () => {
+    /**
+     * Sem SMTP os emails ficam no log. Ninguém confirma a conta, ninguém
+     * recupera a palavra-passe, e um link de recuperação escrito no log
+     * é uma chave para entrar numa conta ao alcance de quem lê logs.
+     */
+    it('recusa produção sem forma de enviar email', () => {
+        const problemas = problemasDeProducao(
+            ambiente({ SMTP_URL: undefined }),
+        );
+
+        expect(problemas).toHaveLength(1);
+        expect(problemas[0]).toContain('SMTP_URL');
+    });
+
+    it('acusa todos de uma vez, e não só o primeiro', () => {
         expect(
             problemasDeProducao(
                 ambiente({
                     AUTH_COOKIE_SECURE: false,
                     APP_PUBLIC_URL: 'http://localhost:5173',
+                    SMTP_URL: undefined,
                 }),
             ),
-        ).toHaveLength(2);
+        ).toHaveLength(3);
     });
 
     /**
@@ -80,6 +96,7 @@ describe('a configuração que não serve para produção', () => {
                         NODE_ENV: 'development',
                         AUTH_COOKIE_SECURE: false,
                         APP_PUBLIC_URL: 'http://localhost:5173',
+                        SMTP_URL: undefined,
                     }),
                 ),
             ).toEqual([]);
@@ -92,6 +109,7 @@ describe('a configuração que não serve para produção', () => {
                         NODE_ENV: 'test',
                         AUTH_COOKIE_SECURE: false,
                         APP_PUBLIC_URL: 'http://localhost:5173',
+                        SMTP_URL: undefined,
                     }),
                 ),
             ).toEqual([]);

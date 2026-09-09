@@ -174,6 +174,18 @@ const envSchema = z.object({
         ),
 });
 
+/**
+ * Os nomes de todas as variáveis que a API lê.
+ *
+ * Existe para o `.env.example` poder ser confrontado com a verdade em
+ * vez de acreditarem nele. Um exemplo que não menciona uma variável é um
+ * exemplo que envelheceu — e ninguém dá por isso enquanto não faltar
+ * qualquer coisa em produção, que é o pior sítio para dar por ela.
+ */
+export const NOMES_DAS_VARIAVEIS: readonly string[] = Object.freeze(
+    Object.keys(envSchema.shape),
+);
+
 const parsedEnvironment = envSchema.safeParse(process.env);
 
 if (!parsedEnvironment.success) {
@@ -197,7 +209,7 @@ if (!parsedEnvironment.success) {
 export const problemasDeProducao = (
     valores: Pick<
         z.infer<typeof envSchema>,
-        'NODE_ENV' | 'AUTH_COOKIE_SECURE' | 'APP_PUBLIC_URL'
+        'NODE_ENV' | 'AUTH_COOKIE_SECURE' | 'APP_PUBLIC_URL' | 'SMTP_URL'
     >,
 ): string[] => {
     if (valores.NODE_ENV !== 'production') {
@@ -226,6 +238,27 @@ export const problemasDeProducao = (
     if (publico === 'localhost' || publico === '127.0.0.1') {
         problemas.push(
             `APP_PUBLIC_URL aponta para ${publico} em produção: os links de recuperação enviados por email não levariam a lado nenhum.`,
+        );
+    }
+
+    /**
+     * Sem SMTP_URL os emails não são enviados: são escritos no log.
+     *
+     * Em desenvolvimento isso é uma comodidade. Em produção é duas
+     * coisas más ao mesmo tempo. A primeira é que ninguém consegue
+     * confirmar a conta nem recuperar a palavra-passe, e a plataforma
+     * não dá sinal disso — o pedido responde na mesma que sim. A
+     * segunda é pior: um link de recuperação é uma chave para entrar
+     * numa conta, e escrevê-lo no log deixa essa chave em texto simples
+     * ao alcance de toda a gente que leia logs.
+     *
+     * Por isso não é aviso, é recusa. Um aviso no arranque perde-se
+     * entre as outras linhas, e quando se der por ela já há contas
+     * dependentes de emails que nunca saíram.
+     */
+    if (valores.SMTP_URL === undefined) {
+        problemas.push(
+            'SMTP_URL não está definida em produção: os emails de confirmação e de recuperação ficariam escritos no log em vez de serem enviados, e um link de recuperação no log é uma chave para entrar numa conta.',
         );
     }
 
