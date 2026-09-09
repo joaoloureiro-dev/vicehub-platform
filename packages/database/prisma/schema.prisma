@@ -337,7 +337,7 @@ model Server {
   apiKeys ServerApiKey[]
 }
 
-/// Uma chave que deixa um servidor de FiveM falar com a plataforma.
+/// Uma chave que deixa um servidor de jogo falar com a plataforma.
 ///
 /// O segredo não é guardado — guarda-se o resumo, como nos tokens de
 /// conta. O prefixo fica em claro de propósito: é o que permite listar

@@ -1,4 +1,4 @@
--- A ligação entre um servidor de FiveM e a plataforma.
+-- A ligação entre um servidor de jogo e a plataforma.
 --
 -- Até aqui, tudo o que a plataforma sabia de um servidor era o que
 -- alguém escrevia num formulário — incluindo se estava online, que é o
