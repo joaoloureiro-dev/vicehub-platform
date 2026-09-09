@@ -270,6 +270,15 @@ model Crew {
   tag         String
   description String?
 
+  /// O que esta crew exige a quem se quer candidatar, em texto livre.
+  ///
+  /// Texto e não condições verificáveis: "falamos português", "jogamos
+  /// à noite", "18+" não são coisas que a plataforma consiga confirmar,
+  /// e uma candidatura recusada por uma regra que o servidor julgou
+  /// cumprida seria pior do que não prometer nada. Quem lê decide se se
+  /// candidata; quem manda na crew decide se aceita.
+  join_requirements String?
+
   /// Personalização reservada a quem tem plano ativo. Os campos ficam
   /// gravados mesmo que o plano termine: quem voltar a subscrever
   /// reencontra o que tinha, e perder trabalho por deixar de pagar seria

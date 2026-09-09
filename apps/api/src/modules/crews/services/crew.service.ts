@@ -41,6 +41,7 @@ interface ListCrewsInput {
 interface UpdateCrewInput {
     name?: string | undefined;
     description?: string | null | undefined;
+    joinRequirements?: string | null | undefined;
 }
 
 /**
@@ -650,6 +651,13 @@ export class CrewService {
             name: crew.name,
             tag: crew.tag,
             description: crew.description,
+            /**
+             * Público como a descrição: quem chega ao perfil está a
+             * decidir se se candidata, e é aqui que precisa de saber o
+             * que lhe vão exigir. Pedir entrada às cegas e ser recusado
+             * por uma regra que não estava escrita não serve a ninguém.
+             */
+            joinRequirements: crew.join_requirements,
             level: progresso.nivel,
             xp: crew.xp,
             levelXp: progresso.xpDoNivelAtual,

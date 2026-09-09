@@ -32,6 +32,13 @@ export interface CrewProfile {
     name: string;
     tag: string;
     description: string | null;
+    /**
+     * O que a crew exige a quem se candidata. Null quer dizer que
+     * ninguém escreveu nada, e nesse caso o perfil não mostra secção
+     * nenhuma: um cabeçalho vazio dizia "não exigimos nada", que é uma
+     * afirmação que a crew não fez.
+     */
+    joinRequirements: string | null;
     level: number;
     xp: string;
     /** O chão do nível atual e o teto do seguinte, para a barra. */

@@ -2215,3 +2215,15 @@ button.link:hover {
     color: var(--cyan);
     border-bottom-color: currentColor;
 }
+
+/*
+  Texto escrito por gente, com as quebras de linha que essa gente pôs.
+
+  Uns requisitos de candidatura chegam quase sempre em lista — uma
+  condição por linha. Sem isto o browser junta-as todas num parágrafo só
+  e a lista deixa de se ler como lista. `pre-line` e não `pre`: as
+  quebras contam, os espaços a mais não.
+*/
+.pre-linha {
+    white-space: pre-line;
+}

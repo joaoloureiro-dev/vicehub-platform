@@ -5,6 +5,7 @@ export interface CrewRecord {
     name: string;
     tag: string;
     description: string | null;
+    join_requirements: string | null;
     banner_url: string | null;
     accent_color: string | null;
     level: number;
@@ -19,6 +20,13 @@ export interface CrewProfile {
     name: string;
     tag: string;
     description: string | null;
+    /**
+     * O que a crew exige a quem se candidata, escrito por quem manda
+     * nela. Null quer dizer que ninguém escreveu nada — e é diferente de
+     * texto vazio, que o perfil também não mostra mas que já foi uma
+     * decisão de alguém.
+     */
+    joinRequirements: string | null;
     /** Sai do xp, sempre. A coluna guardada é a mesma conta, para ordenar. */
     level: number;
     xp: bigint;
