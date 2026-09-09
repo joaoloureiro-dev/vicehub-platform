@@ -3,7 +3,7 @@ import type { RoleKey } from './rbac.js';
 /**
  * Pesos por omissão de uma divisão ponderada por cargo.
  *
- * Segue o que as comunidades de FiveM já fazem: no paycheck do QBCore o
+ * Segue o que as comunidades de roleplay já fazem: no paycheck do QBCore o
  * salário vem do grau, e nos assaltos quem lidera leva uma fatia maior.
  *
  * Os pesos vivem aqui, e não espalhados pelo código, pela mesma razão do

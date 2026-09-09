@@ -26,7 +26,7 @@ export interface ChaveCriada {
 }
 
 /**
- * A ingestão: o que os servidores de FiveM mandam para cá.
+ * A ingestão: o que os servidores de jogo mandam para cá.
  *
  * Uma chave identifica **um servidor**, e nunca uma pessoa. É a
  * distinção que mantém isto seguro: o que um script consegue fazer com

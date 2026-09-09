@@ -612,7 +612,7 @@ conseguir, manda outro evento e o acesso volta sozinho.
 já tem acesso que não termina: receber dinheiro por uma coisa que já foi
 oferecida é a espécie de erro que ninguém repara e toda a gente acha mal.
 
-### O servidor de FiveM a falar connosco
+### O servidor de jogo a falar connosco
 
 | Rota | Quem pode |
 |---|---|
@@ -672,8 +672,8 @@ ninguém.
 **Corre em servidores de outras pessoas, por isso é testado.** O recurso
 só corre dentro do jogo, mas o que decide se está certo não precisa de
 jogo nenhum: o que vai no corpo, o que faz quando a chave é recusada,
-quanto espera antes de tentar de novo. Isso corre-se contra um FiveM de
-mentira (`resources/vicehub/tests/`), e a CI corre-o em cada push:
+quanto espera antes de tentar de novo. Isso corre-se contra um runtime
+de mentira (`resources/vicehub/tests/`), e a CI corre-o em cada push:
 
 ```bash
 npm run test:lua

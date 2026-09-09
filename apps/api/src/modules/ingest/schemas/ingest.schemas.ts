@@ -15,7 +15,7 @@ export const createApiKeySchema = z.object({
 });
 
 /**
- * O que o recurso do FiveM manda a cada batida.
+ * O que o recurso instalado no servidor manda a cada batida.
  *
  * O número de jogadores tem um teto porque é um número que vem de fora:
  * sem limite, um script com um erro punha o diretório a mostrar um

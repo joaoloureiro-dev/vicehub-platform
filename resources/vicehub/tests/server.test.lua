@@ -1,5 +1,5 @@
 --[[
-    O recurso, corrido contra um FiveM de mentira.
+    O recurso, corrido contra um runtime de mentira.
 
     O que se quer provar é o que só se veria num servidor a sério: o que
     vai no corpo, o que acontece quando a chave é recusada, e que um

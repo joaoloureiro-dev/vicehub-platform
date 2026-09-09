@@ -321,7 +321,7 @@ export const ServerPage = () => {
 
             {/*
               As chaves são de quem manda no servidor, e só dele: é com
-              elas que o servidor de FiveM fala connosco.
+              elas que o servidor de jogo fala connosco.
             */}
             {souDono ? <ServerApiKeys serverId={perfil.id} /> : null}
 

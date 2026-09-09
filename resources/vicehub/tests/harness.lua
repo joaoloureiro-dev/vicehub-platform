@@ -1,5 +1,5 @@
 --[[
-    Um FiveM de mentira, só com o que o recurso usa.
+    O runtime do servidor, de mentira, só com o que o recurso usa.
 
     Existe porque a alternativa era não verificar nada: o recurso só
     corre dentro do jogo, e o que aqui se quer provar — o que vai no

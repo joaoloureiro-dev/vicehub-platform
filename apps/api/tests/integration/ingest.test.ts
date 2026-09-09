@@ -5,7 +5,7 @@ import { HEARTBEAT_JANELA_MS, prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 
 /**
- * A ingestão: o que um servidor de FiveM manda para cá.
+ * A ingestão: o que um servidor de jogo manda para cá.
  *
  * Contra PostgreSQL a sério, porque o que se quer provar é o que a
  * chave **não** deixa acontecer — e isso depende do que está gravado:
