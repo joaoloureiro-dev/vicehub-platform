@@ -462,6 +462,7 @@ export const pt = (p: Tools): Messages => ({
 
     chaves: {
         titulo: 'Chaves do servidor',
+        comoInstalar: 'Como se instala',
         paraQueServem:
             'Uma chave deixa o teu servidor de FiveM reportar ao ViceHub — se está de pé, e com quantas pessoas dentro. Instala o recurso e cola lá a chave.',
         nome: 'Nome da chave',

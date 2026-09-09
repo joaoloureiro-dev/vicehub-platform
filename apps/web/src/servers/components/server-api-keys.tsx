@@ -73,7 +73,17 @@ export const ServerApiKeys = ({ serverId }: ServerApiKeysProps) => {
     return (
         <section className="grupo">
             <h2>{t.chaves.titulo}</h2>
-            <p className="hint">{t.chaves.paraQueServem}</p>
+            <p className="hint">
+                {t.chaves.paraQueServem}{' '}
+                <a
+                    className="link-premium"
+                    href="https://github.com/joaoloureiro-dev/vicehub-platform/tree/main/resources/vicehub"
+                    target="_blank"
+                    rel="noreferrer"
+                >
+                    {t.chaves.comoInstalar}
+                </a>
+            </p>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
 

@@ -463,6 +463,7 @@ export const fr = (p: Tools): Messages => ({
 
     chaves: {
         titulo: 'Clés du serveur',
+        comoInstalar: 'Comment l’installer',
         paraQueServem:
             "Une clé permet à ton serveur FiveM de faire son rapport à ViceHub — s'il tourne, et avec combien de monde. Installe la ressource et colles-y la clé.",
         nome: 'Nom de la clé',

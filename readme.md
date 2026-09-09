@@ -658,6 +658,32 @@ sítios que respondem à mesma pergunta — o perfil, que a avalia em
 memória, e o diretório, que a traduz em filtro. Vêm do mesmo sítio para
 que não possam divergir.
 
+#### O recurso
+
+Vive em `resources/vicehub/` e é a outra metade disto: sem ele, quem
+cria uma chave fica com uma chave e nada onde a colar. Copia-se para os
+recursos do servidor, põe-se a chave no `server.cfg`, e ele reporta de
+minuto a minuto.
+
+O que sai de lá é uma linha de JSON com a contagem de jogadores, e mais
+nada — não vai lista de quem está a jogar, nem identificadores de
+ninguém.
+
+**Corre em servidores de outras pessoas, por isso é testado.** O recurso
+só corre dentro do jogo, mas o que decide se está certo não precisa de
+jogo nenhum: o que vai no corpo, o que faz quando a chave é recusada,
+quanto espera antes de tentar de novo. Isso corre-se contra um FiveM de
+mentira (`resources/vicehub/tests/`), e a CI corre-o em cada push:
+
+```bash
+npm run test:lua
+```
+
+O identificador do servidor **não** vai no corpo, e há um teste só para
+isso: quem decide de que servidor é um sinal é a chave, do lado de cá.
+Se viesse no corpo, uma chave podia reportar pelo servidor de outra
+pessoa.
+
 ### Recuperar a password e confirmar o email
 
 | Rota | Quem pode |
