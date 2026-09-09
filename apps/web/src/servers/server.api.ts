@@ -36,6 +36,15 @@ export const listServers = (
 export const getServer = (serverId: string): Promise<ServerProfile> =>
     api<ServerProfile>(`/servers/${serverId}`);
 
+/**
+ * Apaga o servidor.
+ *
+ * Exige `server:manage` — o dono. As mesmas três recusas das crews, e as
+ * chaves de ingestão deixam de servir no mesmo instante.
+ */
+export const deleteServer = (serverId: string): Promise<void> =>
+    api<void>(`/servers/${encodeURIComponent(serverId)}`, { method: 'DELETE' });
+
 export const listMyServerMemberships = (): Promise<ServerMembership[]> =>
     api<ServerMembership[]>('/servers/me/memberships');
 

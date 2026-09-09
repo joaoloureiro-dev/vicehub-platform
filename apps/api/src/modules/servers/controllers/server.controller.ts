@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { AuditService } from '../../audit/services/audit.service.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     CreateServerDto,
@@ -17,7 +18,35 @@ import type {
 } from '../types/server.types.js';
 
 export class ServerController {
-    constructor(private readonly serverService: ServerService) { }
+    constructor(
+        private readonly serverService: ServerService,
+        private readonly auditService: AuditService,
+    ) { }
+
+    async remove(
+        request: FastifyRequest<{ Params: ServerIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const { serverId } = request.params;
+
+        /** O nome vai para o rasto antes de deixar de ser encontrável. */
+        const { name } = await this.serverService.getProfile(serverId);
+
+        await this.serverService.deleteServer(serverId, user.id);
+
+        await this.auditService.record({
+            action: 'server.deleted',
+            entityType: 'Server',
+            entityId: serverId,
+            actorId: user.id,
+            before: { name },
+            ...AuditService.contextOf(request),
+        });
+
+        reply.status(204).send();
+    }
 
     async create(
         request: FastifyRequest<{ Body: CreateServerDto }>,

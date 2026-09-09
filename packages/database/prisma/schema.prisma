@@ -239,8 +239,14 @@ model User {
 model Crew {
   id String @id @default(uuid())
 
-  name        String  @unique
-  tag         String  @unique
+  /// O nome e a tag são únicos entre as crews que existem.
+  ///
+  /// A unicidade vive num índice parcial escrito à mão — filtrado por
+  /// is_deleted — e não num @unique: apagar uma crew tem de devolver o
+  /// nome dela a quem vier a seguir, incluindo a quem a apagou por se
+  /// ter enganado a escrevê-lo.
+  name        String
+  tag         String
   description String?
 
   /// Personalização reservada a quem tem plano ativo. Os campos ficam
@@ -283,7 +289,11 @@ model Server {
   /// O nome identifica o servidor no diretório público, tal como o nome
   /// de uma crew. Sem unicidade, dois servidores homónimos seriam
   /// indistinguíveis para quem procura onde jogar.
-  name        String  @unique
+  ///
+  /// Único entre os servidores que existem, e não para sempre: a
+  /// unicidade está num índice parcial filtrado por is_deleted, pela
+  /// mesma razão que a do nome de uma crew.
+  name        String
   region      String?
   description String?
 

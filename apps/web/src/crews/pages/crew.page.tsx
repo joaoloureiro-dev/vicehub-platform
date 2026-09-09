@@ -9,9 +9,11 @@ import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { CrewAffiliation } from '../../affiliations/components/crew-affiliation.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
+import { ApagarComunidade } from '../../components/apagar-comunidade.js';
 import { CrewSettings } from '../components/crew-settings.js';
 import {
     acceptJoinRequest,
+    deleteCrew,
     getCrew,
     leaveCrew,
     listCrewMembers,
@@ -403,6 +405,20 @@ export const CrewPage = () => {
                         }}
                     />
                 </section>
+            ) : null}
+
+            {/*
+              Apagar fica no fim, e só para o líder. Até aqui não havia
+              como desfazer um engano: os nomes são únicos, por isso
+              quem criasse uma crew com o nome trocado ficava com ele
+              ocupado para sempre — inclusive para si próprio.
+            */}
+            {souLider ? (
+                <ApagarComunidade
+                    tipo="crew"
+                    nome={perfil.name}
+                    apagar={() => deleteCrew(perfil.id)}
+                />
             ) : null}
         </div>
     );

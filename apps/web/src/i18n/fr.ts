@@ -480,6 +480,25 @@ export const fr = (p: Tools): Messages => ({
             quantos === 1 ? '1 joueur en ligne' : `${quantos} joueurs en ligne`,
     },
 
+    zonaPerigo: {
+        crewTitulo: 'Supprimer ce crew',
+        servidorTitulo: 'Supprimer ce serveur',
+        crewExplicacao:
+            'Le crew quitte l’annuaire, ses membres perdent leur adhésion et il n’est plus affilié au serveur où il joue. Le nom et le tag redeviennent libres.',
+        servidorExplicacao:
+            'Le serveur quitte l’annuaire, ses membres perdent leur adhésion, les crews qui y jouent ne sont plus affiliés — y compris ceux que son abonnement couvrait — et ses clés cessent de fonctionner. Le nom redevient libre.',
+        escreveONome: (nome: string) => `Tape ${nome} pour confirmer.`,
+        confirmacao: 'Confirmation',
+        botao: 'Supprimer',
+        aApagar: 'Suppression…',
+        temSaldo:
+            'La trésorerie a encore un solde. Répartis-le ou retire-le d’abord.',
+        temDecisoes:
+            'Des mouvements ou des répartitions attendent encore une décision dans la trésorerie.',
+        temPlano: 'Un abonnement est actif. Annule-le d’abord.',
+        naoFoiPossivel: 'La suppression n’a pas fonctionné.',
+    },
+
     estadosEvento: {
         scheduled: 'Planifié',
         ongoing: 'En cours',

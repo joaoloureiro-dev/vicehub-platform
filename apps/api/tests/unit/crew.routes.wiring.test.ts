@@ -92,6 +92,7 @@ describe('ligação das rotas de crew', () => {
             removeMember: vi.fn(),
             setMemberRole: vi.fn(),
             updateAppearance: vi.fn(),
+            remove: vi.fn(),
         } as unknown as CrewController;
 
         await app.register(crewRoutes, { controller });
@@ -163,7 +164,15 @@ describe('ligação das rotas de crew', () => {
          * membros: caso contrário um oficial podia promover um cúmplice a
          * líder e tomar a crew a quem a fundou.
          */
-        it.each(['PATCH /:crewId', 'PUT /:crewId/members/:userId/role'])(
+        it.each([
+            'PATCH /:crewId',
+            /*
+              Apagar é do líder pela mesma razão: com crew:manage_members
+              um oficial apagava a crew de quem a fundou.
+            */
+            'DELETE /:crewId',
+            'PUT /:crewId/members/:userId/role',
+        ])(
             '%s exige crew:manage',
             (key) => {
                 expect(permissoesPorRota.get(key)).toEqual(['crew:manage']);

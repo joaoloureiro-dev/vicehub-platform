@@ -127,6 +127,48 @@ export class ServerService {
     }
 
     /**
+     * Apaga o servidor.
+     *
+     * As mesmas três condições das crews, pela mesma razão: o que ficava
+     * inalcançável se a linha saísse do diretório.
+     *
+     * Há uma consequência a mais aqui, e é de propósito que não impede
+     * nada: as crews que jogavam neste servidor deixam de estar
+     * filiadas, e as que eram premium por causa do plano dele deixam de
+     * o ser. Pedir que se desfiliassem primeiro seria pedir ao dono do
+     * servidor autorização de crews que não são dele.
+     */
+    async deleteServer(serverId: string, actorId: string): Promise<void> {
+        await this.requireServer(serverId);
+
+        const impedimentos
+            = await this.serverRepository.findDeletionBlockers(serverId);
+
+        if (impedimentos.funds !== 0n) {
+            throw new ServerError(
+                'SERVER_HAS_FUNDS',
+                'A tesouraria do servidor ainda tem saldo. Divide-o ou retira-o antes de apagar o servidor.',
+            );
+        }
+
+        if (impedimentos.openDecisions > 0) {
+            throw new ServerError(
+                'SERVER_HAS_OPEN_DECISIONS',
+                'Há movimentos ou divisões por decidir na tesouraria deste servidor.',
+            );
+        }
+
+        if (impedimentos.hasActivePlan) {
+            throw new ServerError(
+                'SERVER_HAS_ACTIVE_PLAN',
+                'Este servidor tem um plano ativo. Cancela o plano antes de o apagar.',
+            );
+        }
+
+        await this.serverRepository.softDelete(serverId, actorId);
+    }
+
+    /**
      * Pede entrada num servidor.
      *
      * O pedido fica pendente até alguém com autorização responder.

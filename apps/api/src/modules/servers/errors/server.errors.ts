@@ -5,7 +5,10 @@ export type ServerErrorCode =
     | 'ALREADY_MEMBER'
     | 'NOT_A_MEMBER'
     | 'MEMBERSHIP_NOT_PENDING'
-    | 'CANNOT_MANAGE_SELF';
+    | 'CANNOT_MANAGE_SELF'
+    | 'SERVER_HAS_FUNDS'
+    | 'SERVER_HAS_OPEN_DECISIONS'
+    | 'SERVER_HAS_ACTIVE_PLAN';
 
 export class ServerError extends Error {
     constructor(

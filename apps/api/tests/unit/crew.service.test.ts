@@ -44,6 +44,12 @@ const createRepositoryMock = () => ({
     countActiveMembersFor: vi.fn().mockResolvedValue([]),
     listOpenMembershipsOfUser: vi.fn().mockResolvedValue([]),
     listUserScopedRoles: vi.fn().mockResolvedValue([]),
+    findDeletionBlockers: vi.fn().mockResolvedValue({
+        funds: 0n,
+        openDecisions: 0,
+        hasActivePlan: false,
+    }),
+    softDelete: vi.fn().mockResolvedValue(undefined),
 });
 
 const createRolesMock = () => ({
@@ -691,6 +697,89 @@ describe('CrewService', () => {
                 service.withdrawJoinRequest('crew-1', 'user-2'),
                 'MEMBERSHIP_NOT_FOUND',
             );
+        });
+    });
+    describe('eliminação', () => {
+        it('apaga quando não há nada em cima da mesa', async () => {
+            await service.deleteCrew('crew-1', 'user-1');
+
+            expect(repository.softDelete).toHaveBeenCalledWith(
+                'crew-1',
+                'user-1',
+            );
+        });
+
+        it('recusa enquanto a tesouraria tiver saldo', async () => {
+            repository.findDeletionBlockers.mockResolvedValue({
+                funds: 250n,
+                openDecisions: 0,
+                hasActivePlan: false,
+            });
+
+            await expectCrewError(
+                service.deleteCrew('crew-1', 'user-1'),
+                'CREW_HAS_FUNDS',
+            );
+
+            expect(repository.softDelete).not.toHaveBeenCalled();
+        });
+
+        /*
+          Um saldo negativo é saldo na mesma: uma dívida que desaparece
+          do ecrã é uma dívida perdoada por engano.
+        */
+        it('recusa também com saldo negativo', async () => {
+            repository.findDeletionBlockers.mockResolvedValue({
+                funds: -40n,
+                openDecisions: 0,
+                hasActivePlan: false,
+            });
+
+            await expectCrewError(
+                service.deleteCrew('crew-1', 'user-1'),
+                'CREW_HAS_FUNDS',
+            );
+        });
+
+        it('recusa enquanto houver decisões por tomar', async () => {
+            repository.findDeletionBlockers.mockResolvedValue({
+                funds: 0n,
+                openDecisions: 2,
+                hasActivePlan: false,
+            });
+
+            await expectCrewError(
+                service.deleteCrew('crew-1', 'user-1'),
+                'CREW_HAS_OPEN_DECISIONS',
+            );
+
+            expect(repository.softDelete).not.toHaveBeenCalled();
+        });
+
+        it('recusa enquanto houver plano ativo', async () => {
+            repository.findDeletionBlockers.mockResolvedValue({
+                funds: 0n,
+                openDecisions: 0,
+                hasActivePlan: true,
+            });
+
+            await expectCrewError(
+                service.deleteCrew('crew-1', 'user-1'),
+                'CREW_HAS_ACTIVE_PLAN',
+            );
+
+            expect(repository.softDelete).not.toHaveBeenCalled();
+        });
+
+        it('não apaga o que não existe', async () => {
+            repository.findById.mockResolvedValue(null);
+
+            await expectCrewError(
+                service.deleteCrew('crew-1', 'user-1'),
+                'CREW_NOT_FOUND',
+            );
+
+            expect(repository.findDeletionBlockers).not.toHaveBeenCalled();
         });
     });
 });

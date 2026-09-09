@@ -121,6 +121,20 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
     );
 
     /**
+     * Apagar exige crew:manage — o cargo de líder — e não a gestão de
+     * membros: com crew:manage_members um oficial apagava a crew de
+     * quem a fundou.
+     */
+    fastify.delete<{ Params: CrewIdParamDto }>(
+        '/:crewId',
+        {
+            preHandler: [fastify.authenticate, fastify.authorize('crew:manage')],
+            schema: { params: crewIdParamSchema },
+        },
+        controller.remove.bind(controller),
+    );
+
+    /**
      * Pedir entrada, retirar o pedido e sair dizem respeito ao próprio:
      * exigem conta, mas nenhuma permissão sobre a crew.
      */

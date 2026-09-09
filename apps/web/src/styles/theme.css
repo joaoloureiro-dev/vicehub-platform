@@ -1919,3 +1919,32 @@ button.link:hover {
         align-self: auto;
     }
 }
+
+
+/* ---------- apagar uma crew ou um servidor ---------- */
+
+/*
+ * A moldura desta secção é a única coisa vermelha da página, e chega:
+ * o que ela contém é um campo de texto e um botão desligado até se
+ * escrever o nome certo, e um bloco inteiro pintado de vermelho fazia
+ * parecer que a página está avariada.
+ */
+.grupo.perigo {
+    padding: 20px;
+    border: 1px solid rgba(255, 92, 122, 0.35);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.grupo.perigo h2 {
+    color: var(--danger);
+}
+
+/*
+ * O botão não ocupa a largura toda. Uma ação destas com o tamanho da
+ * ação principal do ecrã é uma ação destas a pedir para ser carregada
+ * por engano.
+ */
+.grupo.perigo button {
+    align-self: flex-start;
+}

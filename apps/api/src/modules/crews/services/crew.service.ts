@@ -133,6 +133,48 @@ export class CrewService {
     }
 
     /**
+     * Apaga a crew.
+     *
+     * Quem chega aqui manda na crew — a rota exige crew:manage, que só
+     * o líder tem. O que falta verificar não é quem pede, é o que a
+     * crew ainda tem em cima da mesa.
+     *
+     * Nada disto é uma opinião sobre arrumação: cada uma destas três
+     * condições é uma coisa que ficava fora do alcance de toda a gente
+     * no instante em que a crew saísse do diretório. Todas se desfazem,
+     * e a mensagem diz como.
+     */
+    async deleteCrew(crewId: string, actorId: string): Promise<void> {
+        await this.requireCrew(crewId);
+
+        const impedimentos
+            = await this.crewRepository.findDeletionBlockers(crewId);
+
+        if (impedimentos.funds !== 0n) {
+            throw new CrewError(
+                'CREW_HAS_FUNDS',
+                'A tesouraria da crew ainda tem saldo. Divide-o ou retira-o antes de apagar a crew.',
+            );
+        }
+
+        if (impedimentos.openDecisions > 0) {
+            throw new CrewError(
+                'CREW_HAS_OPEN_DECISIONS',
+                'Há movimentos ou divisões por decidir na tesouraria desta crew.',
+            );
+        }
+
+        if (impedimentos.hasActivePlan) {
+            throw new CrewError(
+                'CREW_HAS_ACTIVE_PLAN',
+                'Esta crew tem um plano ativo. Cancela o plano antes de a apagar.',
+            );
+        }
+
+        await this.crewRepository.softDelete(crewId, actorId);
+    }
+
+    /**
      * Pede entrada numa crew.
      *
      * O pedido fica pendente até alguém com autorização responder.

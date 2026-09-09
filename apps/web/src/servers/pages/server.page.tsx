@@ -9,10 +9,12 @@ import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { ServerCrews } from '../../affiliations/components/server-crews.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
+import { ApagarComunidade } from '../../components/apagar-comunidade.js';
 import { ServerApiKeys } from '../components/server-api-keys.js';
 import { ServerSettings } from '../components/server-settings.js';
 import {
     acceptServerJoinRequest,
+    deleteServer,
     getServer,
     leaveServer,
     listMyServerMemberships,
@@ -367,6 +369,15 @@ export const ServerPage = () => {
                         }}
                     />
                 </section>
+            ) : null}
+
+            {/* Apagar fica no fim, e só para o dono. */}
+            {souDono ? (
+                <ApagarComunidade
+                    tipo="servidor"
+                    nome={perfil.name}
+                    apagar={() => deleteServer(perfil.id)}
+                />
             ) : null}
         </div>
     );
