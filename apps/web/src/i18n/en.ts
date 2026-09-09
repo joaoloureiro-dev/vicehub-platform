@@ -458,6 +458,7 @@ export const en = (p: Tools) => ({
 
     chaves: {
         titulo: 'Server keys',
+        comoInstalar: 'How to install it',
         paraQueServem:
             'A key lets your FiveM server report to ViceHub — whether it is up, and how many people are in. Install the resource and paste the key into its config.',
         nome: 'Key name',
