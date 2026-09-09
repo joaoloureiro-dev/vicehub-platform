@@ -1,0 +1,13 @@
+ViceHub update.
+
+Two things crews kept doing in Discord, now done where the crew actually lives.
+
+A crew can write what it asks of people who apply. Free text, not checkable conditions — "we play at night", "18+", "we speak Portuguese" are not things a platform can verify, and rejecting someone over a rule the server wrongly believed satisfied is worse than promising nothing. It's readable without an account, because you decide whether to apply before you have one.
+
+And there's a recruitment board: only crews that said they're looking for people. Said, not inferred. Written requirements or free places don't put a crew there — an inference like that lists crews that never asked to be listed, and whoever applies gets a silence the platform caused.
+
+Each notice carries its age. Recruitment boards fill up with notices nobody turned off, and you don't fix that by hiding it. So saving your settings again never rejuvenates the notice, and turning it off clears the date — coming back is a new notice, not an old one.
+
+One more, less visible: in production the API now refuses to start with no way to send email. Without it, confirmation and recovery links get written to the log instead of sent, and a recovery link in a log is a key to somebody's account.
+
+Still nothing deployed. MVP end of September. First testers get lifetime access, handed out one at a time.

@@ -47,6 +47,26 @@ plataforma **já faz** — é a regra abaixo.
 - Nada está em produção. O MVP é no fim de setembro.
 - Os primeiros testadores recebem acesso vitalício, dado um a um.
 
+Setembro de 2026, segundo post. Continua o primeiro — não se
+reapresenta, conta o que mudou desde ele.
+
+- Uma crew escreve o que pede a quem se candidata. Texto livre, e não
+  condições verificáveis: a plataforma não confirma nenhuma delas, e
+  recusar alguém por uma regra que o servidor julgou cumprida seria pior
+  do que não prometer nada.
+- Esses requisitos lêem-se sem conta nenhuma. Quem decide se se
+  candidata muitas vezes ainda nem conta tem.
+- Há um quadro de crews a recrutar, e a crew é que o diz. Não é deduzido
+  de ter requisitos escritos nem de ter lugares livres.
+- Cada anúncio mostra a idade. Voltar a guardar as definições não o
+  rejuvenesce, e desligá-lo apaga a data: voltar a recrutar é um anúncio
+  novo.
+- Os lugares de destaque obedecem ao mesmo filtro — uma crew paga que
+  não recruta nunca é destacada no quadro de recrutamento.
+- Em produção a API recusa arrancar sem forma de enviar email. Sem ela,
+  os links de confirmação e de recuperação ficavam escritos no log, e um
+  link de recuperação no log é uma chave para entrar numa conta.
+
 Os números que a imagem do sistema mostra são contados contra o `main`
 no dia em que é feita, nunca escritos de memória.
 

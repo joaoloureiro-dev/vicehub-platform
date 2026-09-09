@@ -1,0 +1,7 @@
+ViceHub update.
+
+Crews can now write what they ask of people who apply. Readable without an account — you decide whether to apply before you have one.
+
+And there's a board of crews that are recruiting. A crew says that itself. It's never guessed.
+
+Still nothing deployed.
