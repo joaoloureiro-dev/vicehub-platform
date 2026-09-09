@@ -481,6 +481,15 @@ export const en = (p: Tools) => ({
             quantos === 1 ? '1 player online' : `${quantos} players online`,
     },
 
+    feed: {
+        titulo: 'What happened',
+        aindaNada:
+            'Nothing yet. Join a crew, run an event, or add a friend — this fills up on its own.',
+        eventoFeito: (xp: number) => `+${xp} XP from an event ·`,
+        entrouEm: 'joined',
+        naoCarregou: 'This could not be loaded.',
+    },
+
     amigos: {
         titulo: 'Friends',
         adicionar: 'Add friend',

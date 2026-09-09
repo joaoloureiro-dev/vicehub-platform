@@ -4,6 +4,7 @@ import { useAsync } from '../lib/use-async.js';
 import { Alert } from '../auth/components/alert.js';
 import { listMyMemberships } from '../crews/crew.api.js';
 import { listMyServerMemberships } from '../servers/server.api.js';
+import { Feed } from './feed.js';
 import { useT } from '../i18n/i18n.js';
 
 /**
@@ -50,6 +51,13 @@ export const MyCommunitiesPage = () => {
             <div className="panel-head">
                 <h1>{t.crews.asMinhasTitulo}</h1>
             </div>
+
+            {/*
+              O que aconteceu vem primeiro: é a pergunta com que se
+              chega a esta página depois de uns dias fora, e as listas
+              de crews e servidores continuam logo a seguir.
+            */}
+            <Feed />
 
             {falhou ? (
                 <Alert kind="bad">{t.crews.naoCarregouMinhas}</Alert>
