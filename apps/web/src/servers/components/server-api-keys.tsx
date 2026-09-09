@@ -15,7 +15,7 @@ interface ServerApiKeysProps {
 }
 
 /**
- * As chaves que deixam o servidor de FiveM falar com a plataforma.
+ * As chaves que deixam o servidor de jogo falar com a plataforma.
  *
  * A chave inteira aparece **uma vez**, logo a seguir a ser criada, e
  * nunca mais: o que fica gravado é o resumo dela. É por isso que este

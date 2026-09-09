@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ApiKeyService } from '../../src/modules/ingest/services/api-key.service.js';
 
 /**
- * As chaves que deixam um servidor de FiveM falar connosco.
+ * As chaves que deixam um servidor de jogo falar connosco.
  *
  * O que aqui interessa é o que a chave **não** deixa acontecer: o
  * segredo não volta a existir depois de gerado, uma chave mal formada

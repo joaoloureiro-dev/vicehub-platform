@@ -456,7 +456,7 @@ export const es = (p: Tools): Messages => ({
         titulo: 'Claves del servidor',
         comoInstalar: 'Cómo se instala',
         paraQueServem:
-            'Una clave permite que tu servidor de FiveM informe a ViceHub — si está en pie y con cuánta gente dentro. Instala el recurso y pega ahí la clave.',
+            'Una clave permite que tu servidor informe a ViceHub — si está en pie y con cuánta gente dentro. Instala el recurso en el servidor y pega ahí la clave.',
         nome: 'Nombre de la clave',
         nomeExemplo: 'producción',
         criar: 'Crear una clave',

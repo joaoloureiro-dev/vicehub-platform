@@ -72,7 +72,7 @@ jobs:
       - name: Correr testes
         run: npm run test
 
-      # O recurso do FiveM é Lua, e é código que corre em servidores de
+      # O recurso do servidor é Lua, e é código que corre em servidores de
       # outras pessoas. Sem isto, a única verificação que teria era
       # alguém instalá-lo e ver o que acontece.
       - name: Instalar o Lua

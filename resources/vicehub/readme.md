@@ -1,8 +1,20 @@
-# ViceHub — recurso de FiveM
+# ViceHub — o recurso do servidor
 
 Reporta o teu servidor ao ViceHub: se está de pé, e com quantas pessoas
 dentro. É o que faz o servidor aparecer como online no diretório sem
 que ninguém tenha de ligar um interruptor à mão.
+
+## Que servidores
+
+O ViceHub é para comunidades de roleplay de **GTA VI**. Do lado da
+plataforma, a ingestão é HTTP simples — um pedido com uma chave — por
+isso qualquer servidor que consiga fazer um pedido consegue reportar-se,
+seja qual for o motor.
+
+Este recurso é a **implementação de referência**, e está escrito para o
+runtime do FiveM porque é o que existe hoje para instalar e testar a
+sério. Quando houver ferramentas de servidor para GTA VI, o contrato do
+outro lado é o mesmo e o que muda é este ficheiro.
 
 ## Instalar
 
@@ -75,8 +87,8 @@ set vicehub_url "https://a-tua-instalacao/api/v1"
 
 O recurso corre dentro do jogo, mas o que decide se ele está certo não
 precisa de jogo nenhum — o que vai no corpo, o que faz quando a chave é
-recusada, quanto espera antes de tentar outra vez. Isso corre-se com um
-FiveM de mentira:
+recusada, quanto espera antes de tentar outra vez. Isso corre-se contra
+um runtime de mentira, com a forma do que o recurso usa:
 
 ```bash
 npm run test:lua

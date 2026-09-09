@@ -2,7 +2,7 @@
  * Quanto tempo um servidor continua a contar como online depois do
  * último sinal.
  *
- * O recurso do FiveM bate à porta a cada minuto; cinco minutos deixam
+ * O recurso bate à porta a cada minuto; cinco minutos deixam
  * passar quatro falhas seguidas sem declarar em baixo um servidor que
  * apenas teve um soluço na rede. Mais do que isto e o diretório
  * mostraria servidores que já ninguém consegue encontrar.
