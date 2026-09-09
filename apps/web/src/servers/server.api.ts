@@ -117,3 +117,47 @@ export const updateServer = (
         method: 'PATCH',
         body: input,
     });
+
+/**
+ * Uma chave de API de um servidor, tal como a listagem a mostra.
+ *
+ * Não traz nada que sirva para a usar: o segredo só existe na resposta
+ * que a cria, e nunca mais.
+ */
+export interface ServerApiKey {
+    id: string;
+    label: string;
+    prefix: string;
+    lastUsedAt: string | null;
+    revokedAt: string | null;
+    createdAt: string;
+}
+
+/** O que a criação devolve, e que inclui a chave inteira — uma só vez. */
+export interface ServerApiKeyCriada {
+    id: string;
+    label: string;
+    prefix: string;
+    createdAt: string;
+    key: string;
+}
+
+export const listServerApiKeys = (serverId: string): Promise<ServerApiKey[]> =>
+    api<ServerApiKey[]>(`/servers/${serverId}/api-keys`);
+
+export const createServerApiKey = (
+    serverId: string,
+    label: string,
+): Promise<ServerApiKeyCriada> =>
+    api<ServerApiKeyCriada>(`/servers/${serverId}/api-keys`, {
+        method: 'POST',
+        body: { label },
+    });
+
+export const revokeServerApiKey = (
+    serverId: string,
+    apiKeyId: string,
+): Promise<void> =>
+    api<void>(`/servers/${serverId}/api-keys/${apiKeyId}`, {
+        method: 'DELETE',
+    });

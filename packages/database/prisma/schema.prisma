@@ -294,7 +294,15 @@ model Server {
   banner_url   String?
   accent_color String?
 
+  /// O que o dono marca à mão, e que só decide enquanto o servidor
+  /// nunca tiver reportado por si. A partir do primeiro heartbeat,
+  /// quem decide é o relógio.
   isOnline Boolean @default(false)
+
+  /// A última vez que o servidor bateu à porta, e com quantas pessoas
+  /// dentro. Nulos enquanto ninguém tiver instalado o recurso.
+  last_heartbeat_at DateTime?
+  players_online    Int?
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -315,6 +323,45 @@ model Server {
 
   /// As crews que jogam neste servidor, e as que o pediram.
   affiliations Affiliation[]
+
+  apiKeys ServerApiKey[]
+}
+
+/// Uma chave que deixa um servidor de FiveM falar com a plataforma.
+///
+/// O segredo não é guardado — guarda-se o resumo, como nos tokens de
+/// conta. O prefixo fica em claro de propósito: é o que permite listar
+/// chaves sem revelar nenhuma, e é por ele que a chave apresentada é
+/// encontrada sem percorrer a tabela.
+model ServerApiKey {
+  id String @id @default(uuid())
+
+  serverId String
+
+  /// Nome dado por quem a criou, para distinguir "produção" de "teste".
+  label  String
+  prefix String @unique
+
+  /// SHA-256 do segredo, em hexadecimal.
+  key_hash String
+
+  /// Serve para revogar o que já ninguém usa sem partir o que trabalha.
+  last_used_at DateTime?
+  revoked_at   DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
 }
 
 /// A ligação entre uma crew e o servidor onde ela joga.

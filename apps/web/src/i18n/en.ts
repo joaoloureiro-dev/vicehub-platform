@@ -213,6 +213,8 @@ export const en = (p: Tools) => ({
         nomeJaExiste: 'A server with this name already exists.',
         nome: 'Name',
         descricao: 'Description',
+        reportaPorSi:
+            'This server reports for itself: whether it is online comes from its last heartbeat, not from a box ticked here.',
         estaOnline: 'The server is online right now',
         planoAtivo:
             "The server's plan is active. The banner and colour show on its public page.",
@@ -450,6 +452,24 @@ export const en = (p: Tools) => ({
         aceitar: 'Accept',
         recusar: 'Reject',
         remover: 'Remove',
+    },
+
+    chaves: {
+        titulo: 'Server keys',
+        paraQueServem:
+            'A key lets your FiveM server report to ViceHub — whether it is up, and how many people are in. Install the resource and paste the key into its config.',
+        nome: 'Key name',
+        nomeExemplo: 'production',
+        criar: 'Create a key',
+        copiaAgora:
+            'Copy it now. This is the only time it is shown — we keep a digest, not the key.',
+        revogar: 'Revoke',
+        revogada: 'revoked',
+        nuncaUsada: 'never used',
+        usadaEm: (quando: string) => `last used ${quando}`,
+        aindaNenhuma: 'This server has no keys yet.',
+        jogadoresOnline: (quantos: number) =>
+            quantos === 1 ? '1 player online' : `${quantos} players online`,
     },
 
     estadosEvento: {

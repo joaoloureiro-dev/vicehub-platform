@@ -206,6 +206,8 @@ export const es = (p: Tools): Messages => ({
         nomeJaExiste: 'Ya existe un servidor con este nombre.',
         nome: 'Nombre',
         descricao: 'Descripción',
+        reportaPorSi:
+            'Este servidor informa por sí mismo: estar en línea viene de su última señal, y no de una casilla marcada aquí.',
         estaOnline: 'El servidor está online ahora mismo',
         planoAtivo:
             'El plan del servidor está activo. El banner y el color aparecen en su página pública.',
@@ -446,6 +448,24 @@ export const es = (p: Tools): Messages => ({
         aceitar: 'Aceptar',
         recusar: 'Rechazar',
         remover: 'Quitar',
+    },
+
+    chaves: {
+        titulo: 'Claves del servidor',
+        paraQueServem:
+            'Una clave permite que tu servidor de FiveM informe a ViceHub — si está en pie y con cuánta gente dentro. Instala el recurso y pega ahí la clave.',
+        nome: 'Nombre de la clave',
+        nomeExemplo: 'producción',
+        criar: 'Crear una clave',
+        copiaAgora:
+            'Cópiala ahora. Es la única vez que aparece — de este lado queda un resumen, no la clave.',
+        revogar: 'Revocar',
+        revogada: 'revocada',
+        nuncaUsada: 'nunca usada',
+        usadaEm: (quando: string) => `usada el ${quando}`,
+        aindaNenhuma: 'Este servidor todavía no tiene claves.',
+        jogadoresOnline: (quantos: number) =>
+            quantos === 1 ? '1 jugador en línea' : `${quantos} jugadores en línea`,
     },
 
     estadosEvento: {

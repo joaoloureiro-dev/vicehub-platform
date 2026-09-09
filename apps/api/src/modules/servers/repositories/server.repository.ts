@@ -1,5 +1,6 @@
 import {
     entitlingSubscriptionFilter,
+    filtroDeOnline,
     MembershipStatus,
     MembershipType,
     SourceType,
@@ -30,6 +31,8 @@ const DIRECTORY_ENTRY_SELECT = {
     banner_url: true,
     accent_color: true,
     isOnline: true,
+    last_heartbeat_at: true,
+    players_online: true,
     created_at: true,
 } as const;
 
@@ -212,27 +215,42 @@ export class ServerRepository {
         take: number;
         sort: 'newest' | 'name';
     }) {
+        /**
+         * As duas condições vão dentro de um `AND`, e não lado a lado no
+         * mesmo objeto.
+         *
+         * Ambas se escrevem com um `OR` — estar online é "reportou há
+         * pouco **ou** nunca reportou e está marcado", e a procura é
+         * "nome **ou** região". Postas lado a lado, a segunda apagava a
+         * primeira: uma procura com "só online" devolvia servidores em
+         * baixo, e em silêncio. Foi um teste de integração que o
+         * apanhou.
+         */
         const where = {
             is_deleted: false,
-            ...(input.onlineOnly ? { isOnline: true } : {}),
-            ...(input.search
-                ? {
-                    OR: [
+            AND: [
+                ...(input.onlineOnly ? [filtroDeOnline()] : []),
+                ...(input.search
+                    ? [
                         {
-                            name: {
-                                contains: input.search,
-                                mode: 'insensitive' as const,
-                            },
+                            OR: [
+                                {
+                                    name: {
+                                        contains: input.search,
+                                        mode: 'insensitive' as const,
+                                    },
+                                },
+                                {
+                                    region: {
+                                        contains: input.search,
+                                        mode: 'insensitive' as const,
+                                    },
+                                },
+                            ],
                         },
-                        {
-                            region: {
-                                contains: input.search,
-                                mode: 'insensitive' as const,
-                            },
-                        },
-                    ],
-                }
-                : {}),
+                    ]
+                    : []),
+            ],
         };
 
         const orderBy =

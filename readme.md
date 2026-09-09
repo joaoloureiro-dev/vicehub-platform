@@ -562,6 +562,52 @@ conseguir, manda outro evento e o acesso volta sozinho.
 já tem acesso que não termina: receber dinheiro por uma coisa que já foi
 oferecida é a espécie de erro que ninguém repara e toda a gente acha mal.
 
+### O servidor de FiveM a falar connosco
+
+| Rota | Quem pode |
+|---|---|
+| `POST /api/v1/servers/:serverId/api-keys` | quem manda no servidor |
+| `GET /api/v1/servers/:serverId/api-keys` | quem manda no servidor |
+| `DELETE /api/v1/servers/:serverId/api-keys/:apiKeyId` | quem manda no servidor |
+| `GET /api/v1/ingest/me` | uma chave |
+| `POST /api/v1/ingest/heartbeat` | uma chave |
+
+Uma chave identifica **um servidor**, e nunca uma pessoa. É a distinção
+que mantém isto seguro: o que um script consegue fazer com uma chave
+roubada é mentir sobre o servidor dele — não mexe em contas, tesourarias
+nem planos. Por isso o `authenticateServer` é um guard à parte do
+`authenticate` das pessoas, e tem de continuar a ser.
+
+**O segredo não é guardado.** Guarda-se o resumo, como nos tokens de
+conta; o que fica em claro é o prefixo, que é o que permite listar
+chaves sem revelar nenhuma e encontrar a linha sem percorrer a tabela. A
+chave inteira aparece **uma vez**, na resposta que a cria. Quem a perder
+gera outra — a alternativa era a plataforma poder ler as chaves de toda
+a gente, e uma base de dados lida passaria a ser uma base de dados que
+entrega os servidores todos.
+
+```bash
+curl -X POST https://.../api/v1/ingest/heartbeat \
+  -H "authorization: Bearer vh_<prefixo>_<segredo>" \
+  -H "content-type: application/json" \
+  -d '{"playersOnline": 37}'
+```
+
+**Estar online deixou de ser uma marca e passou a ser uma data.** A
+regra tem duas metades, e a ordem entre elas é o ponto:
+
+- um servidor que já reportou alguma vez é julgado pelo relógio — cinco
+  minutos sem sinal e sai do diretório. A marca manual deixa de contar,
+  e o formulário deixa de a oferecer: um botão que não faz nada é pior
+  do que botão nenhum;
+- um servidor que nunca instalou o recurso continua a valer o que o
+  dono marcou, porque é a única coisa que existe sobre ele.
+
+A regra vive em `packages/database/src/heartbeat.ts` e é usada nos dois
+sítios que respondem à mesma pergunta — o perfil, que a avalia em
+memória, e o diretório, que a traduz em filtro. Vêm do mesmo sítio para
+que não possam divergir.
+
 ### Recuperar a password e confirmar o email
 
 | Rota | Quem pode |

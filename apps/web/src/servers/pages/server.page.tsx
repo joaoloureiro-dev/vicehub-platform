@@ -9,6 +9,7 @@ import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { ServerCrews } from '../../affiliations/components/server-crews.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
+import { ServerApiKeys } from '../components/server-api-keys.js';
 import { ServerSettings } from '../components/server-settings.js';
 import {
     acceptServerJoinRequest,
@@ -132,6 +133,14 @@ export const ServerPage = () => {
                             aria-hidden="true"
                         />
                         {perfil.isOnline ? t.servidores.online : t.servidores.offline}
+                        {/*
+                          A contagem só aparece com o servidor de pé:
+                          "0 jogadores" num servidor em baixo seria uma
+                          leitura do passado a passar por presente.
+                        */}
+                        {perfil.isOnline && perfil.playersOnline !== null
+                            ? ` · ${t.chaves.jogadoresOnline(perfil.playersOnline)}`
+                            : ''}
                         {perfil.region ? ` · ${perfil.region}` : ''}
                     </span>
                     <h1>{perfil.name}</h1>
@@ -307,6 +316,12 @@ export const ServerPage = () => {
               recusa a mais alguém.
             */}
             <ServerCrews serverId={perfil.id} podeGerir={souDono} />
+
+            {/*
+              As chaves são de quem manda no servidor, e só dele: é com
+              elas que o servidor de FiveM fala connosco.
+            */}
+            {souDono ? <ServerApiKeys serverId={perfil.id} /> : null}
 
             {/*
               O mesmo que na crew, e pela mesma razão: a personalização
