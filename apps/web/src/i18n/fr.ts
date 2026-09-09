@@ -119,6 +119,12 @@ export const fr = (p: Tools): Messages => ({
         anterior: 'Précédent',
         seguinte: 'Suivant',
         paginaDe: (atual: number, total: number) => `Page ${atual} sur ${total}`,
+        ordenarPor: 'Trier par',
+        ordemRecentes: 'Plus récents',
+        ordemNivel: 'Niveau',
+        ordemNome: 'Nom',
+        lugar: (posicao: number, total: number) =>
+            `#${posicao} sur ${total} crews classés`,
         naoCarregou: 'L’annuaire n’a pas pu être chargé.',
         nivel: (n: number) => `Niveau ${n}`,
         membros: (n: number) =>

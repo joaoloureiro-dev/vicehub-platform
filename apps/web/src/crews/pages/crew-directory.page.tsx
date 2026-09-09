@@ -15,15 +15,32 @@ import { useT } from '../../i18n/i18n.js';
  * colocação paga tornaria os resultados pouco fiáveis. O ecrã segue essa
  * decisão em vez de a contrariar.
  */
+/** As ordens que a API conhece. Não há aqui nenhuma que ela não saiba. */
+const ORDENS = ['newest', 'level', 'name'] as const;
+
+type Ordem = (typeof ORDENS)[number];
+
 export const CrewDirectoryPage = () => {
     const t = useT();
     const [termo, setTermo] = useState('');
     const [pesquisa, setPesquisa] = useState('');
     const [pagina, setPagina] = useState(1);
 
+    /**
+     * A API ordena por nível desde sempre, e não havia por onde lá
+     * chegar: o diretório mostrava a ordem por omissão e mais nada. Uma
+     * crew que subiu de nível não tinha onde isso aparecer.
+     */
+    const [ordem, setOrdem] = useState<Ordem>('newest');
+
     const { data, loading, error } = useAsync(
-        () => listCrews({ ...(pesquisa ? { search: pesquisa } : {}), page: pagina }),
-        [pesquisa, pagina],
+        () =>
+            listCrews({
+                ...(pesquisa ? { search: pesquisa } : {}),
+                page: pagina,
+                sort: ordem,
+            }),
+        [pesquisa, pagina, ordem],
     );
 
     const submeter = (event: FormEvent) => {
@@ -55,6 +72,27 @@ export const CrewDirectoryPage = () => {
                     {t.crews.botaoProcurar}
                 </button>
             </form>
+
+            {/*
+              Mudar de ordem volta à primeira página: continuar na
+              página 4 de outra ordenação é olhar para um sítio que já
+              não quer dizer o mesmo.
+            */}
+            <div className="ordenar">
+                <label htmlFor="crew-ordem">{t.crews.ordenarPor}</label>
+                <select
+                    id="crew-ordem"
+                    value={ordem}
+                    onChange={(event) => {
+                        setOrdem(event.target.value as Ordem);
+                        setPagina(1);
+                    }}
+                >
+                    <option value="newest">{t.crews.ordemRecentes}</option>
+                    <option value="level">{t.crews.ordemNivel}</option>
+                    <option value="name">{t.crews.ordemNome}</option>
+                </select>
+            </div>
 
             {error ? (
                 <Alert kind="bad">{t.crews.naoCarregou}</Alert>

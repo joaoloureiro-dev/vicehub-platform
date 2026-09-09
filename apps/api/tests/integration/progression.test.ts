@@ -354,4 +354,105 @@ describe('progressão de crews e jogadores', () => {
             expect((await pedirXp()).statusCode).toBe(401);
         });
     });
+
+    /**
+     * O lugar na classificação, contra a base a sério.
+     *
+     * A conta é "quantas estão à frente, mais um", e é aqui que se vê se
+     * ela está certa: com empates, com crews que ainda não ganharam
+     * nada, e com o próprio a contar-se a si mesmo por engano — que é o
+     * erro clássico deste tipo de contagem.
+     */
+    describe('o lugar na classificação', () => {
+        /** Uma crew nova, com o xp que se lhe quiser dar. */
+        const crewCom = async (xp: bigint, sufixo: string): Promise<string> => {
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/crews',
+                headers: auth(lider),
+                payload: {
+                    name: `Lugar ${marca}${sufixo}`,
+                    tag: `L${sufixo}${marca.slice(-4)}`,
+                },
+            });
+
+            expect(response.statusCode, response.body).toBe(201);
+
+            const id = response.json().id as string;
+
+            await prisma.crew.update({
+                where: { id },
+                data: { xp, level: nivelDoXp(xp) },
+            });
+
+            return id;
+        };
+
+        const lugarDe = async (id: string) => {
+            const response = await app.inject({
+                method: 'GET',
+                url: `/api/v1/crews/${id}`,
+            });
+
+            expect(response.statusCode, response.body).toBe(200);
+
+            return response.json().rank as {
+                position: number;
+                of: number;
+            } | null;
+        };
+
+        it('quem tem mais xp fica à frente', async () => {
+            const muito = await crewCom(10_000_000n, 'a');
+            const pouco = await crewCom(9_000_000n, 'b');
+
+            const primeiro = await lugarDe(muito);
+            const segundo = await lugarDe(pouco);
+
+            expect(primeiro?.position).toBeLessThan(
+                segundo?.position as number,
+            );
+        });
+
+        /**
+         * Duas crews com o mesmo xp partilham o lugar. A alternativa
+         * seria desempatar por uma coisa que ninguém ganhou.
+         */
+        it('empates partilham o mesmo lugar', async () => {
+            const uma = await crewCom(8_000_000n, 'c');
+            const outra = await crewCom(8_000_000n, 'd');
+
+            expect((await lugarDe(uma))?.position).toBe(
+                (await lugarDe(outra))?.position,
+            );
+        });
+
+        /** Quem ainda não ganhou nada não está em último: não entrou. */
+        it('não dá lugar a quem tem zero', async () => {
+            expect(await lugarDe(await crewCom(0n, 'e'))).toBeNull();
+        });
+
+        /**
+         * A posição absoluta, e não apenas a ordem relativa.
+         *
+         * É o caso que apanha o erro clássico desta contagem: contar com
+         * `>=` em vez de `>` põe cada crew à frente de si própria, e a
+         * primeira de todas passa a aparecer em segundo. Comparar duas
+         * crews entre si não dá por isso — as duas erram na mesma
+         * medida. Só um número exato o revela.
+         */
+        it('a que tem mais xp de todas fica em primeiro', async () => {
+            const maior = await prisma.crew.aggregate({
+                where: { is_deleted: false },
+                _max: { xp: true },
+            });
+
+            const acimaDeTodas = (maior._max.xp ?? 0n) + 1_000n;
+
+            const lugar = await lugarDe(await crewCom(acimaDeTodas, 'f'));
+
+            expect(lugar?.position).toBe(1);
+            expect(lugar?.of).toBeGreaterThanOrEqual(1);
+        });
+    });
 });

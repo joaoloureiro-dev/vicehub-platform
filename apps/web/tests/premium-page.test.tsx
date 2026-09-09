@@ -50,6 +50,7 @@ const CREW = {
     xp: '0',
     levelXp: '0',
     nextLevelXp: '100',
+    rank: null,
     influence: 0,
     prestige: 0,
     isPremium: false,

@@ -37,6 +37,8 @@ export interface CrewProfile {
     /** O chão do nível atual e o teto do seguinte, para a barra. */
     levelXp: string;
     nextLevelXp: string | null;
+    /** O lugar entre as crews que já ganharam xp. Null: ainda sem lugar. */
+    rank: { position: number; of: number } | null;
     influence: number;
     prestige: number;
     isPremium: boolean;

@@ -117,6 +117,12 @@ export const en = (p: Tools) => ({
         anterior: 'Previous',
         seguinte: 'Next',
         paginaDe: (atual: number, total: number) => `Page ${atual} of ${total}`,
+        ordenarPor: 'Sort by',
+        ordemRecentes: 'Newest',
+        ordemNivel: 'Level',
+        ordemNome: 'Name',
+        lugar: (posicao: number, total: number) =>
+            `#${posicao} of ${total} ranked crews`,
         naoCarregou: 'The directory could not be loaded.',
         nivel: (n: number) => `Level ${n}`,
         membros: (n: number) =>

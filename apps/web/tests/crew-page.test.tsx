@@ -16,6 +16,7 @@ const perfil = {
     xp: '9007199254740993',
     levelXp: '495000',
     nextLevelXp: null,
+    rank: { position: 3, of: 12 },
     influence: 12,
     prestige: 3,
     isPremium: false,
@@ -82,6 +83,8 @@ const servidor = (opcoes: {
     patch?: Response;
     /** O que a lista de ganhos de xp responde. Por omissão, dois ganhos. */
     xp?: Response;
+    /** O perfil, quando o caso o quer diferente do normal. */
+    perfil?: Record<string, unknown>;
     /** De onde vem o plano, quando não é da própria crew. */
     via?: { kind: 'server'; id: string; name: string };
 }) =>
@@ -148,7 +151,7 @@ const servidor = (opcoes: {
 
         return Promise.resolve(
             json(200, {
-                ...perfil,
+                ...(opcoes.perfil ?? perfil),
                 isPremium: opcoes.premium === true,
                 premiumVia: opcoes.via ?? null,
             }),
@@ -551,6 +554,45 @@ describe('o ecrã de uma crew', () => {
 
             expect(screen.queryByText(t.progressao.historico)).toBeNull();
             expect(screen.queryByRole('alert')).toBeNull();
+        });
+    });
+
+    /**
+     * O lugar na classificação.
+     *
+     * Só existe para quem já ganhou alguma coisa: uma crew sem xp não
+     * está em último — não entrou ainda.
+     */
+    describe('o lugar', () => {
+        it('mostra a posição e entre quantas', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText(t.crews.lugar(3, 12))).toBeDefined();
+            });
+        });
+
+        it('não mostra lugar nenhum a uma crew que ainda não ganhou xp', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(403, { code: 'FORBIDDEN' }),
+                    perfil: { ...perfil, rank: null },
+                }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('Vice Kings')).toBeDefined();
+            });
+
+            expect(screen.queryByText(/#/)).toBeNull();
         });
     });
 });

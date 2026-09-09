@@ -402,6 +402,30 @@ export class CrewRepository {
      * Uma única consulta para todos, em vez de uma por membro.
      */
     /**
+     * Em que lugar fica quem tem este xp, e entre quantas.
+     *
+     * A posição é "quantas estão à frente, mais um". Duas crews com o
+     * mesmo xp partilham o lugar — é como se conta uma classificação, e
+     * a alternativa seria desempatar por uma coisa que ninguém ganhou,
+     * como a data de criação.
+     *
+     * Só contam as que já ganharam alguma coisa: sem isso, metade da
+     * tabela seria um empate a zero e o lugar não queria dizer nada.
+     */
+    async rankByXp(xp: bigint): Promise<{ position: number; of: number }> {
+        const [aFrente, classificadas] = await this.database.$transaction([
+            this.database.crew.count({
+                where: { is_deleted: false, xp: { gt: xp } },
+            }),
+            this.database.crew.count({
+                where: { is_deleted: false, xp: { gt: 0n } },
+            }),
+        ]);
+
+        return { position: aFrente + 1, of: classificadas };
+    }
+
+    /**
      * Os últimos ganhos de xp da crew.
      *
      * O limite é do repositório e não de quem chama: uma crew com anos

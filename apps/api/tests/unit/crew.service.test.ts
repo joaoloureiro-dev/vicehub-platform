@@ -44,6 +44,7 @@ const createRepositoryMock = () => ({
     countActiveMembersFor: vi.fn().mockResolvedValue([]),
     listOpenMembershipsOfUser: vi.fn().mockResolvedValue([]),
     listUserScopedRoles: vi.fn().mockResolvedValue([]),
+    rankByXp: vi.fn().mockResolvedValue({ position: 3, of: 12 }),
     findDeletionBlockers: vi.fn().mockResolvedValue({
         funds: 0n,
         openDecisions: 0,
@@ -780,6 +781,31 @@ describe('CrewService', () => {
             );
 
             expect(repository.findDeletionBlockers).not.toHaveBeenCalled();
+        });
+    });
+
+    /**
+     * O lugar na classificação.
+     *
+     * Uma crew sem xp não está em último: não entrou. Perguntar o lugar
+     * de quem tem zero seria pô-la num empate a zero com metade do
+     * diretório, e um lugar assim não diz nada a ninguém.
+     */
+    describe('o lugar', () => {
+        it('não pergunta o lugar de quem ainda não ganhou xp', async () => {
+            const perfil = await service.getProfile('crew-1');
+
+            expect(perfil.rank).toBeNull();
+            expect(repository.rankByXp).not.toHaveBeenCalled();
+        });
+
+        it('pergunta o lugar a partir do xp que a crew tem', async () => {
+            repository.findById.mockResolvedValue({ ...crewRow(), xp: 450n });
+
+            const perfil = await service.getProfile('crew-1');
+
+            expect(repository.rankByXp).toHaveBeenCalledWith(450n);
+            expect(perfil.rank).toEqual({ position: 3, of: 12 });
         });
     });
 });
