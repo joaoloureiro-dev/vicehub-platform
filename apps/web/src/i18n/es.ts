@@ -45,6 +45,8 @@ export const es = (p: Tools): Messages => ({
             'ViceHub se está construyendo a la vista, empezando por GTA VI. Hay cosas listas y otras no, y la forma más rápida de cambiarlo es que nos digas qué falta.',
     },
     auth: {
+        ouEntao: 'o',
+        entrarComDiscord: 'Continuar con Discord',
         entrarTitulo: 'Entrar',
         entrarSub: 'Bienvenido de vuelta a ViceHub.',
         email: 'Email',

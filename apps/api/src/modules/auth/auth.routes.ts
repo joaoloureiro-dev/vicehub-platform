@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { env } from '../../config/env.js';
 
 import type { AuthController } from './controllers/auth.controller.js';
+import type { DiscordAuthController } from './controllers/discord-auth.controller.js';
 import {
     loginSchema,
     registerSchema,
@@ -12,6 +13,7 @@ import {
 } from './schemas/auth.schemas.js';
 
 interface AuthRoutesOptions {
+    discordController: DiscordAuthController;
     controller: AuthController;
 }
 
@@ -26,7 +28,7 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
     fastify,
     options,
 ) => {
-    const { controller } = options;
+    const { controller, discordController } = options;
 
     /**
      * Rotas públicas.
@@ -43,6 +45,31 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
         '/login',
         { schema: { body: loginSchema } },
         controller.login.bind(controller),
+    );
+
+    /**
+     * Entrar com Discord.
+     *
+     * Duas rotas e nenhum corpo: a ida manda para o Discord, e o
+     * regresso traz um código no endereço. Ambas terminam num
+     * encaminhamento, e é por isso que não devolvem JSON — quem as
+     * percorre é o browser, e não a aplicação.
+     */
+    fastify.get(
+        '/providers',
+        discordController.providers.bind(discordController),
+    );
+
+    fastify.get(
+        '/discord',
+        discordController.start.bind(discordController),
+    );
+
+    fastify.get<{
+        Querystring: { code?: string; state?: string; error?: string };
+    }>(
+        '/discord/callback',
+        discordController.callback.bind(discordController),
     );
 
     /**

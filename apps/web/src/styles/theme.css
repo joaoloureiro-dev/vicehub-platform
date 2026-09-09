@@ -1039,6 +1039,53 @@ button.link:hover {
     cursor: pointer;
 }
 
+/* ---------- entrar com Discord ---------- */
+
+/*
+ * O botão leva a cor do Discord e não a nossa, de propósito: quem o
+ * procura procura aquele azul, e pintá-lo de rosa fá-lo passar
+ * despercebido no meio do resto.
+ *
+ * É uma âncora e não um <button> — a entrada é uma navegação a sério —,
+ * pelo que precisa do que um botão traz de origem: altura de toque,
+ * centragem e cursor.
+ */
+.discord {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: var(--tap);
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    color: #FFFFFF;
+    text-decoration: none;
+    background: #5865F2;
+    border-radius: var(--radius);
+    box-shadow: 0 6px 22px -10px rgba(88, 101, 242, 0.75);
+    transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.discord:hover {
+    filter: brightness(1.1);
+}
+
+.discord:active {
+    transform: translateY(1px);
+}
+
+/*
+ * A palavra que separa as duas formas de entrar. Centrada e discreta:
+ * é uma junta, não uma secção.
+ */
+.ou-entao {
+    text-align: center;
+    margin: 14px 0 10px;
+}
+
 /* ---------- navegação ---------- */
 
 /*

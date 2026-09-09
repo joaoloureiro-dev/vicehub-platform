@@ -4,6 +4,7 @@ import type { RouteOptions } from 'fastify';
 
 import authRoutes from '../../src/modules/auth/auth.routes.js';
 import type { AuthController } from '../../src/modules/auth/controllers/auth.controller.js';
+import type { DiscordAuthController } from '../../src/modules/auth/controllers/discord-auth.controller.js';
 import validationPlugin from '../../src/plugins/http/validation.plugin.js';
 
 /**
@@ -47,7 +48,13 @@ describe('ligação das rotas de autenticação ao middleware', () => {
             verifyEmail: vi.fn(),
         } as unknown as AuthController;
 
-        await app.register(authRoutes, { controller });
+        const discordController = {
+            providers: vi.fn(),
+            start: vi.fn(),
+            callback: vi.fn(),
+        } as unknown as DiscordAuthController;
+
+        await app.register(authRoutes, { controller, discordController });
         await app.ready();
         await app.close();
     });

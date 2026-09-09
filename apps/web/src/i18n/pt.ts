@@ -53,6 +53,8 @@ export const pt = (p: Tools): Messages => ({
             'O ViceHub está a ser construído às claras, a começar pelo GTA VI. Há coisas prontas e outras não, e a forma mais rápida de mudar isso é dizeres o que falta.',
     },
     auth: {
+        ouEntao: 'ou',
+        entrarComDiscord: 'Continuar com Discord',
         entrarTitulo: 'Entrar',
         entrarSub: 'Bem-vindo de volta ao ViceHub.',
         email: 'Email',

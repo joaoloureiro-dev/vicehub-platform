@@ -1,5 +1,7 @@
 import {
     AuthProviderType,
+    DEFAULT_USER_ROLE,
+    ROLES,
     AccountTokenPurpose,
     AuthSessionStatus,
     RefreshTokenStatus,
@@ -7,6 +9,16 @@ import {
     SourceType,
     type DatabaseClient,
 } from '@vicehub/database';
+
+interface CreateFederatedUserInput {
+    email: string;
+    username: string;
+    defaultRoleId: string;
+    provider: AuthProviderType;
+    providerUserId: string;
+    /** Se o fornecedor confirmou o endereço — decide o email_verified_at. */
+    emailVerified: boolean;
+}
 
 interface CreateLocalUserInput {
     email: string;
@@ -112,6 +124,136 @@ export class AuthRepository {
             select: {
                 email: true,
                 username: true,
+            },
+        });
+    }
+
+    /**
+     * O cargo que toda a gente recebe ao criar conta.
+     *
+     * Vive aqui, e não em quem cria contas, porque quem cria contas
+     * passou a ser mais do que um: o registo local e a entrada pelo
+     * Discord precisam do mesmo cargo, e duas cópias da mesma consulta
+     * divergem no dia em que uma delas mudar.
+     */
+    async findDefaultRoleId(): Promise<string> {
+        const role = await this.findRoleIdBySlug(
+            ROLES[DEFAULT_USER_ROLE].slug,
+            ROLES[DEFAULT_USER_ROLE].scope,
+        );
+
+        if (!role) {
+            throw new Error(
+                `[ViceHub Auth] O cargo base "${ROLES[DEFAULT_USER_ROLE].slug}" não existe na base de dados. Corre "npm run db:seed".`,
+            );
+        }
+
+        return role.id;
+    }
+
+    /**
+     * A conta ligada a esta identidade de um fornecedor externo.
+     *
+     * É por aqui que uma segunda entrada com o mesmo Discord reencontra
+     * a conta em vez de criar outra.
+     */
+    findByProviderIdentity(provider: AuthProviderType, providerUserId: string) {
+        return this.database.userAuthProvider.findFirst({
+            where: {
+                provider,
+                provider_user_id: providerUserId,
+                is_deleted: false,
+                user: { is_deleted: false },
+            },
+            select: { user: { include: { credentials: true } } },
+        });
+    }
+
+    /**
+     * A conta que já usa este email, se houver.
+     */
+    findByEmail(email: string) {
+        return this.database.user.findFirst({
+            where: { email, is_deleted: false },
+            include: { credentials: true },
+        });
+    }
+
+    /**
+     * Liga uma identidade externa a uma conta que já existe.
+     */
+    linkProvider(input: {
+        userId: string;
+        provider: AuthProviderType;
+        providerUserId: string;
+        providerEmail: string | null;
+    }) {
+        return this.database.userAuthProvider.create({
+            data: {
+                userId: input.userId,
+                provider: input.provider,
+                provider_user_id: input.providerUserId,
+                provider_email: input.providerEmail,
+                source: SourceType.api,
+            },
+            select: { id: true },
+        });
+    }
+
+    /**
+     * Se este nome de utilizador já está ocupado.
+     */
+    async usernameTaken(username: string): Promise<boolean> {
+        const encontrado = await this.database.user.findFirst({
+            where: { username, is_deleted: false },
+            select: { id: true },
+        });
+
+        return encontrado !== null;
+    }
+
+    /**
+     * Cria uma conta a partir de um fornecedor externo.
+     *
+     * Igual à local em tudo menos numa coisa: não nasce com credenciais,
+     * porque não há password nenhuma. Quem entra pelo Discord entra pelo
+     * Discord; se um dia quiser uma password, define-a pela recuperação
+     * de conta.
+     */
+    createFederatedUser(input: CreateFederatedUserInput) {
+        return this.database.user.create({
+            data: {
+                email: input.email,
+                username: input.username,
+                source: SourceType.api,
+                /**
+                 * O endereço já vem confirmado pelo fornecedor — obrigar
+                 * a confirmá-lo outra vez seria pedir a alguém que prove
+                 * o que acabou de provar.
+                 */
+                email_verified_at: input.emailVerified ? new Date() : null,
+                authProviders: {
+                    create: {
+                        provider: input.provider,
+                        provider_user_id: input.providerUserId,
+                        provider_email: input.email,
+                        source: SourceType.api,
+                    },
+                },
+                userRoles: {
+                    create: {
+                        roleId: input.defaultRoleId,
+                        source: SourceType.api,
+                    },
+                },
+                wallet: {
+                    create: {
+                        source: SourceType.api,
+                    },
+                },
+            },
+            include: {
+                credentials: true,
             },
         });
     }

@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthRepository } from '../../src/modules/auth/repositories/auth.repository.js';
-import type { DatabaseClient } from '@vicehub/database';
+import {
+    DEFAULT_USER_ROLE,
+    ROLES,
+    type DatabaseClient,
+} from '@vicehub/database';
 
 /**
  * Testes à forma das consultas do repositório.
@@ -18,6 +22,10 @@ describe('AuthRepository', () => {
             create: ReturnType<typeof vi.fn>;
         };
         role: { findFirst: ReturnType<typeof vi.fn> };
+        userAuthProvider: {
+            findFirst: ReturnType<typeof vi.fn>;
+            create: ReturnType<typeof vi.fn>;
+        };
         userCredential: { update: ReturnType<typeof vi.fn> };
         authSession: {
             findFirst: ReturnType<typeof vi.fn>;
@@ -39,6 +47,7 @@ describe('AuthRepository', () => {
         database = {
             user: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
             role: { findFirst: vi.fn() },
+            userAuthProvider: { findFirst: vi.fn(), create: vi.fn() },
             userCredential: { update: vi.fn() },
             authSession: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
             refreshToken: { findUnique: vi.fn(), updateMany: vi.fn() },
@@ -116,6 +125,94 @@ describe('AuthRepository', () => {
                 scope: 'global',
                 is_deleted: false,
             });
+        });
+    });
+
+    describe('findDefaultRoleId', () => {
+        /**
+         * O cargo base vive aqui porque quem cria contas já é mais do
+         * que um: o registo local e a entrada pelo Discord pedem o
+         * mesmo, e duas cópias da consulta divergiriam.
+         */
+        it('procura o cargo do catálogo pelo slug e escopo', async () => {
+            database.role.findFirst.mockResolvedValue({ id: 'role-1' });
+
+            expect(await repository.findDefaultRoleId()).toBe('role-1');
+            expect(argsOf(database.role.findFirst)['where']).toEqual({
+                slug: ROLES[DEFAULT_USER_ROLE].slug,
+                scope: ROLES[DEFAULT_USER_ROLE].scope,
+                is_deleted: false,
+            });
+        });
+
+        /**
+         * Sem o seed, mais vale rebentar do que criar contas sem
+         * autorização nenhuma — essas só se descobrem muito depois.
+         */
+        it('rebenta a dizer o que falta correr quando o cargo não existe', async () => {
+            database.role.findFirst.mockResolvedValue(null);
+
+            await expect(repository.findDefaultRoleId()).rejects.toThrow(
+                /db:seed/,
+            );
+        });
+    });
+
+    describe('identidades de fornecedores externos', () => {
+        it('procura a identidade sem trazer contas eliminadas', () => {
+            repository.findByProviderIdentity('discord' as never, '42');
+
+            expect(argsOf(database.userAuthProvider.findFirst)['where']).toEqual({
+                provider: 'discord',
+                provider_user_id: '42',
+                is_deleted: false,
+                user: { is_deleted: false },
+            });
+        });
+
+        /**
+         * Uma conta criada pelo Discord não nasce com credenciais: não
+         * há password nenhuma para guardar. E o email já vem confirmado
+         * pelo fornecedor, pelo que pedir uma segunda confirmação era
+         * pedir a alguém que prove o que acabou de provar.
+         */
+        it('cria a conta federada sem credenciais e com o email já confirmado', () => {
+            repository.createFederatedUser({
+                email: 'alguem@vicehub.test',
+                username: 'alguem',
+                defaultRoleId: 'role-1',
+                provider: 'discord' as never,
+                providerUserId: '42',
+                emailVerified: true,
+            });
+
+            const data = argsOf(database.user.create)['data'] as Record<
+                string,
+                unknown
+            >;
+
+            expect(data['credentials']).toBeUndefined();
+            expect(data['email_verified_at']).toBeInstanceOf(Date);
+            expect(data['userRoles']).toBeDefined();
+            expect(data['wallet']).toBeDefined();
+        });
+
+        it('deixa o email por confirmar quando o fornecedor não o confirmou', () => {
+            repository.createFederatedUser({
+                email: 'alguem@vicehub.test',
+                username: 'alguem',
+                defaultRoleId: 'role-1',
+                provider: 'discord' as never,
+                providerUserId: '42',
+                emailVerified: false,
+            });
+
+            const data = argsOf(database.user.create)['data'] as Record<
+                string,
+                unknown
+            >;
+
+            expect(data['email_verified_at']).toBeNull();
         });
     });
 

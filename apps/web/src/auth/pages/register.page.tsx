@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 
 import { ApiError } from '../../lib/api.js';
 import { Alert } from '../components/alert.js';
+import { DiscordButton } from '../components/discord-button.js';
 import { Field } from '../components/field.js';
 import { register } from '../auth.api.js';
 import { useT } from '../../i18n/i18n.js';
@@ -100,6 +101,8 @@ export const RegisterPage = () => {
                     {aEnviar ? t.auth.aCriar : t.auth.registoTitulo}
                 </button>
             </form>
+
+            <DiscordButton />
 
             <div className="foot">
                 <span>{t.auth.jaTensConta}</span>

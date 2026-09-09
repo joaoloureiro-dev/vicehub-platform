@@ -67,6 +67,16 @@ const authErrorStatusCodes: Record<AuthErrorCode, number> = {
     INVALID_ACCOUNT_TOKEN: 400,
     /** Já está confirmado: não é erro de quem pede, é estado. */
     EMAIL_ALREADY_VERIFIED: 409,
+    DISCORD_NOT_CONFIGURED: 503,
+    /** Não está avariado do nosso lado: o Discord é que não respondeu. */
+    DISCORD_UNAVAILABLE: 502,
+    DISCORD_EXCHANGE_FAILED: 502,
+    /**
+     * 400 e não 403: o pedido chegou mal formado — sem `state`, ou com
+     * um que não saiu daqui. Não há aqui ninguém a quem recusar acesso.
+     */
+    DISCORD_STATE_MISMATCH: 400,
+    DISCORD_EMAIL_UNUSABLE: 409,
 };
 
 /**

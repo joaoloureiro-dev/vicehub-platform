@@ -146,6 +146,23 @@ const envSchema = z.object({
     STRIPE_SUCCESS_URL: z.string().url().optional(),
     STRIPE_CANCEL_URL: z.string().url().optional(),
 
+    /**
+     * Entrar com Discord.
+     *
+     * Os três andam juntos e são opcionais como os do Stripe, e pela
+     * mesma razão: o desenvolvimento, os testes e a integração contínua
+     * não têm uma aplicação registada no Discord, e exigi-la faria a
+     * plataforma recusar arrancar em todos esses sítios por causa de uma
+     * forma de entrar que lá não se usa.
+     *
+     * O endereço de retorno tem de ser exatamente o que está registado
+     * no portal do Discord — é ele que compara, e uma diferença de uma
+     * barra é uma recusa sem explicação.
+     */
+    DISCORD_CLIENT_ID: z.string().min(1).optional(),
+    DISCORD_CLIENT_SECRET: z.string().min(1).optional(),
+    DISCORD_REDIRECT_URI: z.string().url().optional(),
+
     CORS_ALLOWED_ORIGINS: z
         .string()
         .min(1)
@@ -273,6 +290,53 @@ if (stripeFieldsPresent.length > 0 && stripeFieldsPresent.length !== STRIPE_FIEL
  * planos; o que não existe é a compra pelo próprio.
  */
 export const isStripeConfigured = stripeFieldsPresent.length === STRIPE_FIELDS.length;
+
+/**
+ * Os campos que entrar com Discord exige, todos ao mesmo tempo.
+ */
+const DISCORD_FIELDS = [
+    'DISCORD_CLIENT_ID',
+    'DISCORD_CLIENT_SECRET',
+    'DISCORD_REDIRECT_URI',
+] as const;
+
+const discordFieldsPresent = DISCORD_FIELDS.filter(
+    (field) => env[field] !== undefined,
+);
+
+/**
+ * Meia configuração do Discord é recusada ao arrancar.
+ *
+ * Ter o identificador sem o segredo daria um botão que leva ao Discord
+ * e volta com um erro que ninguém sabe ler. Mais vale não arrancar.
+ */
+if (
+    discordFieldsPresent.length > 0 &&
+    discordFieldsPresent.length !== DISCORD_FIELDS.length
+) {
+    const emFalta = DISCORD_FIELDS.filter((field) => env[field] === undefined);
+
+    throw new Error(
+        `[ViceHub API] Configuração do Discord incompleta. Em falta: ${emFalta.join(', ')}.`,
+    );
+}
+
+/**
+ * Se entrar com Discord está configurado.
+ */
+export const isDiscordConfigured =
+    discordFieldsPresent.length === DISCORD_FIELDS.length;
+
+/**
+ * A configuração do Discord, quando existe.
+ */
+export const discordConfig = isDiscordConfigured
+    ? Object.freeze({
+        clientId: env.DISCORD_CLIENT_ID as string,
+        clientSecret: env.DISCORD_CLIENT_SECRET as string,
+        redirectUri: env.DISCORD_REDIRECT_URI as string,
+    })
+    : null;
 
 /**
  * A configuração do Stripe, quando existe.

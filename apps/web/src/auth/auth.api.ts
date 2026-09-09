@@ -86,3 +86,25 @@ export const restoreSession = async (): Promise<boolean> => {
         return false;
     }
 };
+
+/**
+ * Que formas de entrar esta instalação oferece.
+ *
+ * Pergunta-se porque o Discord pode não estar configurado, e um botão
+ * que leva a um erro é pior do que botão nenhum.
+ */
+export interface AuthProviders {
+    discord: boolean;
+}
+
+export const getAuthProviders = (): Promise<AuthProviders> =>
+    api<AuthProviders>('/auth/providers', { withoutRefresh: true });
+
+/**
+ * Onde começa a entrada pelo Discord.
+ *
+ * É uma navegação do browser e não um pedido nosso: o Discord tem de
+ * ver a pessoa, e uma resposta a `fetch` não a levaria a lado nenhum.
+ * Daí ser um endereço e não uma função que chama a API.
+ */
+export const ENDERECO_DISCORD = '/api/v1/auth/discord';
