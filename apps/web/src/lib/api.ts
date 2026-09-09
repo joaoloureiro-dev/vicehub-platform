@@ -23,6 +23,29 @@ export class ApiError extends Error {
     }
 }
 
+/**
+ * Carrega alguma coisa que quem não tem permissão não pode ver.
+ *
+ * Um 403 não é uma avaria: é a API a dizer "isto não é para ti". Quem
+ * chama recebe `null` e esconde a secção, em vez de mostrar um erro a
+ * quem não fez nada de errado — e, sobretudo, em vez de o ecrã adivinhar
+ * o cargo a partir de outra coisa. A permissão mostrada passa a ser a
+ * permissão real.
+ */
+export const vazioSem403 = async <T>(
+    carregar: () => Promise<T>,
+): Promise<T | null> => {
+    try {
+        return await carregar();
+    } catch (falha) {
+        if (falha instanceof ApiError && falha.status === 403) {
+            return null;
+        }
+
+        throw falha;
+    }
+};
+
 export interface AuthPayload {
     accessToken: string;
     user: SessionUser;

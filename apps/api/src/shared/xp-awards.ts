@@ -42,6 +42,30 @@ const NADA: EventXpResultado = {
 };
 
 /**
+ * Os ganhos de xp de um dono, do mais recente para o mais antigo.
+ *
+ * É a resposta a "porquê?". O total diz onde a crew está; isto diz como
+ * lá chegou — e sem isto o número só se podia acreditar.
+ */
+export const listXpAwards = (
+    database: DatabaseClient,
+    owner: { crewId: string } | { userId: string },
+    take: number,
+) =>
+    database.xpAward.findMany({
+        where: { ...owner, is_deleted: false },
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+        take,
+        select: {
+            id: true,
+            amount: true,
+            reason: true,
+            created_at: true,
+            event: { select: { id: true, name: true } },
+        },
+    });
+
+/**
  * Paga o xp de um evento concluído.
  *
  * Escrever o ganho e somá-lo ao dono vai na mesma transação: um ganho

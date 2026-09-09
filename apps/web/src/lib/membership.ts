@@ -1,4 +1,4 @@
-import { ApiError, api } from './api.js';
+import { api, vazioSem403 } from './api.js';
 
 /**
  * Uma pessoa dentro de uma comunidade — crew ou servidor.
@@ -81,19 +81,9 @@ export const createMembershipApi = (base: '/crews' | '/servers') => ({
  *
  * Devolve `null` para "não gere", e a lista para "gere".
  */
-export const carregarCandidaturas = async (
+export const carregarCandidaturas = (
     listar: () => Promise<CommunityJoinRequest[]>,
-): Promise<CommunityJoinRequest[] | null> => {
-    try {
-        return await listar();
-    } catch (falha) {
-        if (falha instanceof ApiError && falha.status === 403) {
-            return null;
-        }
-
-        throw falha;
-    }
-};
+): Promise<CommunityJoinRequest[] | null> => vazioSem403(listar);
 
 /**
  * Constrói a query de um diretório.

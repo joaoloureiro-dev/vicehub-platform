@@ -19,6 +19,7 @@ import type {
     CrewMember,
     CrewMembershipSummary,
     CrewProfile,
+    CrewXpAward,
     CrewRecord,
     DirectoryPage,
 } from '../types/crew.types.js';
@@ -136,6 +137,28 @@ export class CrewService {
         await this.crewRepository.updateAppearance(crewId, input);
 
         return this.getProfile(crewId);
+    }
+
+    /**
+     * De onde veio o xp desta crew.
+     *
+     * O total e o nível são públicos — estão no perfil de quem quer que
+     * lá chegue. Isto não é: os ganhos dizem os **nomes dos eventos**, e
+     * o calendário de uma comunidade é dela. É por isso que a rota exige
+     * `event:read`, a mesma permissão que ver os eventos.
+     */
+    async listXpAwards(crewId: string): Promise<CrewXpAward[]> {
+        await this.requireCrew(crewId);
+
+        const ganhos = await this.crewRepository.listXpAwards(crewId);
+
+        return ganhos.map((ganho) => ({
+            id: ganho.id,
+            amount: ganho.amount,
+            reason: ganho.reason,
+            at: ganho.created_at,
+            event: ganho.event,
+        }));
     }
 
     /**

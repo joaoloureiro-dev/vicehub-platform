@@ -477,6 +477,10 @@ export const es = (p: Tools): Messages => ({
             `Faltan ${xp} XP para el nivel ${proximo}`,
         noTopo: (nivel: number) =>
             `Nivel ${nivel} — el máximo que hay, por ahora.`,
+        historico: 'De dónde viene este nivel',
+        aindaSemGanhos:
+            'Todavía no hay XP. Organiza un evento, confirma quién apareció y ciérralo.',
+        eventoApagado: 'un evento que ya no existe',
         deOndeVem:
             'Una crew gana XP cuando un evento que organizó termina con gente que apareció de verdad. Quien apareció también gana.',
     },

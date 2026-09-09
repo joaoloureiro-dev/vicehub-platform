@@ -93,6 +93,7 @@ describe('ligação das rotas de crew', () => {
             setMemberRole: vi.fn(),
             updateAppearance: vi.fn(),
             remove: vi.fn(),
+            listXp: vi.fn(),
         } as unknown as CrewController;
 
         await app.register(crewRoutes, { controller });
@@ -155,6 +156,25 @@ describe('ligação das rotas de crew', () => {
             'DELETE /:crewId/members/:userId',
         ])('%s exige crew:manage_members', (key) => {
             expect(permissoesPorRota.get(key)).toEqual(['crew:manage_members']);
+        });
+    });
+
+    /**
+     * O nível e o total de xp são públicos, no perfil. De onde vieram
+     * não é: a lista diz os **nomes dos eventos**, e o calendário de uma
+     * comunidade é dela. Exige a mesma permissão que ver os eventos —
+     * `event:read`, que qualquer membro tem — e não a gestão de membros,
+     * que deixaria um membro comum de fora do que é dele também.
+     */
+    describe('de onde veio o xp', () => {
+        const rota = 'GET /:crewId/xp';
+
+        it('exige event:read', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(['event:read']);
+        });
+
+        it('exige conta, e não é pública como o perfil', () => {
+            expect(preHandlerCount(rota)).toBe(2);
         });
     });
 

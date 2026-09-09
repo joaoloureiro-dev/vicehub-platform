@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
-import { ApiError } from '../../lib/api.js';
+import { ApiError, vazioSem403 } from '../../lib/api.js';
 import { carregarCandidaturas } from '../../lib/membership.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
@@ -11,11 +11,13 @@ import { CrewAffiliation } from '../../affiliations/components/crew-affiliation.
 import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ApagarComunidade } from '../../components/apagar-comunidade.js';
 import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
+import { HistoricoDeXp } from '../components/historico-de-xp.js';
 import { CrewSettings } from '../components/crew-settings.js';
 import {
     acceptJoinRequest,
     deleteCrew,
     getCrew,
+    listCrewXp,
     leaveCrew,
     listCrewMembers,
     listJoinRequests,
@@ -66,6 +68,18 @@ export const CrewPage = () => {
         () =>
             user
                 ? carregarCandidaturas(() => listJoinRequests(crewId as string))
+                : Promise.resolve(null),
+        [crewId, user?.id],
+    );
+
+    /**
+     * De onde veio o xp. Pelo mesmo caminho das candidaturas: pede-se, e
+     * um 403 quer dizer "não pertences", não "avariou".
+     */
+    const ganhos = useAsync(
+        () =>
+            user
+                ? vazioSem403(() => listCrewXp(crewId as string))
                 : Promise.resolve(null),
         [crewId, user?.id],
     );
@@ -179,6 +193,15 @@ export const CrewPage = () => {
             />
 
             <p className="hint">{t.progressao.deOndeVem}</p>
+
+            {/*
+              A lista só aparece a quem pertence: diz os nomes dos
+              eventos, e o calendário de uma comunidade é dela. O 403 da
+              API é a resposta, e não um palpite deste ecrã.
+            */}
+            {ganhos.data ? (
+                <HistoricoDeXp crewId={perfil.id} ganhos={ganhos.data} />
+            ) : null}
 
             {erroAcao ? <Alert kind="bad">{erroAcao}</Alert> : null}
 
