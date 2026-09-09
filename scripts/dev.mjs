@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -81,17 +81,63 @@ const correr = (comando, etiqueta, cor) =>
     });
 
 /**
- * O pacote `database` tem de estar construído antes de tudo o resto.
+ * A data do ficheiro mais recente de uma pasta, ou 0 se não existir.
+ *
+ * Percorre subpastas porque o `src` do pacote tem-nas, e o que interessa
+ * é o mais recente de todos — um ficheiro mexido três pastas abaixo
+ * torna o `dist` tão velho como um mexido à porta.
+ */
+const maisRecente = (caminho) => {
+    if (!existsSync(caminho)) {
+        return 0;
+    }
+
+    const info = statSync(caminho);
+
+    if (!info.isDirectory()) {
+        return info.mtimeMs;
+    }
+
+    return readdirSync(caminho).reduce(
+        (maior, entrada) => Math.max(maior, maisRecente(join(caminho, entrada))),
+        0,
+    );
+};
+
+/**
+ * O pacote `database` tem de estar construído **e atualizado** antes de
+ * tudo o resto.
  *
  * Em execução, `@vicehub/database` resolve para `dist/`, e o `dist/` não
  * é versionado — num clone acabado de fazer não existe. O `tsx` compila
  * o código da API ao vivo e por isso engana: o erro que aparece é um
  * export em falta num ficheiro que ninguém tocou, e não "falta
  * construir".
+ *
+ * A verificação já foi só "existe?", e isso deixava passar o caso mais
+ * frequente de todos: quem faz `git pull` fica com código novo e um
+ * `dist` velho, que existe e por isso não era reconstruído. O erro é
+ * exatamente o mesmo — `does not provide an export named X` — mas agora
+ * a apontar para um export que o código novo trouxe e o `dist` antigo
+ * não conhece. Ninguém liga uma coisa à outra.
+ *
+ * Por isso a pergunta passou a ser "está atualizado?", comparando datas
+ * com o `src` e com o schema do Prisma. O schema conta porque o cliente
+ * gerado sai dele: mudar uma coluna sem voltar a gerar dá um erro de
+ * tipos num ficheiro que ninguém tocou.
  */
-if (!existsSync(join(raiz, 'packages/database/dist/index.js'))) {
+const construido = maisRecente(join(raiz, 'packages/database/dist/index.js'));
+
+const fonte = Math.max(
+    maisRecente(join(raiz, 'packages/database/src')),
+    maisRecente(join(raiz, 'packages/database/prisma/schema.prisma')),
+);
+
+if (construido === 0 || fonte > construido) {
     console.log(
-        `${COR.setup}[vicehub]${COR.fim} O pacote database ainda não está construído. A construir, uma vez só…`,
+        construido === 0
+            ? `${COR.setup}[vicehub]${COR.fim} O pacote database ainda não está construído. A construir, uma vez só…`
+            : `${COR.setup}[vicehub]${COR.fim} O pacote database está desatualizado em relação ao código. A reconstruir…`,
     );
 
     const preparacao = await correr(
