@@ -24,6 +24,13 @@ export interface CrewProfile {
     xp: bigint;
     /** O xp com que se entrou no nível atual. */
     levelXp: bigint;
+    /**
+     * O lugar entre as crews que já ganharam xp, ou null.
+     *
+     * Null quer dizer "ainda sem lugar", e não "último": uma crew que
+     * ainda não ganhou nada não está mal classificada — não entrou.
+     */
+    rank: { position: number; of: number } | null;
     /** O xp que o nível seguinte exige, ou null no topo. */
     nextLevelXp: bigint | null;
     influence: number;

@@ -118,6 +118,12 @@ export const pt = (p: Tools): Messages => ({
         anterior: 'Anterior',
         seguinte: 'Seguinte',
         paginaDe: (atual: number, total: number) => `Página ${atual} de ${total}`,
+        ordenarPor: 'Ordenar por',
+        ordemRecentes: 'Mais recentes',
+        ordemNivel: 'Nível',
+        ordemNome: 'Nome',
+        lugar: (posicao: number, total: number) =>
+            `#${posicao} entre ${total} crews classificadas`,
         naoCarregou: 'Não foi possível carregar o diretório.',
         nivel: (n: number) => `Nível ${n}`,
         membros: (n: number) =>

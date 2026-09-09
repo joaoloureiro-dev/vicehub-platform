@@ -192,6 +192,20 @@ export const CrewPage = () => {
                 xpDoNivelSeguinte={perfil.nextLevelXp}
             />
 
+            {/*
+              O lugar só existe para quem já ganhou alguma coisa. Uma
+              crew sem xp não está em último — não entrou ainda, e
+              mostrar-lhe um lugar seria dizer-lhe que perdeu uma corrida
+              em que nunca correu.
+            */}
+            {perfil.rank ? (
+                <p className="lugar">
+                    <Link to="/crews">
+                        {t.crews.lugar(perfil.rank.position, perfil.rank.of)}
+                    </Link>
+                </p>
+            ) : null}
+
             <p className="hint">{t.progressao.deOndeVem}</p>
 
             {/*

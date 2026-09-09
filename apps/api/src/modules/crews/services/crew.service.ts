@@ -624,9 +624,15 @@ export class CrewService {
     }
 
     private async buildProfile(crew: CrewRecord): Promise<CrewProfile> {
-        const [entitlement, memberCount] = await Promise.all([
+        const [entitlement, memberCount, rank] = await Promise.all([
             this.subscriptionService.getEntitlement({ crewId: crew.id }),
             this.crewRepository.countActiveMembers(crew.id),
+            /*
+              Sem xp não há lugar. Contar uma crew que nunca ganhou nada
+              seria pô-la num empate a zero com metade do diretório, e um
+              lugar assim não diz nada a ninguém.
+            */
+            crew.xp > 0n ? this.crewRepository.rankByXp(crew.xp) : null,
         ]);
 
         /**
@@ -648,6 +654,7 @@ export class CrewService {
             xp: crew.xp,
             levelXp: progresso.xpDoNivelAtual,
             nextLevelXp: progresso.xpDoNivelSeguinte,
+            rank,
             influence: crew.influence,
             prestige: crew.prestige,
             isPremium: entitlement.isPremium,

@@ -2060,3 +2060,46 @@ button.link:hover {
     color: var(--faint);
     font-variant-numeric: tabular-nums;
 }
+
+
+/* ---------- o lugar na classificação ---------- */
+
+.lugar {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+}
+
+.lugar a {
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+
+.lugar a:hover {
+    color: var(--cyan);
+    border-bottom-color: currentColor;
+}
+
+/* ---------- ordenar o diretório ---------- */
+
+.ordenar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.ordenar select {
+    font: inherit;
+    font-size: 15px;
+    min-height: var(--tap);
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--edge-lit);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+}
