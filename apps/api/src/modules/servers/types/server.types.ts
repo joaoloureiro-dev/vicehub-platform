@@ -8,6 +8,9 @@ export interface ServerRecord {
     banner_url: string | null;
     accent_color: string | null;
     isOnline: boolean;
+    /** O que o servidor reporta de si próprio, quando reporta. */
+    last_heartbeat_at: Date | null;
+    players_online: number | null;
     created_at: Date;
 }
 
@@ -17,6 +20,19 @@ export interface ServerProfile {
     region: string | null;
     description: string | null;
     isOnline: boolean;
+    /**
+     * Quantas pessoas o servidor reportou da última vez. Null enquanto
+     * ninguém tiver instalado o recurso que reporta.
+     */
+    playersOnline: number | null;
+    /**
+     * Se o servidor já reportou por si alguma vez.
+     *
+     * A partir daí, o estado online vem do relógio e a marca manual
+     * deixa de decidir — e um formulário que continuasse a oferecer
+     * essa marca estaria a oferecer um botão que não faz nada.
+     */
+    reportsItself: boolean;
     isPremium: boolean;
     /** Personalização, vazia para quem não tem plano ativo. */
     appearance: Appearance;
@@ -46,6 +62,11 @@ export interface ServerDirectoryEntry {
     region: string | null;
     description: string | null;
     isOnline: boolean;
+    /**
+     * Quantas pessoas o servidor reportou da última vez. Null enquanto
+     * ninguém tiver instalado o recurso que reporta.
+     */
+    playersOnline: number | null;
     memberCount: number;
     isPremium: boolean;
     appearance: Appearance;

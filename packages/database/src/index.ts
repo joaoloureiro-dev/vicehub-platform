@@ -63,6 +63,12 @@ export {
 export type { PlanDefinition, PlanKey } from './plans.js';
 
 export {
+    HEARTBEAT_JANELA_MS,
+    estaOnline,
+    filtroDeOnline,
+} from './heartbeat.js';
+
+export {
     PRUNE_MARGEM_MS,
     condicoesDePrune,
     contarParaPrune,

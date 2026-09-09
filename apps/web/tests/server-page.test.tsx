@@ -13,6 +13,8 @@ const perfil = {
     region: 'EU',
     description: 'O servidor do teste.',
     isOnline: true,
+    playersOnline: null,
+    reportsItself: false,
     isPremium: false,
     appearance: { bannerUrl: null, accentColor: null },
     memberCount: 12,
@@ -51,6 +53,8 @@ const servidor = (opcoes: {
     requests: Response;
     premium?: boolean;
     patch?: Response;
+    /** Um perfil diferente do normal, para os casos que o exigem. */
+    perfil?: unknown;
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -88,7 +92,11 @@ const servidor = (opcoes: {
         }
 
         return Promise.resolve(
-            json(200, { ...perfil, isPremium: opcoes.premium === true }),
+            json(200, {
+                ...perfil,
+                ...(opcoes.perfil ?? {}),
+                isPremium: opcoes.premium === true,
+            }),
         );
     });
 
@@ -167,6 +175,28 @@ describe('as definições de um servidor', () => {
         await waitFor(() => {
             expect(corpoDoPatch(fetchMock)).toMatchObject({ isOnline: false });
         });
+    });
+
+    /**
+     * A partir do momento em que o servidor reporta por si, a marca
+     * manual deixa de decidir. Continuar a mostrá-la seria oferecer um
+     * botão que não faz nada — e alguém desligá-lo-ia e o servidor
+     * continuava online, sem perceber porquê.
+     */
+    it('esconde a marca manual num servidor que reporta por si', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                perfil: { ...perfil, reportsItself: true },
+            }),
+        );
+
+        montar();
+
+        expect(await screen.findByLabelText(t.servidores.nome)).toBeDefined();
+        expect(screen.queryByLabelText(t.servidores.estaOnline)).toBeNull();
+        expect(screen.getByText(t.servidores.reportaPorSi)).toBeDefined();
     });
 
     /**

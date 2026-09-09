@@ -1,4 +1,4 @@
-import { MembershipStatus, type RoleKey } from '@vicehub/database';
+import { MembershipStatus, estaOnline, type RoleKey } from '@vicehub/database';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { visibleAppearance } from '../../../shared/appearance.js';
@@ -284,6 +284,8 @@ export class ServerService {
             banner_url: string | null;
             accent_color: string | null;
             isOnline: boolean;
+            last_heartbeat_at: Date | null;
+            players_online: number | null;
             created_at: Date;
         },
         isPremium: boolean,
@@ -294,7 +296,8 @@ export class ServerService {
             name: server.name,
             region: server.region,
             description: server.description,
-            isOnline: server.isOnline,
+            isOnline: estaOnline(server),
+            playersOnline: server.players_online,
             memberCount,
             isPremium,
             appearance: visibleAppearance(server, isPremium),
@@ -559,7 +562,9 @@ export class ServerService {
             name: server.name,
             region: server.region,
             description: server.description,
-            isOnline: server.isOnline,
+            isOnline: estaOnline(server),
+            playersOnline: server.players_online,
+            reportsItself: server.last_heartbeat_at !== null,
             isPremium: entitlement.isPremium,
             appearance: visibleAppearance(server, entitlement.isPremium),
             memberCount,

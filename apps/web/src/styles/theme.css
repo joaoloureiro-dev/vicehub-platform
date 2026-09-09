@@ -985,6 +985,45 @@ button.link:hover {
     font-size: 14px;
 }
 
+/* ---------- chaves de servidor ---------- */
+
+/*
+ * A chave acabada de criar. Aparece uma vez e nunca mais, por isso é o
+ * elemento com mais peso do painel — e vai em monoespaçado, a quebrar
+ * por qualquer sítio, porque é para ser selecionada com o dedo num
+ * telemóvel.
+ */
+.chave-nova {
+    border: 1px solid var(--cyan);
+    border-radius: var(--radius);
+    background: rgba(43, 213, 233, 0.06);
+    padding: 14px 16px;
+    margin: 12px 0;
+}
+
+.chave-nova p {
+    margin: 0 0 10px;
+    font-size: 14.5px;
+    color: var(--muted);
+}
+
+.chave-nova code {
+    display: block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-all;
+    user-select: all;
+    color: var(--ink);
+}
+
+/* O prefixo, para se distinguir uma chave de outra numa lista. */
+.prefixo {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    color: var(--muted);
+}
+
 /* ---------- servidores ---------- */
 
 /*

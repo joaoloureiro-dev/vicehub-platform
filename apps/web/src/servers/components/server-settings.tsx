@@ -137,20 +137,32 @@ export const ServerSettings = ({ servidor, aoGuardar }: ServerSettingsProps) => 
                 </div>
 
                 {/*
-                  A mesma caixa do filtro do diretório, e de propósito: é
-                  o mesmo estado dos dois lados, e quem o liga aqui
-                  reconhece-o lá.
+                  A partir do momento em que o servidor reporta por si,
+                  a marca manual deixa de decidir seja o que for — quem
+                  decide é o último sinal. Continuar a mostrar a caixa
+                  seria oferecer um botão que não faz nada, e pior:
+                  alguém desligá-la-ia e o servidor continuaria online,
+                  sem perceber porquê.
                 */}
-                <label className="filtro">
-                    <input
-                        type="checkbox"
-                        checked={online}
-                        onChange={(event) => {
-                            setOnline(event.target.checked);
-                        }}
-                    />
-                    {t.servidores.estaOnline}
-                </label>
+                {servidor.reportsItself ? (
+                    <p className="hint">{t.servidores.reportaPorSi}</p>
+                ) : (
+                    /*
+                      A mesma caixa do filtro do diretório, e de
+                      propósito: é o mesmo estado dos dois lados, e quem
+                      o liga aqui reconhece-o lá.
+                    */
+                    <label className="filtro">
+                        <input
+                            type="checkbox"
+                            checked={online}
+                            onChange={(event) => {
+                                setOnline(event.target.checked);
+                            }}
+                        />
+                        {t.servidores.estaOnline}
+                    </label>
+                )}
 
                 <button
                     className="primary"

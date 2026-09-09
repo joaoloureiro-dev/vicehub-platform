@@ -8,6 +8,11 @@ export interface ServerDirectoryEntry {
     region: string | null;
     description: string | null;
     isOnline: boolean;
+    /**
+     * Quantas pessoas o servidor reportou da última vez. Null enquanto
+     * ninguém tiver instalado o recurso que reporta.
+     */
+    playersOnline: number | null;
     memberCount: number;
     isPremium: boolean;
     appearance: Appearance;
@@ -20,6 +25,16 @@ export interface ServerProfile {
     region: string | null;
     description: string | null;
     isOnline: boolean;
+    /**
+     * Quantas pessoas o servidor reportou da última vez. Null enquanto
+     * ninguém tiver instalado o recurso que reporta.
+     */
+    playersOnline: number | null;
+    /**
+     * Se o servidor já reportou por si. A partir daí, o estado online
+     * vem do último sinal e não da marca manual.
+     */
+    reportsItself: boolean;
     isPremium: boolean;
     appearance: Appearance;
     memberCount: number;

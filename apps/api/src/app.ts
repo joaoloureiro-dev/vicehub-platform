@@ -12,6 +12,8 @@ import authModule from './modules/auth/auth.module.js';
 import userModule from './modules/users/user.module.js';
 import affiliationModule from './modules/affiliations/affiliation.module.js';
 import crewModule from './modules/crews/crew.module.js';
+import ingestModule from './modules/ingest/ingest.module.js';
+import authenticateServerPlugin from './modules/ingest/http/authenticate-server.plugin.js';
 import serverModule from './modules/servers/server.module.js';
 import subscriptionModule from './modules/subscriptions/subscription.module.js';
 import billingModule from './modules/billing/billing.module.js';
@@ -174,6 +176,12 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Módulo das filiações entre crews e servidores
     void app.register(affiliationModule);
+
+    // Autenticação de servidores por chave de API, para a ingestão
+    void app.register(authenticateServerPlugin);
+
+    // Módulo da ingestão: chaves e o que os servidores reportam
+    void app.register(ingestModule);
 
     // Módulo de subscrições
     void app.register(subscriptionModule);

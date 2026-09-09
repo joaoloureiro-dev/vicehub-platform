@@ -41,6 +41,9 @@ const ServerCard = ({
             <span>
                 {servidor.isOnline ? t.servidores.online : t.servidores.offline}
             </span>
+            {servidor.isOnline && servidor.playersOnline !== null ? (
+                <span>{t.chaves.jogadoresOnline(servidor.playersOnline)}</span>
+            ) : null}
             {servidor.region ? <span>{servidor.region}</span> : null}
             <span>{t.crews.membros(servidor.memberCount)}</span>
             {destaque ? <span className="pill">{t.crews.destaque}</span> : null}

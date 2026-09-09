@@ -13,6 +13,10 @@ import {
     type AffiliationErrorCode,
 } from '../../modules/affiliations/errors/affiliation.errors.js';
 import {
+    IngestError,
+    type IngestErrorCode,
+} from '../../modules/ingest/errors/ingest.errors.js';
+import {
     CrewError,
     type CrewErrorCode,
 } from '../../modules/crews/errors/crew.errors.js';
@@ -126,6 +130,17 @@ const affiliationErrorStatusCodes: Record<AffiliationErrorCode, number> = {
     CREW_ALREADY_AFFILIATED: 409,
     AFFILIATION_ALREADY_REQUESTED: 409,
     AFFILIATION_NOT_PENDING: 409,
+};
+
+/**
+ * Estatuto HTTP de cada erro da ingestão.
+ */
+const ingestErrorStatusCodes: Record<IngestErrorCode, number> = {
+    SERVER_NOT_FOUND: 404,
+    API_KEY_NOT_FOUND: 404,
+    /** A chave apresentada não serve. Não se diz porquê, de propósito. */
+    INVALID_API_KEY: 401,
+    TOO_MANY_API_KEYS: 409,
 };
 
 const serverErrorStatusCodes: Record<ServerErrorCode, number> = {
@@ -368,6 +383,23 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             request.log.warn(
                 { err: error, code: error.code },
                 'Pedido recusado pelo módulo das filiações.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: error.code,
+                error: httpErrorNames[statusCode] ?? 'Error',
+                message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof IngestError) {
+            const statusCode = ingestErrorStatusCodes[error.code];
+
+            request.log.warn(
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo da ingestão.',
             );
 
             reply.status(statusCode).send({
