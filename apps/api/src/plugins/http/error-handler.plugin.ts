@@ -13,6 +13,10 @@ import {
     type AffiliationErrorCode,
 } from '../../modules/affiliations/errors/affiliation.errors.js';
 import {
+    FriendError,
+    type FriendErrorCode,
+} from '../../modules/friends/errors/friend.errors.js';
+import {
     IngestError,
     type IngestErrorCode,
 } from '../../modules/ingest/errors/ingest.errors.js';
@@ -103,6 +107,23 @@ const subscriptionErrorStatusCodes: Record<SubscriptionErrorCode, number> = {
     /** O titular já tem o que se estava a tentar dar-lhe. */
     ALREADY_LIFETIME: 409,
     LIFETIME_CANNOT_BE_CANCELED: 409,
+};
+
+/**
+ * Estatuto HTTP de cada erro das amizades.
+ */
+const friendErrorStatusCodes: Record<FriendErrorCode, number> = {
+    USER_NOT_FOUND: 404,
+    /**
+     * 409 e não 400: o pedido está bem escrito, e o que o impede é o
+     * estado — que quem pede e quem recebe são a mesma pessoa.
+     */
+    CANNOT_FRIEND_SELF: 409,
+    ALREADY_FRIENDS: 409,
+    ALREADY_REQUESTED: 409,
+    FRIENDSHIP_NOT_FOUND: 404,
+    FRIENDSHIP_NOT_PENDING: 409,
+    CANNOT_ACCEPT_OWN_REQUEST: 409,
 };
 
 const crewErrorStatusCodes: Record<CrewErrorCode, number> = {
@@ -378,6 +399,23 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
             request.log.warn(
                 { err: error, code: error.code },
                 'Pedido recusado pelo módulo de crews.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
+                code: error.code,
+                error: httpErrorNames[statusCode] ?? 'Error',
+                message: error.message,
+            });
+            return;
+        }
+
+        if (error instanceof FriendError) {
+            const statusCode = friendErrorStatusCodes[error.code];
+
+            request.log.warn(
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo das amizades.',
             );
 
             reply.status(statusCode).send({

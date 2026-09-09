@@ -481,6 +481,21 @@ export const en = (p: Tools) => ({
             quantos === 1 ? '1 player online' : `${quantos} players online`,
     },
 
+    amigos: {
+        titulo: 'Friends',
+        adicionar: 'Add friend',
+        aceitar: 'Accept',
+        recusar: 'Decline',
+        retirar: 'Withdraw',
+        desfazer: 'Remove',
+        saoAmigos: 'Friends',
+        pedidoEnviado: 'Request sent',
+        pedidos: 'Waiting for you',
+        aindaNenhum: 'No friends yet. Open someone’s profile and ask.',
+        desde: (quando: string) => `Friends since ${quando}`,
+        naoCarregou: 'Your friends could not be loaded.',
+    },
+
     progressao: {
         nivelAtual: (nivel: number) => `Level ${nivel}`,
         faltam: (xp: string, proximo: number) =>

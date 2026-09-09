@@ -8,6 +8,7 @@ import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { requestEmailVerification } from '../../auth/auth.api.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
+import { ListaDeAmigos } from '../components/lista-de-amigos.js';
 import {
     getMyProfile,
     updateMyAppearance,
@@ -153,6 +154,8 @@ export const MyProfilePage = () => {
                 xpDoNivel={eu.levelXp}
                 xpDoNivelSeguinte={eu.nextLevelXp}
             />
+
+            <ListaDeAmigos />
 
             <section className="grupo">
                 <h2>{t.perfil.conta}</h2>

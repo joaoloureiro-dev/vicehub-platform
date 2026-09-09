@@ -1,7 +1,10 @@
 import { Link, useParams } from 'react-router';
 
 import { useAsync } from '../../lib/use-async.js';
+import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
+import { BotaoDeAmizade } from '../components/botao-de-amizade.js';
+import { listFriendRequests, listFriends } from '../friends.api.js';
 import { getProfile } from '../profile.api.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 
@@ -17,10 +20,32 @@ export const PublicProfilePage = () => {
     const { idioma } = useIdioma();
     const { username } = useParams<{ username: string }>();
 
+    const { user } = useAuth();
+
     const { data, loading, error } = useAsync(
         () => getProfile(username as string),
         [username],
     );
+
+    /**
+     * O estado da amizade sai das listas que a API já devolve, e não de
+     * um campo no perfil: assim o botão mostra sempre o que a API diria
+     * se lhe perguntassem outra vez.
+     */
+    const amigos = useAsync(
+        () => (user ? listFriends() : Promise.resolve(null)),
+        [user?.id],
+    );
+
+    const pedidos = useAsync(
+        () => (user ? listFriendRequests() : Promise.resolve(null)),
+        [user?.id],
+    );
+
+    const recarregar = () => {
+        amigos.reload();
+        pedidos.reload();
+    };
 
     if (loading && !data) {
         return <p className="centered">{t.comum.aCarregar}</p>;
@@ -76,6 +101,19 @@ export const PublicProfilePage = () => {
                     <dd>{new Date(data.createdAt).toLocaleDateString(idioma)}</dd>
                 </div>
             </dl>
+
+            {/*
+              O botão só existe para outra pessoa: no próprio perfil não
+              há nada a pedir, e a API recusaria de qualquer maneira.
+            */}
+            {user && user.id !== data.id ? (
+                <BotaoDeAmizade
+                    userId={data.id}
+                    amigos={amigos.data}
+                    pedidos={pedidos.data}
+                    aoMudar={recarregar}
+                />
+            ) : null}
         </div>
     );
 };
