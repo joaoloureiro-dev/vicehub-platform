@@ -14,3 +14,7 @@ São geradas a partir do HTML no [kit de imagens](https://claude.ai/code/artifac
 com as fontes do produto (Chakra Petch, Inter, JetBrains Mono) e as
 cores do `theme.css`. Os números que aparecem na primeira foram contados
 contra o `main` no dia em que foi feita, e não escritos à mão.
+
+Antes de fazer uma peça nova — um post, uma imagem, uma página — lê o
+[registo de continuidade](continuidade.md): diz o que já foi dito em
+público, com que identidade, e o que uma peça nova pode afirmar.
