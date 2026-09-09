@@ -486,6 +486,15 @@ export const fr = (p: Tools): Messages => ({
             quantos === 1 ? '1 joueur en ligne' : `${quantos} joueurs en ligne`,
     },
 
+    feed: {
+        titulo: 'Ce qui s’est passé',
+        aindaNada:
+            'Rien encore. Rejoins un crew, organise un événement ou ajoute un ami — ça se remplit tout seul.',
+        eventoFeito: (xp: number) => `+${xp} XP d’un événement ·`,
+        entrouEm: 'a rejoint',
+        naoCarregou: 'Impossible de charger ceci.',
+    },
+
     amigos: {
         titulo: 'Amis',
         adicionar: 'Ajouter',
