@@ -269,6 +269,9 @@ export class CrewController {
         return {
             ...profile,
             xp: profile.xp.toString(),
+            levelXp: profile.levelXp.toString(),
+            /** Ausente quer dizer que já não há nível seguinte. */
+            nextLevelXp: profile.nextLevelXp?.toString() ?? null,
             createdAt: profile.createdAt.toISOString(),
         };
     }

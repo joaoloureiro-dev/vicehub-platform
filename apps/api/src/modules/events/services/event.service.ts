@@ -156,6 +156,31 @@ export class EventService {
             );
         }
 
+        /**
+         * Concluir é o que faz o evento valer xp.
+         *
+         * Aqui e não na confirmação de cada presença: enquanto o evento
+         * está a decorrer ainda se confirma e se desconfirma gente, e
+         * pagar a cada confirmação seria pagar por uma lista que ainda
+         * está a mudar. No fim há uma lista só, e é essa que conta.
+         *
+         * Um evento de servidor paga a quem apareceu e a mais ninguém —
+         * os servidores não têm nível.
+         */
+        if (to === 'completed') {
+            const confirmados
+                = await this.eventRepository.listConfirmedParticipants(eventId);
+
+            await this.eventRepository.awardEventXp({
+                eventId,
+                crewId: owner.crewId ?? null,
+                confirmedUserIds: confirmados.map(
+                    (participante) => participante.userId,
+                ),
+                actorId: changedBy,
+            });
+        }
+
         return this.getEvent(owner, eventId);
     }
 

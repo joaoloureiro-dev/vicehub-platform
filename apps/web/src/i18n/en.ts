@@ -475,6 +475,16 @@ export const en = (p: Tools) => ({
             quantos === 1 ? '1 player online' : `${quantos} players online`,
     },
 
+    progressao: {
+        nivelAtual: (nivel: number) => `Level ${nivel}`,
+        faltam: (xp: string, proximo: number) =>
+            `${xp} XP to level ${proximo}`,
+        noTopo: (nivel: number) =>
+            `Level ${nivel} — as far as the levels go, for now.`,
+        deOndeVem:
+            'A crew earns XP when an event it ran is finished with people who actually turned up. Whoever turned up earns some too.',
+    },
+
     zonaPerigo: {
         crewTitulo: 'Delete this crew',
         servidorTitulo: 'Delete this server',

@@ -114,6 +114,19 @@ enum EventParticipantStatus {
   withdrawn
 }
 
+/// De onde veio um ganho de xp.
+///
+/// Fica como enum, e não como texto livre, porque cada razão tem uma
+/// regra de quanto vale e de quantas vezes pode acontecer — e uma razão
+/// nova é uma decisão, não uma string.
+enum XpReason {
+  /// O evento chegou ao fim com gente lá. Vai para a crew que o marcou.
+  event_completed
+
+  /// Apareceu, e alguém o confirmou. Vai para a pessoa.
+  event_attended
+}
+
 enum AuthProviderType {
   local
   discord
@@ -234,6 +247,7 @@ model User {
   subscriptions     Subscription[]
   eventParticipants EventParticipant[]
   accountTokens     AccountToken[]
+  xpAwards          XpAward[]
 }
 
 model Crew {
@@ -281,6 +295,8 @@ model Crew {
   /// O servidor onde a crew joga, quando existe. É uma lista porque o
   /// histórico fica: pedidos recusados e saídas continuam gravados.
   affiliations Affiliation[]
+
+  xpAwards XpAward[]
 }
 
 model Server {
@@ -981,9 +997,60 @@ model Event {
   distributions Distribution[]
 
   @@index([crewId, status])
+  xpAwards XpAward[]
+
   @@index([serverId, status])
   @@index([starts_at])
   @@index([is_deleted])
+}
+
+/// Um ganho de xp, gravado como facto e não como soma.
+///
+/// O xp de uma crew podia ser uma coluna que alguém incrementa. Não é,
+/// por duas razões. A primeira é que um incremento não sabe repetir-se
+/// sem estragar: dois pedidos a concluir o mesmo evento somavam duas
+/// vezes, e não havia como saber que já tinha sido pago. A segunda é
+/// que "porque é que esta crew está no nível 4?" tem de ter resposta —
+/// e a resposta é uma lista de linhas destas.
+///
+/// A coluna `xp` do dono continua a existir e é a soma disto. Quem
+/// pergunta o nível lê a coluna; quem pergunta porquê lê a tabela.
+model XpAward {
+  id String @id @default(uuid())
+
+  /// O dono do ganho: uma pessoa ou uma crew, nunca os dois.
+  ///
+  /// Os servidores não aparecem aqui porque não têm nível: um evento de
+  /// servidor dá xp a quem apareceu, e a mais ninguém.
+  userId String?
+  crewId String?
+
+  amount Int
+  reason XpReason
+
+  /// O evento de onde veio, quando veio de um.
+  ///
+  /// É por esta coluna que os índices impedem que o mesmo evento pague
+  /// duas vezes ao mesmo dono.
+  eventId String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crew  Crew?  @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([crewId, created_at(sort: Desc)])
+  @@index([userId, created_at(sort: Desc)])
+  @@index([eventId])
 }
 
 /// A participação de alguém num evento.

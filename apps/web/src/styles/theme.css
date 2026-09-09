@@ -1948,3 +1948,65 @@ button.link:hover {
 .grupo.perigo button {
     align-self: flex-start;
 }
+
+
+/* ---------- progresso de nível ---------- */
+
+.progresso {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.progresso-topo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.progresso-topo span:first-child {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+}
+
+.progresso-falta {
+    font-variant-numeric: tabular-nums;
+}
+
+/*
+ * A barra é um <progress>, e por isso precisa das duas famílias de
+ * seletores: o WebKit pinta o interior por -webkit-progress-value e o
+ * Firefox por -moz-progress-bar. Escrever só uma delas dá uma barra
+ * cinzenta em metade dos browsers.
+ */
+.barra {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--surface-high);
+    overflow: hidden;
+}
+
+.barra::-webkit-progress-bar {
+    background: var(--surface-high);
+    border-radius: 999px;
+}
+
+.barra::-webkit-progress-value {
+    background: var(--brand);
+    border-radius: 999px;
+}
+
+.barra::-moz-progress-bar {
+    background: var(--brand);
+    border-radius: 999px;
+}

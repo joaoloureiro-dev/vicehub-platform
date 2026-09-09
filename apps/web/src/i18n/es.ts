@@ -471,6 +471,16 @@ export const es = (p: Tools): Messages => ({
             quantos === 1 ? '1 jugador en línea' : `${quantos} jugadores en línea`,
     },
 
+    progressao: {
+        nivelAtual: (nivel: number) => `Nivel ${nivel}`,
+        faltam: (xp: string, proximo: number) =>
+            `Faltan ${xp} XP para el nivel ${proximo}`,
+        noTopo: (nivel: number) =>
+            `Nivel ${nivel} — el máximo que hay, por ahora.`,
+        deOndeVem:
+            'Una crew gana XP cuando un evento que organizó termina con gente que apareció de verdad. Quien apareció también gana.',
+    },
+
     zonaPerigo: {
         crewTitulo: 'Eliminar esta crew',
         servidorTitulo: 'Eliminar este servidor',

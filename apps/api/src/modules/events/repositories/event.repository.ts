@@ -7,6 +7,8 @@ import {
     type DatabaseClient,
 } from '@vicehub/database';
 
+import type { EventXpResultado } from '../../../shared/xp-awards.js';
+import { awardEventXp } from '../../../shared/xp-awards.js';
 import type { EventOwner } from '../types/event.types.js';
 
 interface CreateEventInput {
@@ -317,6 +319,22 @@ export class EventRepository {
             orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
             select: { userId: true, weight: true },
         });
+    }
+
+    /**
+     * Paga o xp de um evento concluído, uma vez só.
+     *
+     * A regra de quanto vale vive em @vicehub/database, e a escrita no
+     * shared: um ganho de xp é a mesma coisa venha de onde vier, e a
+     * próxima razão que existir entra pelo mesmo caminho.
+     */
+    awardEventXp(input: {
+        eventId: string;
+        crewId: string | null;
+        confirmedUserIds: string[];
+        actorId: string;
+    }): Promise<EventXpResultado> {
+        return awardEventXp(this.database, input);
     }
 
     /**

@@ -27,8 +27,13 @@ export interface PublicProfile {
     username: string;
     avatarUrl: string | null;
     bio: string | null;
+    /** Sai do xp, sempre — como na crew. */
     level: number;
     xp: bigint;
+    /** O xp com que se entrou no nível atual. */
+    levelXp: bigint;
+    /** O xp que o nível seguinte exige, ou null no topo. */
+    nextLevelXp: bigint | null;
     reputation: number;
     isPremium: boolean;
     /**

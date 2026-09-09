@@ -10,6 +10,9 @@ export interface PublicProfile {
     level: number;
     /** BigInt na base de dados: chega e fica em texto. */
     xp: string;
+    /** O chão do nível atual e o teto do seguinte, para a barra. */
+    levelXp: string;
+    nextLevelXp: string | null;
     reputation: number;
     isPremium: boolean;
     appearance: Appearance;
