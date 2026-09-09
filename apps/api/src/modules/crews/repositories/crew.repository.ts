@@ -13,6 +13,7 @@ import {
     findDeletionBlockers,
     softDeleteCommunity,
 } from '../../../shared/community-deletion.js';
+import { listXpAwards } from '../../../shared/xp-awards.js';
 
 interface CreateCrewInput {
     name: string;
@@ -400,6 +401,17 @@ export class CrewRepository {
      *
      * Uma única consulta para todos, em vez de uma por membro.
      */
+    /**
+     * Os últimos ganhos de xp da crew.
+     *
+     * O limite é do repositório e não de quem chama: uma crew com anos
+     * de eventos tem uma lista sem fim, e o ecrã que a mostra é uma
+     * secção de um perfil, não um arquivo.
+     */
+    listXpAwards(crewId: string, take = 20) {
+        return listXpAwards(this.database, { crewId }, take);
+    }
+
     /**
      * O que impede esta crew de ser apagada, se alguma coisa impedir.
      *

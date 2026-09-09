@@ -10,6 +10,7 @@ import type {
     CrewMembership,
     CrewProfile,
     CrewRole,
+    CrewXpAward,
     DirectoryPage,
 } from './crew.types.js';
 
@@ -40,6 +41,15 @@ export const getCrew = (crewId: string): Promise<CrewProfile> =>
  */
 export const deleteCrew = (crewId: string): Promise<void> =>
     api<void>(`/crews/${encodeURIComponent(crewId)}`, { method: 'DELETE' });
+
+/**
+ * De onde veio o xp da crew.
+ *
+ * Exige `event:read` — pertencer à crew. Quem não pertence leva 403, e
+ * é assim que o ecrã sabe que não deve mostrar a secção.
+ */
+export const listCrewXp = (crewId: string): Promise<CrewXpAward[]> =>
+    api<CrewXpAward[]>(`/crews/${encodeURIComponent(crewId)}/xp`);
 
 export const listMyMemberships = (): Promise<CrewMembership[]> =>
     api<CrewMembership[]>('/crews/me/memberships');

@@ -141,6 +141,22 @@ export class CrewController {
         reply.status(204).send();
     }
 
+    async listXp(
+        request: FastifyRequest<{ Params: CrewIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const ganhos = await this.crewService.listXpAwards(
+            request.params.crewId,
+        );
+
+        reply.send(
+            ganhos.map((ganho) => ({
+                ...ganho,
+                at: ganho.at.toISOString(),
+            })),
+        );
+    }
+
     async listMembers(
         request: FastifyRequest<{ Params: CrewIdParamDto }>,
         reply: FastifyReply,

@@ -2010,3 +2010,53 @@ button.link:hover {
     background: var(--brand);
     border-radius: 999px;
 }
+
+
+/* ---------- de onde veio o xp ---------- */
+
+.ganhos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ganhos li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--edge);
+    font-size: 15px;
+}
+
+.ganhos li:last-child {
+    border-bottom: 0;
+}
+
+/*
+ * O montante alinha em coluna: são números a ler de cima a baixo, e
+ * sem largura fixa cada linha começava num sítio diferente.
+ */
+.ganho-quanto {
+    flex: 0 0 auto;
+    min-width: 52px;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ok);
+}
+
+.ganho-porque {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+}
+
+.ganho-quando {
+    flex: 0 0 auto;
+    font-size: 13px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+}

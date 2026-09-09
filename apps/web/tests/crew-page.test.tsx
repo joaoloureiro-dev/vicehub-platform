@@ -45,6 +45,24 @@ const membrosSemMandar = [
     { userId: 'u1', username: 'outro', avatarUrl: null, role: 'crew_member', joinedAt: '2026-01-02T00:00:00.000Z' },
 ];
 
+/** De onde veio o xp desta crew, como a API o devolve. */
+const ganhos = [
+    {
+        id: 'xp-2',
+        amount: 100,
+        reason: 'event_completed',
+        at: '2026-02-02T20:00:00.000Z',
+        event: { id: 'evento-2', name: 'Assalto ao banco' },
+    },
+    {
+        id: 'xp-1',
+        amount: 75,
+        reason: 'event_completed',
+        at: '2026-02-01T20:00:00.000Z',
+        event: null,
+    },
+];
+
 const json = (status: number, body: unknown): Response =>
     ({
         ok: status >= 200 && status < 300,
@@ -62,6 +80,8 @@ const servidor = (opcoes: {
     memberships?: unknown;
     premium?: boolean;
     patch?: Response;
+    /** O que a lista de ganhos de xp responde. Por omissão, dois ganhos. */
+    xp?: Response;
     /** De onde vem o plano, quando não é da própria crew. */
     via?: { kind: 'server'; id: string; name: string };
 }) =>
@@ -94,6 +114,16 @@ const servidor = (opcoes: {
 
         if (endereco.endsWith('/requests')) {
             return Promise.resolve(opcoes.requests);
+        }
+
+        /**
+         * O xp exige `event:read`, que **qualquer membro** tem — e não
+         * `crew:manage_members`, que é o que decide as candidaturas. São
+         * duas permissões diferentes de propósito: um membro comum não
+         * vê quem se candidatou, mas vê de onde veio o nível da crew.
+         */
+        if (endereco.endsWith('/xp')) {
+            return Promise.resolve(opcoes.xp ?? json(200, ganhos));
         }
 
         /**
@@ -452,6 +482,75 @@ describe('o ecrã de uma crew', () => {
 
         await waitFor(() => {
             expect(screen.getByText('9007199254740993')).toBeDefined();
+        });
+    });
+
+    /**
+     * De onde veio o nível.
+     *
+     * A lista é a razão de o xp ser gravado como factos: um total
+     * sozinho só se pode acreditar.
+     */
+    describe('de onde veio o xp', () => {
+        it('mostra cada ganho, com o evento de onde veio', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText(t.progressao.historico)).toBeDefined();
+            });
+
+            expect(screen.getByText('+100')).toBeDefined();
+            expect(
+                screen.getByRole('link', { name: 'Assalto ao banco' }),
+            ).toBeDefined();
+        });
+
+        /**
+         * Apagar um evento não apaga o xp que ele deu — o que aconteceu,
+         * aconteceu — mas deixa de haver para onde apontar.
+         */
+        it('diz que o evento já não existe, em vez de um link partido', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('+75')).toBeDefined();
+            });
+
+            expect(screen.getByText(t.progressao.eventoApagado)).toBeDefined();
+        });
+
+        /**
+         * Quem não pertence leva 403 — a lista diz os nomes dos eventos,
+         * e o calendário de uma comunidade é dela. Um 403 não é avaria:
+         * a secção não aparece, e mais nada.
+         */
+        it('esconde a secção a quem a API recusa, sem mostrar erro', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(403, { code: 'FORBIDDEN' }),
+                    xp: json(403, { code: 'FORBIDDEN' }),
+                }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('Vice Kings')).toBeDefined();
+            });
+
+            expect(screen.queryByText(t.progressao.historico)).toBeNull();
+            expect(screen.queryByRole('alert')).toBeNull();
         });
     });
 });

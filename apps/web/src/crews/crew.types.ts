@@ -51,6 +51,18 @@ export interface CrewProfile {
     createdAt: string;
 }
 
+/**
+ * Um ganho de xp. O evento vem vazio quando já não existe.
+ */
+export interface CrewXpAward {
+    id: string;
+    amount: number;
+    reason: string;
+    /** ISO 8601, como todas as datas que chegam da API. */
+    at: string;
+    event: { id: string; name: string } | null;
+}
+
 export interface CrewMember {
     userId: string;
     username: string;

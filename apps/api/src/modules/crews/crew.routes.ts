@@ -121,6 +121,22 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
     );
 
     /**
+     * De onde veio o xp.
+     *
+     * O nível e o total são públicos, no perfil. Isto não: a lista diz
+     * os nomes dos eventos, e o calendário de uma comunidade é dela —
+     * por isso exige a mesma permissão que ver os eventos.
+     */
+    fastify.get<{ Params: CrewIdParamDto }>(
+        '/:crewId/xp',
+        {
+            preHandler: [fastify.authenticate, fastify.authorize('event:read')],
+            schema: { params: crewIdParamSchema },
+        },
+        controller.listXp.bind(controller),
+    );
+
+    /**
      * Apagar exige crew:manage — o cargo de líder — e não a gestão de
      * membros: com crew:manage_members um oficial apagava a crew de
      * quem a fundou.

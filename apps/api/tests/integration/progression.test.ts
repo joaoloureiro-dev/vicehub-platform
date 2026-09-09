@@ -286,4 +286,72 @@ describe('progressão de crews e jogadores', () => {
         /** A coluna é a soma da lista, e não um número à parte. */
         expect(BigInt(soma)).toBe(BigInt(perfil.xp));
     });
+
+    /**
+     * De onde veio o nível, pela API.
+     *
+     * O total é público; a lista não é. Ela diz os nomes dos eventos, e
+     * o calendário de uma comunidade é dela — por isso a rota exige a
+     * mesma permissão que ver os eventos.
+     */
+    describe('a lista de ganhos', () => {
+        const pedirXp = (token?: string) =>
+            app.inject({
+                method: 'GET',
+                url: `/api/v1/crews/${crewId}/xp`,
+                ...(token === undefined ? {} : { headers: auth(token) }),
+            });
+
+        it('mostra a um membro cada ganho e o evento de onde veio', async () => {
+            const response = await pedirXp(membro);
+
+            expect(response.statusCode, response.body).toBe(200);
+
+            const ganhos = response.json() as {
+                amount: number;
+                reason: string;
+                at: string;
+                event: { id: string; name: string } | null;
+            }[];
+
+            expect(ganhos.length).toBeGreaterThan(0);
+
+            for (const ganho of ganhos) {
+                expect(ganho.reason).toBe('event_completed');
+                expect(ganho.event).not.toBeNull();
+                expect(ganho.amount).toBeGreaterThan(0);
+                expect(Number.isNaN(Date.parse(ganho.at))).toBe(false);
+            }
+        });
+
+        /** Do mais recente para o mais antigo: é assim que se lê. */
+        it('vem do mais recente para o mais antigo', async () => {
+            const ganhos = (await pedirXp(membro)).json() as { at: string }[];
+
+            const datas = ganhos.map((ganho) => Date.parse(ganho.at));
+
+            expect(datas).toEqual([...datas].sort((a, b) => b - a));
+        });
+
+        /** A soma da lista é o total do perfil. */
+        it('soma exatamente o xp que o perfil mostra', async () => {
+            const ganhos = (await pedirXp(membro)).json() as {
+                amount: number;
+            }[];
+
+            const soma = ganhos.reduce((total, ganho) => total + ganho.amount, 0);
+
+            expect(BigInt(soma)).toBe(BigInt((await perfilDaCrew()).xp));
+        });
+
+        it('recusa a quem não pertence à crew', async () => {
+            const estranho = await register(`prx${marca}`);
+
+            expect((await pedirXp(estranho.token)).statusCode).toBe(403);
+        });
+
+        it('recusa a quem não tem sessão', async () => {
+            expect((await pedirXp()).statusCode).toBe(401);
+        });
+    });
 });

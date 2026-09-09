@@ -481,6 +481,10 @@ export const en = (p: Tools) => ({
             `${xp} XP to level ${proximo}`,
         noTopo: (nivel: number) =>
             `Level ${nivel} — as far as the levels go, for now.`,
+        historico: 'Where this level came from',
+        aindaSemGanhos:
+            'No XP yet. Run an event, confirm who turned up, and finish it.',
+        eventoApagado: 'an event that no longer exists',
         deOndeVem:
             'A crew earns XP when an event it ran is finished with people who actually turned up. Whoever turned up earns some too.',
     },

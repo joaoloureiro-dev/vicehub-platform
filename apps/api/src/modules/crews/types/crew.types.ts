@@ -61,6 +61,20 @@ export interface CrewJoinRequest {
     requestedAt: Date;
 }
 
+/**
+ * Um ganho de xp, como o ecrã o mostra.
+ *
+ * O evento pode vir vazio: apagar um evento não apaga o xp que ele deu
+ * — o que aconteceu, aconteceu — mas deixa de haver para onde apontar.
+ */
+export interface CrewXpAward {
+    id: string;
+    amount: number;
+    reason: string;
+    at: Date;
+    event: { id: string; name: string } | null;
+}
+
 export interface CrewDirectoryEntry {
     id: string;
     name: string;
