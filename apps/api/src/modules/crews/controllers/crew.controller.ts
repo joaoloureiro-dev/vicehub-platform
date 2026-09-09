@@ -275,6 +275,8 @@ export class CrewController {
         return {
             ...entry,
             createdAt: entry.createdAt.toISOString(),
+            /** Ausente quer dizer que não há anúncio no ar. */
+            recruitingSince: entry.recruitingSince?.toISOString() ?? null,
         };
     }
 
@@ -289,6 +291,8 @@ export class CrewController {
             /** Ausente quer dizer que já não há nível seguinte. */
             nextLevelXp: profile.nextLevelXp?.toString() ?? null,
             createdAt: profile.createdAt.toISOString(),
+            /** Ausente quer dizer que não há anúncio no ar. */
+            recruitingSince: profile.recruitingSince?.toISOString() ?? null,
         };
     }
 }

@@ -33,6 +33,7 @@ export const fr = (p: Tools): Messages => ({
         subtitulo:
             'ViceHub, c’est là où les communautés de jeu s’organisent : dirige ta crew, fais circuler ce que vous gagnez, et prouve qui était vraiment là.',
         criarConta: 'Créer mon compte',
+        verRecrutamento: 'Qui recrute',
         verCrews: 'Voir les crews',
         jaTenhoConta: 'J’ai déjà un compte',
 
@@ -112,6 +113,7 @@ export const fr = (p: Tools): Messages => ({
         botaoProcurar: 'Chercher',
         emDestaque: 'En vedette',
         destaque: 'En vedette',
+        aRecrutarAgora: 'À la recherche de monde',
         todas: 'Toutes les crews',
         resultados: (termo: string) => `Résultats pour « ${termo} »`,
         semResultados: 'Aucune crew de ce nom. Essaie un autre terme.',
@@ -154,6 +156,16 @@ export const fr = (p: Tools): Messages => ({
         influencia: 'Influence',
         prestigio: 'Prestige',
         contagemMembros: 'Membres',
+        recruta: 'Recrute',
+        recrutaTitulo: 'Cette crew recrute',
+        recrutaDesde: (data: string) => `Recrute depuis le ${data}.`,
+        recrutaLabel: 'Indiquer que cette crew recrute',
+        recrutaAjuda:
+            'Cela place la crew sur le tableau de recrutement et la signale dans l\u2019annuaire. Rien d\u2019autre ne change : il faut toujours postuler, et c\u2019est toujours toi qui décides. Désactive-le quand tu es au complet — le tableau montre depuis combien de temps chaque annonce est en ligne.',
+        recrutamentoTitulo: 'Crews qui recrutent',
+        recrutamentoExplica: 'Uniquement les crews qui ont dit chercher du monde.',
+        verQuemRecruta: 'Voir quelles crews recrutent',
+        verTodas: 'Voir toutes les crews',
         requisitos: 'Ce que cette crew attend de toi',
         requisitosAjuda:
             'Une condition par ligne. Personne n\u2019est vérifié là-dessus : cela dit à qui postule ce qui l\u2019attend, et c\u2019est toujours toi qui décides qui entre.',

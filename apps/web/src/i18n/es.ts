@@ -24,6 +24,7 @@ export const es = (p: Tools): Messages => ({
         subtitulo:
             'ViceHub es donde las comunidades de juego se organizan: dirige tu crew, mueve lo que ganáis y demuestra quién apareció de verdad.',
         criarConta: 'Crear mi cuenta',
+        verRecrutamento: 'Quién está reclutando',
         verCrews: 'Ver las crews',
         jaTenhoConta: 'Ya tengo cuenta',
 
@@ -103,6 +104,7 @@ export const es = (p: Tools): Messages => ({
         botaoProcurar: 'Buscar',
         emDestaque: 'Destacadas',
         destaque: 'Destacada',
+        aRecrutarAgora: 'Buscando gente',
         todas: 'Todas las crews',
         resultados: (termo: string) => `Resultados para "${termo}"`,
         semResultados: 'Ninguna crew con ese nombre. Prueba otro término.',
@@ -145,6 +147,16 @@ export const es = (p: Tools): Messages => ({
         influencia: 'Influencia',
         prestigio: 'Prestigio',
         contagemMembros: 'Miembros',
+        recruta: 'Reclutando',
+        recrutaTitulo: 'Esta crew está reclutando',
+        recrutaDesde: (data: string) => `Reclutando desde ${data}.`,
+        recrutaLabel: 'Decir que esta crew está reclutando',
+        recrutaAjuda:
+            'Pone la crew en el tablón de reclutamiento y la marca en el directorio. No cambia nada más: siguen teniendo que pedirlo, y sigues decidiendo tú. Desactívalo cuando estés completo — el tablón muestra cuánto lleva puesto cada anuncio.',
+        recrutamentoTitulo: 'Crews reclutando',
+        recrutamentoExplica: 'Solo las crews que dijeron que buscan gente.',
+        verQuemRecruta: 'Ver qué crews están reclutando',
+        verTodas: 'Ver todas las crews',
         requisitos: 'Lo que esta crew te pide',
         requisitosAjuda:
             'Una condición por línea. Nadie se verifica contra esto: sirve para que quien se postula sepa a qué atenerse, y quien decide quién entra sigues siendo tú.',

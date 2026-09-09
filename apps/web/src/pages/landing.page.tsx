@@ -32,6 +32,9 @@ export const LandingPage = () => {
                     <Link className="primary como-botao" to="/registo">
                         {t.landing.criarConta}
                     </Link>
+                    <Link className="btn-secondary" to="/recrutamento">
+                        {t.landing.verRecrutamento}
+                    </Link>
                     <Link className="btn-secondary" to="/crews">
                         {t.landing.verCrews}
                     </Link>

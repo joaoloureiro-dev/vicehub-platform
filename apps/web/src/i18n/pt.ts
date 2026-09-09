@@ -32,6 +32,7 @@ export const pt = (p: Tools): Messages => ({
         subtitulo:
             'O ViceHub é onde as comunidades de jogo se organizam: gere a tua crew, move o que ganham, e prova quem apareceu mesmo.',
         criarConta: 'Criar a minha conta',
+        verRecrutamento: 'Quem está a recrutar',
         verCrews: 'Ver as crews',
         jaTenhoConta: 'Já tenho conta',
 
@@ -111,6 +112,7 @@ export const pt = (p: Tools): Messages => ({
         botaoProcurar: 'Procurar',
         emDestaque: 'Em destaque',
         destaque: 'Destaque',
+        aRecrutarAgora: 'À procura de gente',
         todas: 'Todas as crews',
         resultados: (termo: string) => `Resultados para "${termo}"`,
         semResultados: 'Nenhuma crew com esse nome. Experimenta outro termo.',
@@ -153,6 +155,16 @@ export const pt = (p: Tools): Messages => ({
         influencia: 'Influência',
         prestigio: 'Prestígio',
         contagemMembros: 'Membros',
+        recruta: 'A recrutar',
+        recrutaTitulo: 'Esta crew está a recrutar',
+        recrutaDesde: (data: string) => `A recrutar desde ${data}.`,
+        recrutaLabel: 'Dizer que esta crew está a recrutar',
+        recrutaAjuda:
+            'Põe a crew no quadro de recrutamento e marca-a no diretório. Não muda mais nada: continuam a ter de pedir, e continuas a decidir. Desliga quando estiveres cheio — o quadro mostra há quanto tempo cada anúncio está no ar.',
+        recrutamentoTitulo: 'Crews a recrutar',
+        recrutamentoExplica: 'Só as crews que disseram que procuram gente.',
+        verQuemRecruta: 'Ver que crews estão a recrutar',
+        verTodas: 'Ver todas as crews',
         requisitos: 'O que esta crew te pede',
         requisitosAjuda:
             'Uma condição por linha. Ninguém é verificado contra isto: serve para quem se candidata saber ao que vai, e quem decide quem entra continuas a ser tu.',

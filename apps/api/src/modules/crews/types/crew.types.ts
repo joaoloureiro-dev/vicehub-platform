@@ -6,6 +6,8 @@ export interface CrewRecord {
     tag: string;
     description: string | null;
     join_requirements: string | null;
+    is_recruiting: boolean;
+    recruiting_since: Date | null;
     banner_url: string | null;
     accent_color: string | null;
     level: number;
@@ -27,6 +29,17 @@ export interface CrewProfile {
      * decisão de alguém.
      */
     joinRequirements: string | null;
+    /** Se a crew diz, ela própria, que está a recrutar. */
+    isRecruiting: boolean;
+    /**
+     * Desde quando o anúncio está no ar, ou null quando não está.
+     *
+     * Público de propósito. O problema conhecido dos quadros de
+     * recrutamento é encherem-se de anúncios que ninguém desligou, e
+     * esconder a idade do anúncio não o torna mais verdadeiro — só torna
+     * mais difícil dar por isso.
+     */
+    recruitingSince: Date | null;
     /** Sai do xp, sempre. A coluna guardada é a mesma conta, para ordenar. */
     level: number;
     xp: bigint;
@@ -95,6 +108,8 @@ export interface CrewDirectoryEntry {
     name: string;
     tag: string;
     description: string | null;
+    isRecruiting: boolean;
+    recruitingSince: Date | null;
     level: number;
     memberCount: number;
     isPremium: boolean;

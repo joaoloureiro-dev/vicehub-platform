@@ -33,6 +33,7 @@ interface CreateCrewInput {
 
 interface ListCrewsInput {
     search?: string | undefined;
+    recruiting?: boolean | undefined;
     page: number;
     pageSize: number;
     sort: 'newest' | 'level' | 'name';
@@ -42,6 +43,7 @@ interface UpdateCrewInput {
     name?: string | undefined;
     description?: string | null | undefined;
     joinRequirements?: string | null | undefined;
+    isRecruiting?: boolean | undefined;
 }
 
 /**
@@ -92,7 +94,12 @@ export class CrewService {
         crewId: string,
         input: UpdateCrewInput,
     ): Promise<CrewProfile> {
-        await this.requireCrew(crewId);
+        /**
+         * O estado atual é preciso, e não só a existência da crew: a
+         * data do anúncio de recrutamento decide-se comparando o que se
+         * pede com o que lá está.
+         */
+        const crew = await this.requireCrew(crewId);
 
         if (input.name !== undefined) {
             /**
@@ -116,9 +123,40 @@ export class CrewService {
             }
         }
 
-        await this.crewRepository.updateCrew(crewId, input);
+        await this.crewRepository.updateCrew(crewId, {
+            ...input,
+            ...this.anuncioDeRecrutamento(crew, input.isRecruiting),
+        });
 
         return this.getProfile(crewId);
+    }
+
+    /**
+     * O que gravar sobre o anúncio de recrutamento, se é que há o que
+     * gravar.
+     *
+     * A regra que interessa é a do meio: **guardar o mesmo estado outra
+     * vez não mexe na data.** O ecrã de definições manda o formulário
+     * inteiro de cada vez que se corrige uma vírgula na descrição, e sem
+     * isto cada gravação rejuvenescia o anúncio — um anúncio de há três
+     * meses passava a ser de hoje sempre que alguém guardava seja o que
+     * fosse, e a idade que o quadro mostra deixava de querer dizer nada.
+     *
+     * Desligar apaga a data em vez de a guardar: voltar a recrutar é um
+     * anúncio novo, e herdar a data do anterior seria dizer que a crew
+     * está à espera de gente desde uma altura em que já tinha desistido.
+     */
+    private anuncioDeRecrutamento(
+        crew: CrewRecord,
+        pedido: boolean | undefined,
+    ): { recruiting?: { is: boolean; since: Date | null } } {
+        if (pedido === undefined || pedido === crew.is_recruiting) {
+            return {};
+        }
+
+        return {
+            recruiting: { is: pedido, since: pedido ? new Date() : null },
+        };
     }
 
     /**
@@ -260,6 +298,7 @@ export class CrewService {
         const [[crews, total], featured] = await Promise.all([
             this.crewRepository.listDirectory({
                 search: input.search,
+                recruiting: input.recruiting,
                 skip: (input.page - 1) * input.pageSize,
                 take: input.pageSize,
                 sort: input.sort,
@@ -311,7 +350,9 @@ export class CrewService {
             return [];
         }
 
-        const candidatas = await this.crewRepository.listEntitledIds();
+        const candidatas = await this.crewRepository.listEntitledIds(
+            input.recruiting,
+        );
 
         const escolhidas = pickFeatured(
             candidatas.map((candidata) => candidata.id),
@@ -359,6 +400,8 @@ export class CrewService {
             name: string;
             tag: string;
             description: string | null;
+            is_recruiting: boolean;
+            recruiting_since: Date | null;
             banner_url: string | null;
             accent_color: string | null;
             xp: bigint;
@@ -372,6 +415,8 @@ export class CrewService {
             name: crew.name,
             tag: crew.tag,
             description: crew.description,
+            isRecruiting: crew.is_recruiting,
+            recruitingSince: crew.recruiting_since,
             /** Do xp, como no perfil: uma crew não tem dois níveis. */
             level: nivelDoXp(crew.xp),
             memberCount,
@@ -658,6 +703,8 @@ export class CrewService {
              * por uma regra que não estava escrita não serve a ninguém.
              */
             joinRequirements: crew.join_requirements,
+            isRecruiting: crew.is_recruiting,
+            recruitingSince: crew.recruiting_since,
             level: progresso.nivel,
             xp: crew.xp,
             levelXp: progresso.xpDoNivelAtual,

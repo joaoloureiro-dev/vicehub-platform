@@ -2227,3 +2227,32 @@ button.link:hover {
 .pre-linha {
     white-space: pre-line;
 }
+
+/*
+  Uma etiqueta e a caixa que a liga, na mesma linha.
+
+  Um `field` normal põe a etiqueta por cima do campo, que é o que serve a
+  caixas de texto. Numa caixa de seleção a etiqueta é a frase que se está
+  a marcar, e pô-la por cima parte a frase ao meio.
+*/
+.field-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.field-inline label {
+    margin: 0;
+}
+
+/*
+  A marca de quem recruta.
+
+  Distinta da do destaque de propósito: uma diz "esta crew paga para
+  aparecer aqui" e a outra diz "esta crew aceita gente". Confundi-las
+  faria o quadro de recrutamento parecer comprado.
+*/
+.pill.recruta {
+    background: color-mix(in srgb, var(--good, #2e7d32) 18%, transparent);
+    color: var(--good, #2e7d32);
+}

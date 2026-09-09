@@ -28,7 +28,7 @@ import {
     updateCrewAppearance,
     withdrawJoinRequest,
 } from '../crew.api.js';
-import { useT } from '../../i18n/i18n.js';
+import { useIdioma, useT } from '../../i18n/i18n.js';
 
 /**
  * O perfil de uma crew.
@@ -45,6 +45,7 @@ import { useT } from '../../i18n/i18n.js';
  */
 export const CrewPage = () => {
     const t = useT();
+    const { idioma } = useIdioma();
     const { crewId } = useParams<{ crewId: string }>();
     const { user } = useAuth();
 
@@ -227,10 +228,34 @@ export const CrewPage = () => {
               vazio dizia "não exigimos nada", e isso é uma afirmação que
               a crew não fez.
             */}
-            {perfil.joinRequirements ? (
+            {perfil.isRecruiting || perfil.joinRequirements ? (
                 <section className="grupo requisitos">
-                    <h2>{t.crews.requisitos}</h2>
-                    <p className="pre-linha">{perfil.joinRequirements}</p>
+                    <h2>
+                        {perfil.isRecruiting
+                            ? t.crews.recrutaTitulo
+                            : t.crews.requisitos}
+                    </h2>
+
+                    {/*
+                      A idade do anúncio aparece porque é ela que diz se
+                      isto ainda é verdade. Um "recrutamos" de há oito
+                      meses e um de ontem lêem-se de maneira diferente, e
+                      esconder a diferença só serve a quem se esqueceu de
+                      desligar o anúncio.
+                    */}
+                    {perfil.isRecruiting && perfil.recruitingSince ? (
+                        <p className="hint">
+                            {t.crews.recrutaDesde(
+                                new Date(
+                                    perfil.recruitingSince,
+                                ).toLocaleDateString(idioma),
+                            )}
+                        </p>
+                    ) : null}
+
+                    {perfil.joinRequirements ? (
+                        <p className="pre-linha">{perfil.joinRequirements}</p>
+                    ) : null}
                 </section>
             ) : null}
 
