@@ -27,6 +27,14 @@ export const updateCrewSchema = z
          * chegar mal informada.
          */
         joinRequirements: z.string().trim().max(1000).nullable(),
+        /**
+         * Anunciar que se recruta é uma escolha, e não uma dedução.
+         *
+         * Ter requisitos escritos ou lugares livres não põe ninguém no
+         * quadro de recrutamento: quem manda na crew é que diz que quer
+         * lá estar.
+         */
+        isRecruiting: z.boolean(),
     })
     .partial()
     .refine((value) => Object.keys(value).length > 0, {
@@ -61,6 +69,18 @@ export const setMemberRoleSchema = z.object({
  */
 export const listCrewsQuerySchema = z.object({
     search: z.string().trim().min(1).max(48).optional(),
+    /**
+     * Só as crews que anunciaram que recrutam.
+     *
+     * Aceita apenas 'true': o quadro de recrutamento é uma lista de quem
+     * recruta, e não há pergunta nenhuma cuja resposta seja "mostra-me
+     * as que **não** recrutam". Filtrar ao contrário só serviria para
+     * fazer uma lista de crews a quem não se deve pedir entrada.
+     */
+    recruiting: z
+        .literal('true')
+        .transform(() => true)
+        .optional(),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(50).default(20),
     sort: z.enum(['newest', 'level', 'name']).default('newest'),

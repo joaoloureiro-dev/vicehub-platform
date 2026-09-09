@@ -31,6 +31,7 @@ export const en = (p: Tools) => ({
         subtitulo:
             'ViceHub is where gaming communities get organised: run your crew, move what you earn, and prove who actually turned up.',
         criarConta: 'Create your account',
+        verRecrutamento: 'Who is recruiting',
         verCrews: 'Browse the crews',
         jaTenhoConta: 'I already have an account',
 
@@ -110,6 +111,7 @@ export const en = (p: Tools) => ({
         botaoProcurar: 'Search',
         emDestaque: 'Featured',
         destaque: 'Featured',
+        aRecrutarAgora: 'Looking for people',
         todas: 'All crews',
         resultados: (termo: string) => `Results for "${termo}"`,
         semResultados: 'No crew by that name. Try another term.',
@@ -152,6 +154,16 @@ export const en = (p: Tools) => ({
         influencia: 'Influence',
         prestigio: 'Prestige',
         contagemMembros: 'Members',
+        recruta: 'Recruiting',
+        recrutaTitulo: 'This crew is recruiting',
+        recrutaDesde: (data: string) => `Recruiting since ${data}.`,
+        recrutaLabel: 'Say this crew is recruiting',
+        recrutaAjuda:
+            'It puts the crew on the recruitment board and marks it in the directory. Nothing else changes: people still have to ask, and you still decide. Turn it off when you are full — the board shows how long each notice has been up.',
+        recrutamentoTitulo: 'Crews recruiting',
+        recrutamentoExplica: 'Only crews that said they are looking for people.',
+        verQuemRecruta: 'See which crews are recruiting',
+        verTodas: 'See every crew',
         requisitos: 'What this crew asks of you',
         requisitosAjuda:
             'One condition per line. Nobody is checked against this: it tells people what to expect before they apply, and you still decide who gets in.',

@@ -34,6 +34,8 @@ const DIRECTORY_ENTRY_SELECT = {
     name: true,
     tag: true,
     description: true,
+    is_recruiting: true,
+    recruiting_since: true,
     xp: true,
     banner_url: true,
     accent_color: true,
@@ -127,6 +129,16 @@ export class CrewRepository {
             name?: string | undefined;
             description?: string | null | undefined;
             joinRequirements?: string | null | undefined;
+            /**
+             * O estado do anúncio e a data em que passou a estar assim,
+             * juntos e não em dois campos independentes.
+             *
+             * A data é consequência do estado, não uma escolha à parte:
+             * quem chamar isto não pode dizer que a crew recruta desde
+             * ontem sem dizer que recruta. Quem decide qual é a data é o
+             * serviço, que sabe qual era o estado anterior.
+             */
+            recruiting?: { is: boolean; since: Date | null } | undefined;
         },
     ) {
         const data: {
@@ -134,6 +146,8 @@ export class CrewRepository {
             name?: string;
             description?: string | null;
             join_requirements?: string | null;
+            is_recruiting?: boolean;
+            recruiting_since?: Date | null;
         } = { version: { increment: 1 } };
 
         if (input.name !== undefined) {
@@ -146,6 +160,11 @@ export class CrewRepository {
 
         if (input.joinRequirements !== undefined) {
             data.join_requirements = input.joinRequirements;
+        }
+
+        if (input.recruiting !== undefined) {
+            data.is_recruiting = input.recruiting.is;
+            data.recruiting_since = input.recruiting.since;
         }
 
         return this.database.crew.update({ where: { id: crewId }, data });
@@ -176,10 +195,21 @@ export class CrewRepository {
      * diretório todo. Se um dia deixarem de ser, é aqui que se põe um
      * tecto.
      */
-    listEntitledIds() {
+    listEntitledIds(recruiting?: boolean) {
         return this.database.crew.findMany({
             where: {
                 is_deleted: false,
+                /**
+                 * O destaque obedece ao mesmo filtro da lista que
+                 * acompanha.
+                 *
+                 * Sem isto, uma crew com plano que **não** está a
+                 * recrutar aparecia em destaque no quadro de
+                 * recrutamento — um anúncio pago a dizer uma coisa que a
+                 * crew nunca disse, e no sítio onde as pessoas mais
+                 * acreditam nele.
+                 */
+                ...(recruiting === true ? { is_recruiting: true } : {}),
                 subscriptions: {
                     some: entitlingSubscriptionFilter(),
                 },
@@ -211,12 +241,14 @@ export class CrewRepository {
      */
     listDirectory(input: {
         search?: string | undefined;
+        recruiting?: boolean | undefined;
         skip: number;
         take: number;
         sort: 'newest' | 'level' | 'name';
     }) {
         const where = {
             is_deleted: false,
+            ...(input.recruiting === true ? { is_recruiting: true } : {}),
             ...(input.search
                 ? {
                     OR: [

@@ -24,6 +24,7 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
     const [nome, setNome] = useState(crew.name);
     const [descricao, setDescricao] = useState(crew.description ?? '');
     const [requisitos, setRequisitos] = useState(crew.joinRequirements ?? '');
+    const [recruta, setRecruta] = useState(crew.isRecruiting);
     const [aGuardar, setAGuardar] = useState(false);
     const [mensagem, setMensagem] = useState<{
         tipo: 'good' | 'bad';
@@ -39,7 +40,8 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
         setNome(crew.name);
         setDescricao(crew.description ?? '');
         setRequisitos(crew.joinRequirements ?? '');
-    }, [crew.name, crew.description, crew.joinRequirements]);
+        setRecruta(crew.isRecruiting);
+    }, [crew.name, crew.description, crew.joinRequirements, crew.isRecruiting]);
 
     /** O mesmo mínimo que a API exige, para o erro chegar antes do pedido. */
     const nomeCurto = nome.trim().length > 0 && nome.trim().length < 3;
@@ -56,6 +58,7 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
                 description: descricao.trim() || null,
                 /** O mesmo para os requisitos: apagá-los tem de ser possível. */
                 joinRequirements: requisitos.trim() || null,
+                isRecruiting: recruta,
             });
 
             setMensagem({ tipo: 'good', texto: t.crews.definicoesGuardadas });
@@ -126,6 +129,24 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
                     />
                     <p className="hint">{t.crews.requisitosAjuda}</p>
                 </div>
+
+                {/*
+                  O interruptor fica a seguir aos requisitos porque é
+                  essa a ordem em que se pensa: primeiro escreve-se o que
+                  se pede a quem entra, e só depois se abre a porta.
+                */}
+                <div className="field field-inline">
+                    <input
+                        id="crew-recruta"
+                        type="checkbox"
+                        checked={recruta}
+                        onChange={(event) => {
+                            setRecruta(event.target.checked);
+                        }}
+                    />
+                    <label htmlFor="crew-recruta">{t.crews.recrutaLabel}</label>
+                </div>
+                <p className="hint">{t.crews.recrutaAjuda}</p>
 
                 <button
                     className="primary"

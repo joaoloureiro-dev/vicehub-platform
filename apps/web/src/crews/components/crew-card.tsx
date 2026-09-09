@@ -39,6 +39,14 @@ export const CrewCard = ({
         <div className="crewcard-foot">
             <span>{t.crews.nivel(crew.level)}</span>
             <span>{t.crews.membros(crew.memberCount)}</span>
+            {/*
+              A marca aparece também no diretório normal, e não só no
+              quadro: é ali que ela poupa a caminhada de abrir crew a
+              crew à procura de uma que aceite gente.
+            */}
+            {crew.isRecruiting ? (
+                <span className="pill recruta">{t.crews.recruta}</span>
+            ) : null}
             {destaque ? <span className="pill">{t.crews.destaque}</span> : null}
         </div>
     </Link>

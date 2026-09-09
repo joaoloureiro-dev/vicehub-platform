@@ -13,6 +13,8 @@ const perfil = {
     tag: 'VICE',
     description: 'A crew do teste.',
     joinRequirements: null,
+    isRecruiting: false,
+    recruitingSince: null,
     level: 100,
     xp: '9007199254740993',
     levelXp: '495000',
@@ -286,6 +288,56 @@ describe('o ecrã de uma crew', () => {
             await waitFor(() => {
                 expect(corpoDoPatch(fetchMock)).toMatchObject({
                     description: null,
+                });
+            });
+        });
+
+        /**
+         * Anunciar que se recruta é uma escolha de quem manda na crew, e
+         * o interruptor tem de a levar mesmo até à API. Um interruptor
+         * que muda o estado do ecrã e não muda o pedido é um interruptor
+         * a fingir — e ninguém dá por isso até se perguntar porque é que
+         * a crew não aparece no quadro.
+         */
+        it('liga o anúncio de recrutamento na API', async () => {
+            const fetchMock = servidor({ requests: json(200, []) });
+            vi.stubGlobal('fetch', fetchMock);
+
+            montar();
+
+            await userEvent.click(
+                await screen.findByLabelText(t.crews.recrutaLabel),
+            );
+            await userEvent.click(
+                screen.getByRole('button', { name: t.comum.guardar }),
+            );
+
+            await waitFor(() => {
+                expect(corpoDoPatch(fetchMock)).toMatchObject({
+                    isRecruiting: true,
+                });
+            });
+        });
+
+        it('desliga-o outra vez', async () => {
+            const fetchMock = servidor({
+                requests: json(200, []),
+                perfil: { ...perfil, isRecruiting: true },
+            });
+            vi.stubGlobal('fetch', fetchMock);
+
+            montar();
+
+            await userEvent.click(
+                await screen.findByLabelText(t.crews.recrutaLabel),
+            );
+            await userEvent.click(
+                screen.getByRole('button', { name: t.comum.guardar }),
+            );
+
+            await waitFor(() => {
+                expect(corpoDoPatch(fetchMock)).toMatchObject({
+                    isRecruiting: false,
                 });
             });
         });
@@ -687,6 +739,83 @@ describe('o ecrã de uma crew', () => {
 
             expect(
                 screen.queryByRole('heading', { name: t.crews.requisitos }),
+            ).toBeNull();
+        });
+    });
+
+    /**
+     * Quem chega ao perfil está a decidir se se candidata. Saber que a
+     * crew *diz* que recruta, e há quanto tempo o diz, é metade dessa
+     * decisão.
+     */
+    describe('o anúncio de recrutamento', () => {
+
+        it('aparece a quem chega ao perfil', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(403, { code: 'FORBIDDEN' }),
+                    perfil: {
+                        ...perfil,
+                        isRecruiting: true,
+                        recruitingSince: '2026-08-01T00:00:00.000Z',
+                    },
+                }),
+            );
+
+            montar();
+
+            expect(
+                await screen.findByRole('heading', {
+                    name: t.crews.recrutaTitulo,
+                }),
+            ).toBeDefined();
+        });
+
+        /**
+         * A idade do anúncio é o que diz se ele ainda é verdade. Um
+         * "recrutamos" de há oito meses lê-se de outra maneira.
+         */
+        it('diz desde quando', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(403, { code: 'FORBIDDEN' }),
+                    perfil: {
+                        ...perfil,
+                        isRecruiting: true,
+                        recruitingSince: '2026-08-01T00:00:00.000Z',
+                    },
+                }),
+            );
+
+            montar();
+
+            expect(
+                await screen.findByText(
+                    t.crews.recrutaDesde(
+                        new Date('2026-08-01T00:00:00.000Z').toLocaleDateString(
+                            'en',
+                        ),
+                    ),
+                ),
+            ).toBeDefined();
+        });
+
+        it('não aparece numa crew que não o disse', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('Vice Kings')).toBeDefined();
+            });
+
+            expect(
+                screen.queryByRole('heading', { name: t.crews.recrutaTitulo }),
             ).toBeNull();
         });
     });

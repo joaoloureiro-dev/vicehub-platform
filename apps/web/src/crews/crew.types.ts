@@ -20,6 +20,8 @@ export interface CrewDirectoryEntry {
     name: string;
     tag: string;
     description: string | null;
+    isRecruiting: boolean;
+    recruitingSince: string | null;
     level: number;
     memberCount: number;
     isPremium: boolean;
@@ -39,6 +41,16 @@ export interface CrewProfile {
      * afirmação que a crew não fez.
      */
     joinRequirements: string | null;
+    /** Se a crew diz, ela própria, que está a recrutar. */
+    isRecruiting: boolean;
+    /**
+     * Desde quando o anúncio está no ar, ou null quando não está.
+     *
+     * Mostrado a quem lê de propósito: os quadros de recrutamento
+     * enchem-se de anúncios que ninguém desligou, e esconder a idade do
+     * anúncio não o torna mais verdadeiro.
+     */
+    recruitingSince: string | null;
     level: number;
     xp: string;
     /** O chão do nível atual e o teto do seguinte, para a barra. */

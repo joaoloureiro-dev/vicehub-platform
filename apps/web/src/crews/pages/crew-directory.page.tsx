@@ -20,7 +20,17 @@ const ORDENS = ['newest', 'level', 'name'] as const;
 
 type Ordem = (typeof ORDENS)[number];
 
-export const CrewDirectoryPage = () => {
+/**
+ * @param apenasRecrutamento Mostra só as crews que anunciaram que
+ * recrutam. É o mesmo ecrã, e não um segundo diretório: a paginação, a
+ * pesquisa, a ordenação e os destaques já existem aqui, e uma cópia
+ * deles acabaria a divergir desta em coisas que ninguém repara logo.
+ */
+export const CrewDirectoryPage = ({
+    apenasRecrutamento = false,
+}: {
+    apenasRecrutamento?: boolean;
+} = {}) => {
     const t = useT();
     const [termo, setTermo] = useState('');
     const [pesquisa, setPesquisa] = useState('');
@@ -37,10 +47,11 @@ export const CrewDirectoryPage = () => {
         () =>
             listCrews({
                 ...(pesquisa ? { search: pesquisa } : {}),
+                ...(apenasRecrutamento ? { recruiting: true } : {}),
                 page: pagina,
                 sort: ordem,
             }),
-        [pesquisa, pagina, ordem],
+        [pesquisa, pagina, ordem, apenasRecrutamento],
     );
 
     const submeter = (event: FormEvent) => {
@@ -52,11 +63,34 @@ export const CrewDirectoryPage = () => {
     return (
         <div className="panel wide">
             <div className="panel-head">
-                <h1>{t.crews.titulo}</h1>
+                <h1>
+                    {apenasRecrutamento
+                        ? t.crews.recrutamentoTitulo
+                        : t.crews.titulo}
+                </h1>
                 <Link className="btn-secondary" to="/crews/nova">
                     {t.crews.criar}
                 </Link>
             </div>
+
+            {/*
+              A ligação entre os dois é nos dois sentidos.
+
+              Quem chega ao quadro e não encontra crew nenhuma que sirva
+              tem de conseguir ver o diretório todo sem voltar atrás — e
+              quem anda a ver o diretório todo não descobre o quadro por
+              adivinhação.
+            */}
+            <p className="hint">
+                {apenasRecrutamento ? (
+                    <>
+                        {t.crews.recrutamentoExplica}{' '}
+                        <Link to="/crews">{t.crews.verTodas}</Link>
+                    </>
+                ) : (
+                    <Link to="/recrutamento">{t.crews.verQuemRecruta}</Link>
+                )}
+            </p>
 
             <form className="searchbar" onSubmit={submeter} role="search">
                 <input
@@ -114,7 +148,11 @@ export const CrewDirectoryPage = () => {
             {data ? (
                 <section className="grupo">
                     <h2>
-                        {pesquisa ? t.crews.resultados(pesquisa) : t.crews.todas}
+                        {pesquisa
+                            ? t.crews.resultados(pesquisa)
+                            : apenasRecrutamento
+                              ? t.crews.aRecrutarAgora
+                              : t.crews.todas}
                     </h2>
 
                     {data.items.length === 0 ? (

@@ -279,6 +279,19 @@ model Crew {
   /// candidata; quem manda na crew decide se aceita.
   join_requirements String?
 
+  /// Se esta crew diz, ela própria, que está a recrutar.
+  ///
+  /// Não é deduzido de ter requisitos escritos nem de ter lugares
+  /// livres: uma dedução dessas põe no quadro de recrutamento crews que
+  /// nunca pediram para lá estar, e quem se candidatar leva com um
+  /// silêncio que a plataforma provocou.
+  ///
+  /// A data serve para o anúncio envelhecer à vista de quem lê, em vez
+  /// de ficar lá para sempre a dizer que sim. É escrita ao ligar e
+  /// apagada ao desligar — voltar a ligar recomeça a contagem.
+  is_recruiting    Boolean   @default(false)
+  recruiting_since DateTime?
+
   /// Personalização reservada a quem tem plano ativo. Os campos ficam
   /// gravados mesmo que o plano termine: quem voltar a subscrever
   /// reencontra o que tinha, e perder trabalho por deixar de pagar seria

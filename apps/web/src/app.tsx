@@ -198,6 +198,16 @@ export const App = () => (
             <Route path="/premium" element={<PremiumPage />} />
 
             <Route path="/crews" element={<CrewDirectoryPage />} />
+            {/*
+              O quadro de recrutamento é o mesmo diretório com o filtro
+              ligado. Rota própria porque é um sítio para onde se manda
+              alguém — "vai ver quem está a recrutar" tem de caber num
+              link.
+            */}
+            <Route
+                path="/recrutamento"
+                element={<CrewDirectoryPage apenasRecrutamento />}
+            />
             <Route path="/servidores" element={<ServerDirectoryPage />} />
 
             <Route path="/u/:username" element={<PublicProfilePage />} />

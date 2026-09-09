@@ -18,6 +18,8 @@ export interface DirectoryQuery {
     search?: string;
     page?: number;
     sort?: 'newest' | 'level' | 'name';
+    /** Só as crews que anunciaram que recrutam. */
+    recruiting?: boolean;
 }
 
 const adesao = createMembershipApi('/crews');
@@ -127,6 +129,7 @@ export const updateCrew = (
         name?: string;
         description?: string | null;
         joinRequirements?: string | null;
+        isRecruiting?: boolean;
     },
 ): Promise<CrewProfile> =>
     api<CrewProfile>(`/crews/${encodeURIComponent(crewId)}`, {
