@@ -100,6 +100,9 @@ export class UserController {
             bio: profile.bio,
             level: profile.level,
             xp: profile.xp.toString(),
+            levelXp: profile.levelXp.toString(),
+            /** Ausente quer dizer que já não há nível seguinte. */
+            nextLevelXp: profile.nextLevelXp?.toString() ?? null,
             reputation: profile.reputation,
             isPremium: profile.isPremium,
             appearance: profile.appearance,

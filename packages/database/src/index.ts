@@ -40,6 +40,7 @@ export {
     TransactionCategory,
     TransactionDirection,
     TransactionStatus,
+    XpReason,
 } from '@prisma/client';
 
 export {
@@ -67,6 +68,22 @@ export {
     estaOnline,
     filtroDeOnline,
 } from './heartbeat.js';
+
+export {
+    NIVEL_MAXIMO,
+    PRESENCAS_MINIMAS,
+    PRESENCAS_QUE_CONTAM,
+    XP_BASE_DO_EVENTO,
+    XP_DE_QUEM_APARECEU,
+    XP_POR_NIVEL,
+    XP_POR_PRESENCA,
+    nivelDoXp,
+    progressoDeNivel,
+    xpDeUmEvento,
+    xpDoNivel,
+} from './progression.js';
+
+export type { Progresso } from './progression.js';
 
 export {
     PRUNE_MARGEM_MS,

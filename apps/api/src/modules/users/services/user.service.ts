@@ -1,3 +1,5 @@
+import { progressoDeNivel } from '@vicehub/database';
+
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { visibleAppearance } from '../../../shared/appearance.js';
 import { UserError } from '../errors/user.errors.js';
@@ -114,13 +116,18 @@ export class UserService {
      * exista no registo lido da base de dados.
      */
     private toPublicProfile(user: UserRecord, isPremium: boolean): PublicProfile {
+        /** O nível vem do xp, pela mesma razão que na crew. */
+        const progresso = progressoDeNivel(user.xp);
+
         return {
             id: user.id,
             username: user.username,
             avatarUrl: user.avatarUrl,
             bio: user.bio,
-            level: user.level,
+            level: progresso.nivel,
             xp: user.xp,
+            levelXp: progresso.xpDoNivelAtual,
+            nextLevelXp: progresso.xpDoNivelSeguinte,
             reputation: user.reputation,
             isPremium,
             appearance: visibleAppearance(user, isPremium),

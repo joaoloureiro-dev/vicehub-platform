@@ -4,6 +4,7 @@ import { UserError } from '../../src/modules/users/errors/user.errors.js';
 import { UserService } from '../../src/modules/users/services/user.service.js';
 import type { SubscriptionService } from '../../src/modules/subscriptions/services/subscription.service.js';
 import type { UserRepository } from '../../src/modules/users/repositories/user.repository.js';
+import { NIVEL_MAXIMO } from '@vicehub/database';
 
 const userRow = (overrides: Record<string, unknown> = {}) => ({
     id: 'user-1',
@@ -86,6 +87,13 @@ describe('UserService', () => {
                 'id',
                 'isPremium',
                 'level',
+                /*
+                  O chão do nível atual e o teto do seguinte. São função
+                  do xp, que já é público: dizem onde a barra começa e
+                  acaba, e não revelam nada que o xp não revelasse.
+                */
+                'levelXp',
+                'nextLevelXp',
                 'reputation',
                 'username',
                 'xp',
@@ -146,7 +154,23 @@ describe('UserService', () => {
         it('mantém tudo o que o perfil público já mostrava', async () => {
             const profile = await service.getPrivateProfile('user-1');
 
-            expect(profile).toMatchObject({ username: 'player', level: 7 });
+            expect(profile).toMatchObject({ username: 'player' });
+        });
+
+        /**
+         * O nível vem do xp, e não da coluna.
+         *
+         * A fixture tem 7 guardado e um xp de quem já está no topo — e o
+         * que sai é o topo. Uma coluna que discorde do xp é uma coluna
+         * errada, não uma segunda opinião: a coluna existe para o
+         * diretório poder ordenar, e é escrita na mesma transação que
+         * soma o xp.
+         */
+        it('lê o nível do xp e não da coluna guardada', async () => {
+            const profile = await service.getPrivateProfile('user-1');
+
+            expect(profile.level).toBe(NIVEL_MAXIMO);
+            expect(profile.nextLevelXp).toBeNull();
         });
     });
 

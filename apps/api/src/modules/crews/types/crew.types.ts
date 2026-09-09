@@ -19,8 +19,13 @@ export interface CrewProfile {
     name: string;
     tag: string;
     description: string | null;
+    /** Sai do xp, sempre. A coluna guardada é a mesma conta, para ordenar. */
     level: number;
     xp: bigint;
+    /** O xp com que se entrou no nível atual. */
+    levelXp: bigint;
+    /** O xp que o nível seguinte exige, ou null no topo. */
+    nextLevelXp: bigint | null;
     influence: number;
     prestige: number;
     isPremium: boolean;

@@ -7,6 +7,7 @@ import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { requestEmailVerification } from '../../auth/auth.api.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
+import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
 import {
     getMyProfile,
     updateMyAppearance,
@@ -145,6 +146,13 @@ export const MyProfilePage = () => {
                     <dd>{eu.reputation}</dd>
                 </div>
             </dl>
+
+            <ProgressoDeNivel
+                nivel={eu.level}
+                xp={eu.xp}
+                xpDoNivel={eu.levelXp}
+                xpDoNivelSeguinte={eu.nextLevelXp}
+            />
 
             <section className="grupo">
                 <h2>{t.perfil.conta}</h2>

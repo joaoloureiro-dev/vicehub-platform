@@ -1,4 +1,10 @@
-import { MembershipStatus, ROLES, type RoleKey } from '@vicehub/database';
+import {
+    MembershipStatus,
+    ROLES,
+    nivelDoXp,
+    progressoDeNivel,
+    type RoleKey,
+} from '@vicehub/database';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { visibleAppearance } from '../../../shared/appearance.js';
@@ -331,7 +337,7 @@ export class CrewService {
             description: string | null;
             banner_url: string | null;
             accent_color: string | null;
-            level: number;
+            xp: bigint;
             created_at: Date;
         },
         isPremium: boolean,
@@ -342,7 +348,8 @@ export class CrewService {
             name: crew.name,
             tag: crew.tag,
             description: crew.description,
-            level: crew.level,
+            /** Do xp, como no perfil: uma crew não tem dois níveis. */
+            level: nivelDoXp(crew.xp),
             memberCount,
             isPremium,
             appearance: visibleAppearance(crew, isPremium),
@@ -599,13 +606,25 @@ export class CrewService {
             this.crewRepository.countActiveMembers(crew.id),
         ]);
 
+        /**
+         * O nível vem do xp, e não da coluna.
+         *
+         * A coluna existe para o diretório poder ordenar sem contar tudo
+         * outra vez, e é escrita na mesma transação que soma o xp — mas
+         * duas verdades sobre a mesma coisa acabam sempre por divergir,
+         * e a que manda é o xp.
+         */
+        const progresso = progressoDeNivel(crew.xp);
+
         return {
             id: crew.id,
             name: crew.name,
             tag: crew.tag,
             description: crew.description,
-            level: crew.level,
+            level: progresso.nivel,
             xp: crew.xp,
+            levelXp: progresso.xpDoNivelAtual,
+            nextLevelXp: progresso.xpDoNivelSeguinte,
             influence: crew.influence,
             prestige: crew.prestige,
             isPremium: entitlement.isPremium,

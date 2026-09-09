@@ -48,6 +48,8 @@ const CREW = {
     description: null,
     level: 1,
     xp: '0',
+    levelXp: '0',
+    nextLevelXp: '100',
     influence: 0,
     prestige: 0,
     isPremium: false,

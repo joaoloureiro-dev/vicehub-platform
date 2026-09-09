@@ -33,6 +33,7 @@ const DIRECTORY_ENTRY_SELECT = {
     name: true,
     tag: true,
     description: true,
+    xp: true,
     banner_url: true,
     accent_color: true,
     level: true,
@@ -226,9 +227,17 @@ export class CrewRepository {
                 : {}),
         };
 
+        /**
+         * Ordenar por nível é ordenar por xp.
+         *
+         * O nível é uma função do xp, e crescente: as duas ordens são a
+         * mesma. Ordenar pela coluna do nível seria pedir a ordem a uma
+         * cópia em vez de a pedir ao original, e uma cópia pode estar
+         * errada.
+         */
         const orderBy =
             input.sort === 'level'
-                ? [{ level: 'desc' as const }, { xp: 'desc' as const }]
+                ? [{ xp: 'desc' as const }]
                 : input.sort === 'name'
                     ? [{ name: 'asc' as const }]
                     : [{ created_at: 'desc' as const }];

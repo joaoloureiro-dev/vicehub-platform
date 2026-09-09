@@ -7,6 +7,7 @@ import { EventService } from '../../src/modules/events/services/event.service.js
 import type { EventRepository } from '../../src/modules/events/repositories/event.repository.js';
 
 const CREW = { crewId: 'crew-1' };
+const SERVER = { serverId: 'server-1' };
 
 const eventRow = (overrides: Record<string, unknown> = {}) => ({
     id: 'event-1',
@@ -46,6 +47,12 @@ const createRepositoryMock = () => ({
     listParticipants: vi.fn().mockResolvedValue([]),
     listConfirmedParticipants: vi.fn().mockResolvedValue([]),
     isActiveMember: vi.fn().mockResolvedValue(true),
+    awardEventXp: vi.fn().mockResolvedValue({
+        awarded: true,
+        crewXp: 100,
+        userXp: 25,
+        users: 2,
+    }),
 });
 
 describe('EventService', () => {
@@ -330,6 +337,72 @@ describe('EventService', () => {
             await expectEventError(
                 service.transition(CREW, 'event-1', 'completed', 'lider'),
                 'INVALID_STATUS_TRANSITION',
+            );
+        });
+
+        /**
+         * Concluir é o que faz o evento valer xp, e paga a quem estava
+         * confirmado no momento em que acabou.
+         */
+        it('paga o xp ao concluir, com quem apareceu', async () => {
+            repository.listConfirmedParticipants.mockResolvedValue([
+                { userId: 'user-1', weight: 1 },
+                { userId: 'user-2', weight: 1 },
+            ]);
+
+            await service.transition(CREW, 'event-1', 'completed', 'lider');
+
+            expect(repository.awardEventXp).toHaveBeenCalledWith({
+                eventId: 'event-1',
+                crewId: CREW.crewId,
+                confirmedUserIds: ['user-1', 'user-2'],
+                actorId: 'lider',
+            });
+        });
+
+        /**
+         * Enquanto o evento decorre ainda se confirma e se desconfirma
+         * gente. Pagar antes do fim seria pagar por uma lista que ainda
+         * está a mudar.
+         */
+        it.each(['ongoing', 'canceled'] as const)(
+            'não paga xp ao passar a %s',
+            async (destino) => {
+                await service.transition(CREW, 'event-1', destino, 'lider');
+
+                expect(repository.awardEventXp).not.toHaveBeenCalled();
+            },
+        );
+
+        /** Uma transição recusada não paga: o evento não acabou agora. */
+        it('não paga quando a transição não se aplica', async () => {
+            repository.transitionStatus.mockResolvedValue(false);
+
+            await expectEventError(
+                service.transition(CREW, 'event-1', 'completed', 'lider'),
+                'INVALID_STATUS_TRANSITION',
+            );
+
+            expect(repository.awardEventXp).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Um servidor não tem nível: o evento dele paga a quem apareceu
+         * e a mais ninguém.
+         */
+        it('num evento de servidor não há crew a quem pagar', async () => {
+            repository.findById.mockResolvedValue(
+                eventRow({ crewId: null, serverId: 'server-1' }),
+            );
+            repository.listConfirmedParticipants.mockResolvedValue([
+                { userId: 'user-1', weight: 1 },
+                { userId: 'user-2', weight: 1 },
+            ]);
+
+            await service.transition(SERVER, 'event-1', 'completed', 'dono');
+
+            expect(repository.awardEventXp).toHaveBeenCalledWith(
+                expect.objectContaining({ crewId: null }),
             );
         });
     });

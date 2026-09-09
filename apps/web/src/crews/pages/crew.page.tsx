@@ -10,6 +10,7 @@ import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { CrewAffiliation } from '../../affiliations/components/crew-affiliation.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ApagarComunidade } from '../../components/apagar-comunidade.js';
+import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
 import { CrewSettings } from '../components/crew-settings.js';
 import {
     acceptJoinRequest,
@@ -165,6 +166,19 @@ export const CrewPage = () => {
                     <dd>{perfil.memberCount}</dd>
                 </div>
             </dl>
+
+            {/*
+              O nível sem o que falta para o seguinte é dizer a alguém
+              onde está sem lhe dizer para onde vai.
+            */}
+            <ProgressoDeNivel
+                nivel={perfil.level}
+                xp={perfil.xp}
+                xpDoNivel={perfil.levelXp}
+                xpDoNivelSeguinte={perfil.nextLevelXp}
+            />
+
+            <p className="hint">{t.progressao.deOndeVem}</p>
 
             {erroAcao ? <Alert kind="bad">{erroAcao}</Alert> : null}
 

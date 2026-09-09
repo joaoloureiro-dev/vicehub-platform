@@ -24,6 +24,8 @@ export const publicProfileSchema = z.object({
     bio: z.string().nullable(),
     level: z.number(),
     xp: z.string(),
+    levelXp: z.string(),
+    nextLevelXp: z.string().nullable(),
     reputation: z.number(),
     isPremium: z.boolean(),
     appearance: appearanceSchema,
