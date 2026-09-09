@@ -19,6 +19,14 @@ export const updateCrewSchema = z
     .object({
         name: z.string().trim().min(3).max(48),
         description: z.string().trim().max(500).nullable(),
+        /**
+         * Os requisitos são mais longos do que a descrição de propósito:
+         * uma lista de condições ("18+", "microfone", "jogamos às
+         * terças") ocupa mais do que uma frase de apresentação, e cortar
+         * a meio o que uma crew exige a quem entra faria a candidatura
+         * chegar mal informada.
+         */
+        joinRequirements: z.string().trim().max(1000).nullable(),
     })
     .partial()
     .refine((value) => Object.keys(value).length > 0, {

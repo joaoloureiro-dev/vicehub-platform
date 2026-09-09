@@ -123,12 +123,17 @@ export class CrewRepository {
 
     updateCrew(
         crewId: string,
-        input: { name?: string | undefined; description?: string | null | undefined },
+        input: {
+            name?: string | undefined;
+            description?: string | null | undefined;
+            joinRequirements?: string | null | undefined;
+        },
     ) {
         const data: {
             version: { increment: number };
             name?: string;
             description?: string | null;
+            join_requirements?: string | null;
         } = { version: { increment: 1 } };
 
         if (input.name !== undefined) {
@@ -137,6 +142,10 @@ export class CrewRepository {
 
         if (input.description !== undefined) {
             data.description = input.description;
+        }
+
+        if (input.joinRequirements !== undefined) {
+            data.join_requirements = input.joinRequirements;
         }
 
         return this.database.crew.update({ where: { id: crewId }, data });

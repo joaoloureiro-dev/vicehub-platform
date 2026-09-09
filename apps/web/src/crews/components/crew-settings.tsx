@@ -23,6 +23,7 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
 
     const [nome, setNome] = useState(crew.name);
     const [descricao, setDescricao] = useState(crew.description ?? '');
+    const [requisitos, setRequisitos] = useState(crew.joinRequirements ?? '');
     const [aGuardar, setAGuardar] = useState(false);
     const [mensagem, setMensagem] = useState<{
         tipo: 'good' | 'bad';
@@ -37,7 +38,8 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
     useEffect(() => {
         setNome(crew.name);
         setDescricao(crew.description ?? '');
-    }, [crew.name, crew.description]);
+        setRequisitos(crew.joinRequirements ?? '');
+    }, [crew.name, crew.description, crew.joinRequirements]);
 
     /** O mesmo mínimo que a API exige, para o erro chegar antes do pedido. */
     const nomeCurto = nome.trim().length > 0 && nome.trim().length < 3;
@@ -52,6 +54,8 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
                 name: nome.trim(),
                 /** Vazio limpa a descrição; não a deixa como estava. */
                 description: descricao.trim() || null,
+                /** O mesmo para os requisitos: apagá-los tem de ser possível. */
+                joinRequirements: requisitos.trim() || null,
             });
 
             setMensagem({ tipo: 'good', texto: t.crews.definicoesGuardadas });
@@ -107,6 +111,20 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
                             setDescricao(event.target.value);
                         }}
                     />
+                </div>
+
+                <div className="field">
+                    <label htmlFor="crew-requisitos">{t.crews.requisitos}</label>
+                    <textarea
+                        id="crew-requisitos"
+                        rows={4}
+                        maxLength={1000}
+                        value={requisitos}
+                        onChange={(event) => {
+                            setRequisitos(event.target.value);
+                        }}
+                    />
+                    <p className="hint">{t.crews.requisitosAjuda}</p>
                 </div>
 
                 <button

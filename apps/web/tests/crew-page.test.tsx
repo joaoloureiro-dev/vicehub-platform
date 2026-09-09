@@ -12,6 +12,7 @@ const perfil = {
     name: 'Vice Kings',
     tag: 'VICE',
     description: 'A crew do teste.',
+    joinRequirements: null,
     level: 100,
     xp: '9007199254740993',
     levelXp: '495000',
@@ -285,6 +286,50 @@ describe('o ecrã de uma crew', () => {
             await waitFor(() => {
                 expect(corpoDoPatch(fetchMock)).toMatchObject({
                     description: null,
+                });
+            });
+        });
+
+        it('guarda os requisitos de candidatura escritos por quem manda', async () => {
+            const fetchMock = servidor({ requests: json(200, []) });
+            vi.stubGlobal('fetch', fetchMock);
+
+            montar();
+
+            const requisitos = await screen.findByLabelText(t.crews.requisitos);
+
+            await userEvent.type(requisitos, '18+');
+            await userEvent.click(
+                screen.getByRole('button', { name: t.comum.guardar }),
+            );
+
+            await waitFor(() => {
+                expect(corpoDoPatch(fetchMock)).toMatchObject({
+                    joinRequirements: '18+',
+                });
+            });
+        });
+
+        /** Pelo mesmo motivo da descrição: apagá-los tem de ser possível. */
+        it('manda os requisitos vazios como null', async () => {
+            const fetchMock = servidor({
+                requests: json(200, []),
+                perfil: { ...perfil, joinRequirements: '18+' },
+            });
+            vi.stubGlobal('fetch', fetchMock);
+
+            montar();
+
+            const requisitos = await screen.findByLabelText(t.crews.requisitos);
+
+            await userEvent.clear(requisitos);
+            await userEvent.click(
+                screen.getByRole('button', { name: t.comum.guardar }),
+            );
+
+            await waitFor(() => {
+                expect(corpoDoPatch(fetchMock)).toMatchObject({
+                    joinRequirements: null,
                 });
             });
         });
@@ -593,6 +638,56 @@ describe('o ecrã de uma crew', () => {
             });
 
             expect(screen.queryByText(/#/)).toBeNull();
+        });
+    });
+
+    /**
+     * O que a crew exige a quem entra é público: quem chega ao perfil
+     * está a decidir se se candidata, e é aqui que precisa de o saber.
+     */
+    describe('os requisitos de candidatura', () => {
+
+        it('aparecem a quem ainda não pertence à crew', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(403, { code: 'FORBIDDEN' }),
+                    perfil: {
+                        ...perfil,
+                        joinRequirements: 'Falamos portugues\nJogamos a noite',
+                    },
+                }),
+            );
+
+            montar();
+
+            expect(
+                await screen.findByRole('heading', { name: t.crews.requisitos }),
+            ).toBeDefined();
+
+            expect(screen.getByText(/Falamos portugues/)).toBeDefined();
+        });
+
+        /**
+         * Sem requisitos escritos não há secção nenhuma. Um cabeçalho
+         * vazio dizia "não exigimos nada" — uma afirmação que a crew
+         * nunca fez.
+         */
+        it('não aparecem quando a crew não escreveu nenhuns', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('Vice Kings')).toBeDefined();
+            });
+
+            expect(
+                screen.queryByRole('heading', { name: t.crews.requisitos }),
+            ).toBeNull();
         });
     });
 });

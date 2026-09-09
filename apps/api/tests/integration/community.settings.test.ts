@@ -33,6 +33,8 @@ describe('definições de crews e servidores', () => {
     const auth = (token: string) => ({ authorization: `Bearer ${token}` });
 
     let dono: string;
+    /** Quem tem conta mas não manda nesta crew. */
+    let alheio: string;
     let crewId: string;
     let serverId: string;
     let outraCrew: string;
@@ -85,7 +87,7 @@ describe('definições de crews e servidores', () => {
         await app.ready();
 
         dono = await register(`set${marca}`);
-        const alheio = await register(`alh${marca}`);
+        alheio = await register(`alh${marca}`);
 
         crewId = await criarCrew(dono, `Crew ${marca}`, `C${marca}`);
         serverId = await criarServidor(dono, `Server ${marca}`);
@@ -161,6 +163,91 @@ describe('definições de crews e servidores', () => {
 
             expect(response.statusCode, response.body).toBe(200);
             expect(response.json().description).toBeNull();
+        });
+
+        /**
+         * Os requisitos de candidatura são públicos de propósito.
+         *
+         * O pedido vai **sem sessão nenhuma**, e não com a de um
+         * estranho: quem decide se se candidata muitas vezes ainda nem
+         * conta tem, e uns requisitos que só aparecem depois do registo
+         * chegam tarde para servirem de alguma coisa.
+         */
+        it('mostra os requisitos a quem nem sessão tem', async () => {
+            const guardado = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/crews/${crewId}`,
+                headers: auth(dono),
+                payload: { joinRequirements: '18+\nFalamos português' },
+            });
+
+            expect(guardado.statusCode, guardado.body).toBe(200);
+
+            const publico = await app.inject({
+                method: 'GET',
+                url: `/api/v1/crews/${crewId}`,
+            });
+
+            expect(publico.statusCode, publico.body).toBe(200);
+            expect(publico.json().joinRequirements).toBe('18+\nFalamos português');
+        });
+
+        /**
+         * Escrever o que a crew exige é mandar na crew.
+         *
+         * Sem isto, qualquer pessoa com conta podia pôr condições no
+         * perfil de uma crew que não é dela — e quem lesse acreditava,
+         * porque o perfil não diz quem escreveu aquilo.
+         */
+        it('recusa os requisitos a quem não manda na crew', async () => {
+            const response = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/crews/${crewId}`,
+                headers: auth(alheio),
+                payload: { joinRequirements: 'entra quem eu quiser' },
+            });
+
+            expect(response.statusCode, response.body).toBe(403);
+
+            const crew = await prisma.crew.findFirstOrThrow({
+                where: { id: crewId },
+                select: { join_requirements: true },
+            });
+
+            expect(crew.join_requirements).toBe('18+\nFalamos português');
+        });
+
+        /**
+         * Um PATCH que não fala nos requisitos não lhes toca.
+         *
+         * O ecrã de definições manda sempre o formulário inteiro e por
+         * isso nunca daria por isto — mas a rota é um PATCH, e quem lhe
+         * chamar com um campo só não pode ver o resto apagado. É a mesma
+         * regra que já vale para a descrição, e é fácil de partir: basta
+         * gravar o campo sem primeiro perguntar se ele veio.
+         */
+        it('mudar só a descrição não apaga os requisitos', async () => {
+            const response = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/crews/${crewId}`,
+                headers: auth(dono),
+                payload: { description: 'só a descrição' },
+            });
+
+            expect(response.statusCode, response.body).toBe(200);
+            expect(response.json().joinRequirements).toBe('18+\nFalamos português');
+        });
+
+        it('limpa os requisitos com null', async () => {
+            const response = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/crews/${crewId}`,
+                headers: auth(dono),
+                payload: { joinRequirements: null },
+            });
+
+            expect(response.statusCode, response.body).toBe(200);
+            expect(response.json().joinRequirements).toBeNull();
         });
     });
 

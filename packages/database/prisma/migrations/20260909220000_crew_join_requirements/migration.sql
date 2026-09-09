@@ -1,0 +1,12 @@
+-- Requisitos de candidatura de uma crew.
+--
+-- Texto livre e não uma lista de condições verificáveis: o que uma crew
+-- exige a quem entra ("falamos português", "jogamos à noite", "18+") não
+-- é coisa que a plataforma consiga confirmar, e fingir que confirma era
+-- pior do que não prometer nada. Fica visível a quem chega ao perfil,
+-- antes de pedir entrada, para que o pedido já venha informado.
+--
+-- Nullable porque uma crew sem requisitos escritos é o caso normal, e
+-- não um erro por corrigir: string vazia e "ainda não escrevi" são
+-- estados diferentes e o perfil trata-os de maneira diferente.
+ALTER TABLE "Crew" ADD COLUMN "join_requirements" TEXT;

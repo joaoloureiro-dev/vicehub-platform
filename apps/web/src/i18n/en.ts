@@ -152,6 +152,9 @@ export const en = (p: Tools) => ({
         influencia: 'Influence',
         prestigio: 'Prestige',
         contagemMembros: 'Members',
+        requisitos: 'What this crew asks of you',
+        requisitosAjuda:
+            'One condition per line. Nobody is checked against this: it tells people what to expect before they apply, and you still decide who gets in.',
         pedirEntrada: 'Ask to join',
         candidaturaEnviada: 'Application sent',
         retirarCandidatura: 'Withdraw application',

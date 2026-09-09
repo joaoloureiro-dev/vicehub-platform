@@ -154,6 +154,9 @@ export const fr = (p: Tools): Messages => ({
         influencia: 'Influence',
         prestigio: 'Prestige',
         contagemMembros: 'Membres',
+        requisitos: 'Ce que cette crew attend de toi',
+        requisitosAjuda:
+            'Une condition par ligne. Personne n\u2019est vérifié là-dessus : cela dit à qui postule ce qui l\u2019attend, et c\u2019est toujours toi qui décides qui entre.',
         pedirEntrada: 'Demander à rejoindre',
         candidaturaEnviada: 'Candidature envoyée',
         retirarCandidatura: 'Retirer la candidature',

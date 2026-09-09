@@ -145,6 +145,9 @@ export const es = (p: Tools): Messages => ({
         influencia: 'Influencia',
         prestigio: 'Prestigio',
         contagemMembros: 'Miembros',
+        requisitos: 'Lo que esta crew te pide',
+        requisitosAjuda:
+            'Una condición por línea. Nadie se verifica contra esto: sirve para que quien se postula sepa a qué atenerse, y quien decide quién entra sigues siendo tú.',
         pedirEntrada: 'Pedir entrar',
         candidaturaEnviada: 'Solicitud enviada',
         retirarCandidatura: 'Retirar la solicitud',
