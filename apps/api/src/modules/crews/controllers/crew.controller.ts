@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { AuditService } from '../../audit/services/audit.service.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     CreateCrewDto,
@@ -14,7 +15,10 @@ import type { CrewService } from '../services/crew.service.js';
 import type { CrewDirectoryEntry, CrewProfile } from '../types/crew.types.js';
 
 export class CrewController {
-    constructor(private readonly crewService: CrewService) { }
+    constructor(
+        private readonly crewService: CrewService,
+        private readonly auditService: AuditService,
+    ) { }
 
     async create(
         request: FastifyRequest<{ Body: CreateCrewDto }>,
@@ -105,6 +109,36 @@ export class CrewController {
                 ),
             ),
         );
+    }
+
+    async remove(
+        request: FastifyRequest<{ Params: CrewIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const { crewId } = request.params;
+
+        /**
+         * O nome é lido antes de a crew desaparecer do diretório: um
+         * rasto que diga apenas o identificador não responde à pergunta
+         * que se vai fazer daqui a seis meses, que é qual das crews é
+         * que era esta.
+         */
+        const { name, tag } = await this.crewService.getProfile(crewId);
+
+        await this.crewService.deleteCrew(crewId, user.id);
+
+        await this.auditService.record({
+            action: 'crew.deleted',
+            entityType: 'Crew',
+            entityId: crewId,
+            actorId: user.id,
+            before: { name, tag },
+            ...AuditService.contextOf(request),
+        });
+
+        reply.status(204).send();
     }
 
     async listMembers(

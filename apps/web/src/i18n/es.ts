@@ -471,6 +471,24 @@ export const es = (p: Tools): Messages => ({
             quantos === 1 ? '1 jugador en línea' : `${quantos} jugadores en línea`,
     },
 
+    zonaPerigo: {
+        crewTitulo: 'Eliminar esta crew',
+        servidorTitulo: 'Eliminar este servidor',
+        crewExplicacao:
+            'La crew sale del directorio, sus miembros pierden la pertenencia y deja de estar afiliada al servidor donde juega. El nombre y la tag vuelven a quedar libres.',
+        servidorExplicacao:
+            'El servidor sale del directorio, sus miembros pierden la pertenencia, las crews que juegan allí dejan de estar afiliadas —incluidas las que cubría su plan— y sus claves dejan de servir. El nombre vuelve a quedar libre.',
+        escreveONome: (nome: string) => `Escribe ${nome} para confirmar.`,
+        confirmacao: 'Confirmación',
+        botao: 'Eliminar',
+        aApagar: 'Eliminando…',
+        temSaldo: 'La tesorería aún tiene saldo. Repártelo o retíralo primero.',
+        temDecisoes:
+            'Hay movimientos o repartos pendientes de decisión en la tesorería.',
+        temPlano: 'Hay un plan activo. Cancélalo primero.',
+        naoFoiPossivel: 'No se ha podido eliminar.',
+    },
+
     estadosEvento: {
         scheduled: 'Programado',
         ongoing: 'En curso',

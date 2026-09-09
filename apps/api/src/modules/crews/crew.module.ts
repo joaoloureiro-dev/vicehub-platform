@@ -1,6 +1,8 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
+import { AuditRepository } from '../audit/repositories/audit.repository.js';
+import { AuditService } from '../audit/services/audit.service.js';
 import { RoleAssignmentRepository } from '../authorization/repositories/role-assignment.repository.js';
 import { RoleAssignmentService } from '../authorization/services/role-assignment.service.js';
 import { SubscriptionRepository } from '../subscriptions/repositories/subscription.repository.js';
@@ -22,7 +24,10 @@ const crewModule: FastifyPluginAsync = async (fastify) => {
 
     await fastify.register(crewRoutes, {
         prefix: '/api/v1/crews',
-        controller: new CrewController(crewService),
+        controller: new CrewController(
+            crewService,
+            new AuditService(new AuditRepository(fastify.prisma)),
+        ),
     });
 };
 

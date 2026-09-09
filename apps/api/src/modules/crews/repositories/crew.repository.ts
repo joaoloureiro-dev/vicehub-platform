@@ -8,6 +8,11 @@ import {
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { toAppearanceColumns } from '../../../shared/appearance.js';
+import type { DeletionBlockers } from '../../../shared/community-deletion.js';
+import {
+    findDeletionBlockers,
+    softDeleteCommunity,
+} from '../../../shared/community-deletion.js';
 
 interface CreateCrewInput {
     name: string;
@@ -386,6 +391,23 @@ export class CrewRepository {
      *
      * Uma única consulta para todos, em vez de uma por membro.
      */
+    /**
+     * O que impede esta crew de ser apagada, se alguma coisa impedir.
+     *
+     * A regra é a mesma dos servidores e vive num sítio só.
+     */
+    findDeletionBlockers(crewId: string): Promise<DeletionBlockers> {
+        return findDeletionBlockers(this.database, { crewId });
+    }
+
+    /**
+     * Apaga a crew e, com ela, adesões, cargos, filiações, eventos e
+     * carteira.
+     */
+    softDelete(crewId: string, actorId: string): Promise<void> {
+        return softDeleteCommunity(this.database, { crewId }, actorId);
+    }
+
     listScopedRoles(crewId: string, userIds: string[]) {
         return this.database.userRole.findMany({
             where: {

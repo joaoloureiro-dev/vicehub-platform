@@ -479,6 +479,23 @@ export const pt = (p: Tools): Messages => ({
             quantos === 1 ? '1 jogador online' : `${quantos} jogadores online`,
     },
 
+    zonaPerigo: {
+        crewTitulo: 'Apagar esta crew',
+        servidorTitulo: 'Apagar este servidor',
+        crewExplicacao:
+            'A crew sai do diretório, os membros perdem a adesão e deixa de estar filiada no servidor onde joga. O nome e a tag voltam a ficar livres.',
+        servidorExplicacao:
+            'O servidor sai do diretório, os membros perdem a adesão, as crews que lá jogam deixam de estar filiadas — incluindo as que o plano dele cobria — e as chaves deixam de servir. O nome volta a ficar livre.',
+        escreveONome: (nome: string) => `Escreve ${nome} para confirmar.`,
+        confirmacao: 'Confirmação',
+        botao: 'Apagar',
+        aApagar: 'A apagar…',
+        temSaldo: 'A tesouraria ainda tem saldo. Divide-o ou retira-o primeiro.',
+        temDecisoes: 'Há movimentos ou divisões por decidir na tesouraria.',
+        temPlano: 'Há um plano ativo. Cancela-o primeiro.',
+        naoFoiPossivel: 'Não foi possível apagar.',
+    },
+
     estadosEvento: {
         scheduled: 'Marcado',
         ongoing: 'A decorrer',

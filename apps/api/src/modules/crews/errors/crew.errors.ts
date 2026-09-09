@@ -6,7 +6,10 @@ export type CrewErrorCode =
     | 'ALREADY_MEMBER'
     | 'NOT_A_MEMBER'
     | 'MEMBERSHIP_NOT_PENDING'
-    | 'CANNOT_MANAGE_SELF';
+    | 'CANNOT_MANAGE_SELF'
+    | 'CREW_HAS_FUNDS'
+    | 'CREW_HAS_OPEN_DECISIONS'
+    | 'CREW_HAS_ACTIVE_PLAN';
 
 export class CrewError extends Error {
     constructor(

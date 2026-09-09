@@ -31,6 +31,16 @@ export const listCrews = (
 export const getCrew = (crewId: string): Promise<CrewProfile> =>
     api<CrewProfile>(`/crews/${crewId}`);
 
+/**
+ * Apaga a crew.
+ *
+ * Exige `crew:manage` — o cargo de líder. A API recusa com 409 enquanto
+ * a tesouraria tiver saldo, houver decisões por tomar ou o plano estiver
+ * ativo, e o código do erro diz qual das três é.
+ */
+export const deleteCrew = (crewId: string): Promise<void> =>
+    api<void>(`/crews/${encodeURIComponent(crewId)}`, { method: 'DELETE' });
+
 export const listMyMemberships = (): Promise<CrewMembership[]> =>
     api<CrewMembership[]>('/crews/me/memberships');
 

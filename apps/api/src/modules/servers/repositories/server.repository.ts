@@ -9,6 +9,11 @@ import {
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { toAppearanceColumns } from '../../../shared/appearance.js';
+import type { DeletionBlockers } from '../../../shared/community-deletion.js';
+import {
+    findDeletionBlockers,
+    softDeleteCommunity,
+} from '../../../shared/community-deletion.js';
 
 interface CreateServerInput {
     name: string;
@@ -407,6 +412,22 @@ export class ServerRepository {
                 },
             },
         });
+    }
+
+    /**
+     * O que impede este servidor de ser apagado, se alguma coisa
+     * impedir. A regra é a mesma das crews e vive num sítio só.
+     */
+    findDeletionBlockers(serverId: string): Promise<DeletionBlockers> {
+        return findDeletionBlockers(this.database, { serverId });
+    }
+
+    /**
+     * Apaga o servidor e, com ele, adesões, cargos, filiações, eventos,
+     * carteira e chaves de ingestão.
+     */
+    softDelete(serverId: string, actorId: string): Promise<void> {
+        return softDeleteCommunity(this.database, { serverId }, actorId);
     }
 
     /**

@@ -114,6 +114,14 @@ const crewErrorStatusCodes: Record<CrewErrorCode, number> = {
     NOT_A_MEMBER: 404,
     MEMBERSHIP_NOT_PENDING: 409,
     CANNOT_MANAGE_SELF: 409,
+    /**
+     * 409 e não 403: quem pede tem autorização para apagar. O que
+     * impede é o estado da crew — dinheiro parado, decisões por tomar
+     * ou um plano a correr — e cada um desses estados desfaz-se.
+     */
+    CREW_HAS_FUNDS: 409,
+    CREW_HAS_OPEN_DECISIONS: 409,
+    CREW_HAS_ACTIVE_PLAN: 409,
 };
 
 /**
@@ -151,6 +159,10 @@ const serverErrorStatusCodes: Record<ServerErrorCode, number> = {
     NOT_A_MEMBER: 404,
     MEMBERSHIP_NOT_PENDING: 409,
     CANNOT_MANAGE_SELF: 409,
+    /** Pelas mesmas razões das crews. */
+    SERVER_HAS_FUNDS: 409,
+    SERVER_HAS_OPEN_DECISIONS: 409,
+    SERVER_HAS_ACTIVE_PLAN: 409,
 };
 
 /**

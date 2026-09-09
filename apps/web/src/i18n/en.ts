@@ -475,6 +475,25 @@ export const en = (p: Tools) => ({
             quantos === 1 ? '1 player online' : `${quantos} players online`,
     },
 
+    zonaPerigo: {
+        crewTitulo: 'Delete this crew',
+        servidorTitulo: 'Delete this server',
+        crewExplicacao:
+            'The crew leaves the directory, its members lose their membership, and it stops being affiliated with the server where it plays. The name and the tag go back to being free.',
+        servidorExplicacao:
+            'The server leaves the directory, its members lose their membership, the crews playing there stop being affiliated — including any covered by its plan — and its keys stop working. The name goes back to being free.',
+        escreveONome: (nome: string) => `Type ${nome} to confirm.`,
+        confirmacao: 'Confirmation',
+        botao: 'Delete',
+        aApagar: 'Deleting…',
+        temSaldo:
+            'The treasury still has a balance. Split it or withdraw it first.',
+        temDecisoes:
+            'There are movements or splits still waiting for a decision in the treasury.',
+        temPlano: 'There is an active plan. Cancel it first.',
+        naoFoiPossivel: 'It could not be deleted.',
+    },
+
     estadosEvento: {
         scheduled: 'Scheduled',
         ongoing: 'Under way',

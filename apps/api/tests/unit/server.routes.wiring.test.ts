@@ -88,6 +88,7 @@ describe('ligação das rotas de servidor', () => {
             removeMember: vi.fn(),
             setMemberRole: vi.fn(),
             updateAppearance: vi.fn(),
+            remove: vi.fn(),
         } as unknown as ServerController;
 
         await app.register(serverRoutes, { controller });
@@ -159,7 +160,12 @@ describe('ligação das rotas de servidor', () => {
          * de membros: caso contrário um moderador podia promover um
          * cúmplice a dono e tomar o servidor a quem o criou.
          */
-        it.each(['PATCH /:serverId', 'PUT /:serverId/members/:userId/role'])(
+        it.each([
+            'PATCH /:serverId',
+            /* Apagar é do dono, pela mesma razão. */
+            'DELETE /:serverId',
+            'PUT /:serverId/members/:userId/role',
+        ])(
             '%s exige server:manage',
             (key) => {
                 expect(permissoesPorRota.get(key)).toEqual(['server:manage']);

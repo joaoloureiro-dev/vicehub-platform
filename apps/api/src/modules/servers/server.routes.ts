@@ -117,6 +117,21 @@ const serverRoutes: FastifyPluginAsync<ServerRoutesOptions> = async (
     );
 
     /**
+     * Apagar exige server:manage — o dono — e não a gestão de membros.
+     */
+    fastify.delete<{ Params: ServerIdParamDto }>(
+        '/:serverId',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('server:manage'),
+            ],
+            schema: { params: serverIdParamSchema },
+        },
+        controller.remove.bind(controller),
+    );
+
+    /**
      * Pedir entrada, retirar o pedido e sair dizem respeito ao próprio:
      * exigem conta, mas nenhuma permissão sobre o servidor.
      */
