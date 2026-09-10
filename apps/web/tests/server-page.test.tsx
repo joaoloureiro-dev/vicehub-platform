@@ -56,6 +56,8 @@ const servidor = (opcoes: {
     patch?: Response;
     /** Um perfil diferente do normal, para os casos que o exigem. */
     perfil?: unknown;
+    /** As adesões de quem está a ver, quando o caso precisa de uma. */
+    adesoes?: unknown[];
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -89,7 +91,7 @@ const servidor = (opcoes: {
         }
 
         if (endereco.endsWith('/me/memberships')) {
-            return Promise.resolve(json(200, []));
+            return Promise.resolve(json(200, opcoes.adesoes ?? []));
         }
 
         return Promise.resolve(
@@ -420,5 +422,55 @@ describe('os requisitos de candidatura de um servidor', () => {
                 joinRequirements: null,
             });
         });
+    });
+});
+
+/**
+ * O calendário de um servidor existe desde sempre na API, e durante
+ * bastante tempo não existiu porta nenhuma para lá chegar. Estes dois
+ * testes são a porta: um diz que ela aparece a quem pertence, o outro
+ * que não aparece a quem não pertence — porque a API responde 403 a
+ * esse, e um link que dá 403 lê-se como avaria.
+ */
+describe('o calendário de um servidor', () => {
+    const adesaoAtiva = [
+        {
+            serverId: 'server-1',
+            name: 'Vice City RP',
+            region: 'EU',
+            status: 'active',
+            role: 'server_owner',
+            since: '2026-01-01T00:00:00.000Z',
+            respondedAt: '2026-01-01T00:00:00.000Z',
+            decisionNote: null,
+        },
+    ];
+
+    it('aparece a quem pertence ao servidor', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ requests: json(200, []), adesoes: adesaoAtiva }),
+        );
+
+        montar();
+
+        const ligacao = await screen.findByText(t.crews.eventos);
+
+        expect(ligacao.getAttribute('href')).toBe('/servidores/server-1/eventos');
+    });
+
+    it('não aparece a quem não pertence', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+        );
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText('Vice City RP')).toBeDefined();
+        });
+
+        expect(screen.queryByText(t.crews.eventos)).toBeNull();
     });
 });
