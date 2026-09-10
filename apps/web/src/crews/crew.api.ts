@@ -67,8 +67,10 @@ export const createCrew = (input: {
 export const listCrewMembers = (crewId: string): Promise<CommunityMember[]> =>
     adesao.listMembers(crewId);
 
-export const requestToJoin = (crewId: string): Promise<void> =>
-    adesao.requestToJoin(crewId);
+export const requestToJoin = (
+    crewId: string,
+    message?: string,
+): Promise<void> => adesao.requestToJoin(crewId, message);
 
 export const withdrawJoinRequest = (crewId: string): Promise<void> =>
     adesao.withdrawJoinRequest(crewId);

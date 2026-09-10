@@ -1,0 +1,16 @@
+-- O que quem se candidata escreve ao candidatar-se.
+--
+-- Até aqui, pedir entrada era um botão que não mandava nada. Do outro
+-- lado aparecia um nome numa lista, e quem decidia tinha de escolher
+-- entre aceitar um desconhecido ou recusar um desconhecido. As duas
+-- coisas são maus negócios.
+--
+-- A crew já escreve o que pede a quem entra; isto é a outra metade — a
+-- resposta. Texto livre e não campos fixos: o que uma crew quer saber
+-- de quem entra muda de crew para crew, e um formulário com as perguntas
+-- de umas seria um formulário errado para as outras.
+--
+-- Nullable porque é opcional. Uma crew que não escreveu requisitos
+-- nenhuns não tem por que exigir uma redação, e obrigar a escrever para
+-- poder pedir entrada punha uma porta onde não havia nenhuma.
+ALTER TABLE "Membership" ADD COLUMN "message" TEXT;

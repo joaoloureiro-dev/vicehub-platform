@@ -475,6 +475,18 @@ model Membership {
   /// fonte de verdade sobre quem pode o quê.
   status MembershipStatus @default(pending)
 
+  /// O que quem se candidata escreveu ao candidatar-se.
+  ///
+  /// A comunidade escreve o que pede a quem entra; isto é a resposta.
+  /// Texto livre e não campos fixos: o que cada uma quer saber muda, e
+  /// um formulário com as perguntas de umas seria o formulário errado
+  /// para as outras.
+  ///
+  /// Fica depois de respondido, e não é apagado ao aceitar ou recusar:
+  /// é o que permite, meses depois, perceber com que ideia é que alguém
+  /// entrou.
+  message String?
+
   responded_at DateTime?
   responded_by String?
 

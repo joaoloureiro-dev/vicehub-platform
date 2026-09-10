@@ -41,6 +41,33 @@ export const updateCrewSchema = z
         message: 'Indica pelo menos um campo a alterar.',
     });
 
+/**
+ * O que se escreve ao pedir entrada numa crew.
+ *
+ * Opcional de propósito. Uma crew que não escreveu requisitos nenhuns
+ * não tem por que exigir uma redação, e obrigar a escrever para poder
+ * pedir entrada punha uma porta onde não havia nenhuma.
+ *
+ * Mais longo do que os requisitos que a crew escreve: quem responde
+ * costuma escrever mais do que quem pergunta, e cortar a meio a
+ * apresentação de alguém é a pior primeira impressão possível.
+ */
+export const joinRequestSchema = z
+    .object({
+        message: z.string().trim().min(1).max(2000).optional(),
+    })
+    /**
+     * O corpo inteiro pode não existir.
+     *
+     * Esta rota já existia sem corpo nenhum — era um botão que se
+     * clicava — e continua a haver quem lhe chame assim. Sem isto, pôr
+     * um esquema no corpo fazia esses pedidos passarem a responder 400:
+     * uma funcionalidade nova a partir a antiga, que é a pior maneira de
+     * acrescentar seja o que for.
+     */
+    .nullish()
+    .transform((valor) => valor ?? {});
+
 export const crewIdParamSchema = z.object({
     crewId: z.string().uuid(),
 });

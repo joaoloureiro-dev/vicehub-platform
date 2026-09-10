@@ -391,7 +391,11 @@ export class CrewRepository {
         });
     }
 
-    createJoinRequest(crewId: string, userId: string) {
+    createJoinRequest(
+        crewId: string,
+        userId: string,
+        message?: string | undefined,
+    ) {
         return this.database.membership.create({
             data: {
                 crewId,
@@ -399,6 +403,13 @@ export class CrewRepository {
                 type: MembershipType.crew,
                 status: MembershipStatus.pending,
                 source: SourceType.api,
+                /**
+                 * Ausente continua ausente, e não vira string vazia:
+                 * "não escreveu nada" e "escreveu e apagou" seriam a
+                 * mesma coisa na base de dados, e não são a mesma coisa
+                 * para quem lê a candidatura.
+                 */
+                ...(message === undefined ? {} : { message }),
             },
         });
     }
@@ -430,6 +441,7 @@ export class CrewRepository {
             orderBy: { created_at: 'asc' },
             select: {
                 created_at: true,
+                message: true,
                 user: {
                     select: { id: true, username: true, avatarUrl: true },
                 },

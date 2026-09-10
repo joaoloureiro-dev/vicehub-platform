@@ -46,6 +46,16 @@ import { useIdioma, useT } from '../../i18n/i18n.js';
 export const CrewPage = () => {
     const t = useT();
     const { idioma } = useIdioma();
+
+    /**
+     * O que se escreve ao candidatar-se.
+     *
+     * Vive aqui e não dentro do botão porque a caixa aparece **antes**
+     * de se clicar: quem chega tem de ver o que a crew pede e ter onde
+     * responder no mesmo ecrã, sem um passo intermédio que só serve para
+     * esconder o formulário.
+     */
+    const [carta, setCarta] = useState('');
     const { crewId } = useParams<{ crewId: string }>();
     const { user } = useAuth();
 
@@ -264,14 +274,44 @@ export const CrewPage = () => {
             {user ? (
                 <div className="actions">
                     {!minhaAdesao ? (
-                        <button
-                            className="primary"
-                            type="button"
-                            disabled={aAgir}
-                            onClick={() => void agir(() => requestToJoin(perfil.id))}
-                        >
-                            {t.crews.pedirEntrada}
-                        </button>
+                        <div className="candidatura field">
+                            <label htmlFor="carta">{t.crews.cartaLabel}</label>
+                            <textarea
+                                id="carta"
+                                rows={4}
+                                maxLength={2000}
+                                value={carta}
+                                placeholder={t.crews.cartaPlaceholder}
+                                onChange={(evento) => {
+                                    setCarta(evento.target.value);
+                                }}
+                            />
+                            <p className="hint">{t.crews.cartaAjuda}</p>
+
+                            <button
+                                className="primary"
+                                type="button"
+                                disabled={aAgir}
+                                onClick={() =>
+                                    void agir(() =>
+                                        /**
+                                         * Vazio vai como ausente, e não
+                                         * como texto vazio: escrever
+                                         * continua a ser opcional, e uma
+                                         * carta em branco gravada seria
+                                         * indistinguível de uma carta
+                                         * que alguém apagou.
+                                         */
+                                        requestToJoin(
+                                            perfil.id,
+                                            carta.trim() || undefined,
+                                        ),
+                                    )
+                                }
+                            >
+                                {t.crews.pedirEntrada}
+                            </button>
+                        </div>
                     ) : null}
 
                     {souCandidato ? (
@@ -335,6 +375,18 @@ export const CrewPage = () => {
                         {candidaturas.data.map((pedido) => (
                             <li key={pedido.userId}>
                                 <span className="nome">{pedido.username}</span>
+
+                                {/*
+                                  O que a pessoa escreveu, com as quebras
+                                  de linha que ela pôs. Uma candidatura
+                                  chega quase sempre em parágrafos, e
+                                  achatá-la faz de um texto pensado uma
+                                  papa que ninguém lê.
+                                */}
+                                {pedido.message ? (
+                                    <p className="carta pre-linha">{pedido.message}</p>
+                                ) : null}
+
                                 <div className="linha-acoes">
                                     <button
                                         className="btn-secondary"

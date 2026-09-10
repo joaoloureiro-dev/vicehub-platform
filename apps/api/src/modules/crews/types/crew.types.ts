@@ -87,6 +87,14 @@ export interface CrewJoinRequest {
     username: string;
     avatarUrl: string | null;
     requestedAt: Date;
+    /**
+     * O que a pessoa escreveu ao candidatar-se, ou null se não escreveu.
+     *
+     * Null e vazio são estados diferentes: um diz "não quis escrever",
+     * o outro seria um campo que alguém preencheu e apagou. Quem decide
+     * lê os dois de maneira diferente.
+     */
+    message: string | null;
 }
 
 /**

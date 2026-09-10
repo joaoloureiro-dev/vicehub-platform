@@ -6,6 +6,7 @@ import type { CrewController } from './controllers/crew.controller.js';
 import type {
     CreateCrewDto,
     CrewIdParamDto,
+    JoinRequestDto,
     ListCrewsQueryDto,
     CrewMemberParamDto,
     SetMemberRoleDto,
@@ -14,6 +15,7 @@ import type {
 import {
     createCrewSchema,
     crewIdParamSchema,
+    joinRequestSchema,
     listCrewsQuerySchema,
     crewMemberParamSchema,
     setMemberRoleSchema,
@@ -154,11 +156,11 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
      * Pedir entrada, retirar o pedido e sair dizem respeito ao próprio:
      * exigem conta, mas nenhuma permissão sobre a crew.
      */
-    fastify.post<{ Params: CrewIdParamDto }>(
+    fastify.post<{ Params: CrewIdParamDto; Body: JoinRequestDto }>(
         '/:crewId/join',
         {
             preHandler: [fastify.authenticate],
-            schema: { params: crewIdParamSchema },
+            schema: { params: crewIdParamSchema, body: joinRequestSchema },
         },
         controller.requestToJoin.bind(controller),
     );

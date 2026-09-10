@@ -185,6 +185,10 @@ export const en = (p: Tools) => ({
         requisitos: 'What this crew asks of you',
         requisitosAjuda:
             'One condition per line. Nobody is checked against this: it tells people what to expect before they apply, and you still decide who gets in.',
+        cartaLabel: 'Tell them who you are',
+        cartaPlaceholder: 'Age, when you play, what you are looking for…',
+        cartaAjuda:
+            'Optional, but it is the only thing they will read before deciding. Whoever runs the crew sees this and nobody else.',
         pedirEntrada: 'Ask to join',
         candidaturaEnviada: 'Application sent',
         retirarCandidatura: 'Withdraw application',

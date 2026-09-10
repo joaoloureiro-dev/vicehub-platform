@@ -178,6 +178,10 @@ export const es = (p: Tools): Messages => ({
         requisitos: 'Lo que esta crew te pide',
         requisitosAjuda:
             'Una condición por línea. Nadie se verifica contra esto: sirve para que quien se postula sepa a qué atenerse, y quien decide quién entra sigues siendo tú.',
+        cartaLabel: 'Diles quién eres',
+        cartaPlaceholder: 'Edad, a qué horas juegas, qué buscas…',
+        cartaAjuda:
+            'Opcional, pero es lo único que leerán antes de decidir. Quien manda en la crew ve esto y nadie más.',
         pedirEntrada: 'Pedir entrar',
         candidaturaEnviada: 'Solicitud enviada',
         retirarCandidatura: 'Retirar la solicitud',
