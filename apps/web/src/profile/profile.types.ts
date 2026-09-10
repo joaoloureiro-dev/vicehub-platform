@@ -1,3 +1,4 @@
+import type { Conquista } from '../components/conquistas.js';
 import type { Appearance } from '../crews/crew.types.js';
 
 export type { Appearance };
@@ -16,6 +17,8 @@ export interface PublicProfile {
     reputation: number;
     isPremium: boolean;
     appearance: Appearance;
+    /** O que conseguiu, das mais recentes para as mais antigas. */
+    achievements: Conquista[];
     createdAt: string;
 }
 

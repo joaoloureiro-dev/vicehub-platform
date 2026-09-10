@@ -700,7 +700,7 @@ export class CrewService {
     }
 
     private async buildProfile(crew: CrewRecord): Promise<CrewProfile> {
-        const [entitlement, memberCount, rank] = await Promise.all([
+        const [entitlement, memberCount, rank, achievements] = await Promise.all([
             this.subscriptionService.getEntitlement({ crewId: crew.id }),
             this.crewRepository.countActiveMembers(crew.id),
             /*
@@ -709,6 +709,7 @@ export class CrewService {
               lugar assim não diz nada a ninguém.
             */
             crew.xp > 0n ? this.crewRepository.rankByXp(crew.xp) : null,
+            this.crewRepository.listAchievements(crew.id),
         ]);
 
         /**
@@ -745,6 +746,7 @@ export class CrewService {
             isPremium: entitlement.isPremium,
             premiumVia: entitlement.via,
             appearance: visibleAppearance(crew, entitlement.isPremium),
+            achievements,
             memberCount,
             createdAt: crew.created_at,
         };

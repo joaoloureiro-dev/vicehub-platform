@@ -106,6 +106,10 @@ export class UserController {
             reputation: profile.reputation,
             isPremium: profile.isPremium,
             appearance: profile.appearance,
+            achievements: profile.achievements.map((conquista) => ({
+                slug: conquista.slug,
+                earnedAt: conquista.earnedAt.toISOString(),
+            })),
             createdAt: profile.createdAt.toISOString(),
         };
     }

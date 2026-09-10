@@ -2,6 +2,7 @@ import { progressoDeNivel } from '@vicehub/database';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { personalAppearance } from '../../../shared/appearance.js';
+import type { ConquistaVisivel } from '../../../shared/list-achievements.js';
 import { UserError } from '../errors/user.errors.js';
 import type { UserRepository } from '../repositories/user.repository.js';
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
@@ -35,7 +36,18 @@ export class UserService {
             throw new UserError('USER_NOT_FOUND', 'Utilizador não encontrado.');
         }
 
-        return this.toPublicProfile(user, await this.isPremium(user.id));
+        /**
+         * As conquistas e o plano são pedidos ao mesmo tempo, e não um a
+         * seguir ao outro: são duas perguntas independentes, e encadeá-las
+         * acrescentava uma ida à base de dados ao tempo de resposta de
+         * cada perfil.
+         */
+        const [premium, conquistas] = await Promise.all([
+            this.isPremium(user.id),
+            this.userRepository.listAchievements(user.id),
+        ]);
+
+        return this.toPublicProfile(user, premium, conquistas);
     }
 
     /**
@@ -53,7 +65,11 @@ export class UserService {
         });
 
         return {
-            ...this.toPublicProfile(user, entitlement.isPremium),
+            ...this.toPublicProfile(
+                user,
+                entitlement.isPremium,
+                await this.userRepository.listAchievements(user.id),
+            ),
             email: user.email,
             emailVerifiedAt: user.email_verified_at,
             lastLoginAt: user.last_login_at,
@@ -115,7 +131,11 @@ export class UserService {
      * O que não estiver aqui não sai numa resposta pública, mesmo que
      * exista no registo lido da base de dados.
      */
-    private toPublicProfile(user: UserRecord, isPremium: boolean): PublicProfile {
+    private toPublicProfile(
+        user: UserRecord,
+        isPremium: boolean,
+        achievements: ConquistaVisivel[],
+    ): PublicProfile {
         /** O nível vem do xp, pela mesma razão que na crew. */
         const progresso = progressoDeNivel(user.xp);
 
@@ -131,6 +151,7 @@ export class UserService {
             reputation: user.reputation,
             isPremium,
             appearance: personalAppearance(user),
+            achievements,
             createdAt: user.created_at,
         };
     }

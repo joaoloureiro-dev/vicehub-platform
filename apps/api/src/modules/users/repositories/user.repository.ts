@@ -1,5 +1,7 @@
 import type { DatabaseClient } from '@vicehub/database';
 
+import { listAchievements } from '../../../shared/list-achievements.js';
+
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { toAppearanceColumns } from '../../../shared/appearance.js';
 
@@ -94,4 +96,15 @@ export class UserRepository {
             },
         });
     }
+    /**
+     * As conquistas desta pessoa, para o perfil.
+     *
+     * Delega na função partilhada, como o histórico de xp: a pergunta é
+     * a mesma para pessoas e para crews, e duas cópias acabariam a
+     * mostrar coisas diferentes nos dois perfis.
+     */
+    listAchievements(userId: string) {
+        return listAchievements(this.database, { userId });
+    }
+
 }

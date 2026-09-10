@@ -6,6 +6,10 @@ import {
     type DatabaseClient,
 } from '@vicehub/database';
 
+import {
+    grantAttendanceAchievements,
+    grantCrewEventAchievements,
+} from './achievements.js';
 import { getUniqueConstraintFields } from './prisma-errors.js';
 
 interface EventXpInput {
@@ -126,6 +130,18 @@ export const awardEventXp = async (
                     where: { id: input.crewId },
                     data: { level: nivelDoXp(xp) },
                 });
+
+                /**
+                 * As conquistas saem da contagem das linhas de xp, que
+                 * acabaram de incluir esta. Na mesma transação: o
+                 * evento contou ou não contou, e a medalha segue o
+                 * mesmo destino.
+                 */
+                await grantCrewEventAchievements(
+                    tx,
+                    input.crewId,
+                    input.actorId,
+                );
             }
 
             if (userXp > 0) {
@@ -153,6 +169,12 @@ export const awardEventXp = async (
                         where: { id: userId },
                         data: { level: nivelDoXp(xp) },
                     });
+
+                    await grantAttendanceAchievements(
+                        tx,
+                        userId,
+                        input.actorId,
+                    );
                 }
             }
         });

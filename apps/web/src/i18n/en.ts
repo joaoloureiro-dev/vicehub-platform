@@ -272,6 +272,18 @@ export const en = (p: Tools) => ({
         entraParaCandidatar: 'to apply to this server.',
     },
 
+    conquistas: {
+        titulo: 'Achievements',
+        nomes: {
+            attended_1: 'Turned up',
+            attended_10: 'Ten nights in',
+            attended_50: 'Fifty nights in',
+            ran_1: 'Ran an event',
+            ran_10: 'Ran ten events',
+            ran_50: 'Ran fifty events',
+        },
+    },
+
     perfil: {
         titulo: 'My profile',
         verPublico: 'View as public',

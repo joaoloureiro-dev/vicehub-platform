@@ -10,6 +10,7 @@ import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { CrewAffiliation } from '../../affiliations/components/crew-affiliation.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ApagarComunidade } from '../../components/apagar-comunidade.js';
+import { Conquistas } from '../../components/conquistas.js';
 import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
 import { HistoricoDeXp } from '../components/historico-de-xp.js';
 import { CrewSettings } from '../components/crew-settings.js';
@@ -202,6 +203,8 @@ export const CrewPage = () => {
                 xpDoNivel={perfil.levelXp}
                 xpDoNivelSeguinte={perfil.nextLevelXp}
             />
+
+            <Conquistas conquistas={perfil.achievements} />
 
             {/*
               O lugar só existe para quem já ganhou alguma coisa. Uma

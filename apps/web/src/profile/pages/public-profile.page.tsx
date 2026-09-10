@@ -6,6 +6,7 @@ import { Alert } from '../../auth/components/alert.js';
 import { BotaoDeAmizade } from '../components/botao-de-amizade.js';
 import { listFriendRequests, listFriends } from '../friends.api.js';
 import { getProfile } from '../profile.api.js';
+import { Conquistas } from '../../components/conquistas.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 
 /**
@@ -101,6 +102,14 @@ export const PublicProfilePage = () => {
                     <dd>{new Date(data.createdAt).toLocaleDateString(idioma)}</dd>
                 </div>
             </dl>
+
+            {/*
+              As conquistas vêm antes do botão de amizade: quem chega a
+              um perfil está a decidir alguma coisa sobre a pessoa, e é
+              isto que sustenta a decisão. O botão vem depois de haver
+              razão para lhe tocar.
+            */}
+            <Conquistas conquistas={data.achievements} />
 
             {/*
               O botão só existe para outra pessoa: no próprio perfil não

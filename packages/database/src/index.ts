@@ -86,6 +86,14 @@ export {
 export type { Progresso } from './progression.js';
 
 export {
+    DEGRAUS_DE_EVENTOS,
+    DEGRAUS_DE_PRESENCAS,
+    conquistaDeEventos,
+    conquistaDePresencas,
+    degrausAlcancados,
+} from './achievements.js';
+
+export {
     PRUNE_MARGEM_MS,
     condicoesDePrune,
     contarParaPrune,

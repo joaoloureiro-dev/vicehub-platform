@@ -1,4 +1,5 @@
 import type { Appearance } from '../../../shared/appearance.js';
+import type { ConquistaVisivel } from '../../../shared/list-achievements.js';
 
 export interface CrewRecord {
     id: string;
@@ -69,6 +70,8 @@ export interface CrewProfile {
     premiumVia: { kind: 'server'; id: string; name: string } | null;
     /** Personalização, vazia para quem não tem plano ativo. */
     appearance: Appearance;
+    /** O que esta crew conseguiu, das mais recentes para as mais antigas. */
+    achievements: ConquistaVisivel[];
     memberCount: number;
     createdAt: Date;
 }

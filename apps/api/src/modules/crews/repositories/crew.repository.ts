@@ -13,6 +13,7 @@ import {
     findDeletionBlockers,
     softDeleteCommunity,
 } from '../../../shared/community-deletion.js';
+import { listAchievements } from '../../../shared/list-achievements.js';
 import { listXpAwards } from '../../../shared/xp-awards.js';
 
 interface CreateCrewInput {
@@ -548,4 +549,9 @@ export class CrewRepository {
             select: { userId: true, role: { select: { slug: true } } },
         });
     }
+    /** As conquistas desta crew, para o perfil. */
+    listAchievements(crewId: string) {
+        return listAchievements(this.database, { crewId });
+    }
+
 }

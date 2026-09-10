@@ -1,3 +1,5 @@
+import type { Conquista } from '../components/conquistas.js';
+
 /**
  * O que a API devolve sobre crews.
  *
@@ -68,6 +70,8 @@ export interface CrewProfile {
      */
     premiumVia: { kind: 'server'; id: string; name: string } | null;
     appearance: Appearance;
+    /** O que conseguiu, das mais recentes para as mais antigas. */
+    achievements: Conquista[];
     memberCount: number;
     createdAt: string;
 }

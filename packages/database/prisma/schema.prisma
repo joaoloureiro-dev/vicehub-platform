@@ -240,14 +240,15 @@ model User {
   memberships Membership[]
   wallet      Wallet?
 
-  credentials   UserCredential?
-  authProviders UserAuthProvider[]
-  authSessions  AuthSession[]
+  credentials       UserCredential?
+  authProviders     UserAuthProvider[]
+  authSessions      AuthSession[]
   userRoles         UserRole[]
   subscriptions     Subscription[]
   eventParticipants EventParticipant[]
   accountTokens     AccountToken[]
   xpAwards          XpAward[]
+  achievements      Achievement[]
 
   /// As duas pontas da mesma tabela de amizades.
   ///
@@ -325,7 +326,8 @@ model Crew {
   /// histórico fica: pedidos recusados e saídas continuam gravados.
   affiliations Affiliation[]
 
-  xpAwards XpAward[]
+  xpAwards     XpAward[]
+  achievements Achievement[]
 }
 
 model Server {
@@ -769,7 +771,7 @@ model Subscription {
   /// A ausência é a forma honesta de dizer "nunca acaba". Uma data muito
   /// distante, como o ano 9999, parece resolver e depois morde: aparece
   /// em ecrãs, entra em contas de dias restantes e ordena mal.
-  current_period_end   DateTime?
+  current_period_end DateTime?
 
   cancel_at_period_end Boolean   @default(false)
   canceled_at          DateTime?
@@ -843,8 +845,8 @@ model Distribution {
   created_by String?
   updated_by String?
 
-  wallet Wallet  @relation(fields: [walletId], references: [id], onDelete: Restrict)
-  event  Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  event  Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   lines Transaction[]
 
@@ -1055,10 +1057,9 @@ model Event {
 
   participants  EventParticipant[]
   distributions Distribution[]
+  xpAwards      XpAward[]
 
   @@index([crewId, status])
-  xpAwards XpAward[]
-
   @@index([serverId, status])
   @@index([starts_at])
   @@index([is_deleted])
@@ -1278,4 +1279,51 @@ model AccountToken {
   @@index([userId, purpose])
   @@index([expires_at])
   @@index([userId, purpose, used_at, invalidated_at])
+}
+
+/// Uma conquista de uma pessoa ou de uma crew.
+///
+/// Todas nascem de factos que a plataforma já regista — uma conquista de
+/// presenças conta linhas de XpAward, que só existem porque alguém
+/// confirmou que a pessoa apareceu a um evento que chegou ao fim.
+/// Nenhuma é atribuída à mão.
+///
+/// É o que as torna difíceis de falsificar, e é a razão de existirem: um
+/// perfil que diz "50 eventos" e não o consegue provar não vale nada a
+/// quem está a decidir se aceita essa pessoa.
+model Achievement {
+  id String @id @default(uuid())
+
+  /// Exatamente um destes é preenchido, como na Subscription e na
+  /// Wallet. A restrição está garantida por um CHECK na base de dados,
+  /// porque o Prisma não a sabe exprimir.
+  userId String?
+  crewId String?
+
+  /// Qual é a conquista. Os identificadores vivem no catálogo, em
+  /// src/achievements.ts, e não são inventados aqui.
+  slug String
+
+  /// Quando foi ganha.
+  ///
+  /// É o que distingue uma conquista de uma etiqueta. Podiam ser
+  /// calculadas a cada leitura a partir das contagens — e seriam sempre
+  /// coerentes — mas perdia-se isto.
+  earned_at DateTime @default(now())
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crew Crew? @relation(fields: [crewId], references: [id], onDelete: Cascade)
+
+  @@index([userId, earned_at(sort: Desc)])
+  @@index([crewId, earned_at(sort: Desc)])
 }
