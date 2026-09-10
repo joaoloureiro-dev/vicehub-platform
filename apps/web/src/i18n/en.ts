@@ -192,6 +192,7 @@ export const en = (p: Tools) => ({
         pedirEntrada: 'Ask to join',
         responderamQueNao: 'They answered no',
         candidaturaRecusada: 'Not this time',
+        enviadaEm: (data: string) => `Sent on ${data}`,
         candidaturaEnviada: 'Application sent',
         retirarCandidatura: 'Withdraw application',
         sair: 'Leave the crew',
