@@ -197,4 +197,127 @@ describe('a candidatura a uma crew', () => {
             }),
         ).toBe(0);
     });
+
+    /**
+     * A outra metade: a resposta chega a quem se candidatou.
+     *
+     * Era aqui que estava o buraco maior. Uma candidatura recusada
+     * desaparecia da lista de quem a fez — pedia-se entrada, esperava-se,
+     * e um dia o pedido já lá não estava. A pessoa nunca chegava a saber
+     * que tinha sido recusada, que é exatamente a queixa que se ouve
+     * sobre comunidades em todo o lado.
+     */
+    describe('a recusa', () => {
+        let recusado: string;
+        let recusadoId: string;
+
+        beforeAll(async () => {
+            recusado = await register(`re${marca}`);
+
+            expect(
+                (await candidatar(recusado, { message: 'Deixem-me entrar.' }))
+                    .statusCode,
+            ).toBe(202);
+
+            recusadoId = await prisma.user
+                .findFirstOrThrow({
+                    where: { username: `re${marca}` },
+                    select: { id: true },
+                })
+                .then((utilizador) => utilizador.id);
+
+            const resposta = await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${crewId}/requests/${recusadoId}/reject`,
+                headers: auth(lider),
+                payload: { reason: 'Estamos cheios este mês. Volta em outubro.' },
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(204);
+        });
+
+        it('aparece a quem se candidatou, com o motivo', async () => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/crews/me/memberships',
+                headers: auth(recusado),
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+
+            const minhas = resposta.json() as {
+                crewId: string;
+                status: string;
+                decisionNote: string | null;
+                respondedAt: string | null;
+            }[];
+
+            const esta = minhas.find((adesao) => adesao.crewId === crewId);
+
+            expect(esta?.status).toBe('rejected');
+            expect(esta?.decisionNote).toBe(
+                'Estamos cheios este mês. Volta em outubro.',
+            );
+            expect(esta?.respondedAt).toBeTypeOf('string');
+        });
+
+        /**
+         * O motivo é para quem foi recusado, e não para o mundo. Um
+         * "não entras porque não confiamos em ti" no diretório seria
+         * pior do que o silêncio que isto veio resolver.
+         */
+        it('não a mostra a mais ninguém', async () => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/crews/me/memberships',
+                headers: auth(estranho),
+            });
+
+            expect(resposta.statusCode).toBe(200);
+
+            const minhas = resposta.json() as { crewId: string }[];
+
+            expect(minhas.some((adesao) => adesao.crewId === crewId)).toBe(false);
+        });
+
+        /**
+         * Recusar não fecha a porta para sempre: a candidatura recusada
+         * não conta como pedido aberto, e quem foi recusado pode voltar
+         * a candidatar-se.
+         */
+        it('não impede uma nova candidatura', async () => {
+            expect((await candidatar(recusado)).statusCode).toBe(202);
+        });
+
+        /**
+         * E uma recusa antiga não fica lá para sempre a encher a lista.
+         * Trinta dias depois sai — "foste recusado a semana passada" diz
+         * alguma coisa, "foste recusado há dois anos" não diz nada.
+         */
+        it('some da lista passado o prazo', async () => {
+            await prisma.membership.updateMany({
+                where: { crewId, userId: recusadoId, status: 'rejected' },
+                data: {
+                    responded_at: new Date(
+                        Date.now() - 31 * 24 * 60 * 60 * 1000,
+                    ),
+                },
+            });
+
+            const minhas = (
+                await app.inject({
+                    method: 'GET',
+                    url: '/api/v1/crews/me/memberships',
+                    headers: auth(recusado),
+                })
+            ).json() as { crewId: string; status: string }[];
+
+            expect(
+                minhas.some(
+                    (adesao) =>
+                        adesao.crewId === crewId && adesao.status === 'rejected',
+                ),
+            ).toBe(false);
+        });
+    });
 });

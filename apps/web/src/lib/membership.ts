@@ -31,9 +31,19 @@ export interface CommunityJoinRequest {
 }
 
 export interface CommunityMembership {
-    status: 'pending' | 'active';
+    /**
+     * `rejected` aparece durante um tempo depois da resposta, e depois
+     * some. Antes não aparecia de todo: uma candidatura recusada
+     * desaparecia desta lista, e quem se candidatou nunca ficava a saber
+     * que tinha sido recusado.
+     */
+    status: 'pending' | 'active' | 'rejected';
     role: string | null;
     since: string;
+    /** Quando foi respondida, ou null enquanto estiver por responder. */
+    respondedAt: string | null;
+    /** O que quem decidiu escreveu, se escreveu alguma coisa. */
+    decisionNote: string | null;
 }
 
 /**

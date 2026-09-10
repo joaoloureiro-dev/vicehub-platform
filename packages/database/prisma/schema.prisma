@@ -490,6 +490,14 @@ model Membership {
   responded_at DateTime?
   responded_by String?
 
+  /// O que quem decidiu escreveu ao decidir, quando escreveu.
+  ///
+  /// Existe para uma recusa poder deixar de ser um silêncio. Opcional,
+  /// porque obrigar a justificar cada recusa faz com que se deixe de
+  /// recusar — e uma candidatura sem resposta é pior do que um "não"
+  /// seco.
+  decision_note String?
+
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
@@ -505,6 +513,7 @@ model Membership {
   server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, responded_at(sort: Desc)])
   @@index([crewId])
   @@index([serverId])
   @@index([type])

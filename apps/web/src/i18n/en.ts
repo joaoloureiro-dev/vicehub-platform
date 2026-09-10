@@ -190,6 +190,8 @@ export const en = (p: Tools) => ({
         cartaAjuda:
             'Optional, but it is the only thing they will read before deciding. Whoever runs the crew sees this and nobody else.',
         pedirEntrada: 'Ask to join',
+        responderamQueNao: 'They answered no',
+        candidaturaRecusada: 'Not this time',
         candidaturaEnviada: 'Application sent',
         retirarCandidatura: 'Withdraw application',
         sair: 'Leave the crew',

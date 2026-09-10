@@ -183,6 +183,8 @@ export const es = (p: Tools): Messages => ({
         cartaAjuda:
             'Opcional, pero es lo único que leerán antes de decidir. Quien manda en la crew ve esto y nadie más.',
         pedirEntrada: 'Pedir entrar',
+        responderamQueNao: 'Respondieron que no',
+        candidaturaRecusada: 'Esta vez no',
         candidaturaEnviada: 'Solicitud enviada',
         retirarCandidatura: 'Retirar la solicitud',
         sair: 'Salir de la crew',

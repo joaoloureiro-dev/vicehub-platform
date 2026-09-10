@@ -191,6 +191,8 @@ export const pt = (p: Tools): Messages => ({
         cartaAjuda:
             'Opcional, mas é a única coisa que vão ler antes de decidir. Quem manda na crew vê isto e mais ninguém.',
         pedirEntrada: 'Pedir para entrar',
+        responderamQueNao: 'Responderam que não',
+        candidaturaRecusada: 'Desta vez não',
         candidaturaEnviada: 'Candidatura enviada',
         retirarCandidatura: 'Retirar candidatura',
         sair: 'Sair da crew',

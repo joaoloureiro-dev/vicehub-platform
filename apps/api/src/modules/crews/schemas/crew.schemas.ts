@@ -68,6 +68,21 @@ export const joinRequestSchema = z
     .nullish()
     .transform((valor) => valor ?? {});
 
+/**
+ * O que quem recusa pode escrever a quem recusou.
+ *
+ * Opcional, e o corpo inteiro pode não existir: quem já usa esta rota
+ * sem corpo nenhum continua a poder. Uma funcionalidade nova a partir a
+ * antiga é a pior maneira de acrescentar seja o que for — foi assim que
+ * a rota de candidatura se partiu na primeira tentativa.
+ */
+export const rejectRequestSchema = z
+    .object({
+        reason: z.string().trim().min(1).max(500).optional(),
+    })
+    .nullish()
+    .transform((valor) => valor ?? {});
+
 export const crewIdParamSchema = z.object({
     crewId: z.string().uuid(),
 });
