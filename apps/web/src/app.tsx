@@ -246,6 +246,23 @@ export const App = () => (
                     path="/crews/:crewId/eventos/:eventId"
                     element={<EventPage />}
                 />
+                {/*
+                  O mesmo ecrã, com o outro titular. A API já tratava os
+                  dois há muito; faltava a porta.
+
+                  Registadas antes de /servidores/:serverId não por
+                  precedência — o React Router escolhe pela rota mais
+                  específica e não pela ordem — mas para ficarem ao pé
+                  das de crews, que é onde alguém as vai procurar.
+                */}
+                <Route
+                    path="/servidores/:serverId/eventos"
+                    element={<EventsPage />}
+                />
+                <Route
+                    path="/servidores/:serverId/eventos/:eventId"
+                    element={<EventPage />}
+                />
             </Route>
 
             {/*
