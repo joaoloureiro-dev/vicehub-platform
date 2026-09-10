@@ -67,6 +67,28 @@ reapresenta, conta o que mudou desde ele.
   os links de confirmação e de recuperação ficavam escritos no log, e um
   link de recuperação no log é uma chave para entrar numa conta.
 
+Setembro de 2026, terceiro post. Continua o segundo.
+
+- Um servidor paga às crews que lá jogam. O dinheiro sai de uma
+  tesouraria e entra na outra numa só transação: nunca está nas duas,
+  nunca está em nenhuma.
+- São duas linhas ligadas por um identificador, e não uma linha-resumo.
+  Débito de um lado, crédito do outro.
+- Só recebem crews com filiação **ativa**. Qualquer outra leva 404 — quem
+  manda num servidor não tem por que saber que aquela crew existe.
+- A transferência chega liquidada, não pendente. O que fica por aprovar é
+  a divisão.
+- Personalizar o próprio perfil passou a ser **grátis**. Era pago, e um
+  perfil ficava cinzento quando alguém deixava de pagar. A cara e o
+  banner de quem joga não se vendem; o que se vende é gerir uma
+  comunidade, e a personalização de crews e servidores continua paga.
+
+**Correção ao segundo post:** eu tinha dito que as aprovações da
+tesouraria não ficavam auditadas. Ficam — quem decidiu, quanto, em que
+sentido e quem tinha pedido. A conclusão errada veio de uma procura que
+só via nomes literais e não via os construídos por template. Não chegou
+a sair para fora; fica escrito para não voltar a entrar.
+
 Os números que a imagem do sistema mostra são contados contra o `main`
 no dia em que é feita, nunca escritos de memória.
 
@@ -93,3 +115,15 @@ no dia em que é feita, nunca escritos de memória.
   <https://claude.ai/code/artifact/026c5200-a130-4275-af87-12ebab2cd3f7>
 - Os PNG estão nesta pasta, e servem-se por
   `raw.githubusercontent.com` — é a via que funciona no telemóvel.
+
+## As imagens de cada post
+
+| post | imagem |
+|---|---|
+| 1 | `vicehub-system-1600x900.png`, `vicehub-card-1600x900.png` |
+| 3 | `vicehub-dinheiro-1600x900.png` — o caminho do dinheiro |
+
+Cada uma existe em 1600×900 para o X e em 3200×1800 para quando for
+preciso ampliar. As fontes são as do produto, embebidas na imagem: o
+Google Fonts está bloqueado no browser que as gera, por isso os ficheiros
+são trazidos por `curl` e postos em base64 antes de renderizar.
