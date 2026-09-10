@@ -10,7 +10,8 @@ export type TreasuryErrorCode =
     | 'NO_MEMBERS_TO_PAY'
     | 'EVENT_NOT_IN_THIS_TREASURY'
     | 'NO_CONFIRMED_PARTICIPANTS'
-    | 'SHARES_DO_NOT_MATCH_TOTAL';
+    | 'SHARES_DO_NOT_MATCH_TOTAL'
+    | 'CREW_DOES_NOT_PLAY_HERE';
 
 export class TreasuryError extends Error {
     constructor(

@@ -138,6 +138,67 @@ export class TreasuryService {
     }
 
     /**
+     * O servidor paga a uma crew que lá joga.
+     *
+     * É o caso de quem contrata gente para animar o servidor: o dinheiro
+     * sai da tesouraria do servidor, entra na da crew, e o líder da crew
+     * distribui-o pelos membros a seguir. São duas decisões de duas
+     * pessoas, e por isso dois passos — quem paga escolhe **quanto** e a
+     * **quem**, e quem lidera a crew escolhe **como se divide**.
+     *
+     * A transferência não fica pendente do lado de quem recebe. Receber
+     * dinheiro não é um fardo que se recuse, e pô-la a aguardar deixava
+     * o saldo de quem pagou por liquidar à espera de alguém que não tem
+     * nada a decidir. O que fica por aprovar é a distribuição.
+     */
+    async transferToCrew(input: {
+        serverId: string;
+        crewId: string;
+        amount: bigint;
+        description?: string | undefined;
+        actorId: string;
+    }) {
+        /**
+         * A filiação é confirmada antes de se olhar sequer para as
+         * carteiras. Quem manda num servidor não tem por que descobrir,
+         * por esta rota, se uma crew existe.
+         */
+        const joga = await this.treasuryRepository.crewPlaysOnServer(
+            input.crewId,
+            input.serverId,
+        );
+
+        if (!joga) {
+            throw new TreasuryError(
+                'CREW_DOES_NOT_PLAY_HERE',
+                'Esta crew não joga neste servidor.',
+            );
+        }
+
+        const origem = await this.requireWallet({ serverId: input.serverId });
+        const destino = await this.requireWallet({ crewId: input.crewId });
+
+        try {
+            return await this.treasuryRepository.transferBetweenWallets({
+                fromWalletId: origem.id,
+                toWalletId: destino.id,
+                amount: input.amount,
+                description: input.description,
+                actorId: input.actorId,
+            });
+        } catch (erro: unknown) {
+            if (erro instanceof InsufficientFundsSignal) {
+                throw new TreasuryError(
+                    'INSUFFICIENT_FUNDS',
+                    'A tesouraria do servidor não tem saldo para esta transferência.',
+                );
+            }
+
+            throw erro;
+        }
+    }
+
+    /**
      * Aprova um movimento e move o dinheiro.
      */
     async approveMovement(

@@ -10,6 +10,7 @@ import type {
     ProposeMovementDto,
     ServerMovementParamDto,
     ServerTreasuryParamDto,
+    TransferToCrewDto,
 } from './dto/treasury.dto.js';
 import {
     crewDistributionParamSchema,
@@ -18,6 +19,7 @@ import {
     crewTreasuryParamSchema,
     listMovementsQuerySchema,
     proposeMovementSchema,
+    transferToCrewSchema,
     serverMovementParamSchema,
     serverTreasuryParamSchema,
 } from './schemas/treasury.schemas.js';
@@ -112,6 +114,34 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             },
         },
         controller.proposeServerMovement.bind(controller),
+    );
+
+    /**
+     * O servidor paga a uma crew que lá joga.
+     *
+     * O caminho identifica de onde o dinheiro **sai**, e é sobre essa
+     * tesouraria que a permissão é verificada — quem manda no dinheiro é
+     * quem o entrega. A crew de destino vai no corpo precisamente para
+     * não dar a ideia de que o guard olha para as duas: olha só para a
+     * do caminho, e é o serviço que confirma que a crew joga mesmo aqui.
+     *
+     * `treasury:transfer` e não `treasury:approve`: isto é o mesmo ato
+     * de mandar dinheiro para fora que propor uma despesa, e quem o faz
+     * está a decidir sobre a tesouraria que já é sua.
+     */
+    fastify.post<{ Params: ServerTreasuryParamDto; Body: TransferToCrewDto }>(
+        '/servers/:serverId/transfers',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('treasury:transfer'),
+            ],
+            schema: {
+                params: serverTreasuryParamSchema,
+                body: transferToCrewSchema,
+            },
+        },
+        controller.transferToCrew.bind(controller),
     );
 
     /**

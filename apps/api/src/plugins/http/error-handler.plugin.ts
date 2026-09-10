@@ -238,6 +238,12 @@ const eventErrorStatusCodes: Record<EventErrorCode, number> = {
 };
 
 const treasuryErrorStatusCodes: Record<TreasuryErrorCode, number> = {
+    /**
+     * 404 e não 403: quem manda no servidor não tem por que saber que
+     * aquela crew existe. Dizer "existe mas não joga aqui" transformava
+     * a rota de transferência num verificador de nomes de crews.
+     */
+    CREW_DOES_NOT_PLAY_HERE: 404,
     WALLET_NOT_FOUND: 404,
     /** Titular inválido é erro de programação, não do cliente. */
     INVALID_WALLET_OWNER: 500,

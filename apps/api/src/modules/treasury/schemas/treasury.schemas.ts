@@ -42,6 +42,27 @@ export const proposeMovementSchema = z.object({
     description: z.string().trim().min(1).max(280),
 });
 
+/**
+ * Transferência do servidor para uma crew que lá joga.
+ *
+ * O montante é texto e não número, pela mesma razão do movimento: o
+ * saldo é BigInt na base de dados, e o JSON não tem inteiros de precisão
+ * arbitrária. Passá-lo por `number` perderia o valor exato acima dos
+ * nove mil biliões, e numa tesouraria isso é inaceitável.
+ *
+ * A crew de destino vem no corpo e não no caminho: o caminho identifica
+ * de onde o dinheiro **sai**, que é a tesouraria sobre a qual a
+ * permissão é verificada. Pôr as duas no caminho daria a ideia de que o
+ * guard olha para as duas, e olha só para a primeira.
+ */
+export const transferToCrewSchema = z.object({
+    crewId: z.string().uuid(),
+    amount: z
+        .string()
+        .regex(/^[1-9][0-9]{0,18}$/, 'O montante tem de ser um inteiro positivo.'),
+    description: z.string().trim().min(1).max(280).optional(),
+});
+
 export const crewMovementParamSchema = z.object({
     crewId: z.string().uuid(),
     movementId: z.string().uuid(),

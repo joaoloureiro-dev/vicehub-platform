@@ -63,6 +63,7 @@ describe('ligação das rotas de tesouraria', () => {
             approveCrewDistribution: vi.fn(),
             rejectCrewDistribution: vi.fn(),
             listCrewDistributions: vi.fn(),
+            transferToCrew: vi.fn(),
         } as unknown as TreasuryController;
 
         await app.register(treasuryRoutes, { controller });
@@ -130,6 +131,34 @@ describe('ligação das rotas de tesouraria', () => {
                 expect(registered.get(key)?.schema?.querystring).toBeDefined();
             },
         );
+    });
+
+    /**
+     * O servidor a pagar a uma crew que lá joga.
+     *
+     * O que se fixa aqui é de onde o guard tira o âmbito: do
+     * **servidor**, no caminho, que é a tesouraria de onde o dinheiro
+     * sai. A crew de destino vai no corpo de propósito — pô-la no
+     * caminho daria a ideia de que o guard olha para as duas, e ele olha
+     * só para a primeira. Quem confirma que a crew joga aqui é o
+     * serviço.
+     */
+    describe('transferir para uma crew', () => {
+        const rota = 'POST /servers/:serverId/transfers';
+
+        it('exige treasury:transfer sobre o servidor', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(['treasury:transfer']);
+        });
+
+        it('o âmbito sai do servidor, e não da crew', () => {
+            expect(rota).toContain(':serverId');
+            expect(rota).not.toContain(':crewId');
+        });
+
+        it('valida o caminho e o corpo', () => {
+            expect(registered.get(rota)?.schema?.params).toBeDefined();
+            expect(registered.get(rota)?.schema?.body).toBeDefined();
+        });
     });
 
     describe('propor movimentos', () => {

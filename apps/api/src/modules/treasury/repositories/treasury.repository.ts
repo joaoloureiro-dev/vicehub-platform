@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
     MembershipStatus,
     MembershipType,
@@ -183,6 +185,119 @@ export class TreasuryRepository {
             }
 
             return { outcome: 'approved' as const };
+        });
+    }
+
+    /**
+     * A crew joga mesmo neste servidor?
+     *
+     * A pergunta é feita à filiação **ativa**, e não à existência de uma
+     * qualquer: uma crew que se candidatou e ainda não foi aceite, ou
+     * que já saiu, não é uma crew deste servidor. Sem isto, quem manda
+     * num servidor podia empurrar dinheiro para qualquer crew da
+     * plataforma.
+     */
+    async crewPlaysOnServer(crewId: string, serverId: string): Promise<boolean> {
+        const filiacao = await this.database.affiliation.findFirst({
+            where: {
+                crewId,
+                serverId,
+                status: MembershipStatus.active,
+                is_deleted: false,
+            },
+            select: { id: true },
+        });
+
+        return filiacao !== null;
+    }
+
+    /**
+     * Move dinheiro de uma tesouraria para outra, de uma só vez.
+     *
+     * As duas pernas — o débito de um lado e o crédito do outro — são
+     * escritas dentro da mesma transação, e o saldo de origem é debitado
+     * condicionalmente. Se não chegar, lança, e a transação inteira
+     * desaparece: não há forma de o dinheiro sair de um lado sem entrar
+     * no outro, nem de entrar sem ter saído.
+     *
+     * As duas linhas nascem já aprovadas. Uma transferência não é uma
+     * proposta à espera de resposta — quem manda no dinheiro de origem
+     * já decidiu ao chamar isto, e pôr a perna do débito a "pendente"
+     * daria um saldo por liquidar do lado de quem já pagou. O que fica
+     * por aprovar é a distribuição a seguir, que é outra decisão e de
+     * outra pessoa.
+     */
+    transferBetweenWallets(input: {
+        fromWalletId: string;
+        toWalletId: string;
+        amount: bigint;
+        description?: string | undefined;
+        actorId: string;
+    }) {
+        return this.database.$transaction(async (tx) => {
+            const debitado = await tx.wallet.updateMany({
+                where: {
+                    id: input.fromWalletId,
+                    balance: { gte: input.amount },
+                },
+                data: {
+                    balance: { decrement: input.amount },
+                    version: { increment: 1 },
+                },
+            });
+
+            if (debitado.count !== 1) {
+                throw new InsufficientFundsSignal();
+            }
+
+            await tx.wallet.update({
+                where: { id: input.toWalletId },
+                data: {
+                    balance: { increment: input.amount },
+                    version: { increment: 1 },
+                },
+            });
+
+            /**
+             * O identificador da transferência é gerado aqui e é o mesmo
+             * nas duas linhas: é ele que permite, mais tarde, olhar para
+             * um crédito numa crew e dizer de que servidor veio.
+             */
+            const transferId = randomUUID();
+
+            const comum = {
+                amount: input.amount,
+                category: TransactionCategory.contribution,
+                status: TransactionStatus.approved,
+                transferId,
+                requested_by: input.actorId,
+                decided_by: input.actorId,
+                decided_at: new Date(),
+                created_by: input.actorId,
+                source: SourceType.api,
+                ...(input.description === undefined
+                    ? {}
+                    : { description: input.description }),
+            };
+
+            const [saida, entrada] = await Promise.all([
+                tx.transaction.create({
+                    data: {
+                        ...comum,
+                        walletId: input.fromWalletId,
+                        direction: TransactionDirection.debit,
+                    },
+                }),
+                tx.transaction.create({
+                    data: {
+                        ...comum,
+                        walletId: input.toWalletId,
+                        direction: TransactionDirection.credit,
+                    },
+                }),
+            ]);
+
+            return { transferId, saida, entrada };
         });
     }
 
