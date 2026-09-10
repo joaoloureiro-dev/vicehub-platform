@@ -265,6 +265,18 @@ export const es = (p: Tools): Messages => ({
         entraParaCandidatar: 'para solicitar entrar en este servidor.',
     },
 
+    conquistas: {
+        titulo: 'Logros',
+        nomes: {
+            attended_1: 'Se presentó',
+            attended_10: 'Diez noches',
+            attended_50: 'Cincuenta noches',
+            ran_1: 'Organizó un evento',
+            ran_10: 'Organizó diez eventos',
+            ran_50: 'Organizó cincuenta eventos',
+        },
+    },
+
     perfil: {
         titulo: 'Mi perfil',
         verPublico: 'Ver como público',

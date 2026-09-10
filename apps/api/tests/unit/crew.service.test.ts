@@ -32,6 +32,7 @@ const createRepositoryMock = () => ({
     createWithFounder: vi.fn().mockResolvedValue(crewRow()),
     updateCrew: vi.fn().mockResolvedValue(undefined),
     countActiveMembers: vi.fn().mockResolvedValue(1),
+    listAchievements: vi.fn().mockResolvedValue([]),
     findOpenMembership: vi.fn().mockResolvedValue(null),
     createJoinRequest: vi.fn().mockResolvedValue(undefined),
     setMembershipStatus: vi.fn().mockResolvedValue(undefined),

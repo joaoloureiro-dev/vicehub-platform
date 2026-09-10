@@ -29,6 +29,7 @@ describe('UserService', () => {
         findById: ReturnType<typeof vi.fn>;
         updateProfile: ReturnType<typeof vi.fn>;
         updateAppearance: ReturnType<typeof vi.fn>;
+        listAchievements: ReturnType<typeof vi.fn>;
     };
     let subscriptions: { getEntitlement: ReturnType<typeof vi.fn> };
     let service: UserService;
@@ -41,6 +42,7 @@ describe('UserService', () => {
             findById: vi.fn().mockResolvedValue(userRow()),
             updateProfile: vi.fn().mockResolvedValue(undefined),
             updateAppearance: vi.fn().mockResolvedValue(undefined),
+            listAchievements: vi.fn().mockResolvedValue([]),
         };
         subscriptions = {
             getEntitlement: vi
@@ -80,6 +82,16 @@ describe('UserService', () => {
             const profile = await service.getPublicProfile('player');
 
             expect(Object.keys(profile).sort()).toEqual([
+                /*
+                  As conquistas são públicas de propósito.
+
+                  Não revelam nada que o perfil já não revelasse — saem
+                  das mesmas presenças confirmadas que dão o xp, e o xp
+                  já está aqui. O que acrescentam é crédito: um perfil
+                  que diz "50 eventos" e não o consegue provar não vale
+                  nada a quem está a decidir se aceita esta pessoa.
+                */
+                'achievements',
                 'appearance',
                 'avatarUrl',
                 'bio',

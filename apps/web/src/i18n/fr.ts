@@ -274,6 +274,18 @@ export const fr = (p: Tools): Messages => ({
         entraParaCandidatar: 'pour postuler à ce serveur.',
     },
 
+    conquistas: {
+        titulo: 'Hauts faits',
+        nomes: {
+            attended_1: 'Présent',
+            attended_10: 'Dix soirées',
+            attended_50: 'Cinquante soirées',
+            ran_1: 'A organisé un événement',
+            ran_10: 'A organisé dix événements',
+            ran_50: 'A organisé cinquante événements',
+        },
+    },
+
     perfil: {
         titulo: 'Mon profil',
         verPublico: 'Voir en public',

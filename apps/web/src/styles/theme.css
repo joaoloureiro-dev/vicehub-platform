@@ -2550,3 +2550,35 @@ button.link:hover {
     color: var(--faint);
     font-size: 12.5px;
 }
+
+/*
+  As conquistas de um perfil.
+
+  Em grelha e não em lista corrida: são poucas e curtas, e uma lista
+  vertical de doze linhas com duas palavras cada desperdiça a página
+  toda para dizer muito pouco.
+*/
+.conquistas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+.conquistas li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    padding: 12px 14px;
+    border: 1px solid var(--edge);
+    border-left: 2px solid var(--good, #34D399);
+    border-radius: 0 10px 10px 0;
+    background: var(--surface);
+}
+
+.conquistas b {
+    font-size: 14px;
+}

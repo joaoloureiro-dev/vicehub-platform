@@ -309,6 +309,10 @@ export class CrewController {
             createdAt: profile.createdAt.toISOString(),
             /** Ausente quer dizer que não há anúncio no ar. */
             recruitingSince: profile.recruitingSince?.toISOString() ?? null,
+            achievements: profile.achievements.map((conquista) => ({
+                slug: conquista.slug,
+                earnedAt: conquista.earnedAt.toISOString(),
+            })),
         };
     }
 }

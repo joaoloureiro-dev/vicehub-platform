@@ -1,4 +1,5 @@
 import type { Appearance } from '../../../shared/appearance.js';
+import type { ConquistaVisivel } from '../../../shared/list-achievements.js';
 
 /**
  * Campos do utilizador que o módulo lê da base de dados.
@@ -41,6 +42,12 @@ export interface PublicProfile {
      * mesmo vazia, para que quem consome não precise de dois caminhos.
      */
     appearance: Appearance;
+    /**
+     * O que esta pessoa conseguiu, das mais recentes para as mais
+     * antigas. Público como o nível: são factos que a plataforma
+     * registou, e é isso que os torna dignos de crédito.
+     */
+    achievements: ConquistaVisivel[];
     createdAt: Date;
 }
 

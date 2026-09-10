@@ -29,6 +29,15 @@ export const publicProfileSchema = z.object({
     reputation: z.number(),
     isPremium: z.boolean(),
     appearance: appearanceSchema,
+    /**
+     * As conquistas, das mais recentes para as mais antigas.
+     *
+     * Públicas de propósito: saem das mesmas presenças confirmadas que
+     * dão o xp, e o xp já está aqui. O que acrescentam é crédito.
+     */
+    achievements: z.array(
+        z.object({ slug: z.string(), earnedAt: z.string() }),
+    ),
     createdAt: z.string(),
 });
 
