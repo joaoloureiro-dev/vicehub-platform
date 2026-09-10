@@ -27,6 +27,7 @@ import { ServerPage } from './servers/pages/server.page.js';
 import { EventPage } from './events/pages/event.page.js';
 import { EventsPage } from './events/pages/events.page.js';
 import { LandingPage } from './pages/landing.page.js';
+import { Navegacao } from './components/navegacao.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
@@ -116,6 +117,18 @@ const Shell = () => {
                     <LanguagePicker />
                 </nav>
             </header>
+
+            {/*
+              A navegação do sítio vive aqui, entre o cabeçalho e o
+              conteúdo, e não dentro do cabeçalho: é a planta do sítio, e
+              não um apêndice ao lado do logótipo.
+
+              Aparece a toda a gente, com sessão ou sem ela. Antes, quem
+              chegasse sem conta via um logótipo e um botão de entrar, e
+              mais nada — pedia-se-lhe a conta antes de lhe dar uma razão
+              para a criar.
+            */}
+            <Navegacao />
 
             <main>
                 <Outlet />
