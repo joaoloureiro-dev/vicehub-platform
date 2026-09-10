@@ -12,6 +12,7 @@ import {
     markNoShow,
     setEventStatus,
     signUp,
+    updateEvent,
     withdraw,
     type Dono,
 } from '../event.api.js';
@@ -140,6 +141,14 @@ export const EventPage = () => {
                     <dt>{t.eventos.confirmados}</dt>
                     <dd>{detalhe.confirmedCount}</dd>
                 </div>
+                <div>
+                    <dt>{t.eventos.quemVe}</dt>
+                    <dd className="pequeno">
+                        {detalhe.isPublic
+                            ? t.eventos.naMontra
+                            : t.eventos.soAComunidade}
+                    </dd>
+                </div>
             </dl>
 
             {detalhe.description ? (
@@ -224,6 +233,30 @@ export const EventPage = () => {
                               : t.eventos.cancelarEvento}
                     </button>
                 ))}
+
+                {/*
+                  Pôr à porta e tirar da porta são a mesma decisão nos
+                  dois sentidos, e por isso um botão só: quem o carrega
+                  vê no mesmo ecrã o estado em que ficou.
+                */}
+                <button
+                    className="btn-secondary"
+                    type="button"
+                    disabled={aAgir}
+                    onClick={() =>
+                        void agir(
+                            () =>
+                                updateEvent(dono, detalhe.id, {
+                                    isPublic: !detalhe.isPublic,
+                                }),
+                            detalhe.isPublic
+                                ? t.eventos.tirado
+                                : t.eventos.publicado,
+                        )
+                    }
+                >
+                    {detalhe.isPublic ? t.eventos.tirarDaMontra : t.eventos.porNaMontra}
+                </button>
             </div>
 
             <section className="grupo">

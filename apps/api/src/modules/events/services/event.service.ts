@@ -8,6 +8,7 @@ import type {
     EventParticipantEntry,
     EventRecord,
     EventSummary,
+    PublicEventEntry,
 } from '../types/event.types.js';
 
 interface CreateEventInput {
@@ -16,6 +17,7 @@ interface CreateEventInput {
     startsAt: Date;
     endsAt?: Date | null | undefined;
     capacity?: number | null | undefined;
+    isPublic?: boolean | undefined;
     organizerId: string;
 }
 
@@ -25,6 +27,7 @@ interface UpdateEventInput {
     startsAt?: Date | undefined;
     endsAt?: Date | null | undefined;
     capacity?: number | null | undefined;
+    isPublic?: boolean | undefined;
 }
 
 interface ListEventsInput {
@@ -40,6 +43,16 @@ interface ListEventsInput {
  * possível se leia de uma vez. O que não está aqui é recusado: um evento
  * concluído não volta a começar, e um cancelado não se conclui.
  */
+/**
+ * Durante quantas horas um evento a decorrer sem hora de fim continua na
+ * montra.
+ *
+ * Sem este limite, um evento que ninguém se lembrou de fechar ficava lá
+ * para sempre — e a página de entrada passava a anunciar como "a
+ * decorrer" uma noite que acabou em março.
+ */
+const HORAS_SEM_FIM = 12;
+
 const ALLOWED_TRANSITIONS: Record<
     'ongoing' | 'completed' | 'canceled',
     EventStatus[]
@@ -74,6 +87,7 @@ export class EventService {
             startsAt: input.startsAt,
             endsAt: input.endsAt,
             capacity: input.capacity,
+            isPublic: input.isPublic,
             organizerId: input.organizerId,
         });
 
@@ -518,6 +532,64 @@ export class EventService {
         }
     }
 
+    /**
+     * A montra pública: o que as comunidades puseram à porta.
+     *
+     * Não recebe titular nem sessão. É a única leitura de eventos que
+     * não passa por `event:read`, e por isso a fronteira tem de estar
+     * aqui e não em quem lhe chama: o repositório só devolve o que está
+     * marcado como público, dentro da janela, e de comunidades que ainda
+     * existem.
+     */
+    async listPublicEvents(limit: number): Promise<PublicEventEntry[]> {
+        const agora = new Date();
+
+        const eventos = await this.eventRepository.listPublic({
+            agora,
+            semFimDesde: new Date(agora.getTime() - HORAS_SEM_FIM * 3_600_000),
+            take: limit,
+        });
+
+        /**
+         * Um evento sem crew e sem servidor não devia existir — a base
+         * de dados tem um CHECK que exige exatamente um dos dois — mas
+         * se existisse, sai da lista em vez de ir para a página de
+         * entrada com o titular por preencher.
+         */
+        return eventos.flatMap((evento) => {
+            const dono = evento.crew
+                ? {
+                      kind: 'crew' as const,
+                      id: evento.crew.id,
+                      name: evento.crew.name,
+                      tag: evento.crew.tag,
+                  }
+                : evento.server
+                  ? {
+                        kind: 'server' as const,
+                        id: evento.server.id,
+                        name: evento.server.name,
+                        tag: null,
+                    }
+                  : null;
+
+            if (!dono) {
+                return [];
+            }
+
+            return [
+                {
+                    id: evento.id,
+                    name: evento.name,
+                    status: evento.status,
+                    startsAt: evento.starts_at,
+                    endsAt: evento.ends_at,
+                    owner: dono,
+                },
+            ];
+        });
+    }
+
     private async buildSummary(evento: EventRecord): Promise<EventSummary> {
         const contagens = await this.eventRepository.countParticipantsFor([
             evento.id,
@@ -550,6 +622,7 @@ export class EventService {
             startsAt: evento.starts_at,
             endsAt: evento.ends_at,
             capacity: evento.capacity,
+            isPublic: evento.is_public,
             organizerId: evento.organizer_id,
             signedUpCount,
             confirmedCount,

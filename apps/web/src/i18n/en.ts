@@ -30,6 +30,10 @@ export const en = (p: Tools) => ({
     },
 
     landing: {
+        aAcontecer: 'Happening across ViceHub',
+        aDecorrerAgora: 'Happening now',
+        comecaEm: (quando: string) => `Starts ${quando}`,
+        naCrew: (nome: string) => `with ${nome}`,
         titulo: 'Your crew. Your server. Your cut.',
         subtitulo:
             'ViceHub is where gaming communities get organised: run your crew, move what you earn, and prove who actually turned up.',
@@ -432,6 +436,15 @@ export const en = (p: Tools) => ({
     },
 
     eventos: {
+        quemVe: 'Who sees it',
+        naMontra: 'On the front page',
+        soAComunidade: 'Only this community',
+        porNaMontra: 'Show this on the front page',
+        tirarDaMontra: 'Take it off the front page',
+        montraAjuda:
+            'Off by default. Turned on, the name, the time and the community show to anyone who opens ViceHub — never who signed up.',
+        publicado: 'This event now shows on the front page.',
+        tirado: 'This event no longer shows on the front page.',
         titulo: 'Events',
         verCrew: 'See the crew',
         soParaMembros: "A crew's calendar is only visible to its members.",

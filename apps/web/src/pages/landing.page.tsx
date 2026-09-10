@@ -2,9 +2,11 @@ import { Link } from 'react-router';
 
 import { CrewCard } from '../crews/components/crew-card.js';
 import { listCrews } from '../crews/crew.api.js';
+import { listPublicEvents } from '../events/event.api.js';
 import { listServers } from '../servers/server.api.js';
 import { useAsync } from '../lib/use-async.js';
-import { useT } from '../i18n/i18n.js';
+import { useIdioma, useT } from '../i18n/i18n.js';
+import { criarTools } from '../i18n/tools.js';
 
 /** Quantos se mostram de cada coisa. Chega para dar sinal de vida. */
 const AMOSTRA = 3;
@@ -18,14 +20,28 @@ const AMOSTRA = 3;
  * e uma plataforma de comunidades que parece vazia está a dizer a quem
  * chega que chegou tarde.
  *
- * Agora mostra crews a recrutar e servidores online, lidos ao vivo dos
- * mesmos diretórios públicos que qualquer visitante pode abrir. Não há
- * aqui nada inventado para encher: se não houver ninguém a recrutar, a
- * secção não aparece, e a página diz o que faz em vez de fingir
- * movimento.
+ * Agora mostra o que está a acontecer, quem está a recrutar e que
+ * servidores estão de pé, lido ao vivo das rotas públicas que qualquer
+ * visitante pode abrir. Não há aqui nada inventado para encher: cada
+ * secção desaparece quando não tem o que mostrar, e a página diz o que
+ * faz em vez de fingir movimento.
+ *
+ * Os eventos são o caso em que isso mais importa. Não vêm todos: vêm os
+ * que cada comunidade marcou como públicos, um a um. O calendário de
+ * uma crew continua a ser dela.
  */
 export const LandingPage = () => {
     const t = useT();
+    const { idioma } = useIdioma();
+    const { quando } = criarTools(idioma);
+
+    /**
+     * A montra vem da rota pública de eventos, que não pede sessão. É a
+     * única leitura de eventos assim, e traz apenas o que cada
+     * comunidade decidiu mostrar: nome, hora e de quem. Quem se
+     * inscreveu não vem, e não vinha nem que esta página o pedisse.
+     */
+    const aAcontecer = useAsync(() => listPublicEvents(AMOSTRA), []);
 
     const recrutamento = useAsync(
         () => listCrews({ recruiting: true, page: 1 }),
@@ -44,6 +60,8 @@ export const LandingPage = () => {
         .slice(0, AMOSTRA);
 
     const aRecrutar = (recrutamento.data?.items ?? []).slice(0, AMOSTRA);
+
+    const eventos = aAcontecer.data ?? [];
 
     return (
         <div className="landing">
@@ -73,7 +91,64 @@ export const LandingPage = () => {
             </header>
 
             {/*
-              Quem está a recrutar vem primeiro porque é a única coisa
+              O que está a acontecer vem primeiro porque é a resposta à
+              pergunta que quem chega faz sem a dizer: isto tem gente?
+              Uma plataforma de comunidades que parece vazia está a
+              dizer a quem chega que chegou tarde.
+
+              Sem eventos públicos não há secção nenhuma. Nada aqui é
+              inventado para encher: se ninguém abriu nada, a página
+              passa direta ao que faz.
+            */}
+            {eventos.length > 0 ? (
+                <section className="landing-vivo">
+                    <div className="landing-vivo-head">
+                        <h2>{t.landing.aAcontecer}</h2>
+                    </div>
+
+                    <ul className="landing-eventos">
+                        {eventos.map((evento) => (
+                            <li key={evento.id}>
+                                <Link
+                                    to={
+                                        evento.owner.kind === 'crew'
+                                            ? `/crews/${evento.owner.id}`
+                                            : `/servidores/${evento.owner.id}`
+                                    }
+                                >
+                                    <b>{evento.name}</b>
+                                    <span className="landing-evento-meta">
+                                        {/*
+                                          "A decorrer agora" e uma hora
+                                          de início são leituras
+                                          diferentes da mesma linha, e
+                                          quem chega quer saber qual
+                                          delas é: uma dá para ir já.
+                                        */}
+                                        {evento.status === 'ongoing' ? (
+                                            <span className="agora">
+                                                {t.landing.aDecorrerAgora}
+                                            </span>
+                                        ) : (
+                                            <span>
+                                                {t.landing.comecaEm(
+                                                    quando(evento.startsAt),
+                                                )}
+                                            </span>
+                                        )}
+                                        <span>
+                                            {t.landing.naCrew(evento.owner.name)}
+                                        </span>
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            ) : null}
+
+            {/*
+              Quem está a recrutar vem a seguir porque é a única coisa
               nesta página em que um visitante pode agir já: encontrar
               uma crew e pedir entrada. Tudo o resto é leitura.
             */}

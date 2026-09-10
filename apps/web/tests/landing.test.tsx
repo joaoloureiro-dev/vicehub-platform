@@ -49,13 +49,46 @@ const pagina = (items: unknown[]) => ({
     totalPages: 1,
 });
 
-/** Responde a cada diretório com o que o caso quiser. */
-const servir = (crews: unknown[], servidores: unknown[]) =>
-    vi.fn((url: string) =>
-        Promise.resolve(
-            json(200, pagina(String(url).includes('/crews') ? crews : servidores)),
-        ),
-    );
+const evento = (extra: Record<string, unknown> = {}) => ({
+    id: 'ev-1',
+    name: 'Assalto ao banco',
+    status: 'scheduled',
+    startsAt: '2026-12-24T21:00:00.000Z',
+    endsAt: null,
+    owner: { kind: 'crew', id: 'crew-1', name: 'Leonida Boys', tag: 'LB' },
+    ...extra,
+});
+
+/**
+ * Responde a cada rota com o que o caso quiser.
+ *
+ * Cada uma é nomeada, e não há ramo que sirva de apanha-tudo: um duplo
+ * que respondesse "o resto" com a lista de servidores fazia a montra de
+ * eventos receber uma página paginada, calar-se, e o teste passar na
+ * mesma. Já aconteceu neste ficheiro; é por isso que está escrito assim.
+ */
+const servir = (
+    crews: unknown[],
+    servidores: unknown[],
+    eventos: unknown[] = [],
+) =>
+    vi.fn((url: string) => {
+        const endereco = String(url);
+
+        if (endereco.includes('/events/public')) {
+            return Promise.resolve(json(200, eventos));
+        }
+
+        if (endereco.includes('/crews')) {
+            return Promise.resolve(json(200, pagina(crews)));
+        }
+
+        if (endereco.includes('/servers')) {
+            return Promise.resolve(json(200, pagina(servidores)));
+        }
+
+        throw new Error(`rota não prevista pelo duplo: ${endereco}`);
+    });
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -157,6 +190,71 @@ describe('a landing', () => {
     });
 
     /**
+     * O que uma comunidade abriu ao público é a primeira coisa que quem
+     * chega vê: é a resposta à pergunta que faz sem a dizer — isto tem
+     * gente?
+     */
+    it('mostra o que as comunidades puseram à porta', async () => {
+        vi.stubGlobal('fetch', servir([], [], [evento()]));
+
+        montarEcra(<LandingPage />);
+
+        expect(await screen.findByText('Assalto ao banco')).toBeDefined();
+        expect(screen.getByText(t.landing.naCrew('Leonida Boys'))).toBeDefined();
+    });
+
+    /**
+     * A decorrer agora e começa às nove são leituras diferentes da
+     * mesma linha, e quem chega quer saber qual delas é: uma dá para ir
+     * já.
+     */
+    it('distingue o que está a decorrer do que ainda vai começar', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir([], [], [evento({ status: 'ongoing' })]),
+        );
+
+        montarEcra(<LandingPage />);
+
+        expect(
+            await screen.findByText(t.landing.aDecorrerAgora),
+        ).toBeDefined();
+    });
+
+    /**
+     * A ligação leva ao dono do evento, e o dono pode ser um servidor —
+     * a montra atravessa os dois. Um link que assumisse crew mandava
+     * quem carregasse para uma página que não existe.
+     */
+    it('liga ao servidor quando o evento é de um servidor', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir(
+                [],
+                [],
+                [
+                    evento({
+                        name: 'Noite de corridas',
+                        owner: {
+                            kind: 'server',
+                            id: 'srv-9',
+                            name: 'Leonida Life',
+                            tag: null,
+                        },
+                    }),
+                ],
+            ),
+        );
+
+        montarEcra(<LandingPage />);
+
+        const ligacao = (await screen.findByText('Noite de corridas'))
+            .closest('a');
+
+        expect(ligacao?.getAttribute('href')).toBe('/servidores/srv-9');
+    });
+
+    /**
      * Sem nada a acontecer, a página não mostra secções vazias — mas o
      * preço fica sempre, porque é a pergunta que toda a gente faz antes
      * de criar conta.
@@ -169,5 +267,6 @@ describe('a landing', () => {
         expect(await screen.findByText(t.landing.planosTitulo)).toBeDefined();
         expect(screen.getByText(t.landing.planoServidorPreco)).toBeDefined();
         expect(screen.queryByText(t.landing.quemRecruta)).toBeNull();
+        expect(screen.queryByText(t.landing.aAcontecer)).toBeNull();
     });
 });

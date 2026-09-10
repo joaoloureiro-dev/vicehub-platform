@@ -76,6 +76,15 @@ export const createEventSchema = z
          * entrar, e por isso é recusado.
          */
         capacity: z.number().int().min(1).max(10_000).nullable().optional(),
+        /**
+         * Se o evento aparece fora da comunidade que o marcou.
+         *
+         * Ausente é privado, e o schema não lhe põe `.default(false)` de
+         * propósito: assim o repositório distingue "não veio" de "veio a
+         * dizer false", e um PATCH que não fala nisto não abre nem fecha
+         * nada.
+         */
+        isPublic: z.boolean().optional(),
     })
     .refine(
         (value) =>
@@ -102,6 +111,7 @@ export const updateEventSchema = z
         startsAt: z.coerce.date(),
         endsAt: z.coerce.date().nullable(),
         capacity: z.number().int().min(1).max(10_000).nullable(),
+        isPublic: z.boolean(),
     })
     .partial()
     .refine((value) => Object.keys(value).length > 0, {
@@ -143,4 +153,15 @@ export const confirmAttendanceSchema = z.object({
  */
 export const eventTransitionSchema = z.object({
     status: z.enum(['ongoing', 'completed', 'canceled']),
+});
+
+/**
+ * Filtros da montra pública de eventos.
+ *
+ * Não tem `status` nem `includePast`: a montra mostra sempre o que está
+ * para vir ou a decorrer, e quem lhe chegasse com filtros podia pedir o
+ * histórico de comunidades a que não pertence. Um limite, e mais nada.
+ */
+export const listPublicEventsQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(50).default(12),
 });

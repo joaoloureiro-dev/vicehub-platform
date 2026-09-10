@@ -3,6 +3,7 @@ import type {
     EventParticipant,
     EventStatus,
     EventSummary,
+    PublicEvent,
 } from './event.types.js';
 
 /**
@@ -49,9 +50,33 @@ export const createEvent = (
         startsAt: string;
         endsAt?: string | null;
         capacity?: number | null;
+        isPublic?: boolean;
     },
 ): Promise<EventSummary> =>
     api<EventSummary>(base(dono), { method: 'POST', body: input });
+
+/**
+ * Altera um evento já marcado. Exige `event:manage`.
+ *
+ * Todos os campos são opcionais, e a API só toca no que lhe chega: um
+ * pedido que mude o nome não diz nada sobre quem pode ver o evento.
+ */
+export const updateEvent = (
+    dono: Dono,
+    eventId: string,
+    input: {
+        name?: string;
+        description?: string | null;
+        startsAt?: string;
+        endsAt?: string | null;
+        capacity?: number | null;
+        isPublic?: boolean;
+    },
+): Promise<EventSummary> =>
+    api<EventSummary>(`${base(dono)}/${eventId}`, {
+        method: 'PATCH',
+        body: input,
+    });
 
 export const setEventStatus = (
     dono: Dono,
@@ -103,3 +128,15 @@ export const markNoShow = (
     });
 
 export type { Dono };
+
+/**
+ * A montra: os eventos que as comunidades puseram à porta.
+ *
+ * É a única leitura de eventos que não exige sessão, e é para isso que
+ * existe — quem chega à plataforma pela primeira vez ainda não tem
+ * conta, e é essa pessoa que precisa de ver que há coisas a acontecer.
+ */
+export const listPublicEvents = (limit?: number): Promise<PublicEvent[]> =>
+    api<PublicEvent[]>(
+        `/events/public${limit === undefined ? '' : `?limit=${limit}`}`,
+    );

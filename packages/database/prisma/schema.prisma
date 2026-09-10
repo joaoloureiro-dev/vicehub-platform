@@ -1047,6 +1047,14 @@ model Event {
   /// Quantos podem participar. Sem valor é sem limite.
   capacity Int?
 
+  /// Se este evento aparece fora da comunidade que o marcou.
+  ///
+  /// Por omissão não aparece, e o valor por omissão é a decisão toda: o
+  /// calendário de uma comunidade é dela, e nada passa a público por ter
+  /// aparecido uma coluna. Quem organiza é que marca, evento a evento, o
+  /// que quer mostrar a quem ainda não entrou.
+  is_public Boolean @default(false)
+
   /// Quem organiza, e é quem confirma as presenças.
   organizer_id String?
 
@@ -1071,6 +1079,8 @@ model Event {
   @@index([serverId, status])
   @@index([starts_at])
   @@index([is_deleted])
+  /// A montra pergunta sempre o mesmo: os públicos, por ordem de começo.
+  @@index([is_public, starts_at])
 }
 
 /// A amizade entre duas pessoas.
