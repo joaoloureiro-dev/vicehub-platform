@@ -290,6 +290,12 @@ export const fr = (p: Tools): Messages => ({
             ran_1: 'A organisé un événement',
             ran_10: 'A organisé dix événements',
             ran_50: 'A organisé cinquante événements',
+            paid_1: 'A payé les siens',
+            paid_10: 'A payé dix fois',
+            paid_50: 'A payé cinquante fois',
+            level_5: 'Niveau 5',
+            level_10: 'Niveau 10',
+            level_25: 'Niveau 25',
         },
     },
 

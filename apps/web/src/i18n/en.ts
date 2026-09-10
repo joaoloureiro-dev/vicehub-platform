@@ -288,6 +288,12 @@ export const en = (p: Tools) => ({
             ran_1: 'Ran an event',
             ran_10: 'Ran ten events',
             ran_50: 'Ran fifty events',
+            paid_1: 'Paid its people',
+            paid_10: 'Paid out ten times',
+            paid_50: 'Paid out fifty times',
+            level_5: 'Level 5',
+            level_10: 'Level 10',
+            level_25: 'Level 25',
         },
     },
 

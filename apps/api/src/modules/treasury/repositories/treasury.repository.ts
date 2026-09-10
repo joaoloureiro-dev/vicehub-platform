@@ -13,6 +13,7 @@ import {
     type DatabaseClient,
 } from '@vicehub/database';
 
+import { grantCrewPayoutAchievements } from '../../../shared/achievements.js';
 import type { WalletOwner } from '../types/treasury.types.js';
 
 /**
@@ -580,6 +581,12 @@ export class TreasuryRepository {
         total: bigint;
         credits: { walletId: string; amount: bigint }[];
         approvedBy: string;
+        /**
+         * A crew que está a pagar, ou null quando quem paga é um
+         * servidor. Os servidores não têm conquistas: só as pessoas e as
+         * crews têm perfil onde as mostrar.
+         */
+        crewId: string | null;
     }) {
         return this.database.$transaction(async (tx) => {
             const decididoEm = new Date();
@@ -635,6 +642,21 @@ export class TreasuryRepository {
                     version: { increment: 1 },
                 },
             });
+
+            /**
+             * A medalha entra na mesma transação que move o dinheiro:
+             * ou a crew pagou e ganhou a conquista, ou não fez nem uma
+             * coisa nem outra. `skipDuplicates` faz a repetição — que é
+             * o caso normal, a partir do segundo pagamento — não levar
+             * consigo a divisão inteira.
+             */
+            if (input.crewId !== null) {
+                await grantCrewPayoutAchievements(
+                    tx,
+                    input.crewId,
+                    input.approvedBy,
+                );
+            }
 
             return { outcome: 'approved' as const };
         });

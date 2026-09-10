@@ -9,6 +9,7 @@ import {
 import {
     grantAttendanceAchievements,
     grantCrewEventAchievements,
+    grantCrewLevelAchievements,
 } from './achievements.js';
 import { getUniqueConstraintFields } from './prisma-errors.js';
 
@@ -126,10 +127,25 @@ export const awardEventXp = async (
                     select: { xp: true },
                 });
 
+                const nivel = nivelDoXp(xp);
+
                 await tx.crew.update({
                     where: { id: input.crewId },
-                    data: { level: nivelDoXp(xp) },
+                    data: { level: nivel },
                 });
+
+                /**
+                 * O nível que a crew acabou de ter, e não um que se vá
+                 * buscar outra vez: é o mesmo número que a linha acima
+                 * gravou, e lê-lo de novo seria abrir a porta a que os
+                 * dois discordassem.
+                 */
+                await grantCrewLevelAchievements(
+                    tx,
+                    input.crewId,
+                    nivel,
+                    input.actorId,
+                );
 
                 /**
                  * As conquistas saem da contagem das linhas de xp, que

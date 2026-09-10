@@ -1,8 +1,13 @@
 import {
     DEGRAUS_DE_EVENTOS,
+    DEGRAUS_DE_NIVEL_DE_CREW,
+    DEGRAUS_DE_PAGAMENTOS,
     DEGRAUS_DE_PRESENCAS,
+    DistributionStatus,
     XpReason,
     conquistaDeEventos,
+    conquistaDeNivel,
+    conquistaDePagamentos,
     conquistaDePresencas,
     degrausAlcancados,
     type DatabaseClient,
@@ -94,6 +99,66 @@ export const grantCrewEventAchievements = async (
         tx,
         { crewId },
         degrausAlcancados(DEGRAUS_DE_EVENTOS, eventos).map(conquistaDeEventos),
+        actorId,
+    );
+};
+
+/**
+ * As conquistas de nível de uma crew que acabou de ganhar xp.
+ *
+ * O nível chega feito, e não é contado outra vez: quem chama acabou de
+ * o calcular a partir do xp na mesma escrita, e recalculá-lo aqui seria
+ * pedir à base de dados um número que quem pergunta já tem na mão.
+ *
+ * Só crews. Uma pessoa só ganha xp de uma maneira, e por isso o nível
+ * dela é a contagem de presenças com outro nome — a medalha por isso já
+ * existe, e dar-lhe uma segunda era premiar o mesmo facto duas vezes.
+ */
+export const grantCrewLevelAchievements = async (
+    tx: Escritor,
+    crewId: string,
+    nivel: number,
+    actorId: string,
+): Promise<void> => {
+    await gravar(
+        tx,
+        { crewId },
+        degrausAlcancados(DEGRAUS_DE_NIVEL_DE_CREW, nivel).map(conquistaDeNivel),
+        actorId,
+    );
+};
+
+/**
+ * As conquistas de uma crew que acabou de pagar aos seus.
+ *
+ * A contagem sai das divisões aprovadas, que é o facto que move o
+ * dinheiro: uma divisão proposta e nunca aprovada não pagou a ninguém,
+ * e contá-la era deixar uma crew ganhar a medalha por escrever
+ * intenções.
+ *
+ * Corre dentro da transação que aprova a divisão, depois de esta já ter
+ * mudado de estado — logo, esta conta-se a si própria, como no xp dos
+ * eventos.
+ */
+export const grantCrewPayoutAchievements = async (
+    tx: Escritor,
+    crewId: string,
+    actorId: string,
+): Promise<void> => {
+    const pagamentos = await (tx as DatabaseClient).distribution.count({
+        where: {
+            wallet: { crewId },
+            status: DistributionStatus.approved,
+            is_deleted: false,
+        },
+    });
+
+    await gravar(
+        tx,
+        { crewId },
+        degrausAlcancados(DEGRAUS_DE_PAGAMENTOS, pagamentos).map(
+            conquistaDePagamentos,
+        ),
         actorId,
     );
 };

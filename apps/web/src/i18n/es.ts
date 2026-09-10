@@ -281,6 +281,12 @@ export const es = (p: Tools): Messages => ({
             ran_1: 'Organizó un evento',
             ran_10: 'Organizó diez eventos',
             ran_50: 'Organizó cincuenta eventos',
+            paid_1: 'Pagó a los suyos',
+            paid_10: 'Pagó diez veces',
+            paid_50: 'Pagó cincuenta veces',
+            level_5: 'Nivel 5',
+            level_10: 'Nivel 10',
+            level_25: 'Nivel 25',
         },
     },
 

@@ -343,6 +343,12 @@ describe('TreasuryRepository', () => {
             distribution: {
                 create: vi.fn().mockResolvedValue({ id: 'dist-1' }),
                 updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+                /**
+                 * A aprovação conta as divisões já pagas para saber que
+                 * conquistas a crew alcançou. Uma só: a que acabou de
+                 * ser aprovada.
+                 */
+                count: vi.fn().mockResolvedValue(1),
             },
             transaction: {
                 create: vi.fn().mockResolvedValue({}),
@@ -351,6 +357,9 @@ describe('TreasuryRepository', () => {
             wallet: {
                 update: vi.fn().mockResolvedValue({}),
                 updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            },
+            achievement: {
+                createMany: vi.fn().mockResolvedValue({ count: 1 }),
             },
         };
 
@@ -444,6 +453,7 @@ describe('TreasuryRepository', () => {
                 { walletId: 'wallet-c', amount: 300n },
             ],
             approvedBy: 'leader-1',
+            crewId: 'crew-1',
         };
 
         it('reclama a divisão só se ainda estiver pendente', async () => {
@@ -507,6 +517,61 @@ describe('TreasuryRepository', () => {
             );
 
             expect(creditadas).toEqual(['wallet-a', 'wallet-b', 'wallet-c']);
+        });
+
+        /**
+         * A medalha entra na mesma transação que move o dinheiro. Se
+         * fosse escrita fora dela, uma crew podia ficar com a conquista
+         * de um pagamento que a transação acabou por desfazer.
+         */
+        it('grava a conquista do pagamento na mesma transação', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.approveDistribution(input);
+
+            expect(tx.achievement.createMany).toHaveBeenCalledTimes(1);
+
+            const args = tx.achievement.createMany.mock.calls[0]?.[0] as {
+                data: { crewId: string; slug: string }[];
+                skipDuplicates: boolean;
+            };
+
+            expect(args.data).toEqual([
+                { crewId: 'crew-1', slug: 'paid_1', created_by: 'leader-1' },
+            ]);
+
+            /**
+             * A partir do segundo pagamento a conquista já existe, e a
+             * repetição é o caso normal. Sem isto, rebentava contra o
+             * índice e levava a divisão inteira com ela.
+             */
+            expect(args.skipDuplicates).toBe(true);
+        });
+
+        /**
+         * Um servidor também paga crews, mas não tem perfil onde mostrar
+         * medalhas — só as pessoas e as crews têm.
+         */
+        it('não tenta dar conquistas quando quem paga é um servidor', async () => {
+            const tx = withDistributionTransaction();
+
+            await repository.approveDistribution({ ...input, crewId: null });
+
+            expect(tx.achievement.createMany).not.toHaveBeenCalled();
+        });
+
+        /**
+         * O dinheiro continua a mover-se: a conquista é um extra, e um
+         * servidor não fica por pagar por não ter onde a pôr.
+         */
+        it('paga na mesma quando quem paga é um servidor', async () => {
+            const tx = withDistributionTransaction();
+
+            await expect(
+                repository.approveDistribution({ ...input, crewId: null }),
+            ).resolves.toEqual({ outcome: 'approved' });
+
+            expect(tx.wallet.update).toHaveBeenCalledTimes(3);
         });
 
         it('marca as linhas pendentes como aprovadas', async () => {

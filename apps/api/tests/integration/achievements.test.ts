@@ -228,6 +228,204 @@ describe('conquistas', () => {
     });
 
     /**
+     * Pagar aos seus é o facto que uma crew tem de mais difícil de
+     * fingir: correr um evento é marcá-lo e confirmar presenças; pagar é
+     * tirar dinheiro da tesouraria e pô-lo nas carteiras de outras
+     * pessoas.
+     *
+     * A conquista entra na mesma transação que move o dinheiro, e é
+     * essa a razão de isto ser um teste de integração: com duplos,
+     * "na mesma transação" não quer dizer nada.
+     */
+    describe('pagar aos seus', () => {
+        /** Põe dinheiro na tesouraria da crew, por proposta e aprovação. */
+        const encher = async (quanto: string): Promise<void> => {
+            const proposta = await app.inject({
+                method: 'POST',
+                url: `/api/v1/treasury/crews/${crewId}/movements`,
+                headers: auth(lider),
+                payload: {
+                    amount: quanto,
+                    direction: 'credit',
+                    category: 'contribution',
+                    description: 'Ganhos',
+                },
+            });
+
+            expect(proposta.statusCode, proposta.body).toBe(201);
+
+            const aprovacao = await app.inject({
+                method: 'POST',
+                url: `/api/v1/treasury/crews/${crewId}/movements/${proposta.json().id}/approve`,
+                headers: auth(lider),
+            });
+
+            expect(aprovacao.statusCode, aprovacao.body).toBe(200);
+        };
+
+        /** Divide e aprova, devolvendo o saldo da crew depois de pagar. */
+        const pagar = async (quanto: string): Promise<bigint> => {
+            const divisao = await app.inject({
+                method: 'POST',
+                url: `/api/v1/treasury/crews/${crewId}/distributions`,
+                headers: auth(lider),
+                payload: { total: quanto, basis: 'equal' },
+            });
+
+            expect(divisao.statusCode, divisao.body).toBe(201);
+
+            const aprovada = await app.inject({
+                method: 'POST',
+                url: `/api/v1/treasury/crews/${crewId}/distributions/${divisao.json().id}/approve`,
+                headers: auth(lider),
+            });
+
+            expect(aprovada.statusCode, aprovada.body).toBe(200);
+
+            const carteira = await prisma.wallet.findFirstOrThrow({
+                where: { crewId, is_deleted: false },
+                select: { balance: true },
+            });
+
+            return carteira.balance;
+        };
+
+        it('dá a conquista à crew que pagou pela primeira vez', async () => {
+            await encher('10000');
+            await pagar('1000');
+
+            expect(
+                (await conquistasDe({ crewId })).map((c) => c.slug),
+            ).toContain('paid_1');
+        });
+
+        /**
+         * O mesmo caso que justifica o `skipDuplicates` no xp, agora no
+         * dinheiro: ao segundo pagamento a medalha já existe, e a
+         * escrita repetida não pode levar a divisão inteira com ela. Se
+         * levasse, ninguém era pago por causa de uma medalha.
+         */
+        /**
+         * Propor não é pagar.
+         *
+         * Uma divisão escrita e nunca aprovada não moveu dinheiro
+         * nenhum, e contá-la deixava uma crew ganhar a medalha por
+         * escrever intenções — dez propostas por aprovar valiam o mesmo
+         * que dez pagamentos feitos.
+         *
+         * O teste propõe as que faltam para chegar ao degrau seguinte,
+         * não aprova nenhuma — **e depois paga a sério uma vez**. Essa
+         * última parte não é enfeite: a contagem só acontece dentro da
+         * transação que aprova, por isso sem uma aprovação a seguir as
+         * propostas nunca chegavam a ser contadas e o teste passava
+         * sozinho, dissesse o código o que dissesse.
+         */
+        it('não conta divisões que ninguém aprovou', async () => {
+            await encher('100000');
+
+            for (let i = 0; i < 9; i += 1) {
+                const proposta = await app.inject({
+                    method: 'POST',
+                    url: `/api/v1/treasury/crews/${crewId}/distributions`,
+                    headers: auth(lider),
+                    payload: { total: '100', basis: 'equal' },
+                });
+
+                expect(proposta.statusCode, proposta.body).toBe(201);
+            }
+
+            expect(
+                await prisma.distribution.count({
+                    where: { wallet: { crewId }, is_deleted: false },
+                }),
+            ).toBeGreaterThanOrEqual(10);
+
+            /** Agora sim: uma aprovação, que é o que dispara a contagem. */
+            await pagar('1000');
+
+            expect(
+                (await conquistasDe({ crewId })).map((c) => c.slug),
+            ).not.toContain('paid_10');
+        });
+
+        it('um segundo pagamento não se perde por a medalha já existir', async () => {
+            const antes = await prisma.wallet.findFirstOrThrow({
+                where: { crewId, is_deleted: false },
+                select: { balance: true },
+            });
+
+            const depois = await pagar('1000');
+
+            expect(depois).toBeLessThan(antes.balance);
+
+            expect(
+                (await conquistasDe({ crewId })).filter(
+                    (c) => c.slug === 'paid_1',
+                ),
+            ).toHaveLength(1);
+        });
+    });
+
+    /**
+     * O nível de uma crew não é a contagem de eventos com outro nome: o
+     * xp de um evento depende de quantas pessoas apareceram, e duas
+     * crews com os mesmos eventos podem estar em níveis diferentes.
+     *
+     * O xp é semeado à mão em vez de se correrem dez eventos a sério. O
+     * que aqui interessa provar não é a curva — isso tem testes seus —
+     * mas que o degrau é dado a partir do nível que a escrita do evento
+     * calcula. Esse caminho continua a ser o real: é o evento que soma,
+     * recalcula e decide.
+     */
+    describe('subir de nível', () => {
+        it('não dá o degrau a uma crew que ainda não lá chegou', async () => {
+            expect(
+                (await conquistasDe({ crewId })).map((c) => c.slug),
+            ).not.toContain('level_5');
+        });
+
+        it('dá o degrau quando o evento a leva ao nível', async () => {
+            /** Um pouco abaixo dos 1000 que o nível 5 exige. */
+            await prisma.crew.update({
+                where: { id: crewId },
+                data: { xp: 950n },
+            });
+
+            await correrUmEvento(3);
+
+            const crew = await prisma.crew.findFirstOrThrow({
+                where: { id: crewId },
+                select: { level: true },
+            });
+
+            expect(crew.level).toBeGreaterThanOrEqual(5);
+
+            expect(
+                (await conquistasDe({ crewId })).map((c) => c.slug),
+            ).toContain('level_5');
+        });
+
+        /**
+         * Uma pessoa não recebe medalhas de nível, e é de propósito: só
+         * ganha xp a aparecer a eventos, e sempre ao mesmo ritmo, por
+         * isso o nível dela é a contagem de presenças com outro nome.
+         * Premiar as duas coisas era premiar o mesmo facto duas vezes.
+         */
+        it('não dá conquistas de nível a uma pessoa', async () => {
+            await prisma.user.update({
+                where: { id: liderId },
+                data: { xp: 5000n },
+            });
+
+            await correrUmEvento(4);
+
+            expect(
+                (await conquistasDe({ userId: liderId })).map((c) => c.slug),
+            ).not.toContain('level_5');
+        });
+    });
+
+    /**
      * E aparecem nos dois perfis públicos, que é onde servem para
      * alguma coisa: quem está a decidir se aceita uma pessoa, ou se se
      * candidata a uma crew, é quem precisa de as ver.
