@@ -1,3 +1,5 @@
+import type { SubscriptionPlan } from '@vicehub/database';
+
 /**
  * Titular de uma subscrição.
  *
@@ -28,6 +30,15 @@ export interface SubscriptionEntitlement {
      * do `isPremium`, e mais cedo ou mais tarde alguém deduziria mal.
      */
     isLifetime: boolean;
+    /**
+     * Qual é o plano em vigor, ou null quando não há nenhum.
+     *
+     * É diferente de `isPremium`: essa pergunta é "tem alguma coisa?", e
+     * esta é "tem qual?". Os escalões de um servidor dão direitos de
+     * tamanhos diferentes — quantas crews podem jogar lá — e sem o nome
+     * do plano não há como perguntar o tamanho.
+     */
+    plan: SubscriptionPlan | null;
     /** Fim do período em vigor, ou null quando não termina. */
     activeUntil: Date | null;
     /**

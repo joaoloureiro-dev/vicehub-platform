@@ -53,6 +53,7 @@ export class SubscriptionService {
                 owner,
                 isPremium: true,
                 isLifetime: isPerpetualPlan(subscription.plan),
+                plan: subscription.plan,
                 activeUntil: subscription.current_period_end,
                 via: null,
             };
@@ -83,6 +84,12 @@ export class SubscriptionService {
                      * acesso desta crew termina quando ela sair de lá.
                      */
                     isLifetime: false,
+                    /**
+                     * O plano do servidor, e não um plano desta crew:
+                     * é ele que está a dar o direito, e dizer outro
+                     * nome era esconder de onde vem.
+                     */
+                    plan: doServidor.plan,
                     activeUntil: doServidor.current_period_end,
                     via: {
                         kind: 'server',
@@ -97,6 +104,7 @@ export class SubscriptionService {
             owner,
             isPremium: false,
             isLifetime: false,
+            plan: null,
             activeUntil: null,
             via: null,
         };

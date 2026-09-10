@@ -159,6 +159,13 @@ const affiliationErrorStatusCodes: Record<AffiliationErrorCode, number> = {
     CREW_ALREADY_AFFILIATED: 409,
     AFFILIATION_ALREADY_REQUESTED: 409,
     AFFILIATION_NOT_PENDING: 409,
+    /**
+     * 402 e não 403: quem pede tem autorização para o fazer — é dono do
+     * servidor. O que falta é o plano dar para mais uma crew, e 402 é o
+     * único estatuto que diz "isto resolve-se a pagar" em vez de "isto
+     * não é para ti".
+     */
+    SERVER_CREW_LIMIT_REACHED: 402,
 };
 
 /**

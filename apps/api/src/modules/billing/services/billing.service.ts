@@ -5,6 +5,7 @@ import {
     PLAN_KEYS,
     SubscriptionStatus,
     isPerpetualPlan,
+    isPurchasablePlan,
 } from '@vicehub/database';
 
 import { AuthorizationError } from '../../authorization/errors/authorization.errors.js';
@@ -126,6 +127,19 @@ export class BillingService {
                  * nulo, sem ter de o inventar mais abaixo.
                  */
                 if (isPerpetualPlan(plano.plan) || plano.intervalMonths === null) {
+                    return [];
+                }
+
+                /**
+                 * E os que a cobrança ainda não sabe vender.
+                 *
+                 * Há **um** preço configurado no Stripe, e o checkout
+                 * vende esse. Anunciar um escalão de servidor aqui era
+                 * prometer um preço e cobrar outro — o pior erro que uma
+                 * lista de preços pode ter. Até cada escalão ter o seu
+                 * preço e o checkout saber escolher, concedem-se à mão.
+                 */
+                if (!isPurchasablePlan(plano)) {
                     return [];
                 }
 

@@ -407,4 +407,221 @@ describe('filiação entre crews e servidores', () => {
             expect(response.json()).toEqual([]);
         });
     });
+
+    /**
+     * O limite de crews do plano do servidor, contra a base de dados a
+     * sério.
+     *
+     * A parte que só aqui se prova é a contagem: quantas crews jogam
+     * mesmo lá é uma pergunta à tabela, e um filtro errado — contar os
+     * pedidos por responder, contar as que já saíram — passa
+     * despercebido com duplos e fecha a porta a quem tinha lugar.
+     */
+    describe('o limite de crews do plano do servidor', () => {
+        /** Um servidor só deste bloco, para as contagens não se cruzarem. */
+        let cheio: string;
+        let donoCheio: string;
+
+        /** Põe uma crew nova a jogar no servidor, e devolve o id dela. */
+        const filiar = async (sufixo: string): Promise<string> => {
+            const outroLider = await register(`lim${sufixo}${marca}`);
+            const crew = await criarCrew(outroLider, `lim${sufixo}${marca}`);
+
+            const pedido = await pedir(outroLider, crew, cheio);
+
+            expect(pedido.statusCode, pedido.body).toBe(201);
+
+            const aceite = await aceitar(donoCheio, cheio, crew);
+
+            expect(aceite.statusCode, aceite.body).toBe(200);
+
+            return crew;
+        };
+
+        const folga = async () => {
+            const response = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${cheio}/affiliations/allowance`,
+                headers: auth(donoCheio),
+            });
+
+            expect(response.statusCode, response.body).toBe(200);
+
+            return response.json() as {
+                used: number;
+                limit: number | null;
+                canAcceptMore: boolean;
+            };
+        };
+
+        beforeAll(async () => {
+            donoCheio = await register(`limdono${marca}`);
+            cheio = await criarServidor(donoCheio, `lim${marca}`);
+        });
+
+        it('começa vazio, com as três de quem não paga', async () => {
+            expect(await folga()).toEqual({
+                used: 0,
+                limit: 3,
+                canAcceptMore: true,
+            });
+        });
+
+        it('conta as crews à medida que entram', async () => {
+            await filiar('a');
+            await filiar('b');
+
+            expect(await folga()).toEqual({
+                used: 2,
+                limit: 3,
+                canAcceptMore: true,
+            });
+        });
+
+        /**
+         * Um pedido por responder não ocupa lugar. Se ocupasse, bastava
+         * a alguém candidatar-se para o servidor deixar de poder
+         * aceitar seja quem for.
+         */
+        it('um pedido por responder não ocupa lugar', async () => {
+            const outroLider = await register(`limp${marca}`);
+            const crew = await criarCrew(outroLider, `limp${marca}`);
+
+            expect((await pedir(outroLider, crew, cheio)).statusCode).toBe(201);
+
+            expect(await folga()).toMatchObject({ used: 2 });
+        });
+
+        /**
+         * O 402 é a resposta certa, e é o que a diferencia de um 403:
+         * quem pede é o dono do servidor e tem toda a autorização. O que
+         * falta é o plano dar para mais uma.
+         */
+        it('recusa a quarta com 402, e não a grava', async () => {
+            await filiar('c');
+
+            expect(await folga()).toEqual({
+                used: 3,
+                limit: 3,
+                canAcceptMore: false,
+            });
+
+            const outroLider = await register(`limx${marca}`);
+            const crew = await criarCrew(outroLider, `limx${marca}`);
+
+            expect((await pedir(outroLider, crew, cheio)).statusCode).toBe(201);
+
+            const recusada = await aceitar(donoCheio, cheio, crew);
+
+            expect(recusada.statusCode, recusada.body).toBe(402);
+            expect(recusada.json().code).toBe('SERVER_CREW_LIMIT_REACHED');
+
+            /** E a crew continua sem servidor. */
+            expect((await estadoDaCrew(crew)).server).toBeNull();
+        });
+
+        /**
+         * Candidatar-se continua livre. Um servidor cheio recebe os
+         * pedidos na mesma, e é essa fila à porta que lhe dá razão para
+         * subir de escalão — melhor argumento do que um número num ecrã
+         * de preços.
+         */
+        it('mesmo cheio, continua a receber pedidos', async () => {
+            const outroLider = await register(`limf${marca}`);
+            const crew = await criarCrew(outroLider, `limf${marca}`);
+
+            const pedido = await pedir(outroLider, crew, cheio);
+
+            expect(pedido.statusCode, pedido.body).toBe(201);
+
+            const pendentes = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${cheio}/affiliations/requests`,
+                headers: auth(donoCheio),
+            });
+
+            expect(pendentes.statusCode, pendentes.body).toBe(200);
+            expect(
+                (pendentes.json() as { crewId: string }[]).map((l) => l.crewId),
+            ).toContain(crew);
+        });
+
+        /**
+         * O escalão paga-se e a porta abre. Concedido à mão, que é como
+         * um plano é concedido enquanto a cobrança não estiver ligada.
+         */
+        it('com o escalão de servidor, aceita a quarta', async () => {
+            await prisma.subscription.create({
+                data: {
+                    serverId: cheio,
+                    plan: 'server_base',
+                    status: 'active',
+                    price_cents: 1_499,
+                    currency: 'EUR',
+                    current_period_start: new Date(),
+                    current_period_end: new Date(Date.now() + 30 * 86_400_000),
+                },
+            });
+
+            expect(await folga()).toMatchObject({
+                limit: 10,
+                canAcceptMore: true,
+            });
+
+            const crew = await filiar('d');
+
+            expect((await estadoDaCrew(crew)).server?.id).toBe(cheio);
+        });
+
+        /**
+         * O que acontece quando o plano acaba: **nada é retirado**. As
+         * crews que já lá jogavam ficam onde estão, e o servidor apenas
+         * deixa de poder aceitar mais. Tirar uma crew de um servidor por
+         * causa de um pagamento desfazia uma relação que não é da
+         * plataforma.
+         */
+        it('sem plano, guarda as que tem e deixa de aceitar mais', async () => {
+            await prisma.subscription.updateMany({
+                where: { serverId: cheio },
+                data: { status: 'canceled' },
+            });
+
+            const depois = await folga();
+
+            expect(depois.used).toBe(4);
+            expect(depois.limit).toBe(3);
+            expect(depois.canAcceptMore).toBe(false);
+
+            /** As quatro continuam lá. */
+            const ativas = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${cheio}/affiliations`,
+            });
+
+            expect(ativas.json()).toHaveLength(4);
+        });
+
+        /**
+         * O escalão do servidor é o plano que ele paga, e isso não é
+         * assunto de quem passa por lá.
+         */
+        it('não diz a folga a quem não gere o servidor', async () => {
+            const estranho = await register(`lime${marca}`);
+
+            const response = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${cheio}/affiliations/allowance`,
+                headers: auth(estranho),
+            });
+
+            expect(response.statusCode).toBe(403);
+
+            const semSessao = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${cheio}/affiliations/allowance`,
+            });
+
+            expect(semSessao.statusCode).toBe(401);
+        });
+    });
 });

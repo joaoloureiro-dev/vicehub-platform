@@ -20,6 +20,29 @@ export interface PlanDefinition {
     priceCents: number;
     currency: string;
     /**
+     * Quantas crews podem jogar num servidor com este plano.
+     *
+     * `null` é sem limite. `undefined` — a ausência do campo — é a
+     * resposta certa para os planos que não são de servidor: um plano de
+     * uma pessoa não tem opinião nenhuma sobre crews, e pôr-lhe um zero
+     * dizia que tem, e que é nenhuma.
+     */
+    maxCrews?: number | null;
+    /**
+     * Se este plano pode ser comprado sozinho, no ecrã de preços.
+     *
+     * A cobrança tem **um** preço configurado, e o checkout vende esse.
+     * Anunciar um escalão que ele não sabe cobrar era prometer uma
+     * coisa e cobrar outra — o pior erro que uma lista de preços pode
+     * ter. Enquanto cada escalão não tiver o seu preço no Stripe e o
+     * checkout não souber escolher entre eles, os escalões de servidor
+     * concedem-se à mão, como o vitalício.
+     *
+     * Ausente é comprável: é o caso do premium, e o que menos surpreende
+     * quem acrescentar um plano novo sem pensar nisto.
+     */
+    purchasable?: boolean;
+    /**
      * Meses de cada período, ou `null` quando o plano não renova.
      *
      * `null` é a forma honesta de dizer "não tem período". Pôr um número
@@ -38,6 +61,45 @@ export const PLANS = {
         currency: 'USD',
         /** Mensal. É o único período cobrado. */
         intervalMonths: 1,
+    },
+    /**
+     * Os escalões de um servidor.
+     *
+     * O que um servidor compra é o direito a ter crews a jogar lá, e é
+     * por isso que o preço sobe com o número delas e não com outra
+     * coisa qualquer: é a única medida em que um servidor grande custa
+     * mais do que um pequeno.
+     */
+    server_base: {
+        plan: SubscriptionPlan.server_base,
+        name: 'Servidor',
+        description:
+            'Tudo o que uma crew tem, para o servidor e para as crews que lá jogam.',
+        priceCents: 1_499,
+        currency: 'EUR',
+        intervalMonths: 1,
+        maxCrews: 10,
+        purchasable: false,
+    },
+    server_plus: {
+        plan: SubscriptionPlan.server_plus,
+        name: 'Servidor +',
+        description: 'Para servidores com muitas crews a jogar lá.',
+        priceCents: 1_999,
+        currency: 'EUR',
+        intervalMonths: 1,
+        maxCrews: 50,
+        purchasable: false,
+    },
+    server_unlimited: {
+        plan: SubscriptionPlan.server_unlimited,
+        name: 'Servidor sem limite',
+        description: 'Sem limite de crews.',
+        priceCents: 9_999,
+        currency: 'EUR',
+        intervalMonths: 1,
+        maxCrews: null,
+        purchasable: false,
     },
     lifetime: {
         plan: SubscriptionPlan.lifetime,
@@ -64,6 +126,64 @@ export const PLANS = {
  */
 export const isPerpetualPlan = (plan: SubscriptionPlan): boolean =>
     plan === SubscriptionPlan.lifetime;
+
+/**
+ * Se este plano aparece no ecrã de preços para ser comprado.
+ *
+ * A ausência do campo é sim: um plano novo entra à venda por omissão, e
+ * quem o quiser fora da lista tem de o dizer.
+ */
+export const isPurchasablePlan = (definicao: PlanDefinition): boolean =>
+    definicao.purchasable !== false;
+
+/**
+ * Quantas crews pode ter um servidor que não paga nada.
+ *
+ * O número que decide se o escalão de entrada vende alguma coisa. Três
+ * é o suficiente para um servidor ver a plataforma a funcionar de
+ * verdade — crews a candidatar-se, a jogar lá, a ser pagas — e pouco
+ * para quem cresce. Um servidor que nunca sentiu o mecanismo a
+ * funcionar não tem razão nenhuma para o pagar.
+ *
+ * Zero seria pior do que parece: um servidor sem crews não tem nada
+ * para mostrar, e quem chegasse a esse servidor não veria plataforma
+ * nenhuma.
+ */
+export const CREWS_SEM_PLANO = 3;
+
+/**
+ * Quantas crews este plano deixa jogar num servidor.
+ *
+ * `null` quer dizer sem limite. Sem plano — ou com um plano que não é
+ * de servidor, como o de uma pessoa que também tem um — vale o que
+ * vale para quem não paga.
+ */
+export const crewAllowance = (plan: SubscriptionPlan | null): number | null => {
+    if (plan === null) {
+        return CREWS_SEM_PLANO;
+    }
+
+    /**
+     * O tipo é anotado porque `as const` guarda os literais e os planos
+     * sem `maxCrews` não têm sequer a propriedade — sem isto, lê-la era
+     * um erro de compilação em vez do `undefined` que se procura.
+     */
+    const definicao: PlanDefinition | undefined = (
+        Object.values(PLANS) as readonly PlanDefinition[]
+    ).find((candidato) => candidato.plan === plan);
+
+    /**
+     * `undefined` é o plano não ter opinião sobre crews — o de uma
+     * pessoa, o vitalício. O vitalício merece nota à parte: é um gesto
+     * a quem apoiou a plataforma no princípio, e limitá-lo a três crews
+     * seria retirar com uma mão o que se deu com a outra.
+     */
+    if (definicao === undefined || definicao.maxCrews === undefined) {
+        return isPerpetualPlan(plan) ? null : CREWS_SEM_PLANO;
+    }
+
+    return definicao.maxCrews;
+};
 
 export type PlanKey = keyof typeof PLANS;
 

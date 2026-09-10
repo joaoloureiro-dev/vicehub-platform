@@ -529,6 +529,16 @@ export const fr = (p: Tools): Messages => ({
         aceitar: 'Accepter',
         recusar: 'Refuser',
         remover: 'Retirer',
+        crewsDoPlano: (usadas: number, limite: number) =>
+            `${usadas} des ${limite} crews que votre offre autorise`,
+        crewsSemLimite: (usadas: number) =>
+            p.plural(usadas, {
+                one: '1 crew joue ici. Votre offre ne met pas de limite.',
+                other: `${usadas} crews jouent ici. Votre offre ne met pas de limite.`,
+            }),
+        planoCheio:
+            "Vous avez déjà toutes les crews que votre offre autorise. Celles qui jouent ici restent ; en accepter une autre demande une offre plus grande.",
+        verEscaloes: 'Voir les offres pour serveurs',
     },
 
     chaves: {

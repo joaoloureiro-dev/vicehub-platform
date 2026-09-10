@@ -58,6 +58,10 @@ const servidor = (opcoes: {
     perfil?: unknown;
     /** As adesões de quem está a ver, quando o caso precisa de uma. */
     adesoes?: unknown[];
+    /** A folga de crews do plano do servidor. */
+    folga?: { used: number; limit: number | null; canAcceptMore: boolean };
+    /** As crews que pediram para jogar no servidor. */
+    pedidosDeCrews?: unknown[];
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -76,6 +80,21 @@ const servidor = (opcoes: {
             );
         }
 
+        /**
+         * As candidaturas de crews vêm **antes** das de pessoas, e não
+         * depois: `/affiliations/requests` também acaba em `/requests`,
+         * e um ramo genérico servia a mesma lista às duas caixas de
+         * entrada — o ecrã ficava com dois botões "Accept" iguais, um
+         * deles a responder à pergunta errada.
+         */
+        if (endereco.endsWith('/affiliations/requests')) {
+            return Promise.resolve(
+                opcoes.requests.status === 200
+                    ? json(200, opcoes.pedidosDeCrews ?? [])
+                    : opcoes.requests,
+            );
+        }
+
         if (endereco.endsWith('/requests')) {
             return Promise.resolve(opcoes.requests);
         }
@@ -83,6 +102,27 @@ const servidor = (opcoes: {
         if (endereco.endsWith('/members')) {
             return Promise.resolve(
                 json(200, opcoes.requests.status === 200 ? membros : membrosSemMandar),
+            );
+        }
+
+        /**
+         * A folga do plano vem **antes** da lista de filiações, e não
+         * depois: `/affiliations/allowance` também contém
+         * `/affiliations`, e um ramo genérico respondia-lhe com uma
+         * lista vazia. O componente lia `limit` de um array, não
+         * encontrava nada, e mostrava a conta com buracos — em silêncio,
+         * com os testes todos a passar.
+         */
+        if (endereco.includes('/affiliations/allowance')) {
+            return Promise.resolve(
+                json(
+                    200,
+                    opcoes.folga ?? {
+                        used: 0,
+                        limit: 3,
+                        canAcceptMore: true,
+                    },
+                ),
             );
         }
 
@@ -472,5 +512,174 @@ describe('o calendário de um servidor', () => {
         });
 
         expect(screen.queryByText(t.crews.eventos)).toBeNull();
+    });
+});
+
+/**
+ * O limite de crews do plano, no ecrã de quem gere o servidor.
+ *
+ * Está aqui e não noutro sítio por uma razão de desenho: quem gere olha
+ * para esta secção quando vai responder a um pedido, e é aí que a conta
+ * tem de estar — dizer-lhe que está cheio **depois** de carregar em
+ * aceitar, num erro, é dizer-lho tarde.
+ */
+describe('a folga de crews de um servidor', () => {
+    it('mostra a quem gere quantas tem e quantas pode ter', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                folga: { used: 7, limit: 10, canAcceptMore: true },
+            }),
+        );
+
+        montar();
+
+        expect(
+            await screen.findByText(t.filiacao.crewsDoPlano(7, 10)),
+        ).toBeDefined();
+    });
+
+    /**
+     * Sem limite não se inventa um número: dizer "900 de null" seria
+     * pior do que não dizer nada.
+     */
+    it('num plano sem limite, diz que não há limite', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                folga: { used: 900, limit: null, canAcceptMore: true },
+            }),
+        );
+
+        montar();
+
+        expect(
+            await screen.findByText(t.filiacao.crewsSemLimite(900)),
+        ).toBeDefined();
+    });
+
+    /**
+     * O aviso aparece antes de alguém carregar em aceitar, e leva o
+     * caminho para o resolver.
+     */
+    it('avisa e aponta o escalão seguinte quando está cheio', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                folga: { used: 3, limit: 3, canAcceptMore: false },
+            }),
+        );
+
+        montar();
+
+        expect(await screen.findByText(t.filiacao.planoCheio)).toBeDefined();
+
+        const link = screen.getByText(t.filiacao.verEscaloes);
+
+        expect(link.getAttribute('href')).toBe('/premium?servidor=server-1');
+    });
+
+    it('com lugar ainda, não avisa nada', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                folga: { used: 1, limit: 3, canAcceptMore: true },
+            }),
+        );
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText(t.filiacao.crewsDoPlano(1, 3))).toBeDefined();
+        });
+
+        expect(screen.queryByText(t.filiacao.planoCheio)).toBeNull();
+    });
+
+    /**
+     * Deixar carregar num botão que só pode recusar é fazer alguém
+     * descobrir pela via difícil o que já lhe estava escrito por cima.
+     */
+    it('não deixa aceitar mais um pedido quando o plano está cheio', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                pedidosDeCrews: [
+                    {
+                        crewId: 'crew-9',
+                        crewName: 'Os Atrasados',
+                        crewTag: 'ATR',
+                        status: 'pending',
+                        requestedAt: '2026-01-01T00:00:00.000Z',
+                        respondedAt: null,
+                    },
+                ],
+                folga: { used: 3, limit: 3, canAcceptMore: false },
+            }),
+        );
+
+        montar();
+
+        const aceitar = (await screen.findByRole('button', {
+            name: t.filiacao.aceitar,
+        })) as HTMLButtonElement;
+
+        expect(aceitar.disabled).toBe(true);
+    });
+
+    it('deixa aceitar enquanto houver lugar', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                pedidosDeCrews: [
+                    {
+                        crewId: 'crew-9',
+                        crewName: 'Os Pontuais',
+                        crewTag: 'PNT',
+                        status: 'pending',
+                        requestedAt: '2026-01-01T00:00:00.000Z',
+                        respondedAt: null,
+                    },
+                ],
+                folga: { used: 1, limit: 3, canAcceptMore: true },
+            }),
+        );
+
+        montar();
+
+        const aceitar = (await screen.findByRole('button', {
+            name: t.filiacao.aceitar,
+        })) as HTMLButtonElement;
+
+        expect(aceitar.disabled).toBe(false);
+    });
+
+    /**
+     * O escalão que um servidor paga não é assunto de quem passa por lá,
+     * e a API recusa-o a mais alguém: o painel nem chega a perguntar.
+     */
+    it('não mostra a folga a quem não gere o servidor', async () => {
+        const fetchMock = servidor({ requests: json(403, { code: 'FORBIDDEN' }) });
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText('Vice City RP')).toBeDefined();
+        });
+
+        expect(screen.queryByText(t.filiacao.crewsDoPlano(0, 3))).toBeNull();
+
+        expect(
+            fetchMock.mock.calls.filter((argumentos) =>
+                String(argumentos[0]).includes('/allowance'),
+            ),
+        ).toHaveLength(0);
     });
 });

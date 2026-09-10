@@ -199,6 +199,7 @@ describe('SubscriptionService', () => {
                 owner: { userId: 'user-1' },
                 isPremium: true,
                 isLifetime: false,
+                plan: 'premium',
                 activeUntil: periodEnd,
                 via: null,
             });
@@ -220,6 +221,7 @@ describe('SubscriptionService', () => {
                 owner: { userId: 'user-1' },
                 isPremium: true,
                 isLifetime: true,
+                plan: 'lifetime',
                 activeUntil: null,
                 via: null,
             });
@@ -259,6 +261,7 @@ describe('SubscriptionService', () => {
                 owner: { crewId: 'crew-1' },
                 isPremium: true,
                 isLifetime: false,
+                plan: 'premium',
                 activeUntil: periodEnd,
                 via: { kind: 'server', id: 'server-9', name: 'Vice City RP' },
             });
@@ -429,6 +432,7 @@ describe('SubscriptionService', () => {
                     owner: { userId: 'user-1' },
                     isPremium: true,
                     isLifetime: false,
+                    plan: 'premium' as const,
                     activeUntil: periodEnd,
                     via: null,
                 }),
@@ -446,6 +450,7 @@ describe('SubscriptionService', () => {
                     owner: { userId: 'user-1' },
                     isPremium: true,
                     isLifetime: true,
+                    plan: 'lifetime' as const,
                     activeUntil: null,
                     via: null,
                 }),
@@ -458,6 +463,7 @@ describe('SubscriptionService', () => {
                     owner: { userId: 'user-1' },
                     isPremium: false,
                     isLifetime: false,
+                    plan: null,
                     activeUntil: null,
                     via: null,
                 });

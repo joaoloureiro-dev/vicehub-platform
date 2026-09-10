@@ -84,6 +84,23 @@ export class AffiliationController {
     }
 
     /**
+     * Quantas crews este servidor pode ter, e quantas já tem.
+     *
+     * Só para quem gere: é o plano do servidor que aqui se lê, e o
+     * escalão que ele paga não é assunto de quem passa.
+     */
+    async getAllowance(
+        request: FastifyRequest<{ Params: ServerIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        reply.send(
+            await this.affiliationService.getCrewAllowance(
+                request.params.serverId,
+            ),
+        );
+    }
+
+    /**
      * Os pedidos por responder deste servidor.
      */
     async listRequests(

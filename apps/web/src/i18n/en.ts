@@ -524,6 +524,16 @@ export const en = (p: Tools) => ({
         aceitar: 'Accept',
         recusar: 'Reject',
         remover: 'Remove',
+        crewsDoPlano: (usadas: number, limite: number) =>
+            `${usadas} of the ${limite} crews your plan allows`,
+        crewsSemLimite: (usadas: number) =>
+            p.plural(usadas, {
+                one: '1 crew plays here. Your plan sets no limit.',
+                other: `${usadas} crews play here. Your plan sets no limit.`,
+            }),
+        planoCheio:
+            'You already have every crew your plan allows. The ones playing here stay; accepting another needs a bigger plan.',
+        verEscaloes: 'See the plans for servers',
     },
 
     chaves: {

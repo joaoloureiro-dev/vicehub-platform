@@ -200,6 +200,28 @@ describe('BillingService', () => {
                 expect(plano.intervalMonths).toBeGreaterThan(0);
             }
         });
+
+        /**
+         * Os escalões de servidor existem, valem cada um o seu preço, e
+         * **não estão aqui**.
+         *
+         * A cobrança tem um preço configurado e o checkout vende esse.
+         * Anunciar um escalão que ele não sabe cobrar seria prometer um
+         * preço e cobrar outro — o pior erro que uma lista de preços
+         * pode ter, e o mais fácil de cometer por distração ao
+         * acrescentar um plano ao catálogo. Este teste é o que o
+         * apanha.
+         */
+        it.each(['server_base', 'server_plus', 'server_unlimited'])(
+            'não anuncia %s, que a cobrança ainda não sabe vender',
+            (chave) => {
+                const chaves = service
+                    .listPurchasablePlans()
+                    .plans.map((plano) => plano.key);
+
+                expect(chaves).not.toContain(chave);
+            },
+        );
     });
 
     /**

@@ -527,6 +527,16 @@ export const pt = (p: Tools): Messages => ({
         aceitar: 'Aceitar',
         recusar: 'Recusar',
         remover: 'Remover',
+        crewsDoPlano: (usadas: number, limite: number) =>
+            `${usadas} das ${limite} crews que o teu plano permite`,
+        crewsSemLimite: (usadas: number) =>
+            p.plural(usadas, {
+                one: '1 crew joga aqui. O teu plano não põe limite.',
+                other: `${usadas} crews jogam aqui. O teu plano não põe limite.`,
+            }),
+        planoCheio:
+            'Já tens todas as crews que o teu plano permite. As que jogam aqui ficam; aceitar mais uma pede um plano maior.',
+        verEscaloes: 'Ver os planos para servidores',
     },
 
     chaves: {
