@@ -289,6 +289,12 @@ export const pt = (p: Tools): Messages => ({
             ran_1: 'Correu um evento',
             ran_10: 'Correu dez eventos',
             ran_50: 'Correu cinquenta eventos',
+            paid_1: 'Pagou aos seus',
+            paid_10: 'Pagou dez vezes',
+            paid_50: 'Pagou cinquenta vezes',
+            level_5: 'Nível 5',
+            level_10: 'Nível 10',
+            level_25: 'Nível 25',
         },
     },
 

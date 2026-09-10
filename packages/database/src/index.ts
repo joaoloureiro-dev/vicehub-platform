@@ -87,8 +87,12 @@ export type { Progresso } from './progression.js';
 
 export {
     DEGRAUS_DE_EVENTOS,
+    DEGRAUS_DE_NIVEL_DE_CREW,
+    DEGRAUS_DE_PAGAMENTOS,
     DEGRAUS_DE_PRESENCAS,
     conquistaDeEventos,
+    conquistaDeNivel,
+    conquistaDePagamentos,
     conquistaDePresencas,
     degrausAlcancados,
 } from './achievements.js';

@@ -385,6 +385,7 @@ export class TreasuryService {
                 total: distribution.total,
                 credits,
                 approvedBy,
+                crewId: owner.crewId ?? null,
             });
 
             if (resultado.outcome === 'not_pending') {
