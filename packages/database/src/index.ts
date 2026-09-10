@@ -53,12 +53,15 @@ export {
 export type { WeightedRoleKey } from './distribution-weights.js';
 
 export {
+    CREWS_SEM_PLANO,
     ENTITLING_SUBSCRIPTION_STATUSES,
     PLANS,
     PLAN_KEYS,
     addPlanInterval,
+    crewAllowance,
     entitlingSubscriptionFilter,
     isPerpetualPlan,
+    isPurchasablePlan,
 } from './plans.js';
 
 export type { PlanDefinition, PlanKey } from './plans.js';

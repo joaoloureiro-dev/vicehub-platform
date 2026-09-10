@@ -96,6 +96,25 @@ const affiliationRoutes: FastifyPluginAsync<AffiliationRoutesOptions> = async (
      * listagem pública: assim a permissão é uma propriedade da rota, e
      * não uma condição escrita dentro dela que um dia se esquece.
      */
+    /**
+     * O limite de crews do plano, para quem gere o servidor.
+     *
+     * Fica ao pé da caixa de entrada porque é ao responder a um pedido
+     * que a pergunta se faz — e é aí que a resposta tem de estar à vista,
+     * antes de alguém carregar em aceitar e levar com um 402.
+     */
+    fastify.get<{ Params: ServerIdParamDto }>(
+        '/api/v1/servers/:serverId/affiliations/allowance',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('server:manage'),
+            ],
+            schema: { params: serverIdParamSchema },
+        },
+        controller.getAllowance.bind(controller),
+    );
+
     fastify.get<{ Params: ServerIdParamDto }>(
         '/api/v1/servers/:serverId/affiliations/requests',
         {

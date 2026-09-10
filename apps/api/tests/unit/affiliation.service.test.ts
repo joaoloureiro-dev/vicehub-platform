@@ -21,6 +21,22 @@ const createRepositoryMock = () => ({
     listOfServer: vi.fn().mockResolvedValue([]),
     crewExists: vi.fn().mockResolvedValue({ id: 'crew-1' }),
     serverExists: vi.fn().mockResolvedValue({ id: 'server-1', name: 'Vice' }),
+    countActiveOfServer: vi.fn().mockResolvedValue(0),
+});
+
+/**
+ * O plano do servidor, que é o que decide quantas crews ele pode ter.
+ * Sem plano, por omissão: é o caso de quase toda a gente.
+ */
+const createSubscriptionMock = () => ({
+    getEntitlement: vi.fn().mockResolvedValue({
+        owner: { serverId: 'server-1' },
+        isPremium: false,
+        isLifetime: false,
+        plan: null,
+        activeUntil: null,
+        via: null,
+    }),
 });
 
 const expectAffiliationError = async (
@@ -33,11 +49,16 @@ const expectAffiliationError = async (
 
 describe('AffiliationService', () => {
     let repository: ReturnType<typeof createRepositoryMock>;
+    let subscriptions: ReturnType<typeof createSubscriptionMock>;
     let service: AffiliationService;
 
     beforeEach(() => {
         repository = createRepositoryMock();
-        service = new AffiliationService(repository as never);
+        subscriptions = createSubscriptionMock();
+        service = new AffiliationService(
+            repository as never,
+            subscriptions as never,
+        );
     });
 
     describe('pedir', () => {
@@ -232,6 +253,171 @@ describe('AffiliationService', () => {
                 servidor: null,
                 pedido: { id: 'server-1', name: 'Vice' },
             });
+        });
+    });
+
+    /**
+     * O limite de crews do plano do servidor.
+     *
+     * A regra é curta e as suas pontas soltas é que são interessantes:
+     * quem não paga tem um número pequeno, o escalão de topo não tem
+     * número nenhum, e um servidor que caiu abaixo do que já tem
+     * **guarda o que tem** e apenas deixa de poder aceitar mais.
+     */
+    describe('o limite de crews do plano', () => {
+        const comPlano = (plan: string | null) => {
+            subscriptions.getEntitlement.mockResolvedValue({
+                owner: { serverId: 'server-1' },
+                isPremium: plan !== null,
+                isLifetime: plan === 'lifetime',
+                plan,
+                activeUntil: null,
+                via: null,
+            });
+        };
+
+        it('deixa aceitar quem ainda tem lugar', async () => {
+            comPlano('server_base');
+            repository.countActiveOfServer.mockResolvedValue(9);
+
+            await service.accept('server-1', 'crew-1', 'user-1');
+
+            expect(repository.activate).toHaveBeenCalled();
+        });
+
+        /**
+         * O 402 é a resposta certa: quem pede tem autorização, o que
+         * falta é o plano dar para mais uma.
+         */
+        it('recusa a que passa do limite, e não grava nada', async () => {
+            comPlano('server_base');
+            repository.countActiveOfServer.mockResolvedValue(10);
+
+            await expectAffiliationError(
+                service.accept('server-1', 'crew-1', 'user-1'),
+                'SERVER_CREW_LIMIT_REACHED',
+            );
+
+            expect(repository.activate).not.toHaveBeenCalled();
+        });
+
+        it('um servidor sem plano nenhum também tem lugar para algumas', async () => {
+            comPlano(null);
+            repository.countActiveOfServer.mockResolvedValue(2);
+
+            await service.accept('server-1', 'crew-1', 'user-1');
+
+            expect(repository.activate).toHaveBeenCalled();
+        });
+
+        it('e para na terceira', async () => {
+            comPlano(null);
+            repository.countActiveOfServer.mockResolvedValue(3);
+
+            await expectAffiliationError(
+                service.accept('server-1', 'crew-1', 'user-1'),
+                'SERVER_CREW_LIMIT_REACHED',
+            );
+        });
+
+        it('o escalão sem limite não tem limite nenhum', async () => {
+            comPlano('server_unlimited');
+            repository.countActiveOfServer.mockResolvedValue(4_000);
+
+            await service.accept('server-1', 'crew-1', 'user-1');
+
+            expect(repository.activate).toHaveBeenCalled();
+        });
+
+        /**
+         * O vitalício foi um gesto a quem apoiou a plataforma no
+         * princípio. Limitá-lo a três crews era retirar com uma mão o
+         * que se deu com a outra.
+         */
+        it('o vitalício não leva com o limite de quem não paga', async () => {
+            comPlano('lifetime');
+            repository.countActiveOfServer.mockResolvedValue(80);
+
+            await service.accept('server-1', 'crew-1', 'user-1');
+
+            expect(repository.activate).toHaveBeenCalled();
+        });
+
+        /**
+         * Só as ativas ocupam lugar. Se os pedidos por responder
+         * contassem, bastava a alguém candidatar-se para o servidor
+         * deixar de poder aceitar seja quem for — a caixa de entrada
+         * enchia o próprio limite.
+         */
+        it('pergunta ao repositório apenas pelas crews ativas', async () => {
+            comPlano('server_base');
+
+            await service.accept('server-1', 'crew-1', 'user-1');
+
+            expect(repository.countActiveOfServer).toHaveBeenCalledWith(
+                'server-1',
+            );
+        });
+    });
+
+    /**
+     * O mesmo número, antes de ser preciso: é o que o ecrã mostra a quem
+     * gere o servidor, para que ninguém carregue em aceitar e leve com
+     * uma recusa que podia ter lido.
+     */
+    describe('a folga do plano, para o ecrã', () => {
+        it('diz quantas tem e quantas pode ter', async () => {
+            subscriptions.getEntitlement.mockResolvedValue({
+                owner: { serverId: 'server-1' },
+                isPremium: true,
+                isLifetime: false,
+                plan: 'server_base',
+                activeUntil: null,
+                via: null,
+            });
+            repository.countActiveOfServer.mockResolvedValue(7);
+
+            await expect(
+                service.getCrewAllowance('server-1'),
+            ).resolves.toEqual({ used: 7, limit: 10, canAcceptMore: true });
+        });
+
+        /**
+         * Um servidor pode estar acima do limite sem que nada esteja
+         * errado: o plano acabou, ou desceu de escalão, e as crews que
+         * já lá jogavam ficaram. Nunca se tira uma crew a ninguém por
+         * causa de um pagamento.
+         */
+        it('um servidor acima do limite continua a dizer a verdade', async () => {
+            subscriptions.getEntitlement.mockResolvedValue({
+                owner: { serverId: 'server-1' },
+                isPremium: false,
+                isLifetime: false,
+                plan: null,
+                activeUntil: null,
+                via: null,
+            });
+            repository.countActiveOfServer.mockResolvedValue(12);
+
+            await expect(
+                service.getCrewAllowance('server-1'),
+            ).resolves.toEqual({ used: 12, limit: 3, canAcceptMore: false });
+        });
+
+        it('sem limite, pode sempre aceitar mais', async () => {
+            subscriptions.getEntitlement.mockResolvedValue({
+                owner: { serverId: 'server-1' },
+                isPremium: true,
+                isLifetime: false,
+                plan: 'server_unlimited',
+                activeUntil: null,
+                via: null,
+            });
+            repository.countActiveOfServer.mockResolvedValue(900);
+
+            await expect(
+                service.getCrewAllowance('server-1'),
+            ).resolves.toEqual({ used: 900, limit: null, canAcceptMore: true });
         });
     });
 });

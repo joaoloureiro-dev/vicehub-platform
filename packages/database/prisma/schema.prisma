@@ -182,6 +182,19 @@ enum PermissionScope {
 enum SubscriptionPlan {
   premium
 
+  /// Os escalões de um servidor, por ordem de tamanho.
+  ///
+  /// O que um servidor compra não é o que uma pessoa compra: é o
+  /// direito a ter crews a jogar lá, e esse direito tem tamanhos.
+  ///
+  /// Os nomes não dizem o número de propósito — quantas crews cada um
+  /// dá vive no catálogo, em código. Um `server_10` passaria a mentir
+  /// na primeira alteração, e o nome fica gravado em cada linha de
+  /// subscrição para sempre.
+  server_base
+  server_plus
+  server_unlimited
+
   /// Acesso premium que não termina nem se cobra.
   ///
   /// Existe para quem apoiou a plataforma no princípio. É concedido um a

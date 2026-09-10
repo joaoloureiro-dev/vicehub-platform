@@ -7,6 +7,20 @@ import { api } from '../lib/api.js';
  * com pedido em curso não tem servidor, e uma crew com servidor não tem
  * pedido.
  */
+/**
+ * Quantas crews um servidor pode ter, e quantas já tem.
+ *
+ * `limit` a null é sem limite. `used` pode ser maior do que `limit`: o
+ * plano pode ter acabado ou descido de escalão, e as crews que já lá
+ * jogavam ficam onde estão — nunca se tira uma crew a ninguém por causa
+ * de um pagamento.
+ */
+export interface CrewAllowance {
+    used: number;
+    limit: number | null;
+    canAcceptMore: boolean;
+}
+
 export interface CrewAffiliation {
     server: { id: string; name: string } | null;
     pending: { id: string; name: string } | null;
@@ -48,6 +62,15 @@ export const listAffiliationRequests = (
     serverId: string,
 ): Promise<ServerAffiliation[]> =>
     api<ServerAffiliation[]>(`/servers/${serverId}/affiliations/requests`);
+
+/**
+ * Quantas crews o plano do servidor deixa ter, e quantas já tem.
+ *
+ * Exige `server:manage`: o escalão que um servidor paga não é assunto de
+ * quem passa por lá.
+ */
+export const getCrewAllowance = (serverId: string): Promise<CrewAllowance> =>
+    api<CrewAllowance>(`/servers/${serverId}/affiliations/allowance`);
 
 export const acceptAffiliation = (
     serverId: string,

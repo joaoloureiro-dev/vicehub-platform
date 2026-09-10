@@ -146,6 +146,24 @@ export class AffiliationRepository {
     }
 
     /**
+     * Quantas crews jogam neste servidor agora.
+     *
+     * Só as ativas: um pedido por responder ainda não ocupa lugar, e
+     * contá-lo faria a caixa de entrada encher o próprio limite —
+     * bastava a alguém candidatar-se para o servidor deixar de poder
+     * aceitar seja quem for.
+     */
+    countActiveOfServer(serverId: string): Promise<number> {
+        return this.database.affiliation.count({
+            where: {
+                serverId,
+                status: MembershipStatus.active,
+                is_deleted: false,
+            },
+        });
+    }
+
+    /**
      * As crews de um servidor, filtradas por estado.
      */
     async listOfServer(serverId: string, status: MembershipStatus) {

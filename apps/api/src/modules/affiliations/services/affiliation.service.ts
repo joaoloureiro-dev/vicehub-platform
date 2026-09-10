@@ -1,9 +1,11 @@
-import { MembershipStatus } from '@vicehub/database';
+import { MembershipStatus, crewAllowance } from '@vicehub/database';
 
+import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
 import { AffiliationError } from '../errors/affiliation.errors.js';
 import type { AffiliationRepository } from '../repositories/affiliation.repository.js';
 import type {
     AffiliationEntry,
+    CrewAllowance,
     CrewAffiliation,
 } from '../types/affiliation.types.js';
 
@@ -20,7 +22,39 @@ import type {
  * pontas consentem, e qualquer das duas pode desfazer.
  */
 export class AffiliationService {
-    constructor(private readonly affiliationRepository: AffiliationRepository) { }
+    constructor(
+        private readonly affiliationRepository: AffiliationRepository,
+        private readonly subscriptionService: SubscriptionService,
+    ) { }
+
+    /**
+     * Quantas crews este servidor pode ter, e quantas já tem.
+     *
+     * Serve os dois lados da mesma pergunta: o ecrã mostra-a antes de
+     * ser preciso, e o `accept` faz-lha no momento em que decide.
+     */
+    async getCrewAllowance(serverId: string): Promise<CrewAllowance> {
+        const [entitlement, used] = await Promise.all([
+            this.subscriptionService.getEntitlement({ serverId }),
+            this.affiliationRepository.countActiveOfServer(serverId),
+        ]);
+
+        const limit = crewAllowance(entitlement.plan);
+
+        return {
+            used,
+            limit,
+            /**
+             * Um servidor pode estar **acima** do limite sem que nada
+             * esteja errado: o plano acabou, ou desceu de escalão, e as
+             * crews que já lá jogavam ficaram. Nunca se tira uma crew de
+             * um servidor por causa de um pagamento — isso desfazia uma
+             * relação que não é da plataforma. O que acontece é deixar
+             * de poder aceitar mais.
+             */
+            canAcceptMore: limit === null || used < limit,
+        };
+    }
 
     /**
      * Onde a crew joga, e o que tem pendente.
@@ -164,6 +198,29 @@ export class AffiliationService {
             throw new AffiliationError(
                 'CREW_ALREADY_AFFILIATED',
                 'Esta crew entretanto passou a jogar noutro servidor.',
+            );
+        }
+
+        /**
+         * O limite do plano, verificado no momento de aceitar e não no
+         * de a crew se candidatar: candidatar-se continua a ser livre.
+         * Um servidor cheio recebe os pedidos na mesma, e é isso que lhe
+         * dá razão para subir de escalão — uma fila à porta é um
+         * argumento melhor do que um número num ecrã de preços.
+         *
+         * Contar e escrever não vão numa transação, e é deliberado. Dois
+         * pedidos a aceitar no mesmo instante podiam deixar o servidor
+         * uma crew acima do limite — mas estar acima do limite já é um
+         * estado que o desenho permite, porque nunca se tira uma crew a
+         * ninguém. Trancar a linha do servidor para evitar uma corrida
+         * cujo resultado é um estado válido não compraria nada.
+         */
+        const allowance = await this.getCrewAllowance(serverId);
+
+        if (!allowance.canAcceptMore) {
+            throw new AffiliationError(
+                'SERVER_CREW_LIMIT_REACHED',
+                'Este servidor já tem todas as crews que o plano dele permite.',
             );
         }
 

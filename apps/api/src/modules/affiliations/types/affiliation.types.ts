@@ -23,3 +23,16 @@ export interface CrewAffiliation {
     servidor: { id: string; name: string } | null;
     pedido: { id: string; name: string } | null;
 }
+
+/**
+ * Quantas crews um servidor pode ter, e quantas já tem.
+ *
+ * `limit` a null é sem limite. `used` pode ser maior do que `limit`: o
+ * plano pode ter acabado ou descido de escalão, e as crews que já lá
+ * jogavam ficam onde estão.
+ */
+export interface CrewAllowance {
+    used: number;
+    limit: number | null;
+    canAcceptMore: boolean;
+}

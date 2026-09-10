@@ -1,8 +1,10 @@
 import {
+    CREWS_SEM_PLANO,
     ENTITLING_SUBSCRIPTION_STATUSES,
     PLANS,
     PLAN_KEYS,
     addPlanInterval,
+    crewAllowance,
 } from '@vicehub/database';
 import { describe, expect, it } from 'vitest';
 
@@ -155,5 +157,69 @@ describe('cálculo do fim de um período', () => {
         });
 
         expect(fim.toISOString().slice(0, 10)).toBe('2026-07-15');
+    });
+
+    /**
+     * Quantas crews cada plano deixa jogar num servidor.
+     *
+     * É a regra que decide se o escalão de entrada vende alguma coisa, e
+     * as suas pontas soltas é que interessam: quem não paga, quem tem um
+     * plano que não é de servidor, e o escalão sem limite nenhum.
+     */
+    describe('quantas crews cada plano deixa ter', () => {
+        it('sem plano, vale o número de quem não paga', () => {
+            expect(crewAllowance(null)).toBe(CREWS_SEM_PLANO);
+        });
+
+        it.each([
+            ['server_base', 10],
+            ['server_plus', 50],
+        ] as const)('%s dá %i crews', (plano, esperado) => {
+            expect(crewAllowance(plano)).toBe(esperado);
+        });
+
+        it('o escalão de topo não tem limite nenhum', () => {
+            expect(crewAllowance('server_unlimited')).toBeNull();
+        });
+
+        /**
+         * O premium é o plano de uma pessoa ou de uma crew, e não tem
+         * opinião nenhuma sobre quantas crews jogam num servidor. Um
+         * servidor cujo dono comprou premium não compra com isso lugares
+         * nenhuns.
+         */
+        it('o premium não compra lugares num servidor', () => {
+            expect(crewAllowance('premium')).toBe(CREWS_SEM_PLANO);
+        });
+
+        /**
+         * O vitalício foi um gesto a quem apoiou a plataforma no
+         * princípio. Limitá-lo ao número de quem não paga seria retirar
+         * com uma mão o que se deu com a outra.
+         */
+        it('o vitalício não leva com o limite de quem não paga', () => {
+            expect(crewAllowance('lifetime')).toBeNull();
+        });
+
+        /**
+         * Os escalões só sobem. Um escalão mais caro que desse menos
+         * crews não daria erro nenhum — daria uma lista de preços que
+         * ninguém percebe.
+         */
+        it('quanto mais caro o escalão, mais crews dá', () => {
+            const escaloes = (['server_base', 'server_plus', 'server_unlimited'] as const)
+                .map((plano) => ({
+                    preco: PLANS[plano].priceCents,
+                    crews: crewAllowance(plano) ?? Number.POSITIVE_INFINITY,
+                }));
+
+            for (let i = 1; i < escaloes.length; i += 1) {
+                const anterior = escaloes[i - 1] as { preco: number; crews: number };
+                const atual = escaloes[i] as { preco: number; crews: number };
+
+                expect(atual.preco).toBeGreaterThan(anterior.preco);
+                expect(atual.crews).toBeGreaterThan(anterior.crews);
+            }
+        });
     });
 });
