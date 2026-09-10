@@ -1,3 +1,8 @@
+import {
+    joinRequestSchema,
+    rejectRequestSchema,
+} from '../../shared/membership-application.js';
+
 import type { FastifyPluginAsync } from 'fastify';
 
 import type { UpdateAppearanceDto } from '../../shared/appearance.js';
@@ -16,8 +21,6 @@ import type {
 import {
     createCrewSchema,
     crewIdParamSchema,
-    joinRequestSchema,
-    rejectRequestSchema,
     listCrewsQuerySchema,
     crewMemberParamSchema,
     setMemberRoleSchema,

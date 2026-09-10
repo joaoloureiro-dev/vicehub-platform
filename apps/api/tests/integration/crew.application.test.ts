@@ -320,4 +320,103 @@ describe('a candidatura a uma crew', () => {
             ).toBe(false);
         });
     });
+
+    /**
+     * O mesmo, num servidor.
+     *
+     * Não é zelo a mais: as duas rotas partilham a tabela e o esquema, e
+     * uma plataforma onde candidatar-se a uma crew leva as tuas palavras
+     * e candidatar-se a um servidor não leva é uma plataforma que se
+     * contradiz a si própria. Quem der por isso não vai supor que foi de
+     * propósito.
+     */
+    describe('e num servidor, do mesmo modo', () => {
+        let serverId: string;
+        let aspirante: string;
+
+        beforeAll(async () => {
+            aspirante = await register(`sv${marca}`);
+
+            const servidor = await app.inject({
+                method: 'POST',
+                url: '/api/v1/servers',
+                headers: auth(lider),
+                payload: { name: `Servidor ${marca}` },
+            });
+
+            expect(servidor.statusCode, servidor.body).toBe(201);
+            serverId = servidor.json().id as string;
+        });
+
+        it('leva a carta até quem decide', async () => {
+            const pedido = await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${serverId}/join`,
+                headers: auth(aspirante),
+                payload: { message: 'Jogo desde 2019.' },
+            });
+
+            expect(pedido.statusCode, pedido.body).toBe(202);
+
+            const pedidos = (
+                await app.inject({
+                    method: 'GET',
+                    url: `/api/v1/servers/${serverId}/requests`,
+                    headers: auth(lider),
+                })
+            ).json() as { username: string; message: string | null }[];
+
+            expect(
+                pedidos.find((entrada) => entrada.username === `sv${marca}`)
+                    ?.message,
+            ).toBe('Jogo desde 2019.');
+        });
+
+        it('e a recusa volta com o motivo', async () => {
+            const userId = await prisma.user
+                .findFirstOrThrow({
+                    where: { username: `sv${marca}` },
+                    select: { id: true },
+                })
+                .then((utilizador) => utilizador.id);
+
+            const recusa = await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${serverId}/requests/${userId}/reject`,
+                headers: auth(lider),
+                payload: { reason: 'Sem vagas de momento.' },
+            });
+
+            expect(recusa.statusCode, recusa.body).toBe(204);
+
+            const minhas = (
+                await app.inject({
+                    method: 'GET',
+                    url: '/api/v1/servers/me/memberships',
+                    headers: auth(aspirante),
+                })
+            ).json() as {
+                serverId: string;
+                status: string;
+                decisionNote: string | null;
+            }[];
+
+            const esta = minhas.find((adesao) => adesao.serverId === serverId);
+
+            expect(esta?.status).toBe('rejected');
+            expect(esta?.decisionNote).toBe('Sem vagas de momento.');
+        });
+
+        it('e o pedido sem corpo continua a passar', async () => {
+            const outro = await register(`s2${marca}`);
+
+            const pedido = await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${serverId}/join`,
+                headers: auth(outro),
+            });
+
+            expect(pedido.statusCode, pedido.body).toBe(202);
+        });
+    });
 });

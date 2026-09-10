@@ -54,6 +54,8 @@ export interface ServerJoinRequest {
     username: string;
     avatarUrl: string | null;
     requestedAt: Date;
+    /** O que a pessoa escreveu ao candidatar-se, ou null se não escreveu. */
+    message: string | null;
 }
 
 export interface ServerDirectoryEntry {
@@ -80,8 +82,13 @@ export interface ServerMembershipSummary {
     serverId: string;
     name: string;
     region: string | null;
-    status: 'pending' | 'active';
+    /** `rejected` só aparece durante um tempo depois da resposta. */
+    status: 'pending' | 'active' | 'rejected';
     /** Cargo dentro do servidor, que só existe depois de ser aceite. */
     role: string | null;
     since: Date;
+    /** Quando foi respondida, ou null enquanto estiver por responder. */
+    respondedAt: Date | null;
+    /** O que quem decidiu escreveu, se escreveu alguma coisa. */
+    decisionNote: string | null;
 }

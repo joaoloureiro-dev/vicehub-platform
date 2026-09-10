@@ -1,3 +1,13 @@
+import {
+    joinRequestSchema,
+    rejectRequestSchema,
+} from '../../shared/membership-application.js';
+
+import type {
+    JoinRequestDto,
+    RejectRequestDto,
+} from '../../shared/membership-application.js';
+
 import type { FastifyPluginAsync } from 'fastify';
 
 import type { UpdateAppearanceDto } from '../../shared/appearance.js';
@@ -135,11 +145,14 @@ const serverRoutes: FastifyPluginAsync<ServerRoutesOptions> = async (
      * Pedir entrada, retirar o pedido e sair dizem respeito ao próprio:
      * exigem conta, mas nenhuma permissão sobre o servidor.
      */
-    fastify.post<{ Params: ServerIdParamDto }>(
+    fastify.post<{ Params: ServerIdParamDto; Body: JoinRequestDto }>(
         '/:serverId/join',
         {
             preHandler: [fastify.authenticate],
-            schema: { params: serverIdParamSchema },
+            schema: {
+                params: serverIdParamSchema,
+                body: joinRequestSchema,
+            },
         },
         controller.requestToJoin.bind(controller),
     );
@@ -190,14 +203,17 @@ const serverRoutes: FastifyPluginAsync<ServerRoutesOptions> = async (
         controller.acceptRequest.bind(controller),
     );
 
-    fastify.post<{ Params: ServerMemberParamDto }>(
+    fastify.post<{ Params: ServerMemberParamDto; Body: RejectRequestDto }>(
         '/:serverId/requests/:userId/reject',
         {
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('server:manage_members'),
             ],
-            schema: { params: serverMemberParamSchema },
+            schema: {
+                params: serverMemberParamSchema,
+                body: rejectRequestSchema,
+            },
         },
         controller.rejectRequest.bind(controller),
     );

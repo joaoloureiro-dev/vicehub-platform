@@ -190,6 +190,7 @@ describe('ServerService', () => {
             expect(repository.createJoinRequest).toHaveBeenCalledWith(
                 'server-1',
                 'user-2',
+                undefined,
             );
             expect(roles.setScopedRole).not.toHaveBeenCalled();
         });
@@ -255,6 +256,32 @@ describe('ServerService', () => {
     });
 
     describe('resposta a pedidos', () => {
+        /**
+         * A recusa pode levar uma palavra, exatamente como nas crews.
+         * Duas comunidades a comportarem-se de maneira diferente na
+         * mesma coisa é uma plataforma que se contradiz a si própria.
+         */
+        it('leva o motivo, quando quem recusa o escreve', async () => {
+            repository.findOpenMembership.mockResolvedValue({
+                id: 'm1',
+                status: 'pending',
+            });
+
+            await service.rejectRequest(
+                'server-1',
+                'user-2',
+                'user-1',
+                'Estamos cheios.',
+            );
+
+            expect(repository.setMembershipStatus).toHaveBeenCalledWith(
+                'm1',
+                'rejected',
+                'user-1',
+                'Estamos cheios.',
+            );
+        });
+
         it('aceitar torna a adesão ativa e concede o cargo de membro', async () => {
             repository.findOpenMembership.mockResolvedValue(pendingMembership);
 
@@ -279,6 +306,7 @@ describe('ServerService', () => {
                 'membership-1',
                 'rejected',
                 'owner-1',
+                undefined,
             );
             expect(roles.setScopedRole).not.toHaveBeenCalled();
         });
