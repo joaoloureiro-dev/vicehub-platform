@@ -344,6 +344,14 @@ model Server {
   region      String?
   description String?
 
+  /// O que este servidor exige a quem se quer candidatar.
+  ///
+  /// Igual ao das crews, e pela mesma razão: texto livre e não condições
+  /// verificáveis. A plataforma não confirma nenhuma delas, e uma
+  /// candidatura recusada por uma regra que o servidor julgou cumprida
+  /// seria pior do que não prometer nada.
+  join_requirements String?
+
   /// Personalização reservada a quem tem plano ativo. Os campos ficam
   /// gravados mesmo que o plano termine: quem voltar a subscrever
   /// reencontra o que tinha, e perder trabalho por deixar de pagar seria

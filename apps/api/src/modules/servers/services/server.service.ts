@@ -36,6 +36,7 @@ interface UpdateServerInput {
     name?: string | undefined;
     region?: string | null | undefined;
     description?: string | null | undefined;
+    joinRequirements?: string | null | undefined;
     isOnline?: boolean | undefined;
 }
 
@@ -629,6 +630,7 @@ export class ServerService {
             name: server.name,
             region: server.region,
             description: server.description,
+            joinRequirements: server.join_requirements,
             isOnline: estaOnline(server),
             playersOnline: server.players_online,
             reportsItself: server.last_heartbeat_at !== null,

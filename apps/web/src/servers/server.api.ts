@@ -121,6 +121,7 @@ export const updateServer = (
         name?: string;
         region?: string | null;
         description?: string | null;
+        joinRequirements?: string | null;
         isOnline?: boolean;
     },
 ): Promise<ServerProfile> =>

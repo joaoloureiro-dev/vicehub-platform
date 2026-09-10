@@ -316,5 +316,93 @@ describe('definições de crews e servidores', () => {
             expect(response.statusCode, response.body).toBe(200);
             expect(response.json().isOnline).toBe(false);
         });
+
+        /**
+         * O mesmo que já vale para as crews, e pela mesma razão: o
+         * pedido vai **sem sessão nenhuma**. Quem está a decidir se se
+         * candidata a um servidor muitas vezes ainda nem conta tem, e
+         * uns requisitos que só aparecem depois do registo chegam tarde
+         * para servirem de alguma coisa.
+         */
+        it('mostra os requisitos a quem nem sessão tem', async () => {
+            const guardado = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/servers/${serverId}`,
+                headers: auth(dono),
+                payload: { joinRequirements: 'Voz obrigatória\nSem cheats' },
+            });
+
+            expect(guardado.statusCode, guardado.body).toBe(200);
+
+            const publico = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${serverId}`,
+            });
+
+            expect(publico.statusCode, publico.body).toBe(200);
+            expect(publico.json().joinRequirements).toBe(
+                'Voz obrigatória\nSem cheats',
+            );
+        });
+
+        /**
+         * Escrever o que o servidor exige é mandar no servidor.
+         *
+         * Sem isto, qualquer pessoa com conta punha condições no perfil
+         * de um servidor que não é dela — e quem lesse acreditava,
+         * porque o perfil não diz quem escreveu aquilo.
+         */
+        it('recusa os requisitos a quem não manda no servidor', async () => {
+            const response = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/servers/${serverId}`,
+                headers: auth(alheio),
+                payload: { joinRequirements: 'entra quem eu quiser' },
+            });
+
+            expect(response.statusCode, response.body).toBe(403);
+
+            const server = await prisma.server.findFirstOrThrow({
+                where: { id: serverId },
+                select: { join_requirements: true },
+            });
+
+            expect(server.join_requirements).toBe('Voz obrigatória\nSem cheats');
+        });
+
+        /**
+         * Um PATCH que não fala nos requisitos não lhes toca.
+         *
+         * O ecrã de definições manda sempre o formulário inteiro e por
+         * isso nunca daria por isto — mas a rota é um PATCH, e quem lhe
+         * chamar com um campo só não pode ver o resto apagado. É fácil
+         * de partir: basta gravar o campo sem primeiro perguntar se ele
+         * veio.
+         */
+        it('mudar só a descrição não apaga os requisitos', async () => {
+            const response = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/servers/${serverId}`,
+                headers: auth(dono),
+                payload: { description: 'só a descrição' },
+            });
+
+            expect(response.statusCode, response.body).toBe(200);
+            expect(response.json().joinRequirements).toBe(
+                'Voz obrigatória\nSem cheats',
+            );
+        });
+
+        it('limpa os requisitos com null', async () => {
+            const response = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/servers/${serverId}`,
+                headers: auth(dono),
+                payload: { joinRequirements: null },
+            });
+
+            expect(response.statusCode, response.body).toBe(200);
+            expect(response.json().joinRequirements).toBeNull();
+        });
     });
 });

@@ -24,6 +24,7 @@ export const ServerSettings = ({ servidor, aoGuardar }: ServerSettingsProps) => 
     const [nome, setNome] = useState(servidor.name);
     const [regiao, setRegiao] = useState(servidor.region ?? '');
     const [descricao, setDescricao] = useState(servidor.description ?? '');
+    const [requisitos, setRequisitos] = useState(servidor.joinRequirements ?? '');
     const [online, setOnline] = useState(servidor.isOnline);
     const [aGuardar, setAGuardar] = useState(false);
     const [mensagem, setMensagem] = useState<{
@@ -35,11 +36,13 @@ export const ServerSettings = ({ servidor, aoGuardar }: ServerSettingsProps) => 
         setNome(servidor.name);
         setRegiao(servidor.region ?? '');
         setDescricao(servidor.description ?? '');
+        setRequisitos(servidor.joinRequirements ?? '');
         setOnline(servidor.isOnline);
     }, [
         servidor.name,
         servidor.region,
         servidor.description,
+        servidor.joinRequirements,
         servidor.isOnline,
     ]);
 
@@ -61,6 +64,8 @@ export const ServerSettings = ({ servidor, aoGuardar }: ServerSettingsProps) => 
                 name: nome.trim(),
                 region: regiao.trim() || null,
                 description: descricao.trim() || null,
+                /** Apagar os requisitos tem de ser possível, como nas crews. */
+                joinRequirements: requisitos.trim() || null,
                 isOnline: online,
             });
 
@@ -134,6 +139,22 @@ export const ServerSettings = ({ servidor, aoGuardar }: ServerSettingsProps) => 
                             setDescricao(event.target.value);
                         }}
                     />
+                </div>
+
+                <div className="field">
+                    <label htmlFor="servidor-requisitos">
+                        {t.servidores.requisitos}
+                    </label>
+                    <textarea
+                        id="servidor-requisitos"
+                        rows={4}
+                        maxLength={1000}
+                        value={requisitos}
+                        onChange={(event) => {
+                            setRequisitos(event.target.value);
+                        }}
+                    />
+                    <p className="hint">{t.servidores.requisitosAjuda}</p>
                 </div>
 
                 {/*

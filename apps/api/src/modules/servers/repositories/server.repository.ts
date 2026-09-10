@@ -130,6 +130,7 @@ export class ServerRepository {
             name?: string | undefined;
             region?: string | null | undefined;
             description?: string | null | undefined;
+            joinRequirements?: string | null | undefined;
             isOnline?: boolean | undefined;
         },
     ) {
@@ -138,6 +139,7 @@ export class ServerRepository {
             name?: string;
             region?: string | null;
             description?: string | null;
+            join_requirements?: string | null;
             isOnline?: boolean;
         } = { version: { increment: 1 } };
 
@@ -151,6 +153,10 @@ export class ServerRepository {
 
         if (input.description !== undefined) {
             data.description = input.description;
+        }
+
+        if (input.joinRequirements !== undefined) {
+            data.join_requirements = input.joinRequirements;
         }
 
         if (input.isOnline !== undefined) {

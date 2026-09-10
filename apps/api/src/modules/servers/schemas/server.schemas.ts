@@ -15,6 +15,13 @@ export const updateServerSchema = z
         name: z.string().trim().min(3).max(48),
         region: z.string().trim().min(2).max(32).nullable(),
         description: z.string().trim().max(500).nullable(),
+        /**
+         * Mais longo do que a descrição, como nas crews: uma lista de
+         * condições ocupa mais do que uma frase de apresentação, e
+         * cortar a meio o que se exige a quem entra faz a candidatura
+         * chegar mal informada.
+         */
+        joinRequirements: z.string().trim().max(1000).nullable(),
         isOnline: z.boolean(),
     })
     .partial()

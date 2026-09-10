@@ -254,6 +254,9 @@ export const es = (p: Tools): Messages => ({
         nomeJaExiste: 'Ya existe un servidor con este nombre.',
         nome: 'Nombre',
         descricao: 'Descripción',
+        requisitos: 'Lo que este servidor te pide',
+        requisitosAjuda:
+            'Una condición por línea. Nadie se comprueba contra esto: sirve para decir qué esperar antes de postularse, y quien decide quién entra sigues siendo tú.',
         reportaPorSi:
             'Este servidor informa por sí mismo: estar en línea viene de su última señal, y no de una casilla marcada aquí.',
         estaOnline: 'El servidor está online ahora mismo',

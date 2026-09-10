@@ -263,6 +263,9 @@ export const fr = (p: Tools): Messages => ({
         nomeJaExiste: 'Un serveur porte déjà ce nom.',
         nome: 'Nom',
         descricao: 'Description',
+        requisitos: 'Ce que ce serveur vous demande',
+        requisitosAjuda:
+            "Une condition par ligne. Personne n'est vérifié là-dessus : cela dit à quoi s'attendre avant de postuler, et c'est toujours vous qui décidez qui entre.",
         reportaPorSi:
             "Ce serveur fait son propre rapport : être en ligne vient de son dernier signal, et non d'une case cochée ici.",
         estaOnline: 'Le serveur est en ligne en ce moment',
