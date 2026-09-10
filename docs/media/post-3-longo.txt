@@ -1,0 +1,17 @@
+ViceHub update.
+
+A server can now pay the crews that play on it.
+
+The money leaves the server's treasury and lands in the crew's in a single database transaction. Two rows — a debit on one side, a credit on the other, joined by a shared id. There is no summary row saying "5000" next to two legs that add up to something else; the two legs are the transfer, which is what bookkeeping has done for six hundred years.
+
+If the balance isn't enough, the whole thing is thrown away. The money is never in both treasuries, and never in neither.
+
+Only crews with an active affiliation can receive. Any other crew answers 404 — a server owner has no business learning which crews exist, and "it exists but doesn't play here" would turn the route into a name checker.
+
+It arrives settled, not pending. Receiving money isn't a burden you refuse, and leaving it pending would park the payer's balance waiting on somebody with nothing to decide. What waits for approval is the split — and a split by attendance reads the confirmed list, not the one whoever proposed typed out. You can't pay yourself by claiming you were there.
+
+One more, and it's a reversal: personalising your own profile is free now. It used to be paid, and a profile went grey when somebody stopped paying — in front of everyone. That's the wrong thing to charge for. A person without a plan is still a person. What's sold is running a community, so crew and server banners stay behind the plan.
+
+Still nothing deployed. MVP end of September. First testers get lifetime access, handed out one at a time.
+
+#GTA6 #GTAVI #GTARP #BuildInPublic #IndieDev
