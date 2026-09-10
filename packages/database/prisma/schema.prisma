@@ -558,6 +558,15 @@ model Transaction {
   /// A divisão de que esta linha faz parte, quando faz.
   distributionId String?
 
+  /// A transferência de que esta linha é uma das duas pernas.
+  ///
+  /// Uma transferência entre tesourarias são duas linhas — um débito de
+  /// um lado, um crédito do outro — gravadas na mesma transação e unidas
+  /// por este identificador. Não há tabela de transferências: uma
+  /// linha-resumo seria uma terceira versão da verdade ao lado das duas
+  /// pernas, e as três acabariam por divergir.
+  transferId String?
+
   /// Quem propôs e quem decidiu são pessoas diferentes por desenho: é o
   /// que permite auditar uma despesa até a quem a aprovou.
   requested_by String?
@@ -583,6 +592,7 @@ model Transaction {
   @@index([status])
   @@index([walletId, status])
   @@index([walletId, created_at(sort: Desc)])
+  @@index([transferId])
 }
 
 model UserCredential {

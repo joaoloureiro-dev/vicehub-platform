@@ -17,6 +17,7 @@ import type {
     ProposeMovementDto,
     ServerMovementParamDto,
     ServerTreasuryParamDto,
+    TransferToCrewDto,
 } from '../dto/treasury.dto.js';
 import type { TreasuryService } from '../services/treasury.service.js';
 import type { TreasuryMovement, WalletOwner } from '../types/treasury.types.js';
@@ -343,6 +344,53 @@ export class TreasuryController {
         });
 
         reply.code(201).send(this.toMovementDto(movement));
+    }
+
+    /**
+     * O servidor paga a uma crew que lá joga.
+     *
+     * O registo de auditoria é escrito com a crew de destino lá dentro:
+     * sem isso, ficava escrito que saíram cinco mil da tesouraria do
+     * servidor e não ficava escrito para onde — que é metade da
+     * pergunta que alguém faz quando vai ver as contas.
+     */
+    async transferToCrew(
+        request: FastifyRequest<{
+            Params: ServerTreasuryParamDto;
+            Body: TransferToCrewDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const resultado = await this.treasuryService.transferToCrew({
+            serverId: request.params.serverId,
+            crewId: request.body.crewId,
+            amount: BigInt(request.body.amount),
+            description: request.body.description,
+            actorId: user.id,
+        });
+
+        await this.auditService.record({
+            action: 'treasury.transfer.sent',
+            entityType: 'Transaction',
+            entityId: resultado.saida.id,
+            actorId: user.id,
+            after: {
+                transferId: resultado.transferId,
+                amount: request.body.amount,
+                fromServerId: request.params.serverId,
+                toCrewId: request.body.crewId,
+            },
+            ...AuditService.contextOf(request),
+        });
+
+        reply.code(201).send({
+            transferId: resultado.transferId,
+            amount: resultado.saida.amount.toString(),
+            sent: this.toMovementDto(resultado.saida),
+            received: this.toMovementDto(resultado.entrada),
+        });
     }
 
     private async decide(
