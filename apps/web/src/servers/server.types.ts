@@ -24,6 +24,11 @@ export interface ServerProfile {
     name: string;
     region: string | null;
     description: string | null;
+    /**
+     * O que o servidor exige a quem se candidata. Null quer dizer que
+     * ninguém escreveu nada — e é diferente de texto vazio.
+     */
+    joinRequirements: string | null;
     isOnline: boolean;
     /**
      * Quantas pessoas o servidor reportou da última vez. Null enquanto

@@ -12,6 +12,7 @@ const perfil = {
     name: 'Vice City RP',
     region: 'EU',
     description: 'O servidor do teste.',
+    joinRequirements: null,
     isOnline: true,
     playersOnline: null,
     reportsItself: false,
@@ -322,5 +323,102 @@ describe('a personalização de um servidor', () => {
         const banner = await screen.findByLabelText(t.perfil.banner);
 
         expect(banner.getAttribute('id')).toBe('servidor-banner');
+    });
+});
+
+/**
+ * O que o servidor exige a quem entra é público: quem chega ao perfil
+ * está a decidir se se candidata, e é aqui que precisa de o saber.
+ */
+describe('os requisitos de candidatura de um servidor', () => {
+    it('aparecem a quem ainda não pertence ao servidor', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(403, { code: 'FORBIDDEN' }),
+                perfil: {
+                    ...perfil,
+                    joinRequirements: 'Voz obrigatoria\nSem cheats',
+                },
+            }),
+        );
+
+        montar();
+
+        expect(
+            await screen.findByRole('heading', {
+                name: t.servidores.requisitos,
+            }),
+        ).toBeDefined();
+
+        expect(screen.getByText(/Voz obrigatoria/)).toBeDefined();
+    });
+
+    /**
+     * Sem requisitos escritos não há secção nenhuma. Um cabeçalho vazio
+     * dizia "não exigimos nada" — uma afirmação que o servidor nunca
+     * fez.
+     */
+    it('não aparecem quando o servidor não escreveu nenhuns', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+        );
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText('Vice City RP')).toBeDefined();
+        });
+
+        expect(
+            screen.queryByRole('heading', { name: t.servidores.requisitos }),
+        ).toBeNull();
+    });
+
+    it('vão no formulário de definições de quem gere', async () => {
+        const fetchMock = servidor({ requests: json(200, []) });
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        const requisitos = await screen.findByLabelText(
+            t.servidores.requisitos,
+        );
+
+        await userEvent.type(requisitos, 'Sem cheats');
+        await userEvent.click(
+            screen.getByRole('button', { name: t.comum.guardar }),
+        );
+
+        await waitFor(() => {
+            expect(corpoDoPatch(fetchMock)).toMatchObject({
+                joinRequirements: 'Sem cheats',
+            });
+        });
+    });
+
+    /** Pelo mesmo motivo da descrição: apagá-los tem de ser possível. */
+    it('vazios vão como null', async () => {
+        const fetchMock = servidor({
+            requests: json(200, []),
+            perfil: { ...perfil, joinRequirements: 'Sem cheats' },
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        await userEvent.clear(
+            await screen.findByLabelText(t.servidores.requisitos),
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: t.comum.guardar }),
+        );
+
+        await waitFor(() => {
+            expect(corpoDoPatch(fetchMock)).toMatchObject({
+                joinRequirements: null,
+            });
+        });
     });
 });

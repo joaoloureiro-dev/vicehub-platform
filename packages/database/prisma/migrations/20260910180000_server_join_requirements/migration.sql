@@ -1,0 +1,13 @@
+-- O que um servidor exige a quem se quer candidatar.
+--
+-- As crews já dizem o que pedem; os servidores não diziam. A assimetria
+-- não era intencional — foi só a ordem por que as coisas se fizeram — e
+-- é do tipo que se paga caro: quem se candidata a um servidor não tinha
+-- por onde saber ao que ia, e quem manda no servidor recusava por
+-- regras que nunca escreveu em lado nenhum.
+--
+-- Texto livre e não condições verificáveis, pela mesma razão das crews:
+-- "18+", "falamos português", "sem cheats" não são coisas que a
+-- plataforma consiga confirmar, e fingir que confirma era pior do que
+-- não prometer nada.
+ALTER TABLE "Server" ADD COLUMN "join_requirements" TEXT;

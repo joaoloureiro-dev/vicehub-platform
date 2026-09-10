@@ -152,6 +152,23 @@ export const ServerPage = () => {
                 </div>
             </header>
 
+            {/*
+              Os requisitos ficam imediatamente acima do formulário de
+              candidatura, e não no cabeçalho junto à descrição: quem
+              está a decidir se pede entrada tem de os ler no momento em
+              que decide.
+
+              Sem requisitos escritos não há secção nenhuma. Um cabeçalho
+              vazio dizia "não exigimos nada", e isso é uma afirmação que
+              o servidor não fez.
+            */}
+            {perfil.joinRequirements ? (
+                <section className="grupo requisitos">
+                    <h2>{t.servidores.requisitos}</h2>
+                    <p className="pre-linha">{perfil.joinRequirements}</p>
+                </section>
+            ) : null}
+
             {erroAcao ? <Alert kind="bad">{erroAcao}</Alert> : null}
 
             {user ? (

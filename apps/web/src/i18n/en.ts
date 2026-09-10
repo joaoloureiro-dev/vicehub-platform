@@ -261,6 +261,9 @@ export const en = (p: Tools) => ({
         nomeJaExiste: 'A server with this name already exists.',
         nome: 'Name',
         descricao: 'Description',
+        requisitos: 'What this server asks of you',
+        requisitosAjuda:
+            'One condition per line. Nobody is checked against this: it tells people what to expect before they apply, and you still decide who gets in.',
         reportaPorSi:
             'This server reports for itself: whether it is online comes from its last heartbeat, not from a box ticked here.',
         estaOnline: 'The server is online right now',
