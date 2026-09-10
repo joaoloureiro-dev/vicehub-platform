@@ -14,7 +14,7 @@ import { FEATURED_SLOTS } from '../../src/shared/featured.js';
  * terminado — porque é essa a única forma de saber que a funcionalidade
  * paga está, de facto, fechada a quem não paga.
  */
-describe('personalização de perfil, funcionalidade do plano', () => {
+describe('personalização: grátis para pessoas, paga para comunidades', () => {
     let app: FastifyInstance;
 
     const marca = `prem${Date.now()}`;
@@ -117,29 +117,36 @@ describe('personalização de perfil, funcionalidade do plano', () => {
     });
 
     describe('sem plano ativo', () => {
-        it('recusa personalizar o perfil', async () => {
+        /**
+         * O contrário do que estas duas já exigiam.
+         *
+         * Personalizar o próprio perfil era pago e respondia 402 a quem
+         * não pagasse. Deixou de ser: a cara e o banner de quem joga não
+         * se vendem, e um perfil que fica cinzento por alguém ter
+         * deixado de pagar castiga a pessoa à frente de toda a gente.
+         *
+         * O que se vende é gerir uma comunidade — e as crews e os
+         * servidores, mais abaixo neste ficheiro, continuam a exigir
+         * plano.
+         */
+        it('personaliza o perfil na mesma', async () => {
             const response = await setAppearance(semPlano, {
                 accentColor: '#1B9AAA',
             });
 
-            expect(response.statusCode, response.body).toBe(402);
-            expect(response.json().code).toBe('SUBSCRIPTION_REQUIRED');
+            expect(response.statusCode, response.body).toBe(200);
+            expect(response.json().appearance.accentColor).toBe('#1B9AAA');
         });
 
-        /**
-         * A recusa tem de acontecer antes de qualquer escrita: um 402
-         * com o campo já gravado seria pior do que não haver guard
-         * nenhum, porque daria a ideia de que havia.
-         */
-        it('não grava nada ao recusar', async () => {
+        it('e grava mesmo, não é só a resposta', async () => {
             await setAppearance(semPlano, { accentColor: '#1B9AAA' });
 
             const utilizador = await prisma.user.findFirstOrThrow({
                 where: { username: `${marca}n` },
-                select: { accent_color: true, banner_url: true },
+                select: { accent_color: true },
             });
 
-            expect(utilizador).toEqual({ accent_color: null, banner_url: null });
+            expect(utilizador.accent_color).toBe('#1B9AAA');
         });
 
         it('continua a poder alterar a bio, que é gratuita', async () => {
@@ -241,16 +248,20 @@ describe('personalização de perfil, funcionalidade do plano', () => {
             });
         });
 
-        it('deixa de mostrar a personalização', async () => {
+        /**
+         * Também ao contrário do que já foi.
+         *
+         * A personalização de uma pessoa desaparecia do ecrã quando o
+         * plano acabava. Agora fica: o que caduca é gerir a comunidade,
+         * não a cara de quem lá está.
+         */
+        it('continua a mostrar a personalização', async () => {
             const response = await app.inject({
                 method: 'GET',
                 url: `/api/v1/users/${marca}x`,
             });
 
-            expect(response.json().appearance).toEqual({
-                bannerUrl: null,
-                accentColor: null,
-            });
+            expect(response.json().appearance.accentColor).toBe('#C0FFEE');
         });
 
         it('mas não apaga o que estava gravado', async () => {
@@ -280,7 +291,7 @@ describe('personalização de perfil, funcionalidade do plano', () => {
             expect(response.json().appearance.accentColor).toBe('#C0FFEE');
         });
 
-        it('e volta a recusar a alteração enquanto não voltar', async () => {
+        it('e continua a poder alterá-la depois de o plano caducar', async () => {
             const sozinho = await register(`${marca}y`);
             const id = await userIdOf(sozinho);
 
@@ -294,7 +305,7 @@ describe('personalização de perfil, funcionalidade do plano', () => {
                 accentColor: '#1B9AAA',
             });
 
-            expect(response.statusCode, response.body).toBe(402);
+            expect(response.statusCode, response.body).toBe(200);
         });
     });
 
