@@ -5,7 +5,7 @@ import { Alert } from '../auth/components/alert.js';
 import { listMyMemberships } from '../crews/crew.api.js';
 import { listMyServerMemberships } from '../servers/server.api.js';
 import { Feed } from './feed.js';
-import { useT } from '../i18n/i18n.js';
+import { useIdioma, useT } from '../i18n/i18n.js';
 
 /**
  * Onde a pessoa pertence — crews e servidores no mesmo sítio.
@@ -20,6 +20,7 @@ import { useT } from '../i18n/i18n.js';
  */
 export const MyCommunitiesPage = () => {
     const t = useT();
+    const { idioma } = useIdioma();
 
     const crews = useAsync(() => listMyMemberships(), []);
     const servidores = useAsync(() => listMyServerMemberships(), []);
@@ -96,6 +97,25 @@ export const MyCommunitiesPage = () => {
                                 </Link>
                                 <span className="pill aguarda">
                                     {t.crews.candidaturaEnviada}
+                                </span>
+
+                                {/*
+                                  Desde quando se espera.
+
+                                  Ninguém é obrigado a responder a uma
+                                  candidatura — e isso é uma decisão de
+                                  quem gere a crew, não da plataforma.
+                                  Mas esconder há quanto tempo o pedido
+                                  está lá deixa quem se candidatou sem
+                                  saber se são três dias ou três meses, e
+                                  isso é silêncio com passos extra.
+                                */}
+                                <span className="desde">
+                                    {t.crews.enviadaEm(
+                                        new Date(adesao.since).toLocaleDateString(
+                                            idioma,
+                                        ),
+                                    )}
                                 </span>
                             </li>
                         ))}

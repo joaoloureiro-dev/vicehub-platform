@@ -2539,3 +2539,14 @@ button.link:hover {
     background: color-mix(in srgb, var(--faint) 20%, transparent);
     color: var(--muted);
 }
+
+/*
+  Desde quando uma candidatura está à espera.
+
+  Discreto de propósito: é informação para quem se candidatou, não uma
+  cobrança a quem ainda não respondeu.
+*/
+.desde {
+    color: var(--faint);
+    font-size: 12.5px;
+}

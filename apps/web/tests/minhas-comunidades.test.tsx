@@ -53,6 +53,26 @@ describe('as minhas comunidades', () => {
         expect(await screen.findByText(t.crews.aEsperaResposta)).toBeDefined();
     });
 
+    /**
+     * Ninguém é obrigado a responder a uma candidatura — essa é uma
+     * decisão de quem gere a crew. Mas esconder há quanto tempo o pedido
+     * está lá deixava quem se candidatou sem saber se são três dias ou
+     * três meses, e isso é silêncio com passos extra.
+     */
+    it('diz desde quando se está à espera', async () => {
+        vi.stubGlobal('fetch', servir([adesao()]));
+
+        montarEcra(<MyCommunitiesPage />);
+
+        expect(
+            await screen.findByText(
+                t.crews.enviadaEm(
+                    new Date('2026-09-01T00:00:00.000Z').toLocaleDateString('en'),
+                ),
+            ),
+        ).toBeDefined();
+    });
+
     it('mostra as que foram recusadas', async () => {
         vi.stubGlobal(
             'fetch',
