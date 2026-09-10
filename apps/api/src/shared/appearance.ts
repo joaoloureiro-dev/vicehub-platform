@@ -59,13 +59,36 @@ export const NO_APPEARANCE: Appearance = {
 };
 
 /**
- * A personalização tal como é mostrada.
+ * A personalização de uma pessoa, que é sempre visível.
+ *
+ * A cara e o banner de quem joga não se vendem.
+ *
+ * Uma pessoa sem plano continua a ser uma pessoa, e um perfil cinzento
+ * ao lado de um perfil com cor não diz "aquele pagou" — diz "este não
+ * conta". Numa plataforma que existe para as comunidades se
+ * apresentarem, cobrar pela cara de cada um é cobrar por participar.
+ *
+ * O que se vende é gerir uma comunidade, e isso é outra coisa: continua
+ * atrás de `visibleAppearance`.
+ */
+export const personalAppearance = (stored: {
+    banner_url: string | null;
+    accent_color: string | null;
+}): Appearance => ({
+    bannerUrl: stored.banner_url,
+    accentColor: stored.accent_color,
+});
+
+/**
+ * A personalização de uma **comunidade**, tal como é mostrada.
  *
  * O que está gravado só aparece enquanto o plano estiver ativo. Os
  * valores não são apagados quando o plano termina — quem voltar a
  * subscrever reencontra o que tinha —, mas deixam de ser mostrados: caso
  * contrário bastaria pagar um mês para ficar com a personalização para
  * sempre, e o que se vende é exibi-la, não defini-la uma vez.
+ *
+ * Isto vale para crews e servidores. Para pessoas, `personalAppearance`.
  */
 export const visibleAppearance = (
     stored: { banner_url: string | null; accent_color: string | null },

@@ -229,16 +229,27 @@ describe('UserService', () => {
         });
 
         /**
-         * Sem isto, bastava pagar um mês para ficar com a personalização
-         * para sempre.
+         * O contrário do que esta regra já foi.
+         *
+         * A personalização de uma pessoa era mostrada só com plano
+         * ativo, e apagava-se do ecrã quando ele acabava. Deixou de ser:
+         * a cara e o banner de quem joga não se vendem, e um perfil que
+         * fica cinzento por alguém ter deixado de pagar castiga a pessoa
+         * à frente de toda a gente. O que se vende é gerir uma
+         * comunidade — a personalização de crews e servidores continua
+         * atrás do plano.
          */
-        it('esconde a personalização quando o plano termina', async () => {
+        it('mostra a personalização mesmo sem plano nenhum', async () => {
             repository.findByUsername.mockResolvedValue(personalizado());
 
             await expect(
                 service.getPublicProfile('player'),
             ).resolves.toMatchObject({
-                appearance: { bannerUrl: null, accentColor: null },
+                isPremium: false,
+                appearance: {
+                    bannerUrl: 'https://cdn.vicehub.gg/p.png',
+                    accentColor: '#1B9AAA',
+                },
             });
         });
 

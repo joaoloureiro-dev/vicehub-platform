@@ -270,13 +270,8 @@ export const pt = (p: Tools): Messages => ({
         avatar: 'Avatar',
         perfilGuardado: 'Perfil guardado.',
         naoFoiPossivelPerfil: 'Não foi possível guardar o perfil.',
-        verPremium: 'Ver o que o premium dá',
         personalizacao: 'Personalização',
         premium: 'Premium',
-        planoAtivo:
-            'O teu plano está ativo. O banner e a cor aparecem no teu perfil público.',
-        precisaDePlano:
-            'Estes campos fazem parte do plano premium. Podes escrevê-los, mas só são guardados com um plano ativo.',
         banner: 'Banner',
         cor: 'Cor de destaque',
         corAjuda: 'Hexadecimal de seis dígitos, como #E93CEF.',

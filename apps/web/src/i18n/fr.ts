@@ -271,13 +271,8 @@ export const fr = (p: Tools): Messages => ({
         avatar: 'Avatar',
         perfilGuardado: 'Profil enregistré.',
         naoFoiPossivelPerfil: 'Le profil n’a pas pu être enregistré.',
-        verPremium: 'Voir ce que donne le premium',
         personalizacao: 'Personnalisation',
         premium: 'Premium',
-        planoAtivo:
-            'Ta formule est active. La bannière et la couleur apparaissent sur ton profil public.',
-        precisaDePlano:
-            'Ces champs font partie de la formule premium. Tu peux les remplir, mais ils ne sont enregistrés qu’avec une formule active.',
         banner: 'Bannière',
         cor: 'Couleur d’accent',
         corAjuda: 'Hexadécimal à six chiffres, comme #E93CEF.',

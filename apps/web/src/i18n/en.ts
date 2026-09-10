@@ -269,13 +269,8 @@ export const en = (p: Tools) => ({
         avatar: 'Avatar',
         perfilGuardado: 'Profile saved.',
         naoFoiPossivelPerfil: 'Your profile could not be saved.',
-        verPremium: 'See what premium gives you',
         personalizacao: 'Customisation',
         premium: 'Premium',
-        planoAtivo:
-            'Your plan is active. The banner and colour show on your public profile.',
-        precisaDePlano:
-            'These fields are part of the premium plan. You can fill them in, but they only save with an active plan.',
         banner: 'Banner',
         cor: 'Accent colour',
         corAjuda: 'Six-digit hexadecimal, like #E93CEF.',

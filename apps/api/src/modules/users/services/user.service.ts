@@ -1,7 +1,7 @@
 import { progressoDeNivel } from '@vicehub/database';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
-import { visibleAppearance } from '../../../shared/appearance.js';
+import { personalAppearance } from '../../../shared/appearance.js';
 import { UserError } from '../errors/user.errors.js';
 import type { UserRepository } from '../repositories/user.repository.js';
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
@@ -130,7 +130,7 @@ export class UserService {
             nextLevelXp: progresso.xpDoNivelSeguinte,
             reputation: user.reputation,
             isPremium,
-            appearance: visibleAppearance(user, isPremium),
+            appearance: personalAppearance(user),
             createdAt: user.created_at,
         };
     }
