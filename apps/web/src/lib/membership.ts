@@ -19,6 +19,15 @@ export interface CommunityJoinRequest {
     username: string;
     avatarUrl: string | null;
     requestedAt: string;
+    /**
+     * O que a pessoa escreveu ao candidatar-se, ou null se não escreveu.
+     *
+     * Só chega a quem manda na comunidade: a API recusa esta lista a
+     * toda a gente que não tenha `crew:manage_members`. É texto sobre a
+     * própria pessoa — idade, horários, por vezes o país — e isso é para
+     * quem responde à candidatura, não para o diretório.
+     */
+    message: string | null;
 }
 
 export interface CommunityMembership {
@@ -39,8 +48,15 @@ export const createMembershipApi = (base: '/crews' | '/servers') => ({
     listMembers: (id: string): Promise<CommunityMember[]> =>
         api<CommunityMember[]>(`${base}/${id}/members`),
 
-    requestToJoin: (id: string): Promise<void> =>
-        api<void>(`${base}/${id}/join`, { method: 'POST' }),
+    /**
+     * O que se escreve é opcional. Sem texto vai sem corpo nenhum, tal
+     * como sempre foi: a API continua a aceitar o pedido pelado.
+     */
+    requestToJoin: (id: string, message?: string): Promise<void> =>
+        api<void>(`${base}/${id}/join`, {
+            method: 'POST',
+            ...(message === undefined ? {} : { body: { message } }),
+        }),
 
     withdrawJoinRequest: (id: string): Promise<void> =>
         api<void>(`${base}/${id}/join`, { method: 'DELETE' }),

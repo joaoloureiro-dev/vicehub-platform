@@ -187,6 +187,10 @@ export const fr = (p: Tools): Messages => ({
         requisitos: 'Ce que cette crew attend de toi',
         requisitosAjuda:
             'Une condition par ligne. Personne n\u2019est vérifié là-dessus : cela dit à qui postule ce qui l\u2019attend, et c\u2019est toujours toi qui décides qui entre.',
+        cartaLabel: 'Dis-leur qui tu es',
+        cartaPlaceholder: 'Âge, quand tu joues, ce que tu cherches…',
+        cartaAjuda:
+            'Facultatif, mais c\u2019est la seule chose qu\u2019ils liront avant de décider. Seuls ceux qui dirigent la crew le voient.',
         pedirEntrada: 'Demander à rejoindre',
         candidaturaEnviada: 'Candidature envoyée',
         retirarCandidatura: 'Retirer la candidature',

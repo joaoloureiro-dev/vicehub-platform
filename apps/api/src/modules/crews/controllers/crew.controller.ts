@@ -6,6 +6,7 @@ import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     CreateCrewDto,
     CrewIdParamDto,
+    JoinRequestDto,
     ListCrewsQueryDto,
     CrewMemberParamDto,
     SetMemberRoleDto,
@@ -186,12 +187,20 @@ export class CrewController {
     }
 
     async requestToJoin(
-        request: FastifyRequest<{ Params: CrewIdParamDto }>,
+        request: FastifyRequest<{ Params: CrewIdParamDto; Body: JoinRequestDto }>,
         reply: FastifyReply,
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.crewService.requestToJoin(request.params.crewId, user.id);
+        await this.crewService.requestToJoin(
+            request.params.crewId,
+            user.id,
+            /**
+             * O corpo é opcional na rota, por isso pode nem existir —
+             * quem já usa esta rota sem corpo nenhum continua a poder.
+             */
+            request.body?.message,
+        );
 
         reply.code(202).send();
     }

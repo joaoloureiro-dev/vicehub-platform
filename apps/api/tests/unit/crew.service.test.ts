@@ -160,7 +160,28 @@ describe('CrewService', () => {
         it('cria pedido pendente', async () => {
             await service.requestToJoin('crew-1', 'user-2');
 
-            expect(repository.createJoinRequest).toHaveBeenCalledWith('crew-1', 'user-2');
+            expect(repository.createJoinRequest).toHaveBeenCalledWith(
+                'crew-1',
+                'user-2',
+                undefined,
+            );
+        });
+
+        /**
+         * A candidatura leva as palavras de quem se candidata.
+         *
+         * Sem isto, do outro lado aparece um nome numa lista e quem
+         * decide escolhe entre aceitar um desconhecido ou recusar um
+         * desconhecido — as duas coisas são maus negócios.
+         */
+        it('leva consigo o que a pessoa escreveu', async () => {
+            await service.requestToJoin('crew-1', 'user-2', 'Jogo à noite, 22 anos.');
+
+            expect(repository.createJoinRequest).toHaveBeenCalledWith(
+                'crew-1',
+                'user-2',
+                'Jogo à noite, 22 anos.',
+            );
         });
 
         it('não dá cargo nenhum enquanto o pedido não for aceite', async () => {

@@ -247,7 +247,11 @@ export class CrewService {
      *
      * O pedido fica pendente até alguém com autorização responder.
      */
-    async requestToJoin(crewId: string, userId: string): Promise<void> {
+    async requestToJoin(
+        crewId: string,
+        userId: string,
+        message?: string | undefined,
+    ): Promise<void> {
         await this.requireCrew(crewId);
 
         const aberta = await this.crewRepository.findOpenMembership(crewId, userId);
@@ -261,7 +265,7 @@ export class CrewService {
             );
         }
 
-        await this.crewRepository.createJoinRequest(crewId, userId);
+        await this.crewRepository.createJoinRequest(crewId, userId, message);
     }
 
     /**
@@ -626,6 +630,7 @@ export class CrewService {
             username: pedido.user.username,
             avatarUrl: pedido.user.avatarUrl,
             requestedAt: pedido.created_at,
+            message: pedido.message,
         }));
     }
 

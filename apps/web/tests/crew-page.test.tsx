@@ -161,6 +161,19 @@ const servidor = (opcoes: {
         );
     });
 
+/** O corpo com que a candidatura foi enviada, ou undefined se não houve. */
+const corpoDaCandidatura = (fetchMock: ReturnType<typeof vi.fn>): unknown => {
+    const chamada = fetchMock.mock.calls.find(
+        (argumentos) =>
+            String(argumentos[0]).endsWith('/join') &&
+            (argumentos[1] as { method?: string } | undefined)?.method === 'POST',
+    );
+
+    const corpo = (chamada?.[1] as { body?: string } | undefined)?.body;
+
+    return corpo === undefined ? undefined : JSON.parse(String(corpo));
+};
+
 /** O corpo com que o perfil da crew foi alterado. */
 const corpoDoPatch = (fetchMock: ReturnType<typeof vi.fn>): unknown => {
     const chamada = fetchMock.mock.calls.find(
@@ -817,6 +830,132 @@ describe('o ecrã de uma crew', () => {
             expect(
                 screen.queryByRole('heading', { name: t.crews.recrutaTitulo }),
             ).toBeNull();
+        });
+    });
+
+    /**
+     * A candidatura leva as palavras de quem se candidata.
+     *
+     * Pedir entrada era um botão que não mandava nada: do outro lado
+     * aparecia um nome numa lista, e quem decidia escolhia entre aceitar
+     * um desconhecido ou recusar um desconhecido.
+     */
+    describe('candidatar-se', () => {
+
+        it('manda o que a pessoa escreveu', async () => {
+            const fetchMock = servidor({
+                requests: json(403, { code: 'FORBIDDEN' }),
+                memberships: [],
+            });
+            vi.stubGlobal('fetch', fetchMock);
+
+            montar();
+
+            await userEvent.type(
+                await screen.findByLabelText(t.crews.cartaLabel),
+                'Jogo à noite',
+            );
+            await userEvent.click(
+                screen.getByRole('button', { name: t.crews.pedirEntrada }),
+            );
+
+            await waitFor(() => {
+                expect(corpoDaCandidatura(fetchMock)).toEqual({
+                    message: 'Jogo à noite',
+                });
+            });
+        });
+
+        /**
+         * Escrever é opcional, e sem texto o pedido vai pelado — como
+         * sempre foi. Um corpo com texto vazio seria indistinguível de
+         * uma carta que alguém apagou.
+         */
+        it('sem texto, vai sem corpo nenhum', async () => {
+            const fetchMock = servidor({
+                requests: json(403, { code: 'FORBIDDEN' }),
+                memberships: [],
+            });
+            vi.stubGlobal('fetch', fetchMock);
+
+            montar();
+
+            await userEvent.click(
+                await screen.findByRole('button', { name: t.crews.pedirEntrada }),
+            );
+
+            await waitFor(() => {
+                expect(corpoDaCandidatura(fetchMock)).toBeUndefined();
+            });
+        });
+    });
+
+    /**
+     * E do outro lado: quem decide lê o que foi escrito.
+     */
+    describe('responder a candidaturas', () => {
+
+        it('mostra a carta a quem gere membros', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(200, [
+                        {
+                            userId: 'u9',
+                            username: 'candidato',
+                            avatarUrl: null,
+                            requestedAt: '2026-09-01T00:00:00.000Z',
+                            message: 'Tenho 22 anos e uso microfone.',
+                        },
+                    ]),
+                }),
+            );
+
+            montar();
+
+            expect(
+                await screen.findByText('Tenho 22 anos e uso microfone.'),
+            ).toBeDefined();
+        });
+
+        /**
+         * Quem não escreveu não ganha uma citação vazia: a caixa não
+         * aparece de todo, em vez de aparecer sem nada lá dentro.
+         */
+        it('não mostra caixa nenhuma a quem não escreveu', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(200, [
+                        {
+                            userId: 'u9',
+                            username: 'candidato',
+                            avatarUrl: null,
+                            requestedAt: '2026-09-01T00:00:00.000Z',
+                            message: null,
+                        },
+                    ]),
+                }),
+            );
+
+            const { container } = montarEcra(
+                <AuthProvider>
+                    <Routes>
+                        <Route path="/crews/:crewId" element={<CrewPage />} />
+                    </Routes>
+                </AuthProvider>,
+                '/crews/crew-1',
+            );
+
+            /**
+             * Espera pelo candidato antes de exigir a ausência da carta.
+             * Sem isto, o caso passava por a lista ainda não ter chegado
+             * — e um teste que passa por chegar cedo de mais diz que sim
+             * a tudo.
+             */
+            expect(await screen.findByText('candidato')).toBeDefined();
+
+            expect(container.querySelector('.carta')).toBeNull();
         });
     });
 });

@@ -2487,3 +2487,44 @@ button.link:hover {
     font-size: 14px;
     line-height: 1.5;
 }
+
+/* ─── A candidatura ────────────────────────────────────────────────── */
+
+/*
+  O formulário ocupa a largura toda em vez de ficar ao lado dos botões:
+  é uma caixa de texto, e uma caixa de texto espremida numa linha de
+  ações convida a escrever uma frase quando o que se quer é um parágrafo.
+
+  Leva também a classe `field`, e não só esta. As caixas de texto do
+  produto estão pintadas em `.field textarea` — fora de um `.field`, uma
+  textarea cai no branco por omissão do browser, que num tema escuro se
+  vê a um quilómetro. Foi o que aconteceu à primeira versão disto.
+*/
+.candidatura {
+    flex: 1 1 100%;
+}
+
+.candidatura .hint {
+    margin: 0;
+}
+
+.candidatura button {
+    align-self: flex-start;
+}
+
+/*
+  O que a pessoa escreveu, na lista de candidaturas.
+  Recuada e com a barra à esquerda porque é uma citação: são as palavras
+  dela, e não uma descrição nossa sobre ela.
+*/
+.carta {
+    flex: 1 1 100%;
+    margin: 8px 0 0;
+    padding: 10px 14px;
+    border-left: 2px solid var(--edge-lit);
+    background: var(--surface-high);
+    border-radius: 0 8px 8px 0;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.55;
+}
