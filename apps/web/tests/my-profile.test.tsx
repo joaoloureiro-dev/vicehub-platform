@@ -113,15 +113,30 @@ describe('o meu perfil', () => {
         expect(screen.getByLabelText(t.perfil.banner)).toBeDefined();
     });
 
-    it('diz que a personalização é do plano a quem não o tem', async () => {
+    /**
+     * O contrário do que esta secção já dizia.
+     *
+     * Personalizar o perfil era pago, e quem não tinha plano via um
+     * aviso e um link para comprar por cima do formulário. Deixou de
+     * ser: a cara e o banner de quem joga não se vendem.
+     *
+     * Tirar a parede sem tirar o aviso seria meia alteração — um
+     * formulário que grava debaixo de "precisas de plano" continua a
+     * dizer à pessoa que não é bem-vinda. Por isso o que se prova aqui
+     * é a ausência: nem etiqueta de plano, nem convite a comprar.
+     */
+    it('não vende nada a quem vem personalizar o perfil', async () => {
         montar();
 
         await waitFor(() => {
-            expect(screen.getByText(t.perfil.precisaDePlano)).toBeDefined();
+            expect(screen.getByLabelText(t.perfil.banner)).toBeDefined();
         });
+
+        expect(screen.queryByText(t.perfil.premium)).toBeNull();
+        expect(screen.queryByText(t.landing.verPremium)).toBeNull();
     });
 
-    it('não repete esse aviso a quem tem plano', async () => {
+    it('e também não muda nada a quem tem plano', async () => {
         servir(perfil({ isPremium: true }));
 
         montar();
@@ -130,7 +145,7 @@ describe('o meu perfil', () => {
             expect(screen.getByLabelText(t.perfil.banner)).toBeDefined();
         });
 
-        expect(screen.queryByText(t.perfil.precisaDePlano)).toBeNull();
+        expect(screen.queryByText(t.perfil.premium)).toBeNull();
     });
 
     /**

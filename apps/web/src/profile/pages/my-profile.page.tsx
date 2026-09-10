@@ -256,33 +256,17 @@ export const MyProfilePage = () => {
             </section>
 
             {/*
-              A personalização aparece a toda a gente, e não só a quem tem
-              plano. Escondê-la faria com que quem recebesse o premium não
-              soubesse que ganhou alguma coisa — e quem não o tem não faz
-              ideia do que está a perder.
-            */}
-            <section className={`grupo premium${eu.isPremium ? ' ativo' : ''}`}>
-                <div className="premium-head">
-                    <h2>{t.perfil.personalizacao}</h2>
-                    <span className="pill">{t.perfil.premium}</span>
-                </div>
+              Personalizar o perfil é grátis, e por isso esta secção não
+              tem aviso nenhum, nem etiqueta de plano, nem link para
+              comprar.
 
-                {eu.isPremium ? (
-                    <p className="hint">{t.perfil.planoAtivo}</p>
-                ) : (
-                    <>
-                        <Alert kind="bad">{t.perfil.precisaDePlano}</Alert>
-                        {/*
-                          Dizer o que falta sem dizer onde se arranja é
-                          meia informação: era aqui que a pessoa ficava a
-                          saber que lhe falta alguma coisa, e sem caminho
-                          nenhum para a ter.
-                        */}
-                        <Link className="link-premium" to="/premium">
-                            {t.perfil.verPremium}
-                        </Link>
-                    </>
-                )}
+              Já teve as três coisas. Tirá-las é metade da alteração: um
+              formulário que funciona debaixo de um aviso a dizer
+              "precisas de plano" continua a dizer à pessoa que não é
+              bem-vinda, mesmo quando o botão já grava.
+            */}
+            <section className="grupo">
+                <h2>{t.perfil.personalizacao}</h2>
 
                 <AppearanceForm
                     atual={eu.appearance}

@@ -94,29 +94,38 @@ describe('ligação das rotas de utilizador', () => {
         expect(preHandlersOf('GET /:username')).toHaveLength(0);
     });
 
-    describe('personalização, que é funcionalidade do plano', () => {
+    describe('personalização, que é grátis para toda a gente', () => {
         const rota = 'PATCH /me/appearance';
 
-        it('exige autenticação e plano ativo', () => {
-            expect(preHandlersOf(rota)).toHaveLength(2);
-            expect(planoPorRota.get(rota)).toEqual(['user']);
+        /**
+         * A cara e o banner de quem joga não se vendem.
+         *
+         * Uma pessoa sem plano continua a ser uma pessoa, e um perfil
+         * cinzento ao lado de um perfil com cor não diz "aquele pagou" —
+         * diz "este não conta". O que se vende é gerir uma comunidade.
+         */
+        it('exige sessão e mais nada', () => {
+            expect(preHandlersOf(rota)).toHaveLength(1);
+            expect(planoPorRota.get(rota)).toEqual([]);
         });
 
-        /**
-         * A personalização é uma rota à parte precisamente para que
-         * alterar a bio continue a ser gratuito. Se um dia as duas se
-         * juntassem, quem não paga deixava de poder mexer no perfil.
-         */
-        it('alterar bio e avatar continua a não exigir plano', () => {
+        it('alterar bio e avatar também não exige plano', () => {
             expect(planoPorRota.get('PATCH /me')).toEqual([]);
         });
 
-        it('as rotas pagas são apenas esta', () => {
+        /**
+         * Nenhuma rota deste módulo é paga.
+         *
+         * Escrito como lista vazia e não como "esta não é": assim, o dia
+         * em que alguém puser uma parede num sítio qualquer do perfil, o
+         * teste diz qual é.
+         */
+        it('nenhuma rota do perfil é paga', () => {
             const pagas = [...planoPorRota.entries()]
                 .filter(([, kinds]) => kinds.length > 0)
                 .map(([key]) => key);
 
-            expect(pagas).toEqual([rota]);
+            expect(pagas).toEqual([]);
         });
 
         /**

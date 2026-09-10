@@ -45,14 +45,17 @@ const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
     /**
      * Personalização do perfil: banner e cor de destaque.
      *
-     * É a primeira funcionalidade paga da plataforma. O requirePremium
-     * lê o plano de quem faz o pedido — não o de uma crew —, por isso
-     * corre sem parâmetros.
+     * Grátis, e sem plano nenhum pelo caminho.
+     *
+     * Já foi paga. A cara e o banner de quem joga não se vendem: uma
+     * pessoa sem plano continua a ser uma pessoa, e um perfil cinzento ao
+     * lado de um perfil com cor não diz "aquele pagou" — diz "este não
+     * conta". O que se vende é gerir uma comunidade.
      */
     fastify.patch<{ Body: UpdateAppearanceDto }>(
         '/me/appearance',
         {
-            preHandler: [fastify.authenticate, fastify.requirePremium('user')],
+            preHandler: [fastify.authenticate],
             schema: { body: updateAppearanceSchema },
         },
         controller.updateOwnAppearance.bind(controller),
