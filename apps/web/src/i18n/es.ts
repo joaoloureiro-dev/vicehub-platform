@@ -15,6 +15,9 @@ export const es = (p: Tools): Messages => ({
         servidores: 'Servidores',
         asMinhas: 'Las mías',
         perfil: 'Perfil',
+        principal: 'Navegación principal',
+        recrutamento: 'Reclutamiento',
+        premium: 'Precios',
         entrar: 'Entrar',
         sair: 'Salir',
     },
@@ -25,9 +28,24 @@ export const es = (p: Tools): Messages => ({
             'ViceHub es donde las comunidades de juego se organizan: dirige tu crew, mueve lo que ganáis y demuestra quién apareció de verdad.',
         criarConta: 'Crear mi cuenta',
         verRecrutamento: 'Quién está reclutando',
-        verCrews: 'Ver las crews',
         jaTenhoConta: 'Ya tengo cuenta',
 
+        quemRecruta: 'Crews buscando gente',
+        agoraOnline: 'Servidores en línea ahora',
+        verTudo: 'Ver todos',
+        jogadores: (n: number) =>
+            p.plural(n, { one: '1 jugador', other: `${n} jugadores` }),
+        planosTitulo: 'Cuánto cuesta',
+        planosGratis:
+            'Jugar es gratis, y lo seguirá siendo: tu perfil, tu banner, postularte a crews, ser miembro, ver quién recluta. Lo que se paga es gestionar una comunidad.',
+        planoCrew: 'Crew',
+        planoCrewPreco: '4,99 \u20ac / mes',
+        planoCrewTexto:
+            'Una tesorería que cuadra, solicitudes que respondes en vez de perder, rangos, eventos, y asistencias que nadie discute.',
+        planoServidor: 'Servidor',
+        planoServidorPreco: '14,99 \u20ac / mes',
+        planoServidorTexto:
+            'Todo lo que tiene una crew, para el servidor y para las crews que juegan en él. Paga a las crews que contratas desde la tesorería del servidor.',
         crewsTitulo: 'Crews y servidores',
         crewsTexto:
             'Reúne a tu gente con rangos que significan algo. Las solicitudes se responden, no se ignoran.',

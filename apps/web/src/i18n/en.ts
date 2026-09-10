@@ -22,6 +22,9 @@ export const en = (p: Tools) => ({
         servidores: 'Servers',
         asMinhas: 'Mine',
         perfil: 'Profile',
+        principal: 'Main navigation',
+        recrutamento: 'Recruiting',
+        premium: 'Pricing',
         entrar: 'Sign in',
         sair: 'Sign out',
     },
@@ -32,9 +35,24 @@ export const en = (p: Tools) => ({
             'ViceHub is where gaming communities get organised: run your crew, move what you earn, and prove who actually turned up.',
         criarConta: 'Create your account',
         verRecrutamento: 'Who is recruiting',
-        verCrews: 'Browse the crews',
         jaTenhoConta: 'I already have an account',
 
+        quemRecruta: 'Crews looking for people',
+        agoraOnline: 'Servers online right now',
+        verTudo: 'See all',
+        jogadores: (n: number) =>
+            p.plural(n, { one: '1 player', other: `${n} players` }),
+        planosTitulo: 'What it costs',
+        planosGratis:
+            'Playing is free, and stays free: your profile, your banner, applying to crews, being a member, seeing who is recruiting. What is paid is running a community.',
+        planoCrew: 'Crew',
+        planoCrewPreco: '\u20ac4.99 / month',
+        planoCrewTexto:
+            'A treasury that adds up, applications you answer instead of losing, ranks, events, and attendance nobody can argue with.',
+        planoServidor: 'Server',
+        planoServidorPreco: '\u20ac14.99 / month',
+        planoServidorTexto:
+            'Everything a crew gets, for the server and for the crews that play on it. Pay the crews you hire straight from the server treasury.',
         crewsTitulo: 'Crews and servers',
         crewsTexto:
             'Bring your people together under ranks that mean something. Applications get answered, not ignored.',

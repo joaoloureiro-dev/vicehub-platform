@@ -23,6 +23,9 @@ export const pt = (p: Tools): Messages => ({
         servidores: 'Servidores',
         asMinhas: 'As minhas',
         perfil: 'Perfil',
+        principal: 'Navegação principal',
+        recrutamento: 'Recrutamento',
+        premium: 'Preços',
         entrar: 'Entrar',
         sair: 'Sair',
     },
@@ -33,9 +36,24 @@ export const pt = (p: Tools): Messages => ({
             'O ViceHub é onde as comunidades de jogo se organizam: gere a tua crew, move o que ganham, e prova quem apareceu mesmo.',
         criarConta: 'Criar a minha conta',
         verRecrutamento: 'Quem está a recrutar',
-        verCrews: 'Ver as crews',
         jaTenhoConta: 'Já tenho conta',
 
+        quemRecruta: 'Crews à procura de gente',
+        agoraOnline: 'Servidores online agora',
+        verTudo: 'Ver todos',
+        jogadores: (n: number) =>
+            p.plural(n, { one: '1 jogador', other: `${n} jogadores` }),
+        planosTitulo: 'Quanto custa',
+        planosGratis:
+            'Jogar é grátis, e continua a ser: o teu perfil, o teu banner, candidatares-te a crews, seres membro, veres quem está a recrutar. O que se paga é gerir uma comunidade.',
+        planoCrew: 'Crew',
+        planoCrewPreco: '4,99 \u20ac / mês',
+        planoCrewTexto:
+            'Uma tesouraria que bate certo, candidaturas que respondes em vez de perderes, cargos, eventos, e presenças que ninguém discute.',
+        planoServidor: 'Servidor',
+        planoServidorPreco: '14,99 \u20ac / mês',
+        planoServidorTexto:
+            'Tudo o que uma crew tem, para o servidor e para as crews que lá jogam. Paga às crews que contratas a partir da tesouraria do servidor.',
         crewsTitulo: 'Crews e servidores',
         crewsTexto:
             'Junta a tua gente com cargos que significam alguma coisa. As candidaturas são respondidas, não ignoradas.',

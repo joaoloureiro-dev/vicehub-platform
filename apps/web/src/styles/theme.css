@@ -2256,3 +2256,234 @@ button.link:hover {
     background: color-mix(in srgb, var(--good, #2e7d32) 18%, transparent);
     color: var(--good, #2e7d32);
 }
+
+/* ─── A navegação do sítio ─────────────────────────────────────────── */
+
+/*
+  Por baixo do cabeçalho e a toda a largura, porque é a planta do sítio
+  e não um apêndice ao lado do logótipo.
+
+  Cola-se por baixo da barra de cima em vez de rolar com a página: quem
+  está a meio de um diretório longo tem de conseguir saltar para outro
+  sem voltar ao princípio.
+*/
+.navegacao {
+    position: sticky;
+    top: var(--topbar-h, 56px);
+    z-index: 9;
+
+    display: flex;
+    gap: 4px;
+
+    padding: 0 var(--pad);
+    padding-left: max(var(--pad), env(safe-area-inset-left));
+    padding-right: max(var(--pad), env(safe-area-inset-right));
+
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--edge);
+
+    /*
+      No telemóvel os quatro destinos não cabem lado a lado. Rolam na
+      horizontal em vez de encolherem até ficarem ilegíveis — e a barra
+      de rolagem esconde-se, porque o gesto é natural e a barra só
+      ocupava espaço.
+    */
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.navegacao::-webkit-scrollbar {
+    display: none;
+}
+
+.navegacao a {
+    flex: none;
+    padding: 12px 14px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+
+    /*
+      A marca de onde se está é uma linha por baixo, e não um fundo: a
+      barra tem quatro itens e quatro fundos fariam dela um tabuleiro.
+      Transparente quando não está ativo, para o texto não saltar de
+      sítio ao mudar de página.
+    */
+    border-bottom: 2px solid transparent;
+}
+
+.navegacao a:hover {
+    color: var(--ink);
+}
+
+.navegacao a.active {
+    color: var(--ink);
+    border-bottom-color: var(--magenta);
+}
+
+.navegacao a:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+
+/* ─── O que está a acontecer, na landing ───────────────────────────── */
+
+.landing-vivo {
+    margin: 40px auto 0;
+    width: min(100%, 1100px);
+    padding: 0 var(--pad);
+}
+
+.landing-vivo-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.landing-vivo-head h2 {
+    margin: 0;
+    font-size: 18px;
+    /* O título cede espaço; o link é curto e não se parte ao meio. */
+    min-width: 0;
+}
+
+.landing-vivo-head a {
+    flex: none;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.landing-servidores {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.landing-servidores a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 12px 14px;
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    background: var(--surface);
+
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.landing-servidores a:hover {
+    border-color: var(--edge-lit);
+}
+
+/*
+  O ponto verde é a única coisa nesta página que afirma um estado a
+  tempo real, por isso pulsa — mas devagar, e para quem pediu menos
+  movimento fica parado.
+*/
+.ponto-online {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--good, #34D399);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--good, #34D399) 20%, transparent);
+    animation: pulsar 2.4s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ponto-online {
+        animation: none;
+    }
+}
+
+.landing-jogadores {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ─── Os planos, na própria página ─────────────────────────────────── */
+
+.landing-planos {
+    margin: 56px auto 0;
+    width: min(100%, 1100px);
+    padding: 0 var(--pad);
+    text-align: center;
+}
+
+.landing-planos > .hint {
+    max-width: 62ch;
+    margin: 8px auto 24px;
+}
+
+.planos {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+@media (min-width: 720px) {
+    .planos {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.planos article {
+    padding: 22px;
+    border: 1px solid var(--edge);
+    border-radius: 14px;
+    background: var(--surface);
+    text-align: left;
+}
+
+/*
+  O plano de servidor é o que sustenta o negócio, e é o único que leva
+  destaque. Dois destaques não são destaque nenhum.
+*/
+.planos article.destaque {
+    border-color: var(--edge-lit);
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--violet) 10%, var(--surface)),
+        var(--surface)
+    );
+}
+
+.planos h3 {
+    margin: 0;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.planos .preco {
+    margin: 6px 0 12px;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.planos article p:last-child {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+}

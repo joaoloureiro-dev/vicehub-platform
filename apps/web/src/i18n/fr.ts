@@ -24,6 +24,9 @@ export const fr = (p: Tools): Messages => ({
         servidores: 'Serveurs',
         asMinhas: 'Les miennes',
         perfil: 'Profil',
+        principal: 'Navigation principale',
+        recrutamento: 'Recrutement',
+        premium: 'Tarifs',
         entrar: 'Connexion',
         sair: 'Déconnexion',
     },
@@ -34,9 +37,24 @@ export const fr = (p: Tools): Messages => ({
             'ViceHub, c’est là où les communautés de jeu s’organisent : dirige ta crew, fais circuler ce que vous gagnez, et prouve qui était vraiment là.',
         criarConta: 'Créer mon compte',
         verRecrutamento: 'Qui recrute',
-        verCrews: 'Voir les crews',
         jaTenhoConta: 'J’ai déjà un compte',
 
+        quemRecruta: 'Crews qui cherchent du monde',
+        agoraOnline: 'Serveurs en ligne maintenant',
+        verTudo: 'Voir tout',
+        jogadores: (n: number) =>
+            p.plural(n, { one: '1 joueur', other: `${n} joueurs` }),
+        planosTitulo: 'Ce que \u00e7a co\u00fbte',
+        planosGratis:
+            'Jouer est gratuit, et le restera : ton profil, ta banni\u00e8re, postuler \u00e0 des crews, en \u00eatre membre, voir qui recrute. Ce qui se paie, c\u2019est de g\u00e9rer une communaut\u00e9.',
+        planoCrew: 'Crew',
+        planoCrewPreco: '4,99 \u20ac / mois',
+        planoCrewTexto:
+            'Une tr\u00e9sorerie qui tombe juste, des candidatures auxquelles tu r\u00e9ponds au lieu de les perdre, des rangs, des \u00e9v\u00e9nements, et des pr\u00e9sences que personne ne conteste.',
+        planoServidor: 'Serveur',
+        planoServidorPreco: '14,99 \u20ac / mois',
+        planoServidorTexto:
+            'Tout ce qu\u2019a une crew, pour le serveur et pour les crews qui y jouent. Paie les crews que tu engages depuis la tr\u00e9sorerie du serveur.',
         crewsTitulo: 'Crews et serveurs',
         crewsTexto:
             'Rassemble les tiens avec des rangs qui veulent dire quelque chose. Les candidatures reçoivent une réponse, elles ne sont pas ignorées.',
