@@ -14,14 +14,15 @@ import {
     signUp,
     updateEvent,
     withdraw,
-    type Dono,
 } from '../event.api.js';
+import { useDono } from '../use-dono.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import { criarTools } from '../../i18n/tools.js';
 import { transicoesDe } from '../event.types.js';
 
 /**
- * Um evento, e quem lá esteve.
+ * Um evento, e quem lá esteve. De uma crew ou de um servidor: é o mesmo
+ * ecrã, tal como a API tem as mesmas rotas para os dois.
  *
  * **Inscrever-se e ter presença confirmada são coisas diferentes.** Só
  * quem organiza pode afirmar que alguém esteve lá, e é essa afirmação —
@@ -32,8 +33,8 @@ export const EventPage = () => {
     const t = useT();
     const { idioma } = useIdioma();
     const { quando } = criarTools(idioma);
-    const { crewId, eventId } = useParams<{ crewId: string; eventId: string }>();
-    const dono: Dono = { tipo: 'crews', id: crewId as string };
+    const { eventId } = useParams<{ eventId: string }>();
+    const { dono, calendario } = useDono();
     const { user } = useAuth();
 
     const [pesos, setPesos] = useState<Record<string, string>>({});
@@ -45,12 +46,12 @@ export const EventPage = () => {
 
     const evento = useAsync(
         () => getEvent(dono, eventId as string),
-        [crewId, eventId],
+        [dono.tipo, dono.id, eventId],
     );
 
     const participantes = useAsync(
         () => listParticipants(dono, eventId as string),
-        [crewId, eventId],
+        [dono.tipo, dono.id, eventId],
     );
 
     const agir = async (acao: () => Promise<unknown>, bom: string) => {
@@ -87,7 +88,7 @@ export const EventPage = () => {
             <div className="panel">
                 <Alert kind="bad">{t.eventos.naoEncontrado}</Alert>
                 <div className="foot">
-                    <Link to={`/crews/${crewId}/eventos`}>{t.eventos.todosOsEventos}</Link>
+                    <Link to={calendario}>{t.eventos.todosOsEventos}</Link>
                 </div>
             </div>
         );
@@ -112,7 +113,7 @@ export const EventPage = () => {
         <div className="panel wide">
             <div className="panel-head">
                 <h1>{detalhe.name}</h1>
-                <Link className="btn-secondary" to={`/crews/${crewId}/eventos`}>
+                <Link className="btn-secondary" to={calendario}>
                     {t.eventos.todosOsEventos}
                 </Link>
             </div>
