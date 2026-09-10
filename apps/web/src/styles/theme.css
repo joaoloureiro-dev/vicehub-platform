@@ -622,6 +622,26 @@ button.link:hover {
 
 .panel.wide {
     max-width: 900px;
+
+    /*
+      Uma página de conteúdo começa em cima.
+
+      O `main` centra verticalmente o que lá está, e isso é o que serve
+      uma caixa de início de sessão: uma caixa pequena a meio do ecrã
+      lê-se bem. Numa página de conteúdo lê-se mal — um perfil com poucas
+      linhas ficava a flutuar a 400px do topo, com um vazio por cima que
+      parece uma avaria, e a coisa mais importante do ecrã fora do
+      primeiro olhar.
+
+      A distinção já existia na marcação: `panel` é um formulário,
+      `panel wide` é conteúdo. Faltava dizê-lo ao alinhamento.
+    */
+    align-self: flex-start;
+}
+
+/* A landing é conteúdo pela mesma razão, e não passa por `panel`. */
+.landing {
+    align-self: flex-start;
 }
 
 .panel-head {
