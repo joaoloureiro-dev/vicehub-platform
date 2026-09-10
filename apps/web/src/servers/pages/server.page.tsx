@@ -40,6 +40,8 @@ export const ServerPage = () => {
     const { serverId } = useParams<{ serverId: string }>();
     const { user } = useAuth();
 
+    /** O que se escreve ao candidatar-se, como nas crews. */
+    const [carta, setCarta] = useState('');
     const [aAgir, setAAgir] = useState(false);
     const [erroAcao, setErroAcao] = useState<string | null>(null);
 
@@ -155,16 +157,39 @@ export const ServerPage = () => {
             {user ? (
                 <div className="actions">
                     {!minhaAdesao ? (
-                        <button
-                            className="primary"
-                            type="button"
-                            disabled={aAgir}
-                            onClick={() =>
-                                void agir(() => requestToJoinServer(perfil.id))
-                            }
-                        >
-                            {t.crews.pedirEntrada}
-                        </button>
+                        <div className="candidatura field">
+                            <label htmlFor="carta-servidor">
+                                {t.crews.cartaLabel}
+                            </label>
+                            <textarea
+                                id="carta-servidor"
+                                rows={4}
+                                maxLength={2000}
+                                value={carta}
+                                placeholder={t.crews.cartaPlaceholder}
+                                onChange={(evento) => {
+                                    setCarta(evento.target.value);
+                                }}
+                            />
+                            <p className="hint">{t.crews.cartaAjuda}</p>
+
+                            <button
+                                className="primary"
+                                type="button"
+                                disabled={aAgir}
+                                onClick={() =>
+                                    void agir(() =>
+                                        /** Vazio vai como ausente, como nas crews. */
+                                        requestToJoinServer(
+                                            perfil.id,
+                                            carta.trim() || undefined,
+                                        ),
+                                    )
+                                }
+                            >
+                                {t.crews.pedirEntrada}
+                            </button>
+                        </div>
                     ) : null}
 
                     {souCandidato ? (
@@ -218,6 +243,11 @@ export const ServerPage = () => {
                         {candidaturas.data.map((pedido) => (
                             <li key={pedido.userId}>
                                 <span className="nome">{pedido.username}</span>
+
+                                {/* O que a pessoa escreveu, como nas crews. */}
+                                {pedido.message ? (
+                                    <p className="carta pre-linha">{pedido.message}</p>
+                                ) : null}
                                 <div className="linha-acoes">
                                     <button
                                         className="btn-secondary"

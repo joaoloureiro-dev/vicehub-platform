@@ -303,21 +303,38 @@ export class ServerRepository {
      * candidatar-se, e listar esses casos daria a ideia errada de que
      * ainda há alguma coisa pendente.
      */
-    listOpenMembershipsOfUser(userId: string) {
+    listOpenMembershipsOfUser(userId: string, recusadasDesde: Date) {
         return this.database.membership.findMany({
             where: {
                 userId,
                 type: MembershipType.server,
                 is_deleted: false,
-                status: {
-                    in: [MembershipStatus.pending, MembershipStatus.active],
-                },
+                OR: [
+                    {
+                        status: {
+                            in: [MembershipStatus.pending, MembershipStatus.active],
+                        },
+                    },
+                    /**
+                     * As recusadas recentes vêm também, pela mesma razão
+                     * que vêm nas crews: sem isto, uma candidatura
+                     * recusada desaparecia da lista de quem a fez, e a
+                     * pessoa nunca chegava a saber que tinha havido
+                     * resposta.
+                     */
+                    {
+                        status: MembershipStatus.rejected,
+                        responded_at: { gte: recusadasDesde },
+                    },
+                ],
             },
             orderBy: { created_at: 'desc' },
             select: {
                 serverId: true,
                 status: true,
                 created_at: true,
+                responded_at: true,
+                decision_note: true,
                 server: { select: { id: true, name: true, region: true } },
             },
         });
@@ -368,7 +385,11 @@ export class ServerRepository {
         });
     }
 
-    createJoinRequest(serverId: string, userId: string) {
+    createJoinRequest(
+        serverId: string,
+        userId: string,
+        message?: string | undefined,
+    ) {
         return this.database.membership.create({
             data: {
                 serverId,
@@ -376,6 +397,12 @@ export class ServerRepository {
                 type: MembershipType.server,
                 status: MembershipStatus.pending,
                 source: SourceType.api,
+                /**
+                 * Ausente continua ausente: "não escreveu nada" e
+                 * "escreveu e apagou" não são a mesma coisa para quem
+                 * lê a candidatura.
+                 */
+                ...(message === undefined ? {} : { message }),
             },
         });
     }
@@ -384,6 +411,7 @@ export class ServerRepository {
         membershipId: string,
         status: MembershipStatus,
         respondedBy: string | null,
+        note?: string | undefined,
     ) {
         return this.database.membership.update({
             where: { id: membershipId },
@@ -392,6 +420,8 @@ export class ServerRepository {
                 responded_at: new Date(),
                 responded_by: respondedBy,
                 version: { increment: 1 },
+                /** Ausente continua ausente, como nas crews. */
+                ...(note === undefined ? {} : { decision_note: note }),
             },
         });
     }
@@ -407,6 +437,7 @@ export class ServerRepository {
             orderBy: { created_at: 'asc' },
             select: {
                 created_at: true,
+                message: true,
                 user: {
                     select: { id: true, username: true, avatarUrl: true },
                 },

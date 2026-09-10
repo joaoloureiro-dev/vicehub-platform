@@ -50,6 +50,8 @@ export const MyCommunitiesPage = () => {
      */
     const crewsRecusadas =
         crews.data?.filter((adesao) => adesao.status === 'rejected') ?? [];
+    const servidoresRecusados =
+        servidores.data?.filter((adesao) => adesao.status === 'rejected') ?? [];
 
     const pendentes = crewsPendentes.length + servidoresPendentes.length;
     const total = (crews.data?.length ?? 0) + (servidores.data?.length ?? 0);
@@ -136,7 +138,7 @@ export const MyCommunitiesPage = () => {
                 </section>
             ) : null}
 
-            {crewsRecusadas.length > 0 ? (
+            {crewsRecusadas.length + servidoresRecusados.length > 0 ? (
                 <section className="grupo">
                     <h2>{t.crews.responderamQueNao}</h2>
                     <ul className="pessoas">
@@ -156,6 +158,25 @@ export const MyCommunitiesPage = () => {
                                   interessa — que houve resposta — em vez
                                   de deixar a pessoa à espera para sempre.
                                 */}
+                                {adesao.decisionNote ? (
+                                    <p className="carta pre-linha">
+                                        {adesao.decisionNote}
+                                    </p>
+                                ) : null}
+                            </li>
+                        ))}
+                        {servidoresRecusados.map((adesao) => (
+                            <li key={adesao.serverId}>
+                                <Link
+                                    className="nome"
+                                    to={`/servidores/${adesao.serverId}`}
+                                >
+                                    {adesao.name}
+                                </Link>
+                                <span className="pill recusada">
+                                    {t.crews.candidaturaRecusada}
+                                </span>
+
                                 {adesao.decisionNote ? (
                                     <p className="carta pre-linha">
                                         {adesao.decisionNote}

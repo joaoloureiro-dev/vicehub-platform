@@ -58,8 +58,10 @@ export const createServer = (input: {
 export const listServerMembers = (id: string): Promise<CommunityMember[]> =>
     adesao.listMembers(id);
 
-export const requestToJoinServer = (id: string): Promise<void> =>
-    adesao.requestToJoin(id);
+export const requestToJoinServer = (
+    id: string,
+    message?: string,
+): Promise<void> => adesao.requestToJoin(id, message);
 
 export const withdrawServerJoinRequest = (id: string): Promise<void> =>
     adesao.withdrawJoinRequest(id);

@@ -46,6 +46,12 @@ interface UpdateServerInput {
  * pertence, o RBAC diz quem manda, e é aqui que os dois se mantêm
  * coerentes — ser aceite dá cargo, sair ou ser removido retira-o.
  */
+/**
+ * Durante quanto tempo uma recusa continua à vista de quem se
+ * candidatou. O mesmo número das crews, e pela mesma razão.
+ */
+const DIAS_A_MOSTRAR_UMA_RECUSA = 30;
+
 export class ServerService {
     constructor(
         private readonly serverRepository: ServerRepository,
@@ -173,7 +179,11 @@ export class ServerService {
      *
      * O pedido fica pendente até alguém com autorização responder.
      */
-    async requestToJoin(serverId: string, userId: string): Promise<void> {
+    async requestToJoin(
+        serverId: string,
+        userId: string,
+        message?: string | undefined,
+    ): Promise<void> {
         await this.requireServer(serverId);
 
         const aberta = await this.serverRepository.findOpenMembership(
@@ -190,7 +200,7 @@ export class ServerService {
             );
         }
 
-        await this.serverRepository.createJoinRequest(serverId, userId);
+        await this.serverRepository.createJoinRequest(serverId, userId, message);
     }
 
     /**
@@ -351,7 +361,10 @@ export class ServerService {
      * Servidores a que um utilizador pertence ou a que se candidatou.
      */
     async listMyMemberships(userId: string): Promise<ServerMembershipSummary[]> {
-        const adesoes = await this.serverRepository.listOpenMembershipsOfUser(userId);
+        const adesoes = await this.serverRepository.listOpenMembershipsOfUser(
+            userId,
+            new Date(Date.now() - DIAS_A_MOSTRAR_UMA_RECUSA * 24 * 60 * 60 * 1000),
+        );
 
         const ids = adesoes
             .map((adesao) => adesao.serverId)
@@ -378,9 +391,11 @@ export class ServerService {
                     serverId: adesao.server.id,
                     name: adesao.server.name,
                     region: adesao.server.region,
-                    status: adesao.status as 'pending' | 'active',
+                    status: adesao.status as 'pending' | 'active' | 'rejected',
                     role: porServidor.get(adesao.server.id) ?? null,
                     since: adesao.created_at,
+                    respondedAt: adesao.responded_at,
+                    decisionNote: adesao.decision_note,
                 },
             ];
         });
@@ -407,10 +422,18 @@ export class ServerService {
         });
     }
 
+    /**
+     * Recusa um pedido de entrada, com uma palavra se houver.
+     *
+     * A nota é opcional pela mesma razão das crews: obrigar a justificar
+     * cada recusa faz com que se deixe de recusar, e uma candidatura sem
+     * resposta nenhuma é pior do que um "não" seco.
+     */
     async rejectRequest(
         serverId: string,
         userId: string,
         respondedBy: string,
+        note?: string | undefined,
     ): Promise<void> {
         const adesao = await this.requirePendingMembership(serverId, userId);
 
@@ -418,6 +441,7 @@ export class ServerService {
             adesao.id,
             MembershipStatus.rejected,
             respondedBy,
+            note,
         );
     }
 
@@ -541,6 +565,7 @@ export class ServerService {
             username: pedido.user.username,
             avatarUrl: pedido.user.avatarUrl,
             requestedAt: pedido.created_at,
+            message: pedido.message,
         }));
     }
 

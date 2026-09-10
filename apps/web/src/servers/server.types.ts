@@ -45,9 +45,14 @@ export interface ServerMembership {
     serverId: string;
     name: string;
     region: string | null;
-    status: 'pending' | 'active';
+    /** `rejected` aparece durante um tempo depois da resposta. */
+    status: 'pending' | 'active' | 'rejected';
     role: string | null;
     since: string;
+    /** Quando foi respondida, ou null enquanto estiver por responder. */
+    respondedAt: string | null;
+    /** O que quem decidiu escreveu, se escreveu alguma coisa. */
+    decisionNote: string | null;
 }
 
 export type ServerRole = 'server_owner' | 'server_moderator' | 'server_member';

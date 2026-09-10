@@ -1,3 +1,8 @@
+import type {
+    JoinRequestDto,
+    RejectRequestDto,
+} from '../../../shared/membership-application.js';
+
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
@@ -87,6 +92,8 @@ export class ServerController {
             adesoes.map((adesao) => ({
                 ...adesao,
                 since: adesao.since.toISOString(),
+                /** Ausente enquanto a candidatura estiver por responder. */
+                respondedAt: adesao.respondedAt?.toISOString() ?? null,
             })),
         );
     }
@@ -147,12 +154,19 @@ export class ServerController {
     }
 
     async requestToJoin(
-        request: FastifyRequest<{ Params: ServerIdParamDto }>,
+        request: FastifyRequest<{
+            Params: ServerIdParamDto;
+            Body: JoinRequestDto;
+        }>,
         reply: FastifyReply,
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.serverService.requestToJoin(request.params.serverId, user.id);
+        await this.serverService.requestToJoin(
+            request.params.serverId,
+            user.id,
+            request.body?.message,
+        );
 
         reply.code(202).send();
     }
@@ -198,7 +212,10 @@ export class ServerController {
     }
 
     async rejectRequest(
-        request: FastifyRequest<{ Params: ServerMemberParamDto }>,
+        request: FastifyRequest<{
+            Params: ServerMemberParamDto;
+            Body: RejectRequestDto;
+        }>,
         reply: FastifyReply,
     ): Promise<void> {
         const { user } = requireAuthContext(request);
@@ -207,6 +224,7 @@ export class ServerController {
             request.params.serverId,
             request.params.userId,
             user.id,
+            request.body?.reason,
         );
 
         reply.status(204).send();

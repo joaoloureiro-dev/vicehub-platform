@@ -23,6 +23,41 @@ const adesao = (extra: Record<string, unknown> = {}) => ({
     ...extra,
 });
 
+const adesaoServidor = (extra: Record<string, unknown> = {}) => ({
+    serverId: 'srv-1',
+    name: 'Leonida Life',
+    region: 'EU',
+    status: 'pending',
+    role: null,
+    since: '2026-09-01T00:00:00.000Z',
+    respondedAt: null,
+    decisionNote: null,
+    ...extra,
+});
+
+/**
+ * Responde a cada diretório com o que o caso quiser.
+ *
+ * Cada rota é nomeada, e tudo o resto responde lista vazia. A primeira
+ * versão disto devolvia os servidores a **qualquer** rota que não fosse
+ * de crews — incluindo a do feed, que rebentou com uma forma que não
+ * esperava. Um duplo que responde a tudo o mesmo mente ao teste.
+ */
+const servirAmbos = (crews: unknown[], servidores: unknown[]) =>
+    vi.fn((url: string) => {
+        const endereco = String(url);
+
+        if (endereco.includes('/crews')) {
+            return Promise.resolve(json(200, crews));
+        }
+
+        if (endereco.includes('/servers')) {
+            return Promise.resolve(json(200, servidores));
+        }
+
+        return Promise.resolve(json(200, []));
+    });
+
 /** As crews vêm da rota de crews; tudo o resto responde vazio. */
 const servir = (crews: unknown[]) =>
     vi.fn((url: string) =>
@@ -154,5 +189,33 @@ describe('as minhas comunidades', () => {
         });
 
         expect(screen.queryByText(t.crews.aEsperaResposta)).toBeNull();
+    });
+
+    /**
+     * O mesmo para os servidores.
+     *
+     * As duas coisas partilham a tabela e o esquema, e uma plataforma
+     * onde a recusa de uma crew aparece e a de um servidor não aparece é
+     * uma plataforma que se contradiz a si própria.
+     */
+    it('mostra também as recusas de servidores', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servirAmbos(
+                [],
+                [
+                    adesaoServidor({
+                        status: 'rejected',
+                        respondedAt: '2026-09-05T00:00:00.000Z',
+                        decisionNote: 'Sem vagas de momento.',
+                    }),
+                ],
+            ),
+        );
+
+        montarEcra(<MyCommunitiesPage />);
+
+        expect(await screen.findByText(t.crews.responderamQueNao)).toBeDefined();
+        expect(screen.getByText('Sem vagas de momento.')).toBeDefined();
     });
 });
