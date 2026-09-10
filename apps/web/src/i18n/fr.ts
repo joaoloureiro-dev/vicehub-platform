@@ -450,14 +450,14 @@ export const fr = (p: Tools): Messages => ({
         publicado: "Cet événement apparaît désormais sur la page d'accueil.",
         tirado: "Cet événement n'apparaît plus sur la page d'accueil.",
         titulo: 'Événements',
-        verCrew: 'Voir la crew',
+        verComunidade: 'Revenir à la communauté',
         soParaMembros:
-            'Le calendrier d’une crew n’est visible que par ses membres.',
+            'Ce calendrier n’est visible que par les membres de la communauté.',
         mostrarPassados: 'Afficher aussi ceux qui sont passés',
         todos: 'Tous les événements',
         oQueVem: 'Ce qui arrive',
         semEventos: 'Rien de prévu. Planifie le premier ci-dessous.',
-        semHistorico: 'Cette crew n’a pas encore eu d’événements.',
+        semHistorico: 'Aucun événement n’a encore eu lieu ici.',
         marcarTitulo: 'Planifier un événement',
         nome: 'Nom',
         comeca: 'Commence',
@@ -467,7 +467,8 @@ export const fr = (p: Tools): Messages => ({
         marcar: 'Planifier l’événement',
         aMarcar: 'Planification…',
         marcado: 'Événement planifié.',
-        soQuemGere: 'Planifier des événements revient à qui dirige la crew.',
+        soQuemGere:
+            'Planifier des événements revient à qui dirige la communauté.',
         naoFoiPossivelMarcar: 'L’événement n’a pas pu être planifié.',
         inscritos: (n: number) =>
             p.plural(n, { one: `${n} inscrit`, other: `${n} inscrits` }),
@@ -494,7 +495,7 @@ export const fr = (p: Tools): Messages => ({
         soQuemOrganiza: 'Cela revient à l’organisateur de l’événement.',
         quemSeInscreveu: 'Qui s’est inscrit',
         diferenca:
-            'S’inscrire et avoir sa présence confirmée sont deux choses différentes. Seul l’organisateur peut affirmer que quelqu’un était là, et c’est cette affirmation — non l’inscription — qui donne droit à une part dans le partage par participation.',
+            'S’inscrire et avoir sa présence confirmée sont deux choses différentes. Seul l’organisateur peut affirmer que quelqu’un était là, et c’est cette affirmation — non l’inscription — qui donne droit à une part dans le partage par participation de la communauté.',
         semInscricoes: 'Pas encore d’inscriptions.',
         pesoDe: (nome: string) => `Poids de ${nome}`,
         confirmarPresenca: 'Confirmer la présence',

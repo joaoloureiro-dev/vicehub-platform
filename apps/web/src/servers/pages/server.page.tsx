@@ -235,6 +235,18 @@ export const ServerPage = () => {
                                         'server_member') as keyof typeof t.cargos
                                 ] ?? minhaAdesao.role}
                             </span>
+                            {/*
+                              O calendário só aparece a quem pertence,
+                              porque só a quem pertence a API o mostra.
+                              Oferecê-lo a mais gente era oferecer um
+                              link que responde 403.
+                            */}
+                            <Link
+                                className="btn-secondary"
+                                to={`/servidores/${perfil.id}/eventos`}
+                            >
+                                {t.crews.eventos}
+                            </Link>
                             <button
                                 className="btn-secondary"
                                 type="button"

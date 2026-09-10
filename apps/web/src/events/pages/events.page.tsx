@@ -1,26 +1,28 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link } from 'react-router';
 
 import { ApiError } from '../../lib/api.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
-import { createEvent, listEvents, type Dono } from '../event.api.js';
+import { createEvent, listEvents } from '../event.api.js';
+import { useDono } from '../use-dono.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import { criarTools } from '../../i18n/tools.js';
 
 /**
- * O calendário de uma crew.
+ * O calendário de uma comunidade — de uma crew ou de um servidor.
  *
- * Ler exige `event:read`, criar exige `event:manage`. Como em toda a
- * aplicação, quem pode o quê descobre-se perguntando à API: um 403 na
- * leitura é a resposta, e não uma avaria.
+ * É o mesmo ecrã para as duas, como as rotas da API: o que muda é o
+ * titular, e as regras não mudam nenhuma. Ler exige `event:read`, criar
+ * exige `event:manage`. Como em toda a aplicação, quem pode o quê
+ * descobre-se perguntando à API: um 403 na leitura é a resposta, e não
+ * uma avaria.
  */
 export const EventsPage = () => {
     const t = useT();
     const { idioma } = useIdioma();
     const { quando } = criarTools(idioma);
-    const { crewId } = useParams<{ crewId: string }>();
-    const dono: Dono = { tipo: 'crews', id: crewId as string };
+    const { dono, comunidade, calendario } = useDono();
 
     const [passados, setPassados] = useState(false);
     const [nome, setNome] = useState('');
@@ -45,7 +47,7 @@ export const EventsPage = () => {
                     throw falha;
                 },
             ),
-        [crewId, passados],
+        [dono.tipo, dono.id, passados],
     );
 
     if (eventos.loading && !eventos.data) {
@@ -57,7 +59,7 @@ export const EventsPage = () => {
             <div className="panel">
                 <Alert kind="bad">{t.eventos.soParaMembros}</Alert>
                 <div className="foot">
-                    <Link to={`/crews/${crewId}`}>{t.eventos.verCrew}</Link>
+                    <Link to={comunidade}>{t.eventos.verComunidade}</Link>
                 </div>
             </div>
         );
@@ -113,8 +115,8 @@ export const EventsPage = () => {
         <div className="panel wide">
             <div className="panel-head">
                 <h1>{t.eventos.titulo}</h1>
-                <Link className="btn-secondary" to={`/crews/${crewId}`}>
-                    {t.eventos.verCrew}
+                <Link className="btn-secondary" to={comunidade}>
+                    {t.eventos.verComunidade}
                 </Link>
             </div>
 
@@ -147,7 +149,7 @@ export const EventsPage = () => {
                                 <div className="mov-principal">
                                     <Link
                                         className="mov-desc forte"
-                                        to={`/crews/${crewId}/eventos/${evento.id}`}
+                                        to={`${calendario}/${evento.id}`}
                                     >
                                         {evento.name}
                                     </Link>
