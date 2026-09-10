@@ -51,6 +51,7 @@ describe('ligação das rotas de eventos', () => {
         const controller = {
             create: vi.fn(),
             list: vi.fn(),
+            listPublic: vi.fn(),
             get: vi.fn(),
             update: vi.fn(),
             transition: vi.fn(),
@@ -176,23 +177,53 @@ describe('ligação das rotas de eventos', () => {
     });
 
     /**
-     * Nenhuma rota de eventos é pública. O calendário de uma comunidade
-     * diz quando e onde ela vai estar, e isso é dela.
+     * Uma rota de eventos é pública, e uma só.
+     *
+     * A montra da página de entrada existe para quem ainda não tem
+     * conta, e por isso não pede sessão. O calendário de uma comunidade
+     * continua a ser dela: diz quando e onde ela vai estar.
+     *
+     * Este teste é a fronteira escrita. Antes dizia "nenhuma rota é
+     * pública" e essa frase deixou de ser verdade — mas substituí-la por
+     * nada seria deixar de verificar a coisa que mais importa aqui. A
+     * lista é fixa de propósito: uma rota nova que se esqueça do guard
+     * não passa a estar coberta, cai aqui.
      */
-    it('não há rotas de eventos sem autenticação', () => {
+    describe('o que é público e o que não é', () => {
+        const PUBLICAS = ['GET /public'];
+
+        it('só a montra dispensa sessão', () => {
+            /**
+             * O HEAD é gerado pelo Fastify a partir do GET e herda-lhe
+             * os guards, por isso não é o que interessa verificar aqui.
+             */
+            const rotas = [...registered.keys()].filter(
+                (key) => !key.startsWith('HEAD '),
+            );
+
+            expect(rotas.length).toBeGreaterThan(0);
+
+            const semGuard = rotas.filter((key) => preHandlerCount(key) === 0);
+
+            expect(semGuard.sort()).toEqual(PUBLICAS);
+        });
+
+        it('a montra não pede permissão nenhuma', () => {
+            expect(permissoesPorRota.get('GET /public')).toEqual([]);
+        });
+
         /**
-         * O HEAD é gerado pelo Fastify a partir do GET e herda-lhe os
-         * guards, por isso não é o que interessa verificar aqui.
+         * O calendário e os participantes são a informação que a montra
+         * não pode passar a dar por uma porta lateral.
          */
-        const rotas = [...registered.keys()].filter(
-            (key) => !key.startsWith('HEAD '),
-        );
-
-        expect(rotas.length).toBeGreaterThan(0);
-
-        for (const key of rotas) {
-            expect(preHandlerCount(key), key).toBeGreaterThan(0);
-        }
+        it.each([
+            'GET /crews/:crewId',
+            'GET /servers/:serverId',
+            'GET /crews/:crewId/:eventId/participants',
+            'GET /servers/:serverId/:eventId/participants',
+        ])('%s continua a exigir event:read', (key) => {
+            expect(permissoesPorRota.get(key)).toEqual(['event:read']);
+        });
     });
 
     describe('validação de entrada', () => {
@@ -217,6 +248,15 @@ describe('ligação das rotas de eventos', () => {
             expect(
                 registered.get('GET /crews/:crewId')?.schema?.querystring,
             ).toBeDefined();
+        });
+
+        /**
+         * A montra é a rota que qualquer pessoa pode chamar sem conta.
+         * Um limite por validar era um pedido de dez mil eventos à
+         * distância de um parâmetro.
+         */
+        it('a montra valida e limita o que lhe pedem', () => {
+            expect(registered.get('GET /public')?.schema?.querystring).toBeDefined();
         });
     });
 });

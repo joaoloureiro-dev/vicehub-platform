@@ -8,12 +8,35 @@ export interface EventSummary {
     startsAt: string;
     endsAt: string | null;
     capacity: number | null;
+    /** Se a comunidade pôs este evento à porta. */
+    isPublic: boolean;
     organizerId: string | null;
     /** Quantos estão inscritos ou já confirmados: os que ocupam lugar. */
     signedUpCount: number;
     /** Quantos têm presença confirmada, e portanto direito a receber. */
     confirmedCount: number;
     createdAt: string;
+}
+
+/**
+ * Um evento como a montra da página de entrada o recebe.
+ *
+ * Traz o que serve para decidir se vale a pena ir ver, e mais nada:
+ * quem se inscreveu continua a ser assunto de dentro da comunidade.
+ */
+export interface PublicEvent {
+    id: string;
+    name: string;
+    status: string;
+    startsAt: string;
+    endsAt: string | null;
+    owner: {
+        kind: 'crew' | 'server';
+        id: string;
+        name: string;
+        /** Só as crews têm tag. */
+        tag: string | null;
+    };
 }
 
 export interface EventParticipant {

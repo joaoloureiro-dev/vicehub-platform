@@ -18,6 +18,7 @@ interface CreateEventInput {
     startsAt: Date;
     endsAt?: Date | null | undefined;
     capacity?: number | null | undefined;
+    isPublic?: boolean | undefined;
     organizerId: string;
 }
 
@@ -27,6 +28,7 @@ interface UpdateEventInput {
     startsAt?: Date | undefined;
     endsAt?: Date | null | undefined;
     capacity?: number | null | undefined;
+    isPublic?: boolean | undefined;
 }
 
 /**
@@ -64,6 +66,7 @@ export class EventRepository {
             description?: string | null;
             ends_at?: Date | null;
             capacity?: number | null;
+            is_public?: boolean;
         } = {
             crewId: input.owner.crewId ?? null,
             serverId: input.owner.serverId ?? null,
@@ -90,6 +93,10 @@ export class EventRepository {
             data.capacity = input.capacity;
         }
 
+        if (input.isPublic !== undefined) {
+            data.is_public = input.isPublic;
+        }
+
         return this.database.event.create({ data });
     }
 
@@ -102,6 +109,7 @@ export class EventRepository {
             starts_at?: Date;
             ends_at?: Date | null;
             capacity?: number | null;
+            is_public?: boolean;
         } = { version: { increment: 1 }, updated_by: updatedBy };
 
         if (input.name !== undefined) {
@@ -122,6 +130,10 @@ export class EventRepository {
 
         if (input.capacity !== undefined) {
             data.capacity = input.capacity;
+        }
+
+        if (input.isPublic !== undefined) {
+            data.is_public = input.isPublic;
         }
 
         return this.database.event.update({ where: { id: eventId }, data });
@@ -172,6 +184,52 @@ export class EventRepository {
              */
             orderBy: [{ starts_at: 'asc' }, { id: 'asc' }],
             take: input.take,
+        });
+    }
+
+    /**
+     * Os eventos que as comunidades puseram à porta.
+     *
+     * A janela é escrita como três frases, e cada uma tem uma razão:
+     *
+     * - o que ainda não começou;
+     * - o que já começou mas ainda não acabou, segundo a hora de fim que
+     *   a comunidade escreveu;
+     * - o que já começou sem hora de fim escrita, e só durante um
+     *   período — sem este limite, um evento que ninguém se lembrou de
+     *   fechar ficava na montra para sempre.
+     *
+     * O estado filtra à parte, e não dentro da janela: concluído e
+     * cancelado saem sempre, aconteça o que acontecer às horas.
+     *
+     * Não é preciso perguntar se a comunidade ainda existe: apagar uma
+     * crew ou um servidor apaga em suave os eventos deles na mesma
+     * escrita, e o `is_deleted` do próprio evento já os deixa de fora.
+     */
+    listPublic(input: { agora: Date; semFimDesde: Date; take: number }) {
+        return this.database.event.findMany({
+            where: {
+                is_public: true,
+                is_deleted: false,
+                status: { in: [EventStatus.scheduled, EventStatus.ongoing] },
+                OR: [
+                    { starts_at: { gte: input.agora } },
+                    { ends_at: { gte: input.agora } },
+                    { ends_at: null, starts_at: { gte: input.semFimDesde } },
+                ],
+            },
+            /** O id desempata, como na lista do titular. */
+            orderBy: [{ starts_at: 'asc' }, { id: 'asc' }],
+            take: input.take,
+            select: {
+                id: true,
+                name: true,
+                status: true,
+                starts_at: true,
+                ends_at: true,
+                crew: { select: { id: true, name: true, tag: true } },
+                server: { select: { id: true, name: true } },
+            },
         });
     }
 

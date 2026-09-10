@@ -2438,6 +2438,58 @@ button.link:hover {
     font-variant-numeric: tabular-nums;
 }
 
+/* ─── O que está a acontecer ───────────────────────────────────────── */
+
+.landing-eventos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.landing-eventos a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+
+    padding: 12px 14px;
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    background: var(--surface);
+
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.landing-eventos a:hover {
+    border-color: var(--edge-lit);
+}
+
+.landing-evento-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    color: var(--muted);
+    font-size: 13px;
+}
+
+/*
+  "A decorrer agora" é a única linha desta lista que afirma o presente.
+  Lê-se em destaque porque é a que dá para agir já.
+*/
+.landing-evento-meta .agora {
+    color: var(--good, #34D399);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+}
+
 /* ─── Os planos, na própria página ─────────────────────────────────── */
 
 .landing-planos {

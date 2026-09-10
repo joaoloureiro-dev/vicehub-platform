@@ -27,6 +27,7 @@ export const EventsPage = () => {
     const [quandoComeca, setQuandoComeca] = useState('');
     const [lugares, setLugares] = useState('');
     const [descricao, setDescricao] = useState('');
+    const [naMontra, setNaMontra] = useState(false);
     const [mensagem, setMensagem] = useState<{
         tipo: 'good' | 'bad';
         texto: string;
@@ -78,6 +79,7 @@ export const EventsPage = () => {
                  */
                 startsAt: new Date(quandoComeca).toISOString(),
                 capacity: lugares ? Number(lugares) : null,
+                isPublic: naMontra,
             });
 
             setMensagem({ tipo: 'good', texto: t.eventos.marcado });
@@ -85,6 +87,12 @@ export const EventsPage = () => {
             setQuandoComeca('');
             setLugares('');
             setDescricao('');
+            /**
+             * A caixa volta ao fim: marcar um evento não é dizer nada
+             * sobre o seguinte, e um formulário que guardasse a escolha
+             * publicava o próximo sem ninguém decidir.
+             */
+            setNaMontra(false);
             eventos.reload();
         } catch (falha) {
             setMensagem({
@@ -228,6 +236,30 @@ export const EventsPage = () => {
                                 setDescricao(event.target.value);
                             }}
                         />
+                    </div>
+
+                    {/*
+                      Por omissão o evento é da crew e de mais ninguém.
+                      A caixa está desmarcada de propósito: publicar tem
+                      de ser um gesto, não o que acontece a quem não
+                      reparou no formulário.
+                    */}
+                    <div className="field">
+                        <label className="filtro" htmlFor="na-montra">
+                            <input
+                                id="na-montra"
+                                type="checkbox"
+                                checked={naMontra}
+                                aria-describedby="montra-hint"
+                                onChange={(event) => {
+                                    setNaMontra(event.target.checked);
+                                }}
+                            />
+                            {t.eventos.porNaMontra}
+                        </label>
+                        <p className="hint" id="montra-hint">
+                            {t.eventos.montraAjuda}
+                        </p>
                     </div>
 
                     <button

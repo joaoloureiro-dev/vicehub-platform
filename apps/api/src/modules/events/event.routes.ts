@@ -8,6 +8,7 @@ import type {
     EventParticipantParamDto,
     EventTransitionDto,
     ListEventsQueryDto,
+    ListPublicEventsQueryDto,
     UpdateEventDto,
 } from './dto/event.dto.js';
 import {
@@ -17,6 +18,7 @@ import {
     eventParticipantParamSchema,
     eventTransitionSchema,
     listEventsQuerySchema,
+    listPublicEventsQuerySchema,
     updateEventSchema,
 } from './schemas/event.schemas.js';
 
@@ -183,6 +185,25 @@ const eventRoutes: FastifyPluginAsync<EventRoutesOptions> = async (
     fastify,
     options,
 ) => {
+    /**
+     * A montra pública, e a única rota de eventos **sem `authenticate`**.
+     *
+     * Fica aqui em cima, fora do plugin do titular, porque não tem
+     * titular nenhum: atravessa as comunidades todas. E é deliberado que
+     * não peça sessão — quem chega à plataforma pela primeira vez ainda
+     * não tem conta, e é essa pessoa que precisa de ver que há coisas a
+     * acontecer.
+     *
+     * O que a torna segura não é esta rota: é o serviço só devolver
+     * eventos que a comunidade marcou como públicos, e sem lista de
+     * participantes. Um calendário continua a exigir `event:read`.
+     */
+    fastify.get<{ Querystring: ListPublicEventsQueryDto }>(
+        '/public',
+        { schema: { querystring: listPublicEventsQuerySchema } },
+        options.controller.listPublic.bind(options.controller),
+    );
+
     await fastify.register(ownerEventRoutes, {
         prefix: '/crews/:crewId',
         controller: options.controller,

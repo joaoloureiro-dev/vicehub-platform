@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     confirmAttendance,
     listEvents,
+    listPublicEvents,
     signUp,
+    updateEvent,
 } from '../src/events/event.api.js';
 import { transicoesDe } from '../src/events/event.types.js';
 
@@ -56,6 +58,39 @@ describe('cliente dos eventos', () => {
         await listEvents({ tipo: 'crews', id: 'c1' }, { includePast: true });
 
         expect(endereco()).toBe('/api/v1/events/crews/c1?includePast=true');
+    });
+
+    /**
+     * A montra não vive sob titular nenhum: atravessa as comunidades
+     * todas, e é a única rota de eventos que não pede sessão.
+     */
+    describe('a montra pública', () => {
+        it('vai a uma rota sem titular', async () => {
+            await listPublicEvents();
+
+            expect(endereco()).toBe('/api/v1/events/public');
+        });
+
+        it('leva o limite quando lho dão', async () => {
+            await listPublicEvents(3);
+
+            expect(endereco()).toBe('/api/v1/events/public?limit=3');
+        });
+    });
+
+    /**
+     * Um pedido que mude uma coisa não pode dizer nada sobre as outras:
+     * a API só toca no que lhe chega, e o cliente só manda o que lhe
+     * pedem. Mandar `isPublic: false` por omissão fecharia eventos ao
+     * mudar-lhes o nome.
+     */
+    it('só manda os campos que lhe deram', async () => {
+        await updateEvent({ tipo: 'crews', id: 'c1' }, 'e1', {
+            isPublic: true,
+        });
+
+        expect(endereco()).toBe('/api/v1/events/crews/c1/e1');
+        expect(corpo()).toEqual({ isPublic: true });
     });
 
     describe('confirmar uma presença', () => {

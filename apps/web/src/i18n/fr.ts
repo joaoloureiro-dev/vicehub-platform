@@ -32,6 +32,10 @@ export const fr = (p: Tools): Messages => ({
     },
 
     landing: {
+        aAcontecer: 'En ce moment sur ViceHub',
+        aDecorrerAgora: 'En cours',
+        comecaEm: (quando: string) => `Commence ${quando}`,
+        naCrew: (nome: string) => `avec ${nome}`,
         titulo: 'Ta crew. Ton serveur. Ta part.',
         subtitulo:
             'ViceHub, c’est là où les communautés de jeu s’organisent : dirige ta crew, fais circuler ce que vous gagnez, et prouve qui était vraiment là.',
@@ -436,6 +440,15 @@ export const fr = (p: Tools): Messages => ({
     },
 
     eventos: {
+        quemVe: 'Qui le voit',
+        naMontra: "Sur la page d'accueil",
+        soAComunidade: 'Cette communauté seulement',
+        porNaMontra: "Afficher sur la page d'accueil",
+        tirarDaMontra: "Retirer de la page d'accueil",
+        montraAjuda:
+            "Désactivé par défaut. Activé, le nom, l'heure et la communauté s'affichent à qui ouvre ViceHub — jamais qui s'est inscrit.",
+        publicado: "Cet événement apparaît désormais sur la page d'accueil.",
+        tirado: "Cet événement n'apparaît plus sur la page d'accueil.",
         titulo: 'Événements',
         verCrew: 'Voir la crew',
         soParaMembros:

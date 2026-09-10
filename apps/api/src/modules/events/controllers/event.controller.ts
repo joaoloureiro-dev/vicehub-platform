@@ -11,6 +11,7 @@ import type {
     EventParticipantParamDto,
     EventTransitionDto,
     ListEventsQueryDto,
+    ListPublicEventsQueryDto,
     UpdateEventDto,
 } from '../dto/event.dto.js';
 import { EventError } from '../errors/event.errors.js';
@@ -19,6 +20,7 @@ import type {
     EventOwner,
     EventParticipantEntry,
     EventSummary,
+    PublicEventEntry,
 } from '../types/event.types.js';
 
 interface OwnerParams {
@@ -66,6 +68,25 @@ export class EventController {
         });
 
         reply.send(eventos.map((evento) => this.toDto(evento)));
+    }
+
+    /**
+     * A montra pública, sem sessão nenhuma.
+     *
+     * Quem chega à plataforma pela primeira vez ainda não tem conta, e é
+     * exatamente essa pessoa que precisa de ver que há coisas a
+     * acontecer. Uma montra que exigisse sessão só se mostrava a quem já
+     * não precisava dela.
+     */
+    async listPublic(
+        request: FastifyRequest<{ Querystring: ListPublicEventsQueryDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const eventos = await this.eventService.listPublicEvents(
+            request.query.limit,
+        );
+
+        reply.send(eventos.map((evento) => this.toPublicDto(evento)));
     }
 
     async get(
@@ -263,6 +284,14 @@ export class EventController {
             startsAt: evento.startsAt.toISOString(),
             endsAt: evento.endsAt?.toISOString() ?? null,
             createdAt: evento.createdAt.toISOString(),
+        };
+    }
+
+    private toPublicDto(evento: PublicEventEntry) {
+        return {
+            ...evento,
+            startsAt: evento.startsAt.toISOString(),
+            endsAt: evento.endsAt?.toISOString() ?? null,
         };
     }
 
