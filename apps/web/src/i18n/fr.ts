@@ -192,6 +192,8 @@ export const fr = (p: Tools): Messages => ({
         cartaAjuda:
             'Facultatif, mais c\u2019est la seule chose qu\u2019ils liront avant de décider. Seuls ceux qui dirigent la crew le voient.',
         pedirEntrada: 'Demander à rejoindre',
+        responderamQueNao: 'Ils ont répondu non',
+        candidaturaRecusada: 'Pas cette fois',
         candidaturaEnviada: 'Candidature envoyée',
         retirarCandidatura: 'Retirer la candidature',
         sair: 'Quitter la crew',

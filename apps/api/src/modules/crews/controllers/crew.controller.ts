@@ -7,6 +7,7 @@ import type {
     CreateCrewDto,
     CrewIdParamDto,
     JoinRequestDto,
+    RejectRequestDto,
     ListCrewsQueryDto,
     CrewMemberParamDto,
     SetMemberRoleDto,
@@ -60,6 +61,8 @@ export class CrewController {
             adesoes.map((adesao) => ({
                 ...adesao,
                 since: adesao.since.toISOString(),
+                /** Ausente enquanto a candidatura estiver por responder. */
+                respondedAt: adesao.respondedAt?.toISOString() ?? null,
             })),
         );
     }
@@ -232,7 +235,10 @@ export class CrewController {
     }
 
     async rejectRequest(
-        request: FastifyRequest<{ Params: CrewMemberParamDto }>,
+        request: FastifyRequest<{
+            Params: CrewMemberParamDto;
+            Body: RejectRequestDto;
+        }>,
         reply: FastifyReply,
     ): Promise<void> {
         const { user } = requireAuthContext(request);
@@ -241,6 +247,7 @@ export class CrewController {
             request.params.crewId,
             request.params.userId,
             user.id,
+            request.body?.reason,
         );
 
         reply.status(204).send();

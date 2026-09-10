@@ -2528,3 +2528,14 @@ button.link:hover {
     font-size: 14px;
     line-height: 1.55;
 }
+
+/*
+  Uma candidatura recusada.
+
+  Cinzenta e não vermelha: um "não" não é um erro do sistema nem culpa
+  de ninguém, e pintá-lo de vermelho fazia da resposta um alarme.
+*/
+.pill.recusada {
+    background: color-mix(in srgb, var(--faint) 20%, transparent);
+    color: var(--muted);
+}

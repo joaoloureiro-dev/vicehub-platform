@@ -7,6 +7,7 @@ import type {
     CreateCrewDto,
     CrewIdParamDto,
     JoinRequestDto,
+    RejectRequestDto,
     ListCrewsQueryDto,
     CrewMemberParamDto,
     SetMemberRoleDto,
@@ -16,6 +17,7 @@ import {
     createCrewSchema,
     crewIdParamSchema,
     joinRequestSchema,
+    rejectRequestSchema,
     listCrewsQuerySchema,
     crewMemberParamSchema,
     setMemberRoleSchema,
@@ -211,14 +213,17 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
         controller.acceptRequest.bind(controller),
     );
 
-    fastify.post<{ Params: CrewMemberParamDto }>(
+    fastify.post<{ Params: CrewMemberParamDto; Body: RejectRequestDto }>(
         '/:crewId/requests/:userId/reject',
         {
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('crew:manage_members'),
             ],
-            schema: { params: crewMemberParamSchema },
+            schema: {
+                params: crewMemberParamSchema,
+                body: rejectRequestSchema,
+            },
         },
         controller.rejectRequest.bind(controller),
     );

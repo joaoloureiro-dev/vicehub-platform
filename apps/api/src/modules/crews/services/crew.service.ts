@@ -31,6 +31,17 @@ interface CreateCrewInput {
     founderId: string;
 }
 
+/**
+ * Durante quanto tempo uma recusa continua à vista de quem se
+ * candidatou.
+ *
+ * Existe porque a alternativa é pior nos dois extremos: sem prazo, a
+ * lista enche-se de recusas antigas que já não dizem nada; sem as
+ * mostrar de todo — que era o que acontecia — a pessoa nunca chega a
+ * saber que foi recusada.
+ */
+const DIAS_A_MOSTRAR_UMA_RECUSA = 30;
+
 interface ListCrewsInput {
     search?: string | undefined;
     recruiting?: boolean | undefined;
@@ -434,7 +445,10 @@ export class CrewService {
      * Crews a que um utilizador pertence ou a que se candidatou.
      */
     async listMyMemberships(userId: string): Promise<CrewMembershipSummary[]> {
-        const adesoes = await this.crewRepository.listOpenMembershipsOfUser(userId);
+        const adesoes = await this.crewRepository.listOpenMembershipsOfUser(
+            userId,
+            new Date(Date.now() - DIAS_A_MOSTRAR_UMA_RECUSA * 24 * 60 * 60 * 1000),
+        );
 
         const ids = adesoes
             .map((adesao) => adesao.crewId)
@@ -461,9 +475,11 @@ export class CrewService {
                     crewId: adesao.crew.id,
                     name: adesao.crew.name,
                     tag: adesao.crew.tag,
-                    status: adesao.status as 'pending' | 'active',
+                    status: adesao.status as 'pending' | 'active' | 'rejected',
                     role: porCrew.get(adesao.crew.id) ?? null,
                     since: adesao.created_at,
+                    respondedAt: adesao.responded_at,
+                    decisionNote: adesao.decision_note,
                 },
             ];
         });
@@ -490,10 +506,18 @@ export class CrewService {
         });
     }
 
+    /**
+     * Recusa um pedido de entrada, com uma palavra se houver.
+     *
+     * A nota é opcional porque obrigar a justificar cada recusa faz com
+     * que se deixe de recusar — e uma candidatura sem resposta nenhuma é
+     * pior do que um "não" seco.
+     */
     async rejectRequest(
         crewId: string,
         userId: string,
         respondedBy: string,
+        note?: string | undefined,
     ): Promise<void> {
         const adesao = await this.requirePendingMembership(crewId, userId);
 
@@ -501,6 +525,7 @@ export class CrewService {
             adesao.id,
             MembershipStatus.rejected,
             respondedBy,
+            note,
         );
     }
 

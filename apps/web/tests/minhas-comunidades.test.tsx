@@ -1,0 +1,138 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+
+import { MyCommunitiesPage } from '../src/pages/my-communities.page.js';
+import { montarEcra, t } from './helpers.js';
+
+const json = (status: number, body: unknown): Response =>
+    ({
+        ok: status >= 200 && status < 300,
+        status,
+        json: () => Promise.resolve(body),
+    }) as Response;
+
+const adesao = (extra: Record<string, unknown> = {}) => ({
+    crewId: 'crew-1',
+    name: 'Leonida Boys',
+    tag: 'LB',
+    status: 'pending',
+    role: null,
+    since: '2026-09-01T00:00:00.000Z',
+    respondedAt: null,
+    decisionNote: null,
+    ...extra,
+});
+
+/** As crews vêm da rota de crews; tudo o resto responde vazio. */
+const servir = (crews: unknown[]) =>
+    vi.fn((url: string) =>
+        Promise.resolve(
+            json(200, String(url).includes('/crews') ? crews : []),
+        ),
+    );
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
+
+/**
+ * O que uma pessoa vê sobre as candidaturas que fez.
+ *
+ * Isto existe por causa de um buraco que era o pior da plataforma: uma
+ * candidatura recusada desaparecia desta lista. Pedia-se entrada,
+ * esperava-se, e um dia o pedido já lá não estava — a pessoa nunca
+ * chegava a saber que tinha sido recusada, e ficava à espera de uma
+ * resposta que já tinha chegado.
+ */
+describe('as minhas comunidades', () => {
+    it('mostra as candidaturas por responder', async () => {
+        vi.stubGlobal('fetch', servir([adesao()]));
+
+        montarEcra(<MyCommunitiesPage />);
+
+        expect(await screen.findByText(t.crews.aEsperaResposta)).toBeDefined();
+    });
+
+    it('mostra as que foram recusadas', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir([
+                adesao({
+                    status: 'rejected',
+                    respondedAt: '2026-09-05T00:00:00.000Z',
+                }),
+            ]),
+        );
+
+        montarEcra(<MyCommunitiesPage />);
+
+        expect(await screen.findByText(t.crews.responderamQueNao)).toBeDefined();
+        expect(screen.getByText(t.crews.candidaturaRecusada)).toBeDefined();
+    });
+
+    it('e o motivo, quando quem recusou escreveu um', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir([
+                adesao({
+                    status: 'rejected',
+                    respondedAt: '2026-09-05T00:00:00.000Z',
+                    decisionNote: 'Estamos cheios este mês.',
+                }),
+            ]),
+        );
+
+        montarEcra(<MyCommunitiesPage />);
+
+        expect(
+            await screen.findByText('Estamos cheios este mês.'),
+        ).toBeDefined();
+    });
+
+    /**
+     * Uma recusa sem motivo escrito continua a dizer o que interessa —
+     * que houve resposta. O que não pode é aparecer uma citação vazia
+     * onde ninguém escreveu nada.
+     */
+    it('sem motivo, não inventa uma citação vazia', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir([
+                adesao({
+                    status: 'rejected',
+                    respondedAt: '2026-09-05T00:00:00.000Z',
+                }),
+            ]),
+        );
+
+        const { container } = montarEcra(<MyCommunitiesPage />);
+
+        expect(await screen.findByText(t.crews.candidaturaRecusada)).toBeDefined();
+
+        expect(container.querySelector('.carta')).toBeNull();
+    });
+
+    /**
+     * Uma recusa não é uma candidatura por responder. Juntá-las deixava
+     * a pessoa à espera de uma coisa que já aconteceu.
+     */
+    it('não conta uma recusa como estando à espera', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir([
+                adesao({
+                    status: 'rejected',
+                    respondedAt: '2026-09-05T00:00:00.000Z',
+                }),
+            ]),
+        );
+
+        montarEcra(<MyCommunitiesPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText(t.crews.responderamQueNao)).toBeDefined();
+        });
+
+        expect(screen.queryByText(t.crews.aEsperaResposta)).toBeNull();
+    });
+});

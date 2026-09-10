@@ -117,10 +117,23 @@ export interface CrewMembership {
     crewId: string;
     name: string;
     tag: string;
-    status: 'pending' | 'active';
+    /**
+     * `rejected` aparece durante um tempo depois da resposta, e depois
+     * some.
+     *
+     * Antes não aparecia de todo: uma candidatura recusada desaparecia
+     * desta lista, e quem se candidatou nunca ficava a saber que tinha
+     * sido recusado — ficava à espera de uma resposta que já tinha
+     * chegado.
+     */
+    status: 'pending' | 'active' | 'rejected';
     /** Só existe depois de a candidatura ser aceite. */
     role: string | null;
     since: string;
+    /** Quando foi respondida, ou null enquanto estiver por responder. */
+    respondedAt: string | null;
+    /** O que quem decidiu escreveu, se escreveu alguma coisa. */
+    decisionNote: string | null;
 }
 
 export type CrewRole = 'crew_leader' | 'crew_officer' | 'crew_member';

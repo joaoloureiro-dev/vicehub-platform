@@ -39,6 +39,17 @@ export const MyCommunitiesPage = () => {
     const servidoresAtivos =
         servidores.data?.filter((adesao) => adesao.status === 'active') ?? [];
 
+    /**
+     * As recusas, que a API só devolve durante um tempo depois da
+     * resposta.
+     *
+     * Vêm em secção própria e não misturadas com as pendentes: "à espera
+     * de resposta" e "responderam que não" são coisas diferentes, e
+     * juntá-las deixava a pessoa à espera de uma coisa que já aconteceu.
+     */
+    const crewsRecusadas =
+        crews.data?.filter((adesao) => adesao.status === 'rejected') ?? [];
+
     const pendentes = crewsPendentes.length + servidoresPendentes.length;
     const total = (crews.data?.length ?? 0) + (servidores.data?.length ?? 0);
 
@@ -99,6 +110,37 @@ export const MyCommunitiesPage = () => {
                                 <span className="pill aguarda">
                                     {t.crews.candidaturaEnviada}
                                 </span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            ) : null}
+
+            {crewsRecusadas.length > 0 ? (
+                <section className="grupo">
+                    <h2>{t.crews.responderamQueNao}</h2>
+                    <ul className="pessoas">
+                        {crewsRecusadas.map((adesao) => (
+                            <li key={adesao.crewId}>
+                                <Link className="nome" to={`/crews/${adesao.crewId}`}>
+                                    <span className="crewtag">[{adesao.tag}]</span>{' '}
+                                    {adesao.name}
+                                </Link>
+                                <span className="pill recusada">
+                                    {t.crews.candidaturaRecusada}
+                                </span>
+
+                                {/*
+                                  O motivo, quando quem recusou escreveu
+                                  um. Sem ele a linha diz na mesma o que
+                                  interessa — que houve resposta — em vez
+                                  de deixar a pessoa à espera para sempre.
+                                */}
+                                {adesao.decisionNote ? (
+                                    <p className="carta pre-linha">
+                                        {adesao.decisionNote}
+                                    </p>
+                                ) : null}
                             </li>
                         ))}
                     </ul>

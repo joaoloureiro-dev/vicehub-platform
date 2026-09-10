@@ -326,21 +326,46 @@ export class CrewRepository {
      * candidatar-se, e listar esses casos daria a ideia errada de que
      * ainda há alguma coisa pendente.
      */
-    listOpenMembershipsOfUser(userId: string) {
+    listOpenMembershipsOfUser(userId: string, recusadasDesde: Date) {
         return this.database.membership.findMany({
             where: {
                 userId,
                 type: MembershipType.crew,
                 is_deleted: false,
-                status: {
-                    in: [MembershipStatus.pending, MembershipStatus.active],
-                },
+                OR: [
+                    {
+                        status: {
+                            in: [MembershipStatus.pending, MembershipStatus.active],
+                        },
+                    },
+                    /**
+                     * As recusadas recentes vêm também, e é o ponto
+                     * todo desta alteração.
+                     *
+                     * Antes, uma candidatura recusada desaparecia da
+                     * lista de quem se candidatou: pedia-se entrada,
+                     * esperava-se, e um dia o pedido já lá não estava.
+                     * A pessoa nunca chegava a saber que tinha sido
+                     * recusada — que é a queixa que se ouve sobre
+                     * comunidades em todo o lado.
+                     *
+                     * Recentes, e não todas: "foste recusado a semana
+                     * passada" diz alguma coisa a quem lê, "foste
+                     * recusado há dois anos" só enche a lista.
+                     */
+                    {
+                        status: MembershipStatus.rejected,
+                        responded_at: { gte: recusadasDesde },
+                    },
+                ],
             },
             orderBy: { created_at: 'desc' },
             select: {
                 crewId: true,
                 status: true,
                 created_at: true,
+                responded_at: true,
+                decision_note: true,
                 crew: { select: { id: true, name: true, tag: true } },
             },
         });
@@ -418,6 +443,7 @@ export class CrewRepository {
         membershipId: string,
         status: MembershipStatus,
         respondedBy: string | null,
+        note?: string | undefined,
     ) {
         return this.database.membership.update({
             where: { id: membershipId },
@@ -426,6 +452,12 @@ export class CrewRepository {
                 responded_at: new Date(),
                 responded_by: respondedBy,
                 version: { increment: 1 },
+                /**
+                 * Ausente continua ausente: "não escreveu nada" e
+                 * "escreveu e apagou" não são a mesma coisa para quem
+                 * lê a resposta.
+                 */
+                ...(note === undefined ? {} : { decision_note: note }),
             },
         });
     }

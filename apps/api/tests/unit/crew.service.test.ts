@@ -229,8 +229,36 @@ describe('CrewService', () => {
 
             await service.rejectRequest('crew-1', 'user-2', 'user-1');
 
-            expect(repository.setMembershipStatus).toHaveBeenCalledWith('m1', 'rejected', 'user-1');
+            expect(repository.setMembershipStatus).toHaveBeenCalledWith(
+                'm1',
+                'rejected',
+                'user-1',
+                undefined,
+            );
             expect(roles.setScopedRole).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Uma recusa pode levar uma palavra. Opcional, porque obrigar a
+         * justificar cada recusa faz com que se deixe de recusar — e uma
+         * candidatura sem resposta nenhuma é pior do que um "não" seco.
+         */
+        it('leva o motivo, quando quem recusa o escreve', async () => {
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending' });
+
+            await service.rejectRequest(
+                'crew-1',
+                'user-2',
+                'user-1',
+                'Estamos cheios este mês.',
+            );
+
+            expect(repository.setMembershipStatus).toHaveBeenCalledWith(
+                'm1',
+                'rejected',
+                'user-1',
+                'Estamos cheios este mês.',
+            );
         });
 
         it('recusa responder a um pedido já respondido', async () => {
