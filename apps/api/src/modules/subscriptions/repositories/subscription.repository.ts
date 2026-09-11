@@ -96,6 +96,14 @@ export class SubscriptionRepository {
             },
             select: {
                 plan: true,
+                /**
+                 * O estado vem porque uma avaliação do servidor é uma
+                 * avaliação para as crews que lá jogam também: o que
+                 * lhes chega é o mesmo direito, e acaba no mesmo dia.
+                 * Sem isto, a crew via o direito descrito como um plano
+                 * pago que ninguém pagou.
+                 */
+                status: true,
                 current_period_end: true,
                 serverId: true,
                 server: { select: { name: true } },

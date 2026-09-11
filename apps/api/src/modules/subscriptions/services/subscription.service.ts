@@ -1,6 +1,7 @@
 import {
     PLANS,
     SubscriptionPlan,
+    SubscriptionStatus,
     addPlanInterval,
     isPerpetualPlan,
 } from '@vicehub/database';
@@ -54,6 +55,7 @@ export class SubscriptionService {
                 isPremium: true,
                 isLifetime: isPerpetualPlan(subscription.plan),
                 plan: subscription.plan,
+                isTrial: subscription.status === SubscriptionStatus.trialing,
                 activeUntil: subscription.current_period_end,
                 via: null,
             };
@@ -90,6 +92,13 @@ export class SubscriptionService {
                      * nome era esconder de onde vem.
                      */
                     plan: doServidor.plan,
+                    /**
+                     * A avaliação do servidor é uma avaliação para as
+                     * crews que lá jogam também: o que lhes chega é o
+                     * mesmo direito, e acaba no mesmo dia.
+                     */
+                    isTrial:
+                        doServidor.status === SubscriptionStatus.trialing,
                     activeUntil: doServidor.current_period_end,
                     via: {
                         kind: 'server',
@@ -105,6 +114,7 @@ export class SubscriptionService {
             isPremium: false,
             isLifetime: false,
             plan: null,
+            isTrial: false,
             activeUntil: null,
             via: null,
         };

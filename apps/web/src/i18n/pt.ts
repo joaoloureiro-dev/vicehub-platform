@@ -387,6 +387,11 @@ export const pt = (p: Tools): Messages => ({
         precisaDePlano:
             'Mexer no dinheiro faz parte do plano da crew — o plano é da crew, e não teu. O saldo, o extrato e as divisões passadas ficam à vista de todos; propor e aprovar é que exigem plano ativo.',
         verPlano: 'Ver o que o plano dá à crew',
+        avaliacaoAcaba: (dias: number) =>
+            p.plural(dias, {
+                one: 'A tua avaliação acaba amanhã. Depois disso o saldo continua à vista, mas propor e aprovar exigem plano.',
+                other: `A tua avaliação acaba daqui a ${dias} dias. Depois disso o saldo continua à vista, mas propor e aprovar exigem plano.`,
+            }),
         soParaMembros:
             'As contas de uma crew só são visíveis a quem pertence a ela.',
         disponivel: 'Disponível',

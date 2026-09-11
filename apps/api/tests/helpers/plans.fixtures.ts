@@ -32,3 +32,21 @@ export const darPlano = async (
         },
     });
 };
+
+/**
+ * Deixa uma crew ou um servidor sem plano nenhum.
+ *
+ * Existe porque **uma comunidade acabada de criar já vem com trinta
+ * dias de avaliação**. Um teste que queira o caso de quem não paga tem
+ * de o dizer de propósito — e é bom que o diga, porque a alternativa é
+ * escrever "sem plano" no nome do teste e estar a exercitar o contrário
+ * sem dar por isso.
+ */
+export const tirarPlano = async (
+    owner: { crewId: string } | { serverId: string },
+): Promise<void> => {
+    await prisma.subscription.updateMany({
+        where: owner,
+        data: { status: 'canceled', ended_at: new Date() },
+    });
+};

@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tirarPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * A filiação entre uma crew e um servidor, contra PostgreSQL a sério.
@@ -457,6 +458,14 @@ describe('filiação entre crews e servidores', () => {
         beforeAll(async () => {
             donoCheio = await register(`limdono${marca}`);
             cheio = await criarServidor(donoCheio, `lim${marca}`);
+
+            /**
+             * Um servidor novo vem com trinta dias de avaliação, e a
+             * avaliação vale pelo escalão de entrada — dez crews. O que
+             * este bloco prova é o limite de **quem não paga**, por isso
+             * a avaliação sai de propósito.
+             */
+            await tirarPlano({ serverId: cheio });
         });
 
         it('começa vazio, com as três de quem não paga', async () => {

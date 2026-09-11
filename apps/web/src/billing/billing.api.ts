@@ -34,8 +34,29 @@ export interface SubscriptionSummary {
      * indistinguível de quem não tem plano: em ambos os casos não há data.
      */
     isLifetime: boolean;
+    /**
+     * Se o que dá direito é uma avaliação, e não um plano pago.
+     *
+     * `isPremium` é verdade nos dois casos, e é suposto ser: uma
+     * avaliação dá o mesmo. O que muda é o que o ecrã diz — uma
+     * avaliação acaba, e acabar em silêncio era a pior maneira de
+     * vender.
+     */
+    isTrial: boolean;
     activeUntil: string | null;
 }
+
+/**
+ * O plano de uma crew, para quem a gere.
+ *
+ * Exige `crew:manage`, e é de propósito: se a crew está em avaliação e
+ * quando é que ela acaba diz respeito a quem decide se a paga, e não a
+ * quem passa pela página. Um 403 aqui é a resposta — não uma avaria.
+ */
+export const getCrewSubscription = (
+    crewId: string,
+): Promise<SubscriptionSummary> =>
+    api<SubscriptionSummary>(`/subscriptions/crews/${crewId}`);
 
 export const getMySubscription = (): Promise<SubscriptionSummary> =>
     api<SubscriptionSummary>('/subscriptions/me');

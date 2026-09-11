@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
-import { darPlano } from '../helpers/plans.fixtures.js';
+import { darPlano, tirarPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * O que a plataforma dá e o que vende, contra PostgreSQL a sério.
@@ -120,6 +120,9 @@ describe('a tesouraria por trás do plano', () => {
 
         expect(servidor.statusCode, servidor.body).toBe(201);
         serverId = servidor.json().id as string;
+
+        /** Um servidor novo vem em avaliação; aqui queremos um sem nada. */
+        await tirarPlano({ serverId });
 
         await darPlano({ crewId: crewPaga });
 

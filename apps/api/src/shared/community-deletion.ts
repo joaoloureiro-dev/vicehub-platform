@@ -1,6 +1,7 @@
 import {
     DistributionStatus,
     entitlingSubscriptionFilter,
+    PAID_SUBSCRIPTION_STATUSES,
     TransactionStatus,
     type DatabaseClient,
 } from '@vicehub/database';
@@ -30,11 +31,15 @@ export interface DeletionBlockers {
     openDecisions: number;
 
     /**
-     * Um plano próprio ainda a dar direito.
+     * Um plano próprio **pago** ainda a dar direito.
      *
      * Não se apaga o que está a ser pago — nem o que foi oferecido:
      * um plano vitalício numa crew apagada é um presente que se perde
      * sem ninguém dar por isso.
+     *
+     * Uma avaliação não conta: não foi paga nem oferecida a ninguém, e
+     * contá-la trancava toda a comunidade recém-criada durante trinta
+     * dias.
      */
     hasActivePlan: boolean;
 }
@@ -71,8 +76,31 @@ export const findDeletionBlockers = async (
                 is_deleted: false,
             },
         }),
+        /**
+         * Um plano **pago** impede apagar; uma avaliação não.
+         *
+         * A razão de a condição existir é não destruir o que alguém
+         * pagou — ou o que lhe foi oferecido: um vitalício numa crew
+         * apagada é um presente que se perde sem ninguém dar por isso.
+         * Uma avaliação não é nem uma coisa nem outra. Contá-la aqui
+         * trancava toda a comunidade recém-criada durante trinta dias,
+         * incluindo a que alguém criou por engano e quis desfazer no
+         * minuto seguinte.
+         */
         database.subscription.findFirst({
-            where: { ...owner, ...entitlingSubscriptionFilter(agora) },
+            where: {
+                ...owner,
+                ...entitlingSubscriptionFilter(agora),
+                /**
+                 * Substitui o `status` que o filtro acima traz, e é
+                 * preciso que substitua: os estados que dão acesso
+                 * incluem a avaliação, e aqui a pergunta é outra.
+                 * Escrever `{ not: trialing }` seria pior do que
+                 * parece — apagava a lista inteira e deixava passar um
+                 * plano **cancelado** cujo período ainda não acabou.
+                 */
+                status: { in: [...PAID_SUBSCRIPTION_STATUSES] },
+            },
             select: { id: true },
         }),
     ]);

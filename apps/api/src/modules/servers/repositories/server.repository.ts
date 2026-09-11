@@ -1,5 +1,9 @@
 import {
     entitlingSubscriptionFilter,
+    fimDaAvaliacao,
+    PLANS,
+    SubscriptionPlan,
+    SubscriptionStatus,
     filtroDeOnline,
     MembershipStatus,
     MembershipType,
@@ -80,6 +84,11 @@ export class ServerRepository {
      *
      * A adesão entra na mesma escrita aninhada que cria o servidor: nunca
      * existe um servidor sem membros, nem sequer por instantes.
+     *
+     * A avaliação entra pela mesma razão: um servidor que nascesse sem
+     * ela abria com a tesouraria fechada e com lugar para três crews em
+     * vez de dez, e quem o criou não teria como saber que lhe faltava
+     * alguma coisa. Ou nasce inteiro, ou não nasce.
      */
     createWithOwner(input: CreateServerInput) {
         const data: {
@@ -90,6 +99,7 @@ export class ServerRepository {
             description?: string | null;
             memberships: unknown;
             wallet: unknown;
+            subscriptions: unknown;
         } = {
             name: input.name,
             source: SourceType.api,
@@ -107,6 +117,27 @@ export class ServerRepository {
             wallet: {
                 create: {
                     source: SourceType.api,
+                },
+            },
+            /**
+             * O escalão de entrada, e não o plano de uma pessoa: o que
+             * um servidor compra é o direito a ter crews a jogar lá, e
+             * uma avaliação que não mostrasse esse direito não mostrava
+             * nada. Durante trinta dias vale por dez crews; depois, se
+             * ninguém pagar, valem três — e as que entretanto entraram
+             * ficam, porque nunca se tira uma crew a ninguém.
+             */
+            subscriptions: {
+                create: {
+                    plan: SubscriptionPlan.server_base,
+                    status: SubscriptionStatus.trialing,
+                    /** Zero: uma avaliação não cobra nada a ninguém. */
+                    price_cents: 0,
+                    currency: PLANS.server_base.currency,
+                    current_period_start: new Date(),
+                    current_period_end: fimDaAvaliacao(),
+                    source: SourceType.api,
+                    created_by: input.ownerId,
                 },
             },
         };

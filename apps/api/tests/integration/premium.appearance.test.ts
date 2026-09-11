@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { ENTITLING_SUBSCRIPTION_STATUSES, prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tirarPlano } from '../helpers/plans.fixtures.js';
 import { FEATURED_SLOTS } from '../../src/shared/featured.js';
 
 /**
@@ -317,6 +318,14 @@ describe('personalização: grátis para pessoas, paga para comunidades', () => 
     describe('numa crew, conta o plano da crew', () => {
         it('recusa ao líder que só tem plano pessoal', async () => {
             const id = await userIdOf(liderCrew);
+
+            /**
+             * A crew nasce com trinta dias de avaliação. O que este
+             * teste prova é que o plano **de quem lidera** não serve
+             * para a crew, e com a avaliação a valer a recusa vinha por
+             * outra razão — ou não vinha de todo.
+             */
+            await tirarPlano({ crewId });
 
             await grant({ userId: id }, daquiAUmAno());
 

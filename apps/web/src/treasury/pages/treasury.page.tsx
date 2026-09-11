@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 import { ApiError } from '../../lib/api.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
+import { getCrewSubscription } from '../../billing/billing.api.js';
 import { getCrew } from '../../crews/crew.api.js';
 import {
     approveMovement,
@@ -81,6 +82,25 @@ export const TreasuryPage = () => {
         [crewId],
     );
 
+    /**
+     * O plano da crew, só para quem a gere.
+     *
+     * Serve uma coisa só: avisar de que a avaliação acaba. Um 403 é a
+     * resposta a quem não decide sobre isto, e não uma avaria — quem
+     * apenas pertence à crew continua a ver a tesouraria na mesma.
+     */
+    const plano = useAsync(
+        () =>
+            getCrewSubscription(crewId as string).catch((falha: unknown) => {
+                if (falha instanceof ApiError && falha.status === 403) {
+                    return null;
+                }
+
+                throw falha;
+            }),
+        [crewId],
+    );
+
     const divisoes = useAsync(
         () =>
             listDistributions(crewId as string).catch((falha: unknown) => {
@@ -107,6 +127,25 @@ export const TreasuryPage = () => {
      * porque mostrar o aviso e tirá-lo a seguir era pior do que esperar.
      */
     const podeMexer = crew.data?.isPremium;
+
+    /**
+     * Quantos dias faltam à avaliação, quando é uma avaliação que está
+     * a dar direito.
+     *
+     * Arredondado para cima: com dezoito horas por passar, o que falta é
+     * um dia e não zero — e "zero dias" num ecrã que ainda funciona
+     * lê-se como avaria.
+     */
+    const diasDeAvaliacao =
+        plano.data?.isTrial && plano.data.activeUntil
+            ? Math.max(
+                  0,
+                  Math.ceil(
+                      (new Date(plano.data.activeUntil).getTime() - Date.now())
+                      / 86_400_000,
+                  ),
+              )
+            : null;
 
     const agir = async (acao: () => Promise<unknown>, bom: string) => {
         setMensagem(null);
@@ -221,6 +260,23 @@ export const TreasuryPage = () => {
             {podeMexer === false ? null : (
             <section className="grupo">
                 <h2>{t.tesouraria.proporTitulo}</h2>
+
+                {/*
+                  A avaliação acaba, e acabar em silêncio — com a
+                  tesouraria a fechar-se sem aviso — era a pior maneira
+                  de vender. Fica aqui, por cima do formulário que
+                  deixará de existir.
+                */}
+                {diasDeAvaliacao !== null ? (
+                    <p className="hint">
+                        {t.tesouraria.avaliacaoAcaba(diasDeAvaliacao)}{' '}
+                        <Link
+                            to={`/premium?crew=${encodeURIComponent(crewId as string)}`}
+                        >
+                            {t.tesouraria.verPlano}
+                        </Link>
+                    </p>
+                ) : null}
                 <p className="hint">{t.tesouraria.proporAviso}</p>
 
                 <form

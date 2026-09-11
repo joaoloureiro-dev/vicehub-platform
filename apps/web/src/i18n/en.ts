@@ -385,6 +385,11 @@ export const en = (p: Tools) => ({
         precisaDePlano:
             "Moving money is part of the crew's plan — the plan belongs to the crew, not to you. The balance, the statement and past splits stay visible to everyone; proposing and approving need an active plan.",
         verPlano: 'See what the plan gives the crew',
+        avaliacaoAcaba: (dias: number) =>
+            p.plural(dias, {
+                one: 'Your trial ends tomorrow. After that the balance stays visible, but proposing and approving need a plan.',
+                other: `Your trial ends in ${dias} days. After that the balance stays visible, but proposing and approving need a plan.`,
+            }),
         soParaMembros: "A crew's books are only visible to its members.",
         disponivel: 'Available',
         liquidado: 'Settled',
