@@ -308,6 +308,12 @@ export const fr = (p: Tools): Messages => ({
             'L\u2019adresse, le nom, l\u2019image et le texte sont effacés, ainsi que le mot de passe et les connexions Discord ou Google. Ce qui reste : les mouvements que tu as proposés ou approuvés, et les événements où tu étais — cela appartient à tes crews et non à toi, et les retirer laisserait leurs comptes faux.',
         apagarContaPassword: 'Ton mot de passe, si le compte en a un',
         apagarContaConfirmar: 'Supprimer le compte définitivement',
+        levarDados: 'Emporte tes données',
+        levarDadosExplicacao:
+            'Un fichier avec tout ce que ViceHub a sur toi : le compte, les communautés où tu es, les événements où tu étais, ce que tu as proposé et décidé dans une trésorerie, et ce que la plateforme t\u2019a donné. Le mot de passe et tes connexions n\u2019y sont pas — ce sont des clés du compte, pas des faits sur toi.',
+        levarDadosBotao: 'Télécharger mes données',
+        levarDadosAPreparar: 'Préparation…',
+        levarDadosFalhou: 'Le fichier n\u2019a pas pu être préparé. Réessaie dans un instant.',
         titulo: 'Mon profil',
         verPublico: 'Voir en public',
         naoCarregou: 'Ton profil n’a pas pu être chargé.',

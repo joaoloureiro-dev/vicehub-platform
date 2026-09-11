@@ -9,6 +9,7 @@ import { requestEmailVerification } from '../../auth/auth.api.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
 import { ApagarConta } from '../components/apagar-conta.js';
+import { LevarDados } from '../components/levar-dados.js';
 import { ListaDeAmigos } from '../components/lista-de-amigos.js';
 import {
     getMyProfile,
@@ -280,12 +281,20 @@ export const MyProfilePage = () => {
             </section>
 
             {/*
-              Apagar a conta fica em último, e fica à vista.
-              
-              Em último porque é o fim de tudo o resto desta página; à
-              vista porque uma conta que se cria num minuto e demora uma
-              semana a apagar não é uma conta, é uma armadilha.
+              As duas ficam no fim, e nesta ordem.
+
+              Quem chega aqui está a pensar em sair, e a ordem em que
+              aparecem é a ordem por que devem ser feitas: **levar os
+              dados primeiro, apagar depois**. Ao contrário, quem
+              carregasse na segunda perdia o direito à primeira sem
+              nunca a ter visto.
+
+              E ficam à vista as duas: uma conta que se cria num minuto
+              e demora uma semana a apagar não é uma conta, é uma
+              armadilha.
             */}
+            <LevarDados />
+
             <ApagarConta username={eu.username} />
         </div>
     );

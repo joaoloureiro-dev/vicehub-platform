@@ -4,6 +4,7 @@ import {
     eraseAccount,
     findAccountDeletionBlockers,
 } from '../../../shared/account-erasure.js';
+import { buildAccountExport } from '../../../shared/account-export.js';
 import { listAchievements } from '../../../shared/list-achievements.js';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
@@ -51,6 +52,17 @@ export class UserRepository {
             where: { userId, is_deleted: false },
             select: { password_hash: true },
         });
+    }
+
+    /**
+     * Tudo o que a plataforma tem sobre esta pessoa.
+     *
+     * A leitura vive no módulo partilhado e não aqui: o que interessa é
+     * a **lista** do que entra e do que não entra, e essa lista tem de
+     * se ler de uma vez. Espalhá-la por dez métodos era escondê-la.
+     */
+    exportAccount(userId: string) {
+        return buildAccountExport(this.database, userId);
     }
 
     /**
