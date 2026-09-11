@@ -384,6 +384,9 @@ export const pt = (p: Tools): Messages => ({
     tesouraria: {
         titulo: 'Tesouraria',
         verCrew: 'Ver a crew',
+        precisaDePlano:
+            'Mexer no dinheiro faz parte do plano da crew — o plano é da crew, e não teu. O saldo, o extrato e as divisões passadas ficam à vista de todos; propor e aprovar é que exigem plano ativo.',
+        verPlano: 'Ver o que o plano dá à crew',
         soParaMembros:
             'As contas de uma crew só são visíveis a quem pertence a ela.',
         disponivel: 'Disponível',

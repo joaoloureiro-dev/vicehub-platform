@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { darPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * Um servidor a pagar às crews que lá jogam, contra PostgreSQL a sério.
@@ -125,6 +126,14 @@ describe('transferências entre tesourarias', () => {
         serverId = servidor.json().id as string;
 
         crewId = await criarCrew(dono, `Crew ${marca}`, `A${marca.slice(-6)}`);
+
+        /**
+         * As duas pontas pagam: o servidor porque é de lá que o dinheiro
+         * sai, a crew porque é ela que depois o divide. Mexer no
+         * dinheiro exige plano; ler não.
+         */
+        await darPlano({ serverId });
+        await darPlano({ crewId });
         crewDeFora = await criarCrew(dono, `Fora ${marca}`, `B${marca.slice(-6)}`);
 
         /** A crew pede para jogar no servidor, e o servidor aceita. */

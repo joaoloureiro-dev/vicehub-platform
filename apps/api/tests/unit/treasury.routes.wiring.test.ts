@@ -15,6 +15,8 @@ import type { TreasuryController } from '../../src/modules/treasury/controllers/
 describe('ligação das rotas de tesouraria', () => {
     const registered = new Map<string, RouteOptions>();
     const permissoesPorRota = new Map<string, string[]>();
+    /** De quem é o plano que cada rota exige, quando exige algum. */
+    const planoPorRota = new Map<string, string[]>();
 
     beforeAll(async () => {
         const app = Fastify();
@@ -24,10 +26,25 @@ describe('ligação das rotas de tesouraria', () => {
         app.decorate('authenticate', vi.fn() as never);
 
         const pedidas = new Map<unknown, string[]>();
+        const planosPedidos = new Map<unknown, string>();
 
         app.decorate('authorize', ((...permissions: string[]) => {
             const handler = vi.fn();
             pedidas.set(handler, permissions);
+            return handler;
+        }) as never);
+
+        /**
+         * O mesmo truque para o plano: cada guard fica identificado pelo
+         * titular que exige, para que o teste possa dizer não só "esta
+         * rota pede plano" como **de quem**. Numa rota de crew, exigir o
+         * plano da crew ou o de quem faz o pedido são coisas
+         * diferentes, e a segunda deixaria qualquer pessoa com premium
+         * mexer na tesouraria de uma crew que não paga nada.
+         */
+        app.decorate('requirePremium', ((kind: string) => {
+            const handler = vi.fn();
+            planosPedidos.set(handler, kind);
             return handler;
         }) as never);
 
@@ -44,6 +61,13 @@ describe('ligação das rotas de tesouraria', () => {
             permissoesPorRota.set(
                 key,
                 preHandlers.flatMap((handler) => pedidas.get(handler) ?? []),
+            );
+
+            planoPorRota.set(
+                key,
+                preHandlers.flatMap(
+                    (handler) => planosPedidos.get(handler) ?? [],
+                ),
             );
         });
 
@@ -294,6 +318,82 @@ describe('ligação das rotas de tesouraria', () => {
                     'POST /crews/:crewId/distributions/:distributionId/approve',
                 )?.schema?.params,
             ).toBeDefined();
+        });
+    });
+
+    /**
+     * O que a plataforma dá e o que vende.
+     *
+     * Esta é a linha do produto escrita em código: **ler a tesouraria é
+     * de graça, mexer no dinheiro é que é o plano**. Quem lidera uma
+     * crew sem plano continua a ver o saldo, o histórico e as divisões
+     * passadas; o que não pode é propor nem aprovar.
+     *
+     * As listas são fixas de propósito. Uma rota de escrita nova que se
+     * esqueça do guard não passa a estar coberta por uma regra genérica:
+     * cai aqui, e é esse o ponto.
+     */
+    describe('o que o plano da comunidade fecha', () => {
+        const ESCRITAS: [string, string][] = [
+            ['POST /crews/:crewId/movements', 'crew'],
+            ['POST /crews/:crewId/movements/:movementId/approve', 'crew'],
+            ['POST /crews/:crewId/movements/:movementId/reject', 'crew'],
+            ['DELETE /crews/:crewId/movements/:movementId', 'crew'],
+            ['POST /crews/:crewId/distributions', 'crew'],
+            ['POST /crews/:crewId/distributions/:distributionId/approve', 'crew'],
+            ['POST /crews/:crewId/distributions/:distributionId/reject', 'crew'],
+            ['POST /servers/:serverId/movements', 'server'],
+            ['POST /servers/:serverId/movements/:movementId/approve', 'server'],
+            ['POST /servers/:serverId/movements/:movementId/reject', 'server'],
+            ['DELETE /servers/:serverId/movements/:movementId', 'server'],
+            ['POST /servers/:serverId/transfers', 'server'],
+        ];
+
+        const LEITURAS = [
+            'GET /me',
+            'GET /crews/:crewId',
+            'GET /servers/:serverId',
+            'GET /crews/:crewId/distributions',
+        ];
+
+        it.each(ESCRITAS)('%s exige o plano %s', (rota, titular) => {
+            expect(registered.has(rota), `rota ${rota} não registada`).toBe(true);
+            expect(planoPorRota.get(rota)).toEqual([titular]);
+        });
+
+        /**
+         * O plano é **do caminho**, e não de quem faz o pedido. Um
+         * `requirePremium()` sem titular leria o plano de quem clica — e
+         * qualquer pessoa com premium próprio passava a poder mexer na
+         * tesouraria de uma crew que não paga nada.
+         */
+        it('nenhuma escrita se contenta com o plano de quem pede', () => {
+            for (const [rota] of ESCRITAS) {
+                expect(planoPorRota.get(rota), rota).not.toContain('user');
+            }
+        });
+
+        it.each(LEITURAS)('%s continua a não exigir plano nenhum', (rota) => {
+            expect(registered.has(rota), `rota ${rota} não registada`).toBe(true);
+            expect(planoPorRota.get(rota)).toEqual([]);
+        });
+
+        /**
+         * E a lista das escritas está completa: qualquer rota que não
+         * seja um GET e não esteja acima é uma escrita sem paywall que
+         * passou despercebida.
+         */
+        it('não há escritas de tesouraria fora desta lista', () => {
+            const nomeadas = new Set(ESCRITAS.map(([rota]) => rota));
+
+            const escritasSemPlano = [...registered.keys()].filter(
+                (rota) =>
+                    !rota.startsWith('GET ')
+                    && !rota.startsWith('HEAD ')
+                    && !nomeadas.has(rota),
+            );
+
+            expect(escritasSemPlano).toEqual([]);
         });
     });
 });

@@ -42,6 +42,22 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
     const { controller } = options;
 
     /**
+     * Ler é de graça; mexer no dinheiro é que é o plano.
+     *
+     * É esta a linha que separa o que a plataforma dá de o que vende, e
+     * está aqui escrita porque é fácil de apagar sem querer: cada
+     * escrita leva `requirePremium` do titular do **caminho** — o plano
+     * da crew ou do servidor de quem é a tesouraria, e não o de quem faz
+     * o pedido. Quem lidera uma crew sem plano continua a ver tudo: o
+     * saldo, o histórico, as divisões passadas. O que não pode é propor
+     * nem aprovar.
+     *
+     * Nada é retirado a ninguém quando um plano acaba. O dinheiro fica
+     * onde está e continua à vista; volta a mexer-se quando o plano
+     * voltar.
+     */
+
+    /**
      * A própria carteira não exige permissão nenhuma além de ter conta.
      */
     fastify.get<{ Querystring: ListMovementsQueryDto }>(
@@ -92,6 +108,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:transfer'),
+                fastify.requirePremium('crew'),
             ],
             schema: {
                 params: crewTreasuryParamSchema,
@@ -107,6 +124,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:transfer'),
+                fastify.requirePremium('server'),
             ],
             schema: {
                 params: serverTreasuryParamSchema,
@@ -135,6 +153,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:transfer'),
+                fastify.requirePremium('server'),
             ],
             schema: {
                 params: serverTreasuryParamSchema,
@@ -158,6 +177,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:approve'),
+                fastify.requirePremium('crew'),
             ],
             schema: { params: crewMovementParamSchema },
         },
@@ -170,6 +190,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:approve'),
+                fastify.requirePremium('crew'),
             ],
             schema: { params: crewMovementParamSchema },
         },
@@ -182,6 +203,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:approve'),
+                fastify.requirePremium('server'),
             ],
             schema: { params: serverMovementParamSchema },
         },
@@ -194,6 +216,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:approve'),
+                fastify.requirePremium('server'),
             ],
             schema: { params: serverMovementParamSchema },
         },
@@ -210,6 +233,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:transfer'),
+                fastify.requirePremium('crew'),
             ],
             schema: { params: crewMovementParamSchema },
         },
@@ -222,6 +246,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:transfer'),
+                fastify.requirePremium('server'),
             ],
             schema: { params: serverMovementParamSchema },
         },
@@ -241,6 +266,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:transfer'),
+                fastify.requirePremium('crew'),
             ],
             schema: {
                 params: crewTreasuryParamSchema,
@@ -271,6 +297,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:approve'),
+                fastify.requirePremium('crew'),
             ],
             schema: { params: crewDistributionParamSchema },
         },
@@ -283,6 +310,7 @@ const treasuryRoutes: FastifyPluginAsync<TreasuryRoutesOptions> = async (
             preHandler: [
                 fastify.authenticate,
                 fastify.authorize('treasury:approve'),
+                fastify.requirePremium('crew'),
             ],
             schema: { params: crewDistributionParamSchema },
         },
