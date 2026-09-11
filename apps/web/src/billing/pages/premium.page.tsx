@@ -257,6 +257,30 @@ export const PremiumPage = () => {
                         {t.premium.irParaPerfil}
                     </Link>
                 </div>
+            ) : !paraComunidade ? (
+                /*
+                 * Sem comunidade no caminho não há nada a vender.
+                 *
+                 * O plano é de uma crew ou de um servidor: a tesouraria
+                 * que ele abre é de uma comunidade, e os lugares que dá
+                 * são de um servidor. Uma pessoa que o comprasse para si
+                 * não comprava nada — e a API recusa-o, por isso um
+                 * botão aqui seria um botão que só pode falhar.
+                 */
+                <div className="premium-estado">
+                    <p>{t.premium.planoEDeComunidade}</p>
+                    <Link
+                        className="primary"
+                        to={user ? '/eu/comunidades' : '/registo'}
+                    >
+                        {user
+                            ? t.premium.asMinhasComunidades
+                            : t.premium.criarConta}
+                    </Link>
+                    {user ? null : (
+                        <Link to="/entrar">{t.premium.jaTenhoConta}</Link>
+                    )}
+                </div>
             ) : meu?.isPremium ? (
                 <div className="premium-estado ativo">
                     <p>

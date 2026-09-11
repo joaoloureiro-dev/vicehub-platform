@@ -84,9 +84,15 @@ describe('BillingService', () => {
     const OUTRA_PESSOA = '33333333-3333-4333-8333-333333333333';
     const UMA_CREW = '11111111-1111-4111-8111-111111111111';
 
+    /**
+     * A compra normal é **de uma crew**, e não de uma pessoa. O plano é
+     * de uma comunidade: a tesouraria que ele abre é de uma crew, os
+     * lugares que dá são de um servidor. Uma pessoa que comprasse para
+     * si não comprava nada, e a API recusa-o.
+     */
     const compra = {
-        ownerKind: 'user' as const,
-        ownerId: EU,
+        ownerKind: 'crew' as const,
+        ownerId: UMA_CREW,
         buyerId: EU,
     };
 
@@ -171,8 +177,8 @@ describe('BillingService', () => {
                 .plans.find((plano) => plano.key === 'premium');
 
             expect(premium).toMatchObject({
-                priceCents: 1_000,
-                currency: 'USD',
+                priceCents: 499,
+                currency: 'EUR',
                 intervalMonths: 1,
             });
         });
@@ -237,24 +243,60 @@ describe('BillingService', () => {
             expect(erro).toBeInstanceOf(AuthorizationError);
         };
 
-        it('deixa comprar para si próprio', async () => {
+        it('deixa comprar para uma crew que se gere', async () => {
             await expect(
                 service.startCheckout(compra),
             ).resolves.toBeDefined();
         });
 
         /**
-         * Comprar para a conta de outra pessoa prendia a cobrança
-         * recorrente de quem paga a uma conta que não é sua.
+         * Não há plano nenhum para uma pessoa comprar para si.
+         *
+         * Durante um tempo houve — dava para personalizar o perfil —,
+         * mas a personalização passou a ser de graça para toda a gente.
+         * O que ficou do lado pago é gestão de uma comunidade, e isso
+         * não é de ninguém em particular. Deixar comprar seria cobrar
+         * por coisa nenhuma.
          */
+        it('recusa comprar um plano para a própria conta', async () => {
+            await expect(
+                service.startCheckout({
+                    ownerKind: 'user',
+                    ownerId: EU,
+                    buyerId: EU,
+                }),
+            ).rejects.toMatchObject({ code: 'PLAN_IS_FOR_COMMUNITIES' });
+        });
+
         it('recusa comprar para a conta de outra pessoa', async () => {
-            await esperarRecusa(
+            await expect(
                 service.startCheckout({
                     ownerKind: 'user',
                     ownerId: OUTRA_PESSOA,
                     buyerId: EU,
                 }),
+            ).rejects.toMatchObject({ code: 'PLAN_IS_FOR_COMMUNITIES' });
+        });
+
+        /**
+         * A recusa vem **antes** de se olhar para a configuração: uma
+         * instalação sem Stripe respondia 503 a toda a gente, e a razão
+         * verdadeira — não há nada para comprar — ficava escondida.
+         */
+        it('recusa a compra pessoal mesmo sem cobrança configurada', async () => {
+            const semStripe = new BillingService(
+                repository as unknown as BillingRepository,
+                null,
+                createAuthorizationMock() as unknown as AuthorizationService,
             );
+
+            await expect(
+                semStripe.startCheckout({
+                    ownerKind: 'user',
+                    ownerId: EU,
+                    buyerId: EU,
+                }),
+            ).rejects.toMatchObject({ code: 'PLAN_IS_FOR_COMMUNITIES' });
         });
 
         it('exige crew:manage para comprar para uma crew', async () => {

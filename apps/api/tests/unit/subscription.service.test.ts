@@ -515,7 +515,7 @@ describe('SubscriptionService', () => {
             });
 
             expect(repository.createPeriod).toHaveBeenCalledWith(
-                expect.objectContaining({ priceCents: 1000, currency: 'USD' }),
+                expect.objectContaining({ priceCents: 499, currency: 'EUR' }),
             );
         });
 

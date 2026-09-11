@@ -18,10 +18,10 @@ const CATALOGO = {
     plans: [
         {
             key: 'premium',
-            name: 'Premium',
-            description: 'Acesso às funcionalidades premium.',
-            priceCents: 1_000,
-            currency: 'USD',
+            name: 'Crew',
+            description: 'A tesouraria da crew.',
+            priceCents: 499,
+            currency: 'EUR',
             intervalMonths: 1,
         },
     ],
@@ -164,7 +164,7 @@ describe('o ecrã do premium', () => {
 
         montar();
 
-        expect(await screen.findByText('$10')).toBeTruthy();
+        expect(await screen.findByText('\u20ac4.99')).toBeTruthy();
         expect(screen.getByText(t.premium.porMes)).toBeTruthy();
     });
 
@@ -177,7 +177,7 @@ describe('o ecrã do premium', () => {
 
         montar();
 
-        expect(await screen.findByText('$10')).toBeTruthy();
+        expect(await screen.findByText('\u20ac4.99')).toBeTruthy();
         expect(screen.getByText(t.premium.criarConta)).toBeTruthy();
         expect(screen.queryByText(t.premium.comprar)).toBeNull();
     });
@@ -185,7 +185,8 @@ describe('o ecrã do premium', () => {
     it('leva quem clica para o pagamento do Stripe', async () => {
         vi.stubGlobal('fetch', servidor({}));
 
-        montar();
+        /** De uma crew: o plano é de uma comunidade, e só aí se compra. */
+        montar('/premium?crew=crew-1');
 
         await userEvent.click(await screen.findByText(t.premium.comprar));
 
@@ -210,16 +211,16 @@ describe('o ecrã do premium', () => {
         });
 
         it('não oferece um botão que não funciona', async () => {
-            montar();
+            montar('/premium?crew=crew-1');
 
             expect(await screen.findByText(t.premium.aindaNaoAbriu)).toBeTruthy();
             expect(screen.queryByText(t.premium.comprar)).toBeNull();
         });
 
         it('continua a mostrar o preço', async () => {
-            montar();
+            montar('/premium?crew=crew-1');
 
-            expect(await screen.findByText('$10')).toBeTruthy();
+            expect(await screen.findByText('\u20ac4.99')).toBeTruthy();
         });
 
         /**
@@ -237,7 +238,7 @@ describe('o ecrã do premium', () => {
                 }),
             );
 
-            montar();
+            montar('/premium?crew=crew-1');
 
             expect(await screen.findByText(t.premium.aindaNaoAbriu)).toBeTruthy();
             expect(screen.queryByText(t.premium.criarConta)).toBeNull();
@@ -262,7 +263,7 @@ describe('o ecrã do premium', () => {
         expect(screen.queryByText(t.premium.comprar)).toBeNull();
     });
 
-    it('não oferece a compra a quem já tem plano a correr', async () => {
+    it('não oferece a compra a uma comunidade que já tem plano a correr', async () => {
         vi.stubGlobal(
             'fetch',
             servidor({
@@ -271,16 +272,15 @@ describe('o ecrã do premium', () => {
                     isLifetime: false,
                     activeUntil: '2026-10-01T00:00:00.000Z',
                 },
+                crew: { ...CREW, isPremium: true },
             }),
         );
 
-        montar();
+        montar('/premium?crew=crew-1');
 
         await waitFor(() => {
             expect(screen.queryByText(t.premium.comprar)).toBeNull();
         });
-
-        expect(screen.getByText(/2026/)).toBeTruthy();
     });
 
     /**
@@ -308,7 +308,7 @@ describe('o ecrã do premium', () => {
             }),
         );
 
-        montar();
+        montar('/premium?crew=crew-1');
 
         await userEvent.click(await screen.findByText(t.premium.comprar));
 
@@ -352,22 +352,50 @@ describe('comprar para uma crew', () => {
         });
     });
 
-    it('sem crew no endereço, compra para quem clica', async () => {
+    /**
+     * Sem comunidade no endereço não há nada a vender.
+     *
+     * Durante um tempo este ecrã comprava para quem clicava — e o que
+     * essa pessoa levava era a personalização do perfil, que passou a
+     * ser de graça para toda a gente. Hoje o que se paga é gerir uma
+     * comunidade, e isso não é de ninguém em particular: a API recusa a
+     * compra pessoal, por isso um botão aqui seria um botão que só pode
+     * falhar.
+     */
+    it('sem comunidade no endereço, não vende nada a ninguém', async () => {
         const fetchMock = servidor({});
         vi.stubGlobal('fetch', fetchMock);
 
         montar();
 
-        await userEvent.click(await screen.findByText(t.premium.comprar));
+        expect(
+            await screen.findByText(t.premium.planoEDeComunidade),
+        ).toBeTruthy();
 
-        await waitFor(() => {
-            expect(irPara).toHaveBeenCalled();
-        });
+        expect(screen.queryByText(t.premium.comprar)).toBeNull();
 
-        expect(corpoDoCheckout(fetchMock)).toEqual({
-            ownerKind: 'user',
-            ownerId: 'u1',
-        });
+        expect(
+            screen
+                .getByText(t.premium.asMinhasComunidades)
+                .getAttribute('href'),
+        ).toBe('/eu/comunidades');
+    });
+
+    /**
+     * Quem ainda não tem conta continua a poder ler quanto custa — é
+     * precisamente quem precisa de o saber antes de a criar — mas o que
+     * lhe é oferecido é criar a conta, e não uma compra que não existe.
+     */
+    it('a quem não tem sessão, oferece criar conta e não comprar', async () => {
+        vi.stubGlobal('fetch', servidor({ comSessao: false }));
+
+        montar();
+
+        expect(
+            await screen.findByText(t.premium.planoEDeComunidade),
+        ).toBeTruthy();
+        expect(screen.getByText(t.premium.criarConta)).toBeTruthy();
+        expect(screen.queryByText(t.premium.comprar)).toBeNull();
     });
 
     /**

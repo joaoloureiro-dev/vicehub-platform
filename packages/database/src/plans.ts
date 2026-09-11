@@ -53,12 +53,27 @@ export interface PlanDefinition {
 }
 
 export const PLANS = {
+    /**
+     * O plano de uma crew.
+     *
+     * A chave continua a chamar-se `premium` porque está gravada em
+     * todas as linhas de subscrição que já existem, e mudá-la seria
+     * reescrever o passado por causa de um nome. O que ela é, é isto: o
+     * que uma crew paga para poder mexer no seu dinheiro.
+     *
+     * Não é um plano de uma pessoa. Durante um tempo pareceu que era —
+     * dava para personalizar o perfil — mas a personalização passou a
+     * ser de graça para toda a gente, e o que ficou do lado pago é
+     * gestão: a tesouraria de uma comunidade. Uma pessoa que comprasse
+     * isto para si não comprava nada.
+     */
     premium: {
         plan: SubscriptionPlan.premium,
-        name: 'Premium',
-        description: 'Acesso às funcionalidades premium do ViceHub.',
-        priceCents: 1_000,
-        currency: 'USD',
+        name: 'Crew',
+        description:
+            'A tesouraria da crew: propor, aprovar e dividir o que a crew ganha.',
+        priceCents: 499,
+        currency: 'EUR',
         /** Mensal. É o único período cobrado. */
         intervalMonths: 1,
     },
@@ -112,7 +127,7 @@ export const PLANS = {
          * dinheiro que nunca entrou.
          */
         priceCents: 0,
-        currency: 'USD',
+        currency: 'EUR',
         intervalMonths: null,
     },
 } as const satisfies Record<string, PlanDefinition>;

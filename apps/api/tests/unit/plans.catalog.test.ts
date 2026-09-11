@@ -55,10 +55,27 @@ describe('catálogo de planos', () => {
         }
     });
 
-    it('o premium custa 10 USD por mês', () => {
-        expect(PLANS.premium.priceCents).toBe(1_000);
-        expect(PLANS.premium.currency).toBe('USD');
+    /**
+     * O preço que o catálogo cobra e o preço que a página de entrada
+     * anuncia têm de ser o mesmo número. Já não foram — o catálogo
+     * dizia 10 USD e a página €4,99 — e um desencontro destes não dá
+     * erro nenhum: dá a alguém uma fatura diferente da que leu.
+     */
+    it('o plano de uma crew custa 4,99 € por mês', () => {
+        expect(PLANS.premium.priceCents).toBe(499);
+        expect(PLANS.premium.currency).toBe('EUR');
         expect(PLANS.premium.intervalMonths).toBe(1);
+    });
+
+    /**
+     * Uma só moeda em todo o catálogo. Duas fariam somas de receita
+     * caladamente erradas, e um ecrã de preços a misturar € com $ é uma
+     * pergunta a que ninguém quer responder.
+     */
+    it('tudo no catálogo está na mesma moeda', () => {
+        for (const key of PLAN_KEYS) {
+            expect(PLANS[key].currency, key).toBe('EUR');
+        }
     });
 
     /**
@@ -183,10 +200,9 @@ describe('cálculo do fim de um período', () => {
         });
 
         /**
-         * O premium é o plano de uma pessoa ou de uma crew, e não tem
-         * opinião nenhuma sobre quantas crews jogam num servidor. Um
-         * servidor cujo dono comprou premium não compra com isso lugares
-         * nenhuns.
+         * O plano de uma crew não tem opinião nenhuma sobre quantas
+         * crews jogam num servidor. Um servidor cujo dono comprou o
+         * plano de uma crew não compra com isso lugares nenhuns.
          */
         it('o premium não compra lugares num servidor', () => {
             expect(crewAllowance('premium')).toBe(CREWS_SEM_PLANO);

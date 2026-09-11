@@ -50,15 +50,15 @@ export const fr = (p: Tools): Messages => ({
             p.plural(n, { one: '1 joueur', other: `${n} joueurs` }),
         planosTitulo: 'Ce que \u00e7a co\u00fbte',
         planosGratis:
-            'Jouer est gratuit, et le restera : ton profil, ta banni\u00e8re, postuler \u00e0 des crews, en \u00eatre membre, voir qui recrute. Ce qui se paie, c\u2019est de g\u00e9rer une communaut\u00e9.',
+            'Jouer est gratuit, et le restera : ton profil, ta banni\u00e8re, postuler \u00e0 des crews, en \u00eatre membre, organiser des \u00e9v\u00e9nements, venir. Ce qui se paie, c\u2019est de d\u00e9placer l\u2019argent.',
         planoCrew: 'Crew',
         planoCrewPreco: '4,99 \u20ac / mois',
         planoCrewTexto:
-            'Une tr\u00e9sorerie qui tombe juste, des candidatures auxquelles tu r\u00e9ponds au lieu de les perdre, des rangs, des \u00e9v\u00e9nements, et des pr\u00e9sences que personne ne conteste.',
+            'Une tr\u00e9sorerie qui tombe juste : proposer, approuver et partager ce que la crew gagne \u2014 tout le monde pay\u00e9 en m\u00eame temps, ou personne. Trente jours pour essayer.',
         planoServidor: 'Serveur',
-        planoServidorPreco: '14,99 \u20ac / mois',
+        planoServidorPreco: '\u00e0 partir de 14,99 \u20ac / mois',
         planoServidorTexto:
-            'Tout ce qu\u2019a une crew, pour le serveur et pour les crews qui y jouent. Paie les crews que tu engages depuis la tr\u00e9sorerie du serveur.',
+            "Jusqu'\u00e0 10 crews sur votre serveur, et une tr\u00e9sorerie pour les payer. Plus de crews, une offre plus grande.",
         crewsTitulo: 'Crews et serveurs',
         crewsTexto:
             'Rassemble les tiens avec des rangs qui veulent dire quelque chose. Les candidatures reçoivent une réponse, elles ne sont pas ignorées.',
@@ -338,32 +338,36 @@ export const fr = (p: Tools): Messages => ({
 
     premium: {
         etiqueta: 'Premium',
-        titulo: 'Soutiens la plateforme, prends les extras',
+        titulo: "L'offre est celle de la communauté, pas la vôtre",
         subtitulo:
-            "ViceHub fonctionne sans rien payer. Le premium est pour celles et ceux qui veulent que ça continue d'être construit — et qui aiment que leur profil leur ressemble.",
+            "Jouer sur ViceHub est gratuit, et le reste. Ce qui se paie, c'est gérer une communauté : déplacer l'argent que la crew gagne, et avoir des crews sur votre serveur.",
         tituloComunidade: (nome: string) => `Premium pour ${nome}`,
         subtituloCrew:
-            "L'offre appartient à la crew, pas à celui qui la paie. Tant qu'elle est active, qui gère la crew peut définir sa bannière et sa couleur.",
+            "L'offre appartient à la crew, pas à celui qui la paie. Tant qu'elle est active, qui gère la crew peut déplacer son argent — et définir sa bannière et sa couleur.",
         crewCobertaPeloServidor: (servidor: string) =>
             `Cette crew est déjà couverte par le plan de ${servidor}, le serveur où elle joue. Elle le garde tant qu'elle y joue.`,
         crewTemPlano: 'Cette crew a déjà une offre active.',
         irParaCrew: 'Aller à la crew',
         subtituloServidor:
-            "L'offre appartient au serveur, pas à celui qui la paie. Tant qu'elle est active, qui gère le serveur peut définir sa bannière et sa couleur.",
+            "L'offre appartient au serveur, pas à celui qui la paie. Elle décide combien de crews peuvent y jouer, et ouvre la trésorerie du serveur.",
         servidorDaPersonalizacao:
-            'Personnalise le serveur : bannière et couleur d’accent sur sa page publique.',
+            'Payez les crews qui jouent sur votre serveur, directement depuis sa trésorerie.',
         servidorDaEquipa:
-            "Une offre pour tout le serveur. Qui le gère peut changer l'apparence — ça ne dépend pas de qui a payé.",
+            "Une offre pour tout le serveur, et pour les crews qui y jouent. Ça ne dépend pas de qui a payé.",
         servidorTemPlano: 'Ce serveur a déjà une offre active.',
         irParaServidor: 'Aller au serveur',
         porMes: 'par mois',
+        planoEDeComunidade:
+            "Il n'y a rien à acheter ici pour votre compte. L'offre appartient à une crew ou à un serveur — ouvrez celle que vous gérez et achetez-la là.",
+        asMinhasComunidades: 'Mes communautés',
         oQueDaPersonalizacao:
-            'Personnalise ton profil : bannière et couleur d’accent sur ta page publique.',
-        oQueDaCrew: 'Le premium peut être acheté pour une crew ou un serveur, pas seulement pour toi.',
+            "Une trésorerie qui tombe juste : une crew propose, approuve et partage ce qu'elle gagne — tout le monde payé en même temps, ou personne.",
+        oQueDaCrew:
+            "Postuler, être membre, organiser des événements et venir restent gratuits pour tout le monde. Votre profil aussi.",
         crewDaPersonalizacao:
-            'Personnalise la crew : bannière et couleur d’accent sur sa page publique.',
+            "Une trésorerie qui tombe juste : proposer, approuver et partager ce que la crew gagne — tout le monde payé en même temps, ou personne.",
         crewDaEquipa:
-            "Une offre pour toute la crew. Qui la gère peut changer l'apparence — ça ne dépend pas de qui a payé.",
+            "Une offre pour toute la crew. Qui la gère peut déplacer l'argent — ça ne dépend pas de qui a payé.",
         oQueDaApoio:
             "C'est ce qui fait tourner la plateforme, et ça paie le temps que tout ça demande.",
         comprar: 'Passer en premium',

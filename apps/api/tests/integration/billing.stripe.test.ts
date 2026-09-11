@@ -32,6 +32,8 @@ describe('cobrança pelo Stripe', () => {
 
     let token: string;
     let userId: string;
+    /** Uma crew de quem compra: o plano é sempre de uma comunidade. */
+    let crewId: string;
 
     const auth = () => ({ authorization: `Bearer ${token}` });
 
@@ -79,6 +81,27 @@ describe('cobrança pelo Stripe', () => {
 
         token = registo.json().accessToken as string;
         userId = registo.json().user.id as string;
+
+        /**
+         * Uma crew de quem está a comprar. É o titular das compras desta
+         * suite: o plano é de uma comunidade, e uma compra para a
+         * própria conta é recusada antes de chegar ao que aqui se quer
+         * provar.
+         */
+        const crew = await app.inject({
+            method: 'POST',
+            url: '/api/v1/crews',
+            headers: auth(),
+            payload: {
+                name: `Crew ${marca}`,
+                tag: `b${Date.now().toString(36).slice(-4)}${Math.random()
+                    .toString(36)
+                    .slice(2, 5)}`,
+            },
+        });
+
+        expect(crew.statusCode, crew.body).toBe(201);
+        crewId = crew.json().id as string;
     });
 
     afterAll(async () => {
@@ -108,11 +131,38 @@ describe('cobrança pelo Stripe', () => {
                 method: 'POST',
                 url: '/api/v1/billing/checkout',
                 headers: auth(),
-                payload: { ownerKind: 'user', ownerId: userId },
+                /**
+                 * De uma crew, e não da própria conta: não há plano
+                 * nenhum para uma pessoa comprar para si, e a recusa por
+                 * esse motivo vem antes desta — o que se quer ver aqui é
+                 * a configuração em falta.
+                 */
+                payload: { ownerKind: 'crew', ownerId: crewId },
             });
 
             expect(response.statusCode, response.body).toBe(503);
             expect(response.json().code).toBe('BILLING_NOT_CONFIGURED');
+        });
+
+        /**
+         * O plano é de uma comunidade. Uma pessoa que o comprasse para
+         * si não comprava nada — a personalização do perfil é de graça
+         * para toda a gente, e o que ficou do lado pago é gestão de uma
+         * crew ou de um servidor.
+         *
+         * A recusa vem **antes** de se olhar para a configuração: numa
+         * instalação sem chaves, um 503 escondia a razão verdadeira.
+         */
+        it('não deixa comprar um plano para a própria conta', async () => {
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/billing/checkout',
+                headers: auth(),
+                payload: { ownerKind: 'user', ownerId: userId },
+            });
+
+            expect(response.statusCode, response.body).toBe(400);
+            expect(response.json().code).toBe('PLAN_IS_FOR_COMMUNITIES');
         });
 
         /**
@@ -191,13 +241,18 @@ describe('cobrança pelo Stripe', () => {
                 expect(response.statusCode, response.body).toBe(403);
             });
 
+            /**
+             * Não chega a ser uma questão de autorização: não há plano
+             * nenhum de uma pessoa, seja ela quem for.
+             */
             it('recusa comprar para a conta de outra pessoa', async () => {
                 const response = await tentar(intrusoToken, {
                     ownerKind: 'user',
                     ownerId: userId,
                 });
 
-                expect(response.statusCode, response.body).toBe(403);
+                expect(response.statusCode, response.body).toBe(400);
+                expect(response.json().code).toBe('PLAN_IS_FOR_COMMUNITIES');
             });
 
             /**
