@@ -3,8 +3,13 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { UserController } from './controllers/user.controller.js';
 import type { UpdateAppearanceDto } from '../../shared/appearance.js';
 import { updateAppearanceSchema } from '../../shared/appearance.js';
-import type { UpdateProfileDto, UsernameParamDto } from './dto/user.dto.js';
+import type {
+    DeleteAccountDto,
+    UpdateProfileDto,
+    UsernameParamDto,
+} from './dto/user.dto.js';
 import {
+    deleteAccountSchema,
     updateProfileSchema,
     usernameParamSchema,
 } from './schemas/user.schemas.js';
@@ -40,6 +45,23 @@ const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
             schema: { body: updateProfileSchema },
         },
         controller.updateOwnProfile.bind(controller),
+    );
+
+    /**
+     * Apagar a própria conta.
+     *
+     * Exige conta e mais nada: o titular vem da sessão, e por isso não
+     * há forma de pedir a conta de outra pessoa. A confirmação vai no
+     * corpo — um DELETE com corpo é invulgar e é o que aqui serve, já
+     * que a alternativa era pôr uma password num endereço.
+     */
+    fastify.delete<{ Body: DeleteAccountDto }>(
+        '/me',
+        {
+            preHandler: [fastify.authenticate],
+            schema: { body: deleteAccountSchema },
+        },
+        controller.deleteOwnAccount.bind(controller),
     );
 
     /**

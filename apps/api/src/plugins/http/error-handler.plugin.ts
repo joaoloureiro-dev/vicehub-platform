@@ -8,6 +8,7 @@ import {
 } from '../../modules/auth/errors/auth.errors.js';
 import { AuthorizationError } from '../../modules/authorization/errors/authorization.errors.js';
 import { UserError } from '../../modules/users/errors/user.errors.js';
+import type { UserErrorCode } from '../../modules/users/errors/user.errors.js';
 import {
     AffiliationError,
     type AffiliationErrorCode,
@@ -112,6 +113,28 @@ const subscriptionErrorStatusCodes: Record<SubscriptionErrorCode, number> = {
 /**
  * Estatuto HTTP de cada erro das amizades.
  */
+/**
+ * Estatuto HTTP de cada erro dos perfis.
+ *
+ * Era um 404 fixo enquanto "não encontrado" era o único erro possível
+ * aqui. Apagar a conta trouxe recusas que não são isso: uma sessão
+ * válida com a confirmação errada, e uma conta que ainda tem coisas
+ * por resolver antes de poder sair.
+ */
+const userErrorStatusCodes: Record<UserErrorCode, number> = {
+    USER_NOT_FOUND: 404,
+    /** 403: a sessão é válida; a confirmação é que não. */
+    ACCOUNT_DELETION_NOT_CONFIRMED: 403,
+    /**
+     * 409: o pedido está bem feito — o estado da conta é que ainda não
+     * permite apagá-la. Há sempre alguma coisa a fazer primeiro, e a
+     * mensagem diz qual.
+     */
+    ACCOUNT_HAS_FUNDS: 409,
+    ACCOUNT_LEADS_COMMUNITIES: 409,
+    ACCOUNT_HAS_ACTIVE_PLAN: 409,
+};
+
 const friendErrorStatusCodes: Record<FriendErrorCode, number> = {
     USER_NOT_FOUND: 404,
     /**
@@ -566,12 +589,17 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
         }
 
         if (error instanceof UserError) {
-            request.log.warn({ err: error, code: error.code }, 'Recurso não encontrado.');
+            const statusCode = userErrorStatusCodes[error.code];
 
-            reply.status(404).send({
-                statusCode: 404,
+            request.log.warn(
+                { err: error, code: error.code },
+                'Pedido recusado pelo módulo de perfis.',
+            );
+
+            reply.status(statusCode).send({
+                statusCode,
                 code: error.code,
-                error: 'Not Found',
+                error: httpErrorNames[statusCode] ?? 'Bad Request',
                 message: error.message,
             });
             return;

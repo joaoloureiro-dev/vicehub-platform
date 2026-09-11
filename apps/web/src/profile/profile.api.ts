@@ -25,3 +25,19 @@ export const updateMyAppearance = (input: {
     accentColor?: string | null;
 }): Promise<unknown> =>
     api<unknown>('/users/me/appearance', { method: 'PATCH', body: input });
+
+/**
+ * Apaga a própria conta.
+ *
+ * A confirmação vai no corpo de um DELETE — invulgar, e é o que aqui
+ * serve: a alternativa era pôr uma password no endereço, onde ficava no
+ * histórico do browser e nos logs de tudo o que estiver pelo caminho.
+ *
+ * As contas que entram só pelo Discord ou pela Google não têm password
+ * nenhuma, e para essas o campo não vai.
+ */
+export const deleteMyAccount = (input: {
+    confirmation: string;
+    password?: string;
+}): Promise<void> =>
+    api<void>('/users/me', { method: 'DELETE', body: input });
