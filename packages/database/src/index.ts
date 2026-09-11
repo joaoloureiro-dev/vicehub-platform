@@ -65,6 +65,8 @@ export {
     fimDaAvaliacao,
     isPerpetualPlan,
     isPurchasablePlan,
+    planDefinition,
+    plansForOwner,
 } from './plans.js';
 
 export type { PlanDefinition, PlanKey } from './plans.js';

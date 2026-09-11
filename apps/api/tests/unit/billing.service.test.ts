@@ -18,6 +18,7 @@ const periodo = (overrides: Partial<StripePeriod> = {}): StripePeriod => ({
     currentPeriodStart: new Date('2026-09-01T00:00:00.000Z'),
     currentPeriodEnd: new Date('2026-10-01T00:00:00.000Z'),
     cancelAtPeriodEnd: false,
+    priceId: 'price_crew',
     priceCents: 1_000,
     currency: 'USD',
     ...overrides,
@@ -34,6 +35,20 @@ const evento = (
     id = 'evt_1',
 ): Stripe.Event =>
     ({ id, type, data: { object } }) as unknown as Stripe.Event;
+
+/**
+ * Os preços desta instalação de teste, um por plano.
+ *
+ * Os três escalões de servidor estão cá para que os testes possam
+ * provar que cada um vende o **seu** preço — que é precisamente o que
+ * não acontecia quando havia um preço só.
+ */
+const PRECOS = {
+    premium: 'price_crew',
+    server_base: 'price_server_base',
+    server_plus: 'price_server_plus',
+    server_unlimited: 'price_server_unlimited',
+};
 
 const createRepositoryMock = () => ({
     claimEvent: vi.fn().mockResolvedValue(true),
@@ -94,6 +109,7 @@ describe('BillingService', () => {
         ownerKind: 'crew' as const,
         ownerId: UMA_CREW,
         buyerId: EU,
+        plan: 'premium',
     };
 
     beforeEach(() => {
@@ -105,6 +121,7 @@ describe('BillingService', () => {
             repository as unknown as BillingRepository,
             gateway as unknown as StripeGateway,
             autorizacao as unknown as AuthorizationService,
+            PRECOS,
         );
     });
 
@@ -126,6 +143,7 @@ describe('BillingService', () => {
                 repository as unknown as BillingRepository,
                 null,
                 createAuthorizationMock() as unknown as AuthorizationService,
+                PRECOS,
             );
 
             await expectBillingError(
@@ -139,6 +157,7 @@ describe('BillingService', () => {
                 repository as unknown as BillingRepository,
                 null,
                 createAuthorizationMock() as unknown as AuthorizationService,
+                PRECOS,
             );
 
             expect(() =>
@@ -157,6 +176,7 @@ describe('BillingService', () => {
                 repository as unknown as BillingRepository,
                 null,
                 createAuthorizationMock() as unknown as AuthorizationService,
+                PRECOS,
             );
 
             const catalogo = semStripe.listPurchasablePlans();
@@ -207,27 +227,233 @@ describe('BillingService', () => {
             }
         });
 
-        /**
-         * Os escalões de servidor existem, valem cada um o seu preço, e
-         * **não estão aqui**.
-         *
-         * A cobrança tem um preço configurado e o checkout vende esse.
-         * Anunciar um escalão que ele não sabe cobrar seria prometer um
-         * preço e cobrar outro — o pior erro que uma lista de preços
-         * pode ter, e o mais fácil de cometer por distração ao
-         * acrescentar um plano ao catálogo. Este teste é o que o
-         * apanha.
-         */
-        it.each(['server_base', 'server_plus', 'server_unlimited'])(
-            'não anuncia %s, que a cobrança ainda não sabe vender',
-            (chave) => {
-                const chaves = service
-                    .listPurchasablePlans()
-                    .plans.map((plano) => plano.key);
+        it.each([
+            ['server_base', 1_499, 10],
+            ['server_plus', 1_999, 50],
+            ['server_unlimited', 9_999, null],
+        ])('traz %s com o seu preço e os seus lugares', (chave, cents, crews) => {
+            const escalao = service
+                .listPurchasablePlans()
+                .plans.find((plano) => plano.key === chave);
 
-                expect(chaves).not.toContain(chave);
-            },
-        );
+            expect(escalao).toMatchObject({
+                priceCents: cents,
+                currency: 'EUR',
+                ownerKind: 'server',
+                maxCrews: crews,
+            });
+        });
+
+        /**
+         * Cada plano diz de quem é, e o ecrã escolhe por aí.
+         *
+         * Sem isto, o ecrã de um servidor teria a lista dos escalões
+         * escrita uma segunda vez — e a segunda cópia envelhecia no dia
+         * em que aparecesse um escalão novo.
+         */
+        it('diz que o plano da crew é de uma crew', () => {
+            const premium = service
+                .listPurchasablePlans()
+                .plans.find((plano) => plano.key === 'premium');
+
+            expect(premium?.ownerKind).toBe('crew');
+        });
+
+        /**
+         * **Um plano vende-se se, e só se, esta instalação tiver preço
+         * para ele.**
+         *
+         * É o que impede uma lista de preços de anunciar um escalão que
+         * a cobrança não sabe cobrar — prometer um preço e cobrar outro
+         * é o pior erro que uma lista de preços pode ter. Era assim que
+         * os três escalões de servidor estiveram anunciados sem que
+         * houvesse forma de os pagar.
+         */
+        it('não anuncia um escalão sem preço configurado', () => {
+            const sóCrew = new BillingService(
+                repository as unknown as BillingRepository,
+                gateway as unknown as StripeGateway,
+                autorizacao as unknown as AuthorizationService,
+                { premium: 'price_crew' },
+            );
+
+            expect(
+                sóCrew.listPurchasablePlans().plans.map((plano) => plano.key),
+            ).toEqual(['premium']);
+        });
+
+        /**
+         * Chaves sem preço nenhum são recusadas ao arrancar, por isso
+         * este caso não chega a acontecer em produção. Continua a ser
+         * a resposta certa: uma lista vazia, e não um escalão a mais.
+         */
+        it('não anuncia nada quando não há preço nenhum', () => {
+            const semPrecos = new BillingService(
+                repository as unknown as BillingRepository,
+                gateway as unknown as StripeGateway,
+                autorizacao as unknown as AuthorizationService,
+                {},
+            );
+
+            expect(semPrecos.listPurchasablePlans().plans).toEqual([]);
+        });
+    });
+
+    /**
+     * **O que separa um escalão do outro é o preço que se cobra.**
+     *
+     * Antes havia um preço configurado só, e o checkout vendia esse
+     * fosse qual fosse o plano pedido: um servidor que comprasse o
+     * escalão sem limite pagava 4,99 € e ficava com o plano de uma
+     * crew, que lhe dava três lugares. Estes testes são o que impede
+     * isso de voltar.
+     */
+    describe('que escalão se está a comprar', () => {
+        it.each([
+            ['server_base', 'price_server_base'],
+            ['server_plus', 'price_server_plus'],
+            ['server_unlimited', 'price_server_unlimited'],
+        ])('%s vai ao Stripe com o seu próprio preço', async (plan, priceId) => {
+            await service.startCheckout({
+                ownerKind: 'server',
+                ownerId: UMA_CREW,
+                buyerId: EU,
+                plan,
+            });
+
+            expect(gateway.createCheckoutSession).toHaveBeenCalledWith(
+                expect.objectContaining({ priceId }),
+            );
+        });
+
+        it('o plano da crew vai com o preço da crew', async () => {
+            await service.startCheckout(compra);
+
+            expect(gateway.createCheckoutSession).toHaveBeenCalledWith(
+                expect.objectContaining({ priceId: 'price_crew' }),
+            );
+        });
+
+        /**
+         * Um escalão de servidor vende lugares para crews, e uma crew
+         * não tem onde os pôr; o da crew abre a tesouraria de uma crew,
+         * e um servidor não é uma. Nenhuma das duas compras dava nada a
+         * quem a fizesse, e ambas eram cobradas.
+         */
+        it('recusa vender um escalão de servidor a uma crew', async () => {
+            await expectBillingError(
+                service.startCheckout({ ...compra, plan: 'server_plus' }),
+                'PLAN_WRONG_OWNER',
+            );
+
+            expect(gateway.createCheckoutSession).not.toHaveBeenCalled();
+        });
+
+        it('recusa vender o plano de uma crew a um servidor', async () => {
+            await expectBillingError(
+                service.startCheckout({
+                    ownerKind: 'server',
+                    ownerId: UMA_CREW,
+                    buyerId: EU,
+                    plan: 'premium',
+                }),
+                'PLAN_WRONG_OWNER',
+            );
+
+            expect(gateway.createCheckoutSession).not.toHaveBeenCalled();
+        });
+
+        it('recusa um plano que não existe', async () => {
+            await expectBillingError(
+                service.startCheckout({ ...compra, plan: 'server_gigante' }),
+                'PLAN_NOT_PURCHASABLE',
+            );
+        });
+
+        /**
+         * O vitalício é um gesto, e concede-se à mão. Vendê-lo era
+         * cobrar por uma coisa que é para ser oferecida.
+         */
+        it('recusa vender o vitalício', async () => {
+            await expectBillingError(
+                service.startCheckout({ ...compra, plan: 'lifetime' }),
+                'PLAN_NOT_PURCHASABLE',
+            );
+        });
+
+        /**
+         * O escalão existe no catálogo e esta instalação ainda não o
+         * abriu. Para quem clica é a mesma coisa que não existir — e
+         * separar os dois casos diria a quem tenta às cegas que
+         * escalões estão escritos no código sem estarem à venda.
+         */
+        it('recusa um escalão que esta instalação ainda não vende', async () => {
+            const sóCrew = new BillingService(
+                repository as unknown as BillingRepository,
+                gateway as unknown as StripeGateway,
+                autorizacao as unknown as AuthorizationService,
+                { premium: 'price_crew' },
+            );
+
+            await expectBillingError(
+                sóCrew.startCheckout({
+                    ownerKind: 'server',
+                    ownerId: UMA_CREW,
+                    buyerId: EU,
+                    plan: 'server_base',
+                }),
+                'PLAN_NOT_PURCHASABLE',
+            );
+
+            expect(gateway.createCheckoutSession).not.toHaveBeenCalled();
+        });
+    });
+
+    /**
+     * O que fica gravado é o plano que o Stripe está mesmo a cobrar.
+     *
+     * Lê-se do preço da subscrição e não dos metadados que lhe
+     * pendurámos na compra: uma mudança de escalão feita no painel do
+     * Stripe muda o preço e não os metadados, e nesse caso o que vale é
+     * a fatura. Gravar sempre `premium`, como se fazia, dava três
+     * lugares a quem pagou sem limite.
+     */
+    describe('que plano fica gravado', () => {
+        const aplicar = async (priceId: string) => {
+            gateway.readSubscription.mockResolvedValue(periodo({ priceId }));
+
+            await service.applyEvent(
+                evento('customer.subscription.updated', {
+                    id: 'sub_stripe_1',
+                    metadata: {
+                        ownerKind: 'server',
+                        ownerId: UMA_CREW,
+                    },
+                }),
+            );
+
+            return repository.upsertPeriod.mock.calls[0]?.[0] as {
+                plan: string;
+            };
+        };
+
+        it.each([
+            ['price_server_base', 'server_base'],
+            ['price_server_plus', 'server_plus'],
+            ['price_server_unlimited', 'server_unlimited'],
+            ['price_crew', 'premium'],
+        ])('%s fica gravado como %s', async (priceId, plan) => {
+            expect((await aplicar(priceId)).plan).toBe(plan);
+        });
+
+        /**
+         * Um preço que não conhecemos — criado à mão no painel — fica
+         * com o plano mais pequeno. Na dúvida dá-se o menos: o
+         * contrário é oferecer lugares que ninguém pagou.
+         */
+        it('um preço desconhecido fica com o plano mais pequeno', async () => {
+            expect((await aplicar('price_inventado')).plan).toBe('premium');
+        });
     });
 
     /**
@@ -264,6 +490,7 @@ describe('BillingService', () => {
                     ownerKind: 'user',
                     ownerId: EU,
                     buyerId: EU,
+                    plan: 'premium',
                 }),
             ).rejects.toMatchObject({ code: 'PLAN_IS_FOR_COMMUNITIES' });
         });
@@ -274,6 +501,7 @@ describe('BillingService', () => {
                     ownerKind: 'user',
                     ownerId: OUTRA_PESSOA,
                     buyerId: EU,
+                    plan: 'premium',
                 }),
             ).rejects.toMatchObject({ code: 'PLAN_IS_FOR_COMMUNITIES' });
         });
@@ -288,6 +516,7 @@ describe('BillingService', () => {
                 repository as unknown as BillingRepository,
                 null,
                 createAuthorizationMock() as unknown as AuthorizationService,
+                PRECOS,
             );
 
             await expect(
@@ -295,6 +524,7 @@ describe('BillingService', () => {
                     ownerKind: 'user',
                     ownerId: EU,
                     buyerId: EU,
+                    plan: 'premium',
                 }),
             ).rejects.toMatchObject({ code: 'PLAN_IS_FOR_COMMUNITIES' });
         });
@@ -303,7 +533,12 @@ describe('BillingService', () => {
             autorizacao.hasPermissions.mockReturnValue(false);
 
             await esperarRecusa(
-                service.startCheckout({ ownerKind: 'crew', ownerId: UMA_CREW, buyerId: EU }),
+                service.startCheckout({
+                    ownerKind: 'crew',
+                    ownerId: UMA_CREW,
+                    buyerId: EU,
+                    plan: 'premium',
+                }),
             );
 
             expect(autorizacao.getEffectivePermissions).toHaveBeenCalledWith(EU, {
@@ -319,7 +554,12 @@ describe('BillingService', () => {
             autorizacao.hasPermissions.mockReturnValue(false);
 
             await esperarRecusa(
-                service.startCheckout({ ownerKind: 'server', ownerId: UMA_CREW, buyerId: EU }),
+                service.startCheckout({
+                    ownerKind: 'server',
+                    ownerId: UMA_CREW,
+                    buyerId: EU,
+                    plan: 'server_base',
+                }),
             );
 
             expect(autorizacao.getEffectivePermissions).toHaveBeenCalledWith(EU, {
@@ -329,7 +569,12 @@ describe('BillingService', () => {
 
         it('deixa passar quem manda na crew', async () => {
             await expect(
-                service.startCheckout({ ownerKind: 'crew', ownerId: UMA_CREW, buyerId: EU }),
+                service.startCheckout({
+                    ownerKind: 'crew',
+                    ownerId: UMA_CREW,
+                    buyerId: EU,
+                    plan: 'premium',
+                }),
             ).resolves.toBeDefined();
         });
 
@@ -342,7 +587,12 @@ describe('BillingService', () => {
             autorizacao.hasPermissions.mockReturnValue(false);
 
             await esperarRecusa(
-                service.startCheckout({ ownerKind: 'crew', ownerId: UMA_CREW, buyerId: EU }),
+                service.startCheckout({
+                    ownerKind: 'crew',
+                    ownerId: UMA_CREW,
+                    buyerId: EU,
+                    plan: 'premium',
+                }),
             );
 
             expect(gateway.createCheckoutSession).not.toHaveBeenCalled();

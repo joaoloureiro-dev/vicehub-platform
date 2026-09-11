@@ -137,8 +137,28 @@ const envSchema = z.object({
      */
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
-    /** Preço mensal recorrente do premium, criado no painel do Stripe. */
-    STRIPE_PRICE_ID: z.string().min(1).optional(),
+
+    /**
+     * Um preço do Stripe por cada plano que se vende.
+     *
+     * São independentes uns dos outros e todos opcionais: **um plano
+     * está à venda aqui se, e só se, tiver preço configurado**. É assim
+     * que um escalão novo abre — pondo o preço — e não com um deploy.
+     *
+     * Antes havia um preço só, e o checkout vendia esse fosse qual
+     * fosse o plano pedido. Um servidor que comprasse o escalão sem
+     * limite pagava o preço de uma crew e ficava com o plano de uma
+     * crew, que lhe dava três lugares. Os preços passaram a ser um por
+     * plano precisamente para que isso deixe de ser possível de
+     * escrever.
+     *
+     * A cobrança exige pelo menos um: chaves sem preço nenhum são um
+     * botão de pagar que não sabe cobrar coisa nenhuma.
+     */
+    STRIPE_PRICE_PREMIUM: z.string().min(1).optional(),
+    STRIPE_PRICE_SERVER_BASE: z.string().min(1).optional(),
+    STRIPE_PRICE_SERVER_PLUS: z.string().min(1).optional(),
+    STRIPE_PRICE_SERVER_UNLIMITED: z.string().min(1).optional(),
 
     /**
      * Para onde o Stripe devolve quem termina ou abandona a compra.
@@ -303,10 +323,24 @@ export type Environment = typeof env;
 const STRIPE_FIELDS = [
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
-    'STRIPE_PRICE_ID',
     'STRIPE_SUCCESS_URL',
     'STRIPE_CANCEL_URL',
 ] as const;
+
+/**
+ * O preço de cada plano, pela chave com que ele é conhecido no
+ * catálogo.
+ *
+ * O catálogo vive no package de dados e não conhece o ambiente; é aqui
+ * que os dois se encontram, e é por isso que esta lista tem de ser lida
+ * ao lado dele quando um plano novo aparecer.
+ */
+const STRIPE_PRICE_FIELDS = {
+    premium: 'STRIPE_PRICE_PREMIUM',
+    server_base: 'STRIPE_PRICE_SERVER_BASE',
+    server_plus: 'STRIPE_PRICE_SERVER_PLUS',
+    server_unlimited: 'STRIPE_PRICE_SERVER_UNLIMITED',
+} as const;
 
 const stripeFieldsPresent = STRIPE_FIELDS.filter(
     (field) => env[field] !== undefined,
@@ -325,6 +359,57 @@ if (stripeFieldsPresent.length > 0 && stripeFieldsPresent.length !== STRIPE_FIEL
 
     throw new Error(
         `[ViceHub API] Configuração do Stripe incompleta. Em falta: ${emFalta.join(', ')}.`,
+    );
+}
+
+/**
+ * Os preços configurados, por chave de plano.
+ *
+ * Um plano sem preço aqui não se vende: não aparece na lista de preços
+ * e o checkout recusa-o. É o que permite abrir os escalões de servidor
+ * um a um, sem tocar em código.
+ */
+export const stripePriceIds: Readonly<Record<string, string>> = Object.freeze(
+    Object.fromEntries(
+        Object.entries(STRIPE_PRICE_FIELDS)
+            .map(([plano, campo]) => [plano, env[campo]] as const)
+            .filter((entrada): entrada is readonly [string, string] =>
+                entrada[1] !== undefined,
+            ),
+    ),
+);
+
+/**
+ * Chaves sem preço nenhum são recusadas ao arrancar.
+ *
+ * É a mesma regra da meia configuração: um botão de pagar que não sabe
+ * cobrar coisa nenhuma falha na primeira compra, e não no arranque —
+ * que é o único sítio onde alguém está a olhar.
+ */
+if (
+    stripeFieldsPresent.length === STRIPE_FIELDS.length &&
+    Object.keys(stripePriceIds).length === 0
+) {
+    throw new Error(
+        `[ViceHub API] Cobrança configurada sem preço nenhum. Define pelo menos um de: ${Object.values(
+            STRIPE_PRICE_FIELDS,
+        ).join(', ')}.`,
+    );
+}
+
+/**
+ * Um preço sem chaves também não serve.
+ *
+ * Ao contrário, quem pusesse os preços e se esquecesse das chaves via a
+ * lista de preços vazia e a compra fechada, sem nada a dizer porquê.
+ */
+const precosPresentes = Object.keys(stripePriceIds).length > 0;
+
+if (precosPresentes && stripeFieldsPresent.length !== STRIPE_FIELDS.length) {
+    const emFalta = STRIPE_FIELDS.filter((field) => env[field] === undefined);
+
+    throw new Error(
+        `[ViceHub API] Há preços do Stripe configurados mas falta o resto. Em falta: ${emFalta.join(', ')}.`,
     );
 }
 
@@ -408,7 +493,6 @@ export const stripeConfig = isStripeConfigured
     ? Object.freeze({
         secretKey: env.STRIPE_SECRET_KEY as string,
         webhookSecret: env.STRIPE_WEBHOOK_SECRET as string,
-        priceId: env.STRIPE_PRICE_ID as string,
         successUrl: env.STRIPE_SUCCESS_URL as string,
         cancelUrl: env.STRIPE_CANCEL_URL as string,
     })

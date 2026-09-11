@@ -14,6 +14,14 @@ interface UpsertPeriodInput {
     owner: SubscriptionOwner;
     providerSubscriptionId: string;
     providerCustomerId: string;
+    /**
+     * O plano que o Stripe está a cobrar.
+     *
+     * Vinha daqui fixo em `premium`, o que era verdade enquanto havia
+     * um preço só. Com escalões, gravar sempre `premium` dava três
+     * lugares a quem pagou sem limite.
+     */
+    plan: SubscriptionPlan;
     status: SubscriptionStatus;
     priceCents: number;
     currency: string;
@@ -80,7 +88,7 @@ export class BillingRepository {
             userId: input.owner.userId ?? null,
             crewId: input.owner.crewId ?? null,
             serverId: input.owner.serverId ?? null,
-            plan: SubscriptionPlan.premium,
+            plan: input.plan,
             status: input.status,
             provider: SubscriptionProvider.stripe,
             price_cents: input.priceCents,

@@ -13,18 +13,56 @@ const json = (status: number, body: unknown): Response =>
         json: () => Promise.resolve(body),
     }) as Response;
 
+const PLANO_CREW = {
+    key: 'premium',
+    name: 'Crew',
+    description: 'A tesouraria da crew.',
+    priceCents: 499,
+    currency: 'EUR',
+    intervalMonths: 1,
+    ownerKind: 'crew' as const,
+};
+
+/**
+ * Os três escalões de servidor, como a API os devolve quando estão
+ * todos abertos. O que os separa é quantas crews podem lá jogar.
+ */
+const ESCALOES = [
+    {
+        key: 'server_base',
+        name: 'Servidor',
+        description: 'Para o servidor e para as crews que lá jogam.',
+        priceCents: 1_499,
+        currency: 'EUR',
+        intervalMonths: 1,
+        ownerKind: 'server' as const,
+        maxCrews: 10,
+    },
+    {
+        key: 'server_plus',
+        name: 'Servidor +',
+        description: 'Para servidores com muitas crews.',
+        priceCents: 1_999,
+        currency: 'EUR',
+        intervalMonths: 1,
+        ownerKind: 'server' as const,
+        maxCrews: 50,
+    },
+    {
+        key: 'server_unlimited',
+        name: 'Servidor sem limite',
+        description: 'Sem limite de crews.',
+        priceCents: 9_999,
+        currency: 'EUR',
+        intervalMonths: 1,
+        ownerKind: 'server' as const,
+        maxCrews: null,
+    },
+];
+
 const CATALOGO = {
     available: true,
-    plans: [
-        {
-            key: 'premium',
-            name: 'Crew',
-            description: 'A tesouraria da crew.',
-            priceCents: 499,
-            currency: 'EUR',
-            intervalMonths: 1,
-        },
-    ],
+    plans: [PLANO_CREW, ...ESCALOES],
 };
 
 const SEM_PLANO = { isPremium: false, isLifetime: false, activeUntil: null };
@@ -159,13 +197,22 @@ afterEach(() => {
 });
 
 describe('o ecrã do premium', () => {
-    it('mostra o preço no formato do idioma', async () => {
+    /**
+     * Sem comunidade no caminho, este ecrã é a lista de preços pública:
+     * mostra a escada toda. Quem vem ver quanto custa quer ver quanto
+     * custa tudo, e não só a linha mais barata — e um servidor que só
+     * visse 4,99 € ficava a achar que o plano dele custava isso.
+     */
+    it('mostra a escada de preços toda, no formato do idioma', async () => {
         vi.stubGlobal('fetch', servidor({}));
 
         montar();
 
         expect(await screen.findByText('\u20ac4.99')).toBeTruthy();
-        expect(screen.getByText(t.premium.porMes)).toBeTruthy();
+        expect(screen.getByText('\u20ac14.99')).toBeTruthy();
+        expect(screen.getByText('\u20ac19.99')).toBeTruthy();
+        expect(screen.getByText('\u20ac99.99')).toBeTruthy();
+        expect(screen.getByText(t.premium.todosPorMes)).toBeTruthy();
     });
 
     /**
@@ -349,6 +396,7 @@ describe('comprar para uma crew', () => {
         expect(corpoDoCheckout(fetchMock)).toEqual({
             ownerKind: 'crew',
             ownerId: 'crew-1',
+            plan: 'premium',
         });
     });
 
@@ -482,7 +530,119 @@ describe('comprar para um servidor', () => {
         expect(corpoDoCheckout(fetchMock)).toEqual({
             ownerKind: 'server',
             ownerId: 'server-1',
+            /** Por omissão, o escalão mais barato dos que servem. */
+            plan: 'server_base',
         });
+    });
+
+    /**
+     * **O que este ecrã tem de acertar.**
+     *
+     * Antes havia um preço configurado só, e o checkout vendia esse
+     * fosse qual fosse o botão em que se carregou: um servidor que
+     * escolhesse o escalão sem limite pagava 4,99 € e ficava com três
+     * lugares. O que aqui se prova é que o escalão escolhido é o
+     * escalão comprado.
+     */
+    it('compra o escalão que foi escolhido, e não o primeiro', async () => {
+        const fetchMock = servidor({});
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar('/premium?servidor=server-1');
+
+        await userEvent.click(
+            await screen.findByText('Servidor sem limite'),
+        );
+        await userEvent.click(screen.getByText(t.premium.comprar));
+
+        await waitFor(() => {
+            expect(irPara).toHaveBeenCalled();
+        });
+
+        expect(corpoDoCheckout(fetchMock)).toMatchObject({
+            plan: 'server_unlimited',
+        });
+    });
+
+    /**
+     * A um servidor que já paga — ou que está nos trinta dias de
+     * avaliação — os escalões continuam à vista, e a escolha não: por
+     * baixo não há botão nenhum onde a usar, e uma escolha que não leva
+     * a lado nenhum é pior do que escolha nenhuma.
+     */
+    it('mostra os preços mas não a escolha a quem já tem plano', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ servidor: { ...SERVIDOR, isPremium: true } }),
+        );
+
+        montar('/premium?servidor=server-1');
+
+        expect(await screen.findByText('\u20ac99.99')).toBeTruthy();
+        expect(screen.queryByText(t.premium.escolheEscalao)).toBeNull();
+        expect(screen.queryByText(t.premium.comprar)).toBeNull();
+        expect(screen.getByText(t.premium.servidorTemPlano)).toBeTruthy();
+    });
+
+    /**
+     * O que separa os três escalões é quantas crews podem lá jogar.
+     * Sem isso, são três preços a subir sem dizer porquê — e um preço
+     * que sobe sem razão visível lê-se como arbitrário.
+     */
+    it('diz quantas crews cada escalão dá', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar('/premium?servidor=server-1');
+
+        expect(await screen.findByText(t.premium.ateCrews(10))).toBeTruthy();
+        expect(screen.getByText(t.premium.ateCrews(50))).toBeTruthy();
+        expect(screen.getByText(t.premium.semLimiteDeCrews)).toBeTruthy();
+    });
+
+    /**
+     * Um servidor não compra o plano de uma crew: o que ele vende são
+     * lugares para crews, e o da crew abre a tesouraria de uma crew.
+     * Oferecê-lo aqui era oferecer um botão que a API recusa.
+     */
+    it('não oferece o plano da crew a um servidor', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar('/premium?servidor=server-1');
+
+        await screen.findByText(t.premium.escolheEscalao);
+
+        expect(screen.queryByText('\u20ac4.99')).toBeNull();
+    });
+
+    /**
+     * E ao contrário. Uma crew com três escalões de servidor para
+     * escolher compraria lugares que não tem onde pôr.
+     */
+    it('não oferece escalões de servidor a uma crew', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar('/premium?crew=crew-1');
+
+        expect(await screen.findByText('\u20ac4.99')).toBeTruthy();
+        expect(screen.queryByText(t.premium.escolheEscalao)).toBeNull();
+        expect(screen.queryByText('\u20ac99.99')).toBeNull();
+    });
+
+    /**
+     * Uma instalação que só abriu o preço da crew não tem nada a vender
+     * a um servidor. Dizer-lhe "ainda não abriu" é a verdade — ao
+     * contrário de um botão que a API recusa depois do clique.
+     */
+    it('diz que ainda não abriu quando não há escalão para este titular', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ catalogo: { available: true, plans: [PLANO_CREW] } }),
+        );
+
+        montar('/premium?servidor=server-1');
+
+        expect(await screen.findByText(t.premium.aindaNaoAbriu)).toBeTruthy();
+        expect(screen.queryByText(t.premium.comprar)).toBeNull();
     });
 
     it('fala do servidor, e não da crew nem do perfil', async () => {

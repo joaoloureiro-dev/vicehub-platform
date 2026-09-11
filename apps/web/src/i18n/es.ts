@@ -348,6 +348,15 @@ export const es = (p: Tools): Messages => ({
             'Un plan para todo el servidor, y para las crews que juegan allí. No depende de quién pagó.',
         servidorTemPlano: 'Este servidor ya tiene un plan activo.',
         irParaServidor: 'Ir al servidor',
+        aTesourariaDaCrew: 'La tesorería de una crew',
+        escolheEscalao: 'Elige tu nivel',
+        ateCrews: (n: number) =>
+            p.plural(n, {
+                one: 'Hasta 1 crew jugando en tu servidor',
+                other: `Hasta ${n} crews jugando en tu servidor`,
+            }),
+        semLimiteDeCrews: 'Sin límite de crews jugando allí',
+        todosPorMes: 'Todos los precios son por mes.',
         porMes: 'al mes',
         planoEDeComunidade:
             'Aquí no hay nada que comprar para tu cuenta. El plan es de una crew o de un servidor: abre la que gestionas y cómpralo allí.',

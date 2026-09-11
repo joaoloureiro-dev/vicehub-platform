@@ -583,6 +583,47 @@ describe('filiação entre crews e servidores', () => {
         });
 
         /**
+         * **A escada toda, e não só o primeiro degrau.**
+         *
+         * O que um servidor compra são lugares para crews, e é a única
+         * medida em que os três escalões diferem. Subir de escalão tem
+         * de subir os lugares — se não subisse, quem pagasse 99,99 €
+         * ficava com os mesmos dez de quem paga 14,99 €, que foi
+         * precisamente o que aconteceu enquanto o checkout vendia
+         * sempre o mesmo preço.
+         */
+        it.each([
+            ['server_plus', 50],
+            ['server_unlimited', null],
+        ] as const)('o escalão %s dá %s lugares', async (plano, lugares) => {
+            await prisma.subscription.updateMany({
+                where: { serverId: cheio },
+                data: { plan: plano },
+            });
+
+            expect(await folga()).toMatchObject({
+                limit: lugares,
+                /** Quatro crews lá dentro, e ainda cabe mais. */
+                used: 4,
+                canAcceptMore: true,
+            });
+        });
+
+        /**
+         * E voltar ao escalão de baixo volta a fechar a porta, sem
+         * tirar nada a ninguém: as quatro que lá estão continuam lá, e
+         * o que muda é só deixar de caber mais.
+         */
+        it('descer de escalão fecha a porta sem confiscar', async () => {
+            await prisma.subscription.updateMany({
+                where: { serverId: cheio },
+                data: { plan: 'server_base' },
+            });
+
+            expect(await folga()).toMatchObject({ limit: 10, used: 4 });
+        });
+
+        /**
          * O que acontece quando o plano acaba: **nada é retirado**. As
          * crews que já lá jogavam ficam onde estão, e o servidor apenas
          * deixa de poder aceitar mais. Tirar uma crew de um servidor por

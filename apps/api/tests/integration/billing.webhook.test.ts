@@ -40,7 +40,15 @@ describe('webhook do Stripe, com a cobrança configurada', () => {
          */
         vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_0123456789abcdef');
         vi.stubEnv('STRIPE_WEBHOOK_SECRET', WEBHOOK_SECRET);
-        vi.stubEnv('STRIPE_PRICE_ID', 'price_teste');
+        /**
+         * Um preço por plano. Os quatro estão cá para que o webhook
+         * possa ser exercitado com o preço de cada escalão: é dele que
+         * se lê que plano fica gravado.
+         */
+        vi.stubEnv('STRIPE_PRICE_PREMIUM', 'price_crew');
+        vi.stubEnv('STRIPE_PRICE_SERVER_BASE', 'price_server_base');
+        vi.stubEnv('STRIPE_PRICE_SERVER_PLUS', 'price_server_plus');
+        vi.stubEnv('STRIPE_PRICE_SERVER_UNLIMITED', 'price_server_unlimited');
         vi.stubEnv('STRIPE_SUCCESS_URL', 'https://app.vicehub.test/ok');
         vi.stubEnv('STRIPE_CANCEL_URL', 'https://app.vicehub.test/cancelado');
 

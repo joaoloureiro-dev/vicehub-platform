@@ -146,7 +146,7 @@ describe('cobrança pelo Stripe', () => {
                  * esse motivo vem antes desta — o que se quer ver aqui é
                  * a configuração em falta.
                  */
-                payload: { ownerKind: 'crew', ownerId: crewId },
+                payload: { ownerKind: 'crew', ownerId: crewId, plan: 'premium' },
             });
 
             expect(response.statusCode, response.body).toBe(503);
@@ -167,7 +167,7 @@ describe('cobrança pelo Stripe', () => {
                 method: 'POST',
                 url: '/api/v1/billing/checkout',
                 headers: auth(),
-                payload: { ownerKind: 'user', ownerId: userId },
+                payload: { ownerKind: 'user', ownerId: userId, plan: 'premium' },
             });
 
             expect(response.statusCode, response.body).toBe(400);
@@ -226,7 +226,7 @@ describe('cobrança pelo Stripe', () => {
 
             const tentar = (
                 token: string,
-                payload: { ownerKind: string; ownerId: string },
+                payload: { ownerKind: string; ownerId: string; plan?: string },
             ) =>
                 app.inject({
                     method: 'POST',
@@ -245,6 +245,7 @@ describe('cobrança pelo Stripe', () => {
                 const response = await tentar(intrusoToken, {
                     ownerKind: 'crew',
                     ownerId: crewDeOutrem,
+                    plan: 'premium',
                 });
 
                 expect(response.statusCode, response.body).toBe(403);
@@ -258,6 +259,7 @@ describe('cobrança pelo Stripe', () => {
                 const response = await tentar(intrusoToken, {
                     ownerKind: 'user',
                     ownerId: userId,
+                    plan: 'premium',
                 });
 
                 expect(response.statusCode, response.body).toBe(400);
@@ -274,6 +276,7 @@ describe('cobrança pelo Stripe', () => {
                 const response = await tentar(token, {
                     ownerKind: 'crew',
                     ownerId: crewDeOutrem,
+                    plan: 'premium',
                 });
 
                 expect(response.statusCode, response.body).toBe(503);
@@ -284,7 +287,7 @@ describe('cobrança pelo Stripe', () => {
             const response = await app.inject({
                 method: 'POST',
                 url: '/api/v1/billing/checkout',
-                payload: { ownerKind: 'user', ownerId: userId },
+                payload: { ownerKind: 'user', ownerId: userId, plan: 'premium' },
             });
 
             expect(response.statusCode).toBe(401);
@@ -320,8 +323,29 @@ describe('cobrança pelo Stripe', () => {
     describe('validação da compra', () => {
         it.each([
             ['sem titular', {}],
-            ['com tipo inválido', { ownerKind: 'guilda', ownerId: crypto.randomUUID() }],
-            ['com identificador que não é uuid', { ownerKind: 'user', ownerId: 'x' }],
+            [
+                'com tipo inválido',
+                {
+                    ownerKind: 'guilda',
+                    ownerId: crypto.randomUUID(),
+                    plan: 'premium',
+                },
+            ],
+            [
+                'com identificador que não é uuid',
+                { ownerKind: 'user', ownerId: 'x', plan: 'premium' },
+            ],
+            /**
+             * Sem plano não há nada a vender. Antes não fazia falta —
+             * vendia-se sempre o mesmo preço —, e é precisamente por
+             * isso que um pedido sem plano tem de ser recusado agora:
+             * um `undefined` a chegar ao serviço procuraria um preço
+             * que não existe.
+             */
+            [
+                'sem plano',
+                { ownerKind: 'crew', ownerId: crypto.randomUUID() },
+            ],
         ])('recusa um pedido %s', async (_nome, payload) => {
             const response = await app.inject({
                 method: 'POST',
