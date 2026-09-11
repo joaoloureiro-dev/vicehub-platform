@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { darPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * Atomicidade de uma divisão de ganhos, contra PostgreSQL a sério.
@@ -116,6 +117,9 @@ describe('divisões de ganhos', () => {
 
         expect(crew.statusCode, crew.body).toBe(201);
         crewId = crew.json().id as string;
+
+        /** Mexer no dinheiro exige plano; ler não. */
+        await darPlano({ crewId });
 
         for (const sufixo of ['a', 'b']) {
             const token = await register(`${marca}${sufixo}`);

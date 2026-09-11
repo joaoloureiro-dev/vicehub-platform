@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { darPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * Testes de concorrência da tesouraria, contra PostgreSQL a sério.
@@ -92,6 +93,9 @@ describe('concorrência na tesouraria', () => {
 
         expect(crew.statusCode, crew.body).toBe(201);
         crewId = crew.json().id as string;
+
+        /** Mexer no dinheiro exige plano; ler não. */
+        await darPlano({ crewId });
 
         await app.inject({
             method: 'POST',

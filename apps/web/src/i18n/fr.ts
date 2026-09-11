@@ -385,6 +385,9 @@ export const fr = (p: Tools): Messages => ({
     tesouraria: {
         titulo: 'Trésorerie',
         verCrew: 'Voir la crew',
+        precisaDePlano:
+            "Déplacer de l'argent fait partie de l'offre de la crew — l'offre est celle de la crew, pas la vôtre. Le solde, le relevé et les partages passés restent visibles par tous ; proposer et approuver demandent une offre active.",
+        verPlano: "Voir ce que l'offre donne à la crew",
         soParaMembros:
             'Les comptes d’une crew ne sont visibles que par ses membres.',
         disponivel: 'Disponible',

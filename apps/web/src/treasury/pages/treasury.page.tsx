@@ -95,6 +95,19 @@ export const TreasuryPage = () => {
 
     const montanteMau = montante.length > 0 && !MONTANTE_VALIDO.test(montante);
 
+    /**
+     * Se esta crew pode mexer no dinheiro.
+     *
+     * O plano é **da crew**, e já vem no perfil que a página carregou —
+     * não é preciso perguntar outra vez. Ler continua de graça: o saldo,
+     * o extrato e as divisões passadas ficam à vista de qualquer membro,
+     * com plano ou sem ele. O que o plano fecha é propor e decidir.
+     *
+     * `undefined` enquanto o perfil não chegou: aí não se decide nada,
+     * porque mostrar o aviso e tirá-lo a seguir era pior do que esperar.
+     */
+    const podeMexer = crew.data?.isPremium;
+
     const agir = async (acao: () => Promise<unknown>, bom: string) => {
         setMensagem(null);
         setAAgir(true);
@@ -181,6 +194,31 @@ export const TreasuryPage = () => {
                 <Alert kind={mensagem.tipo}>{mensagem.texto}</Alert>
             ) : null}
 
+            {/*
+              O aviso fica onde estaria o formulário, e não no topo da
+              página: quem abre a tesouraria para ver o saldo não tem de
+              levar com uma venda; quem a abre para propor um movimento
+              encontra a explicação exatamente onde procurava o campo.
+            */}
+            {podeMexer === false ? (
+                <section className="grupo">
+                    <h2>{t.tesouraria.proporTitulo}</h2>
+                    <Alert kind="bad">{t.tesouraria.precisaDePlano}</Alert>
+                    {/*
+                      O plano é da crew e não de quem o compra: sem o
+                      identificador, quem carregasse comprava para si
+                      próprio e a tesouraria continuava fechada.
+                    */}
+                    <Link
+                        className="link-premium"
+                        to={`/premium?crew=${encodeURIComponent(crewId as string)}`}
+                    >
+                        {t.tesouraria.verPlano}
+                    </Link>
+                </section>
+            ) : null}
+
+            {podeMexer === false ? null : (
             <section className="grupo">
                 <h2>{t.tesouraria.proporTitulo}</h2>
                 <p className="hint">{t.tesouraria.proporAviso}</p>
@@ -277,6 +315,7 @@ export const TreasuryPage = () => {
                     </button>
                 </form>
             </section>
+            )}
 
             <section className="grupo">
                 <h2>{t.tesouraria.extrato}</h2>
@@ -290,7 +329,16 @@ export const TreasuryPage = () => {
                                 key={movimento.id}
                                 movimento={movimento}
                                 acoes={
-                                    movimento.status === 'pending' ? (
+                                    /**
+                                     * Sem plano, os botões não aparecem:
+                                     * todos eles respondem 402, e um
+                                     * botão que só pode recusar é pior
+                                     * do que botão nenhum. O movimento
+                                     * fica à vista, pendente, à espera
+                                     * de que o plano volte.
+                                     */
+                                    movimento.status === 'pending'
+                                    && podeMexer !== false ? (
                                         <>
                                             <button
                                                 className="btn-secondary"

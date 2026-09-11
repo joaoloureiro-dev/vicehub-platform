@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { darPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * A tesouraria de uma crew é dela.
@@ -85,6 +86,15 @@ describe('a tesouraria não atravessa crews', () => {
 
         crewDaAna = await criarCrew(ana.token, 'a');
         crewDoBruno = await criarCrew(bruno.token, 'b');
+
+        /**
+         * As duas pagam, de propósito: o que aqui se prova é que uma
+         * crew não chega à tesouraria da outra, e um 402 por falta de
+         * plano taparia esse resultado — a recusa passaria a ser pela
+         * razão errada, e o teste deixaria de dizer o que diz.
+         */
+        await darPlano({ crewId: crewDaAna });
+        await darPlano({ crewId: crewDoBruno });
     });
 
     afterAll(async () => {

@@ -382,6 +382,9 @@ export const en = (p: Tools) => ({
     tesouraria: {
         titulo: 'Treasury',
         verCrew: 'See the crew',
+        precisaDePlano:
+            "Moving money is part of the crew's plan — the plan belongs to the crew, not to you. The balance, the statement and past splits stay visible to everyone; proposing and approving need an active plan.",
+        verPlano: 'See what the plan gives the crew',
         soParaMembros: "A crew's books are only visible to its members.",
         disponivel: 'Available',
         liquidado: 'Settled',

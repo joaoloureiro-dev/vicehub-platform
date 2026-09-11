@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { darPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * As conquistas, contra PostgreSQL a sério.
@@ -128,6 +129,9 @@ describe('conquistas', () => {
 
         expect(crew.statusCode, crew.body).toBe(201);
         crewId = crew.json().id as string;
+
+        /** Mexer no dinheiro exige plano; ler não. */
+        await darPlano({ crewId });
 
         /** O membro entra, para haver duas presenças e o evento contar. */
         expect(

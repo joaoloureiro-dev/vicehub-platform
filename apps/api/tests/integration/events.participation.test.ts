@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { darPlano } from '../helpers/plans.fixtures.js';
 
 /**
  * Eventos e divisão por participação, contra PostgreSQL a sério.
@@ -152,6 +153,9 @@ describe('eventos e divisão por participação', () => {
 
         expect(crew.statusCode, crew.body).toBe(201);
         crewId = crew.json().id as string;
+
+        /** Mexer no dinheiro exige plano; ler não. */
+        await darPlano({ crewId });
 
         for (const sufixo of ['a', 'b', 'c']) {
             const username = `${marca}${sufixo}`;
