@@ -39,6 +39,15 @@ export interface SubscriptionEntitlement {
      * do plano não há como perguntar o tamanho.
      */
     plan: SubscriptionPlan | null;
+    /**
+     * Se o que está a dar direito é uma avaliação, e não um plano pago.
+     *
+     * Existe para o ecrã poder dizer a verdade. `isPremium` é o mesmo
+     * nos dois casos — e é suposto ser: uma avaliação dá o mesmo que um
+     * plano. Mas uma avaliação **acaba**, e acabar em silêncio, com a
+     * tesouraria a fechar-se sem aviso, era a pior maneira de vender.
+     */
+    isTrial: boolean;
     /** Fim do período em vigor, ou null quando não termina. */
     activeUntil: Date | null;
     /**

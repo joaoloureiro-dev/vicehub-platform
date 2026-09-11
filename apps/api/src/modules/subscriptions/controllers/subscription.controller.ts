@@ -169,6 +169,15 @@ export class SubscriptionController {
              * casos não há data.
              */
             isLifetime: entitlement.isLifetime,
+            /**
+             * Sai à parte do isPremium porque os dois são verdade ao
+             * mesmo tempo: uma avaliação dá o mesmo que um plano pago, e
+             * é suposto dar. O que muda é o que o ecrã tem de dizer —
+             * uma avaliação acaba, e acabar em silêncio, com a
+             * tesouraria a fechar-se sem aviso, era a pior maneira de
+             * vender.
+             */
+            isTrial: entitlement.isTrial,
             activeUntil: this.toIso(entitlement.activeUntil),
             /**
              * De onde vem o direito, quando não vem do próprio titular.

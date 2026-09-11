@@ -200,6 +200,7 @@ describe('SubscriptionService', () => {
                 isPremium: true,
                 isLifetime: false,
                 plan: 'premium',
+                isTrial: false,
                 activeUntil: periodEnd,
                 via: null,
             });
@@ -222,6 +223,7 @@ describe('SubscriptionService', () => {
                 isPremium: true,
                 isLifetime: true,
                 plan: 'lifetime',
+                isTrial: false,
                 activeUntil: null,
                 via: null,
             });
@@ -262,6 +264,7 @@ describe('SubscriptionService', () => {
                 isPremium: true,
                 isLifetime: false,
                 plan: 'premium',
+                isTrial: false,
                 activeUntil: periodEnd,
                 via: { kind: 'server', id: 'server-9', name: 'Vice City RP' },
             });
@@ -433,6 +436,7 @@ describe('SubscriptionService', () => {
                     isPremium: true,
                     isLifetime: false,
                     plan: 'premium' as const,
+                    isTrial: false,
                     activeUntil: periodEnd,
                     via: null,
                 }),
@@ -451,6 +455,7 @@ describe('SubscriptionService', () => {
                     isPremium: true,
                     isLifetime: true,
                     plan: 'lifetime' as const,
+                    isTrial: false,
                     activeUntil: null,
                     via: null,
                 }),
@@ -464,6 +469,7 @@ describe('SubscriptionService', () => {
                     isPremium: false,
                     isLifetime: false,
                     plan: null,
+                    isTrial: false,
                     activeUntil: null,
                     via: null,
                 });

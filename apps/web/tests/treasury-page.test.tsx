@@ -52,9 +52,37 @@ const pendente = {
  * bugs neste repositório mais do que uma vez: o ecrã recebia a forma
  * errada, não mostrava nada, e os testes passavam à mesma.
  */
-const servir = (opcoes: { premium: boolean; movimentos?: unknown[] }) =>
+const servir = (opcoes: {
+    premium: boolean;
+    movimentos?: unknown[];
+    /** O plano da crew, como a rota de quem a gere o devolve. */
+    plano?: { isTrial: boolean; activeUntil: string | null } | 403;
+}) =>
     vi.fn((url: string) => {
         const endereco = String(url);
+
+        /**
+         * Antes da tesouraria, porque `/subscriptions/crews/:id` também
+         * contém `/crews/`. Um ramo genérico respondia-lhe com o perfil
+         * da crew, e o ecrã lia `isTrial` de onde ele não existe — sem
+         * erro nenhum, e com os testes a passar.
+         */
+        if (endereco.includes('/subscriptions/crews/')) {
+            if (opcoes.plano === 403) {
+                return Promise.resolve(json(403, { code: 'FORBIDDEN' }));
+            }
+
+            return Promise.resolve(
+                json(200, {
+                    isPremium: opcoes.premium,
+                    isLifetime: false,
+                    isTrial: opcoes.plano?.isTrial ?? false,
+                    activeUntil: opcoes.plano?.activeUntil ?? null,
+                    via: null,
+                    history: [],
+                }),
+            );
+        }
 
         if (endereco.includes('/distributions')) {
             return Promise.resolve(json(200, []));
@@ -198,5 +226,99 @@ describe('a tesouraria de uma crew com plano', () => {
         expect(
             await screen.findByRole('button', { name: t.tesouraria.aprovar }),
         ).toBeDefined();
+    });
+});
+
+/**
+ * A avaliação acaba. Acabar em silêncio — com a tesouraria a fechar-se
+ * sem aviso a quem estava a usá-la todos os dias — era a pior maneira
+ * de vender.
+ */
+describe('a avaliação de uma crew nova', () => {
+    /** Daqui a N dias, em ISO. */
+    const daqui = (dias: number) =>
+        new Date(Date.now() + dias * 86_400_000).toISOString();
+
+    it('diz quantos dias faltam', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({
+                premium: true,
+                plano: { isTrial: true, activeUntil: daqui(12) },
+            }),
+        );
+
+        montar();
+
+        expect(
+            await screen.findByText(
+                t.tesouraria.avaliacaoAcaba(12),
+                { exact: false },
+            ),
+        ).toBeDefined();
+    });
+
+    /**
+     * Com dezoito horas por passar, o que falta é um dia e não zero —
+     * "zero dias" num ecrã que ainda funciona lê-se como avaria.
+     */
+    it('arredonda para cima o último dia', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({
+                premium: true,
+                plano: { isTrial: true, activeUntil: daqui(0.75) },
+            }),
+        );
+
+        montar();
+
+        expect(
+            await screen.findByText(t.tesouraria.avaliacaoAcaba(1), {
+                exact: false,
+            }),
+        ).toBeDefined();
+    });
+
+    it('num plano pago, não fala de avaliação nenhuma', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({
+                premium: true,
+                plano: { isTrial: false, activeUntil: daqui(12) },
+            }),
+        );
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(t.tesouraria.montante)).toBeDefined();
+        });
+
+        expect(
+            screen.queryByText(t.tesouraria.avaliacaoAcaba(12), {
+                exact: false,
+            }),
+        ).toBeNull();
+    });
+
+    /**
+     * Quem pertence à crew mas não a gere leva 403 nesta pergunta, e
+     * isso não é avaria: continua a ver a tesouraria na mesma, sem o
+     * aviso que não lhe diz respeito.
+     */
+    it('a quem não gere a crew, não mostra nada disto', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: true, plano: 403 }),
+        );
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(t.tesouraria.montante)).toBeDefined();
+        });
+
+        expect(screen.queryByText(/trial/i)).toBeNull();
     });
 });

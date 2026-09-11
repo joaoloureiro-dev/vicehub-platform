@@ -137,6 +137,26 @@ export const isPurchasablePlan = (definicao: PlanDefinition): boolean =>
     definicao.purchasable !== false;
 
 /**
+ * Quantos dias dura a avaliação de uma comunidade acabada de criar.
+ *
+ * Existe porque um muro sem porta não vende — afasta. A tesouraria é o
+ * que a plataforma vende, e ninguém paga por uma coisa que nunca viu a
+ * funcionar com o seu próprio dinheiro e a sua própria gente. Trinta
+ * dias chegam para uma crew correr eventos, juntar ganhos e dividi-los
+ * pelo menos uma vez, que é o ciclo inteiro.
+ *
+ * Uma vez por comunidade, e na criação. Um plano que acabe não abre
+ * outra avaliação: a segunda seria a primeira a não valer nada.
+ */
+export const DIAS_DE_AVALIACAO = 30;
+
+/**
+ * Quando acaba a avaliação de uma comunidade criada agora.
+ */
+export const fimDaAvaliacao = (inicio: Date = new Date()): Date =>
+    new Date(inicio.getTime() + DIAS_DE_AVALIACAO * 24 * 60 * 60 * 1000);
+
+/**
  * Quantas crews pode ter um servidor que não paga nada.
  *
  * O número que decide se o escalão de entrada vende alguma coisa. Três
@@ -200,6 +220,20 @@ export const ENTITLING_SUBSCRIPTION_STATUSES: readonly SubscriptionStatus[] = [
     SubscriptionStatus.active,
     SubscriptionStatus.trialing,
 ];
+
+/**
+ * Estados que dão direito **e foram pagos**.
+ *
+ * É a lista de cima menos a avaliação. Serve a pergunta "isto foi
+ * comprado?", que é diferente de "isto dá acesso?" — e a diferença
+ * decide, por exemplo, se uma comunidade se pode apagar: não se destrói
+ * o que alguém pagou, mas trancar uma comunidade recém-criada durante
+ * trinta dias por causa de uma avaliação seria outra coisa.
+ */
+export const PAID_SUBSCRIPTION_STATUSES: readonly SubscriptionStatus[] =
+    ENTITLING_SUBSCRIPTION_STATUSES.filter(
+        (estado) => estado !== SubscriptionStatus.trialing,
+    );
 
 /**
  * Filtro das subscrições que estão, neste momento, a dar acesso.

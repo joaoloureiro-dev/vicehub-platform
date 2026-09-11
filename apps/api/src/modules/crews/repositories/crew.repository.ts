@@ -1,5 +1,9 @@
 import {
     entitlingSubscriptionFilter,
+    fimDaAvaliacao,
+    PLANS,
+    SubscriptionPlan,
+    SubscriptionStatus,
     MembershipStatus,
     MembershipType,
     SourceType,
@@ -83,6 +87,12 @@ export class CrewRepository {
      *
      * A adesão entra na mesma escrita aninhada que cria a crew: nunca
      * existe uma crew sem membros, nem sequer por instantes.
+     *
+     * A avaliação entra pela mesma razão. Uma crew que nascesse sem ela
+     * — porque a segunda escrita falhou, porque alguém se esqueceu de a
+     * chamar — abria a tesouraria fechada no primeiro dia, e quem a
+     * criou não teria como saber que lhe faltava alguma coisa. Ou nasce
+     * inteira, ou não nasce.
      */
     createWithFounder(input: CreateCrewInput) {
         const data: {
@@ -93,6 +103,7 @@ export class CrewRepository {
             description?: string | null;
             memberships: unknown;
             wallet: unknown;
+            subscriptions: unknown;
         } = {
             name: input.name,
             tag: input.tag,
@@ -111,6 +122,27 @@ export class CrewRepository {
             wallet: {
                 create: {
                     source: SourceType.api,
+                },
+            },
+            /**
+             * Trinta dias de plano, para a crew ver a tesouraria a
+             * funcionar com o seu próprio dinheiro antes de decidir se
+             * a paga. O estado é `trialing` e não `active` porque é
+             * outra coisa: não foi cobrado nada, e o histórico tem de o
+             * dizer. Dar direito, dá — está na lista dos estados que
+             * dão, ao lado de `active`.
+             */
+            subscriptions: {
+                create: {
+                    plan: SubscriptionPlan.premium,
+                    status: SubscriptionStatus.trialing,
+                    /** Zero: uma avaliação não cobra nada a ninguém. */
+                    price_cents: 0,
+                    currency: PLANS.premium.currency,
+                    current_period_start: new Date(),
+                    current_period_end: fimDaAvaliacao(),
+                    source: SourceType.api,
+                    created_by: input.founderId,
                 },
             },
         };
