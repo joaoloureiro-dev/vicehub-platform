@@ -76,3 +76,16 @@ export const usernameParamSchema = z.object({
         .max(32)
         .regex(/^[a-zA-Z0-9_.-]+$/),
 });
+
+/**
+ * Apagar a própria conta.
+ *
+ * O nome escrito de novo separa um clique errado de uma decisão. A
+ * password é opcional aqui e obrigatória no serviço para quem tem uma:
+ * o schema não sabe se esta conta tem password, e recusar por falta
+ * dela antes de saber dava a mesma resposta a quem não a tem.
+ */
+export const deleteAccountSchema = z.object({
+    confirmation: z.string().min(1),
+    password: z.string().min(1).optional(),
+});

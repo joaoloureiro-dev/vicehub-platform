@@ -301,6 +301,13 @@ export const fr = (p: Tools): Messages => ({
     },
 
     perfil: {
+        apagarConta: 'Supprimer mon compte',
+        apagarContaExplicacao:
+            'Tu peux partir quand tu veux. Le compte et tout ce qui t\u2019identifie disparaissent ; ce dont tes crews ont besoin pour que leurs comptes tombent juste reste, sous un nom qui ne dit rien de toi.',
+        apagarContaFica:
+            'L\u2019adresse, le nom, l\u2019image et le texte sont effacés, ainsi que le mot de passe et les connexions Discord ou Google. Ce qui reste : les mouvements que tu as proposés ou approuvés, et les événements où tu étais — cela appartient à tes crews et non à toi, et les retirer laisserait leurs comptes faux.',
+        apagarContaPassword: 'Ton mot de passe, si le compte en a un',
+        apagarContaConfirmar: 'Supprimer le compte définitivement',
         titulo: 'Mon profil',
         verPublico: 'Voir en public',
         naoCarregou: 'Ton profil n’a pas pu être chargé.',

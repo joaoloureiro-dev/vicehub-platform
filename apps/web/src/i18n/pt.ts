@@ -300,6 +300,13 @@ export const pt = (p: Tools): Messages => ({
     },
 
     perfil: {
+        apagarConta: 'Apagar a minha conta',
+        apagarContaExplicacao:
+            'Podes sair quando quiseres. A conta e tudo o que te identifica vão-se; o que as tuas crews precisam para as contas baterem certo fica, com um nome que não diz nada sobre ti.',
+        apagarContaFica:
+            'O email, o nome, a imagem e o texto são apagados, e a password e as entradas por Discord ou Google também. O que fica: os movimentos que propuseste ou aprovaste, e os eventos em que estiveste — isso é das tuas crews e não teu, e retirá-lo deixava as contas delas a não somar.',
+        apagarContaPassword: 'A tua password, se a conta tiver uma',
+        apagarContaConfirmar: 'Apagar a conta de vez',
         titulo: 'O meu perfil',
         verPublico: 'Ver como público',
         naoCarregou: 'Não foi possível carregar o teu perfil.',

@@ -299,6 +299,13 @@ export const en = (p: Tools) => ({
     },
 
     perfil: {
+        apagarConta: 'Delete my account',
+        apagarContaExplicacao:
+            'You can leave whenever you like. Your account and everything that identifies you go; what your crews need to keep their books straight stays, under a name that says nothing about you.',
+        apagarContaFica:
+            'Your email, your name, your picture and your text are erased, and so are your password and any Discord or Google sign-in. What stays: the movements you proposed or approved, and the events you turned up to — those belong to your crews, not to you, and removing them would leave their books not adding up.',
+        apagarContaPassword: 'Your password, if your account has one',
+        apagarContaConfirmar: 'Delete my account for good',
         titulo: 'My profile',
         verPublico: 'View as public',
         naoCarregou: 'Your profile could not be loaded.',

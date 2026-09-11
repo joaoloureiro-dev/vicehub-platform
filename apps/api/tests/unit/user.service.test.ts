@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { UserError } from '../../src/modules/users/errors/user.errors.js';
 import { UserService } from '../../src/modules/users/services/user.service.js';
+import type { PasswordService } from '../../src/modules/auth/services/password.service.js';
 import type { SubscriptionService } from '../../src/modules/subscriptions/services/subscription.service.js';
 import type { UserRepository } from '../../src/modules/users/repositories/user.repository.js';
 import { NIVEL_MAXIMO } from '@vicehub/database';
@@ -30,9 +31,20 @@ describe('UserService', () => {
         updateProfile: ReturnType<typeof vi.fn>;
         updateAppearance: ReturnType<typeof vi.fn>;
         listAchievements: ReturnType<typeof vi.fn>;
+        findCredential: ReturnType<typeof vi.fn>;
+        findAccountDeletionBlockers: ReturnType<typeof vi.fn>;
+        eraseAccount: ReturnType<typeof vi.fn>;
     };
     let subscriptions: { getEntitlement: ReturnType<typeof vi.fn> };
+    let passwords: { verify: ReturnType<typeof vi.fn> };
     let service: UserService;
+
+    /** Nada preso atrás: a conta pode sair. */
+    const SEM_IMPEDIMENTOS = {
+        funds: 0n,
+        orphanedCommunities: [],
+        hasActivePaidPlan: false,
+    };
 
     const premiumUntil = new Date('2026-12-31T00:00:00.000Z');
 
@@ -43,16 +55,211 @@ describe('UserService', () => {
             updateProfile: vi.fn().mockResolvedValue(undefined),
             updateAppearance: vi.fn().mockResolvedValue(undefined),
             listAchievements: vi.fn().mockResolvedValue([]),
+            findCredential: vi
+                .fn()
+                .mockResolvedValue({ password_hash: 'hash-argon2' }),
+            findAccountDeletionBlockers: vi
+                .fn()
+                .mockResolvedValue(SEM_IMPEDIMENTOS),
+            eraseAccount: vi.fn().mockResolvedValue(undefined),
         };
         subscriptions = {
             getEntitlement: vi
                 .fn()
                 .mockResolvedValue({ isPremium: false, activeUntil: null }),
         };
+        passwords = { verify: vi.fn().mockResolvedValue(true) };
+
         service = new UserService(
             repository as unknown as UserRepository,
             subscriptions as unknown as SubscriptionService,
+            passwords as unknown as PasswordService,
         );
+    });
+
+    /**
+     * Apagar a conta.
+     *
+     * Duas garantias, e as duas existem por razões diferentes: **não se
+     * apaga por engano nem por sessão roubada**, e **não fica nada
+     * preso atrás** — dinheiro sem dono, uma crew sem quem a possa
+     * gerir, uma cobrança a sair de um cartão.
+     */
+    describe('apagar a própria conta', () => {
+        const pedido = {
+            userId: 'user-1',
+            confirmation: 'player',
+            password: 'Sup3rS3cret!Pass',
+        };
+
+        const esperarErro = async (promessa: Promise<unknown>, code: string) => {
+            const erro = await promessa.catch((apanhado: unknown) => apanhado);
+
+            expect(erro).toBeInstanceOf(UserError);
+            expect((erro as UserError).code).toBe(code);
+        };
+
+        it('apaga quando a confirmação bate certo e nada fica preso', async () => {
+            await service.deleteOwnAccount(pedido);
+
+            expect(repository.eraseAccount).toHaveBeenCalledWith('user-1');
+        });
+
+        /**
+         * **O que impede uma sessão roubada de apagar a conta.** Sem
+         * isto, quem apanhasse um token tinha o nome de utilizador à
+         * vista no perfil e mais nada a fazer.
+         */
+        it('recusa com a password errada', async () => {
+            passwords.verify.mockResolvedValue(false);
+
+            await esperarErro(
+                service.deleteOwnAccount(pedido),
+                'ACCOUNT_DELETION_NOT_CONFIRMED',
+            );
+
+            expect(repository.eraseAccount).not.toHaveBeenCalled();
+        });
+
+        it('recusa sem password nenhuma quando a conta tem uma', async () => {
+            await esperarErro(
+                service.deleteOwnAccount({
+                    userId: 'user-1',
+                    confirmation: 'player',
+                }),
+                'ACCOUNT_DELETION_NOT_CONFIRMED',
+            );
+
+            expect(passwords.verify).not.toHaveBeenCalled();
+            expect(repository.eraseAccount).not.toHaveBeenCalled();
+        });
+
+        /** O nome escrito ao lado é um clique errado, e não uma decisão. */
+        it('recusa quando o nome não corresponde', async () => {
+            await esperarErro(
+                service.deleteOwnAccount({ ...pedido, confirmation: 'outro' }),
+                'ACCOUNT_DELETION_NOT_CONFIRMED',
+            );
+
+            expect(repository.eraseAccount).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Quem entra pelo Discord ou pela Google não tem password
+         * nenhuma. Exigi-la a essas contas era fechar-lhes a saída para
+         * sempre.
+         */
+        it('não exige password a quem não tem nenhuma', async () => {
+            repository.findCredential.mockResolvedValue(null);
+
+            await service.deleteOwnAccount({
+                userId: 'user-1',
+                confirmation: 'player',
+            });
+
+            expect(repository.eraseAccount).toHaveBeenCalledWith('user-1');
+        });
+
+        /**
+         * E continua a exigir o nome: é a única defesa contra o clique
+         * errado que essas contas têm.
+         */
+        it('exige o nome mesmo a quem não tem password', async () => {
+            repository.findCredential.mockResolvedValue(null);
+
+            await esperarErro(
+                service.deleteOwnAccount({
+                    userId: 'user-1',
+                    confirmation: 'outro',
+                }),
+                'ACCOUNT_DELETION_NOT_CONFIRMED',
+            );
+        });
+
+        /**
+         * **A confirmação vem antes dos impedimentos.**
+         *
+         * A lista de comunidades onde alguém manda diz alguma coisa
+         * sobre essa pessoa. Responder com ela a quem não provou ser ela
+         * era contá-lo a quem apanhou a sessão.
+         */
+        it('não diz o que está preso a quem não confirmou', async () => {
+            passwords.verify.mockResolvedValue(false);
+
+            await esperarErro(
+                service.deleteOwnAccount(pedido),
+                'ACCOUNT_DELETION_NOT_CONFIRMED',
+            );
+
+            expect(
+                repository.findAccountDeletionBlockers,
+            ).not.toHaveBeenCalled();
+        });
+
+        it('recusa com saldo na carteira', async () => {
+            repository.findAccountDeletionBlockers.mockResolvedValue({
+                ...SEM_IMPEDIMENTOS,
+                funds: 500n,
+            });
+
+            await esperarErro(
+                service.deleteOwnAccount(pedido),
+                'ACCOUNT_HAS_FUNDS',
+            );
+
+            expect(repository.eraseAccount).not.toHaveBeenCalled();
+        });
+
+        /**
+         * Uma crew sem ninguém que a possa gerir deixa presas as
+         * pessoas que lá estão. A mensagem nomeia-as: "tens comunidades"
+         * sem dizer quais obrigava a procurá-las uma a uma.
+         */
+        it('recusa e nomeia as comunidades que ficariam sem dono', async () => {
+            repository.findAccountDeletionBlockers.mockResolvedValue({
+                ...SEM_IMPEDIMENTOS,
+                orphanedCommunities: [
+                    { kind: 'crew', id: 'c1', name: 'Vice Kings' },
+                    { kind: 'server', id: 's1', name: 'Vice City RP' },
+                ],
+            });
+
+            const erro = (await service
+                .deleteOwnAccount(pedido)
+                .catch((apanhado: unknown) => apanhado)) as UserError;
+
+            expect(erro.code).toBe('ACCOUNT_LEADS_COMMUNITIES');
+            expect(erro.message).toContain('Vice Kings');
+            expect(erro.message).toContain('Vice City RP');
+        });
+
+        /**
+         * Apagar a conta não cancela nada no Stripe: a cobrança
+         * continuava a sair de um cartão cujo dono já não tem como a
+         * parar aqui.
+         */
+        it('recusa com um plano pago em nome da conta', async () => {
+            repository.findAccountDeletionBlockers.mockResolvedValue({
+                ...SEM_IMPEDIMENTOS,
+                hasActivePaidPlan: true,
+            });
+
+            await esperarErro(
+                service.deleteOwnAccount(pedido),
+                'ACCOUNT_HAS_ACTIVE_PLAN',
+            );
+
+            expect(repository.eraseAccount).not.toHaveBeenCalled();
+        });
+
+        it('recusa apagar uma conta que já não existe', async () => {
+            repository.findById.mockResolvedValue(null);
+
+            await esperarErro(
+                service.deleteOwnAccount(pedido),
+                'USER_NOT_FOUND',
+            );
+        });
     });
 
     describe('perfil público', () => {

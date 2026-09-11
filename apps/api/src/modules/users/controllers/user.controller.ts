@@ -1,8 +1,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
+import { clearRefreshTokenCookie } from '../../auth/http/auth-cookie.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
+    DeleteAccountDto,
     PrivateProfileDto,
     PublicProfileDto,
     UpdateProfileDto,
@@ -32,6 +34,36 @@ export class UserController {
         );
 
         reply.send(this.toPublicDto(profile));
+    }
+
+    /**
+     * DELETE /users/me
+     *
+     * Apaga a própria conta. Nunca a de outra pessoa: o titular vem da
+     * sessão e não do corpo nem do endereço, e por isso não há aqui uma
+     * verificação de "és tu?" — não há maneira de pedir outra conta.
+     *
+     * Responde 204 e limpa o cookie da sessão. Deixá-lo no browser era
+     * deixar o separador aberto numa conta que já não existe, a receber
+     * 401 em cada pedido sem dizer porquê.
+     */
+    async deleteOwnAccount(
+        request: FastifyRequest<{ Body: DeleteAccountDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        await this.userService.deleteOwnAccount({
+            userId: user.id,
+            confirmation: request.body.confirmation,
+            ...(request.body.password === undefined
+                ? {}
+                : { password: request.body.password }),
+        });
+
+        clearRefreshTokenCookie(reply);
+
+        reply.status(204).send();
     }
 
     /**

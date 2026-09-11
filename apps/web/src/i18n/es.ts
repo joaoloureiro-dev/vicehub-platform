@@ -292,6 +292,13 @@ export const es = (p: Tools): Messages => ({
     },
 
     perfil: {
+        apagarConta: 'Eliminar mi cuenta',
+        apagarContaExplicacao:
+            'Puedes irte cuando quieras. La cuenta y todo lo que te identifica desaparecen; lo que tus crews necesitan para que sus cuentas cuadren se queda, con un nombre que no dice nada de ti.',
+        apagarContaFica:
+            'El correo, el nombre, la imagen y el texto se borran, y también la contraseña y los accesos por Discord o Google. Lo que se queda: los movimientos que propusiste o aprobaste, y los eventos a los que asististe — eso es de tus crews y no tuyo, y quitarlo dejaría sus cuentas sin cuadrar.',
+        apagarContaPassword: 'Tu contraseña, si la cuenta tiene una',
+        apagarContaConfirmar: 'Eliminar la cuenta definitivamente',
         titulo: 'Mi perfil',
         verPublico: 'Ver como público',
         naoCarregou: 'No se ha podido cargar tu perfil.',

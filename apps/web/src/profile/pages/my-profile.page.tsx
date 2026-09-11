@@ -8,6 +8,7 @@ import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { requestEmailVerification } from '../../auth/auth.api.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
+import { ApagarConta } from '../components/apagar-conta.js';
 import { ListaDeAmigos } from '../components/lista-de-amigos.js';
 import {
     getMyProfile,
@@ -277,6 +278,15 @@ export const MyProfilePage = () => {
                     }}
                 />
             </section>
+
+            {/*
+              Apagar a conta fica em último, e fica à vista.
+              
+              Em último porque é o fim de tudo o resto desta página; à
+              vista porque uma conta que se cria num minuto e demora uma
+              semana a apagar não é uma conta, é uma armadilha.
+            */}
+            <ApagarConta username={eu.username} />
         </div>
     );
 };
