@@ -93,7 +93,16 @@ describe('cobrança pelo Stripe', () => {
             url: '/api/v1/crews',
             headers: auth(),
             payload: {
-                name: `Crew ${marca}`,
+                /**
+                 * Um nome só desta, e não `Crew ${marca}`: mais abaixo
+                 * há outra crew nesta mesma suite, e os nomes de crew
+                 * são únicos. Com o mesmo nome, a segunda leva 409, o
+                 * `beforeAll` dela rebenta, e os testes que dependem
+                 * dela aparecem como **saltados** em vez de falhados —
+                 * que é a maneira mais fácil de não dar por uma suite
+                 * partida.
+                 */
+                name: `Compras ${marca}`,
                 tag: `b${Date.now().toString(36).slice(-4)}${Math.random()
                     .toString(36)
                     .slice(2, 5)}`,
