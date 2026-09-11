@@ -301,6 +301,12 @@ export const fr = (p: Tools): Messages => ({
     },
 
     perfil: {
+        levarDados: 'Emporte tes données',
+        levarDadosExplicacao:
+            'Un fichier avec tout ce que ViceHub a sur toi : le compte, les communautés où tu es, les événements où tu étais, ce que tu as proposé et décidé dans une trésorerie, et ce que la plateforme t\u2019a donné. Le mot de passe et tes connexions n\u2019y sont pas — ce sont des clés du compte, pas des faits sur toi.',
+        levarDadosBotao: 'Télécharger mes données',
+        levarDadosAPreparar: 'Préparation…',
+        levarDadosFalhou: 'Le fichier n\u2019a pas pu être préparé. Réessaie dans un instant.',
         titulo: 'Mon profil',
         verPublico: 'Voir en public',
         naoCarregou: 'Ton profil n’a pas pu être chargé.',

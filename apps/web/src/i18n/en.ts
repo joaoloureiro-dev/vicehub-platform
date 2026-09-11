@@ -299,6 +299,12 @@ export const en = (p: Tools) => ({
     },
 
     perfil: {
+        levarDados: 'Take your data with you',
+        levarDadosExplicacao:
+            'A file with everything ViceHub holds about you: your account, the communities you are in, the events you turned up to, what you proposed and decided in a treasury, and what the platform gave you. Your password and your sign-ins are not in it — those are keys to the account, not facts about you.',
+        levarDadosBotao: 'Download my data',
+        levarDadosAPreparar: 'Preparing…',
+        levarDadosFalhou: 'The file could not be prepared. Try again shortly.',
         titulo: 'My profile',
         verPublico: 'View as public',
         naoCarregou: 'Your profile could not be loaded.',

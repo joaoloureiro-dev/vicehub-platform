@@ -1,5 +1,6 @@
 import type { DatabaseClient } from '@vicehub/database';
 
+import { buildAccountExport } from '../../../shared/account-export.js';
 import { listAchievements } from '../../../shared/list-achievements.js';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
@@ -15,6 +16,17 @@ interface UpdateProfileInput {
  */
 export class UserRepository {
     constructor(private readonly database: DatabaseClient) { }
+
+    /**
+     * Tudo o que a plataforma tem sobre esta pessoa.
+     *
+     * A leitura vive no módulo partilhado e não aqui: o que interessa é
+     * a **lista** do que entra e do que não entra, e essa lista tem de
+     * se ler de uma vez. Espalhá-la por dez métodos era escondê-la.
+     */
+    exportAccount(userId: string) {
+        return buildAccountExport(this.database, userId);
+    }
 
     /**
      * Procura um utilizador pelo username.

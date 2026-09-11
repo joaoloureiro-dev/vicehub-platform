@@ -8,6 +8,7 @@ import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { requestEmailVerification } from '../../auth/auth.api.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
+import { LevarDados } from '../components/levar-dados.js';
 import { ListaDeAmigos } from '../components/lista-de-amigos.js';
 import {
     getMyProfile,
@@ -277,6 +278,13 @@ export const MyProfilePage = () => {
                     }}
                 />
             </section>
+
+            {/*
+              Levar os dados fica no fim, porque quem chega aqui está a
+              pensar em sair — e a ordem em que as coisas aparecem é a
+              ordem por que devem ser feitas.
+            */}
+            <LevarDados />
         </div>
     );
 };

@@ -61,6 +61,7 @@ describe('ligação das rotas de utilizador', () => {
             getOwnProfile: vi.fn(),
             updateOwnProfile: vi.fn(),
             updateOwnAppearance: vi.fn(),
+            exportOwnAccount: vi.fn(),
         } as unknown as UserController;
 
         await app.register(userRoutes, { controller });
@@ -84,6 +85,32 @@ describe('ligação das rotas de utilizador', () => {
 
     it.each(['GET /me', 'PATCH /me'])('%s exige autenticação', (key) => {
         expect(preHandlersOf(key)).toHaveLength(1);
+    });
+
+    /**
+     * Levar os dados consigo exige sessão e um limite próprio.
+     *
+     * A sessão porque são os dados de alguém; o limite porque é a
+     * leitura mais pesada que uma conta pode pedir, e chamá-la em ciclo
+     * punha a base de dados de joelhos com uma conta só.
+     */
+    describe('levar os dados consigo', () => {
+        const rota = 'GET /me/export';
+
+        it('exige sessão', () => {
+            expect(preHandlersOf(rota)).toHaveLength(1);
+        });
+
+        it('leva um limite de pedidos mais apertado do que o global', () => {
+            const config = registered.get(rota)?.config as
+                | { rateLimit?: { max?: number; timeWindow?: string } }
+                | undefined;
+
+            expect(config?.rateLimit?.max).toBeGreaterThan(0);
+            /** O global permite 100 por minuto. */
+            expect(config?.rateLimit?.max).toBeLessThan(100);
+            expect(config?.rateLimit?.timeWindow).toBeTruthy();
+        });
     });
 
     it('o perfil público não exige autenticação', () => {

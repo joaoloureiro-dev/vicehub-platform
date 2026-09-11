@@ -3,6 +3,7 @@ import { progressoDeNivel } from '@vicehub/database';
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { personalAppearance } from '../../../shared/appearance.js';
 import type { ConquistaVisivel } from '../../../shared/list-achievements.js';
+import type { AccountExport } from '../../../shared/account-export.js';
 import { UserError } from '../errors/user.errors.js';
 import type { UserRepository } from '../repositories/user.repository.js';
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
@@ -115,6 +116,28 @@ export class UserService {
         await this.userRepository.updateAppearance(userId, input);
 
         return this.getPrivateProfile(userId);
+    }
+
+    /**
+     * Tudo o que a plataforma tem sobre a própria pessoa.
+     *
+     * Existe pela mesma razão que se pode apagar a conta: **os dados
+     * são da pessoa**. Uma plataforma que só deixa sair de mãos vazias
+     * está a cobrar uma multa por sair.
+     *
+     * Não pede confirmação nenhuma, ao contrário de apagar: exportar
+     * não destrói nada, e uma confirmação aqui só tornava difícil uma
+     * coisa que deve ser fácil. O que a protege é a sessão e o limite
+     * de pedidos da rota.
+     */
+    async exportOwnAccount(userId: string): Promise<AccountExport> {
+        const exportacao = await this.userRepository.exportAccount(userId);
+
+        if (exportacao === null) {
+            throw new UserError('USER_NOT_FOUND', 'Utilizador não encontrado.');
+        }
+
+        return exportacao;
     }
 
     private async isPremium(userId: string): Promise<boolean> {

@@ -25,3 +25,14 @@ export const updateMyAppearance = (input: {
     accentColor?: string | null;
 }): Promise<unknown> =>
     api<unknown>('/users/me/appearance', { method: 'PATCH', body: input });
+
+/**
+ * Tudo o que a plataforma tem sobre a própria conta.
+ *
+ * Devolve o JSON já interpretado, e não o ficheiro: quem chama é que
+ * decide o que fazer com ele. É a resposta mais pesada da API, e por
+ * isso a rota tem limite próprio — não é para ser chamada a cada
+ * desenho do ecrã.
+ */
+export const exportMyAccount = (): Promise<Record<string, unknown>> =>
+    api<Record<string, unknown>>('/users/me/export');
