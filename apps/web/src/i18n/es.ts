@@ -292,6 +292,13 @@ export const es = (p: Tools): Messages => ({
     },
 
     perfil: {
+        apagarConta: 'Eliminar mi cuenta',
+        apagarContaExplicacao:
+            'Puedes irte cuando quieras. La cuenta y todo lo que te identifica desaparecen; lo que tus crews necesitan para que sus cuentas cuadren se queda, con un nombre que no dice nada de ti.',
+        apagarContaFica:
+            'El correo, el nombre, la imagen y el texto se borran, y también la contraseña y los accesos por Discord o Google. Lo que se queda: los movimientos que propusiste o aprobaste, y los eventos a los que asististe — eso es de tus crews y no tuyo, y quitarlo dejaría sus cuentas sin cuadrar.',
+        apagarContaPassword: 'Tu contraseña, si la cuenta tiene una',
+        apagarContaConfirmar: 'Eliminar la cuenta definitivamente',
         levarDados: 'Llévate tus datos',
         levarDadosExplicacao:
             'Un archivo con todo lo que ViceHub tiene sobre ti: la cuenta, las comunidades en las que estás, los eventos a los que asististe, lo que propusiste y decidiste en una tesorería, y lo que la plataforma te dio. La contraseña y tus accesos no van ahí — eso son llaves de la cuenta, no datos sobre ti.',

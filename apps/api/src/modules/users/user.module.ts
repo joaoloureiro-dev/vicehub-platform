@@ -1,6 +1,7 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
+import { PasswordService } from '../auth/services/password.service.js';
 import { SubscriptionRepository } from '../subscriptions/repositories/subscription.repository.js';
 import { SubscriptionService } from '../subscriptions/services/subscription.service.js';
 import { UserController } from './controllers/user.controller.js';
@@ -15,6 +16,7 @@ const userModule: FastifyPluginAsync = async (fastify) => {
     const userService = new UserService(
         new UserRepository(fastify.prisma),
         new SubscriptionService(new SubscriptionRepository(fastify.prisma)),
+        new PasswordService(),
     );
 
     await fastify.register(userRoutes, {

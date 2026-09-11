@@ -61,6 +61,7 @@ describe('ligação das rotas de utilizador', () => {
             getOwnProfile: vi.fn(),
             updateOwnProfile: vi.fn(),
             updateOwnAppearance: vi.fn(),
+            deleteOwnAccount: vi.fn(),
             exportOwnAccount: vi.fn(),
         } as unknown as UserController;
 
@@ -83,8 +84,32 @@ describe('ligação das rotas de utilizador', () => {
         return Array.isArray(preHandler) ? preHandler : [preHandler];
     };
 
-    it.each(['GET /me', 'PATCH /me'])('%s exige autenticação', (key) => {
-        expect(preHandlersOf(key)).toHaveLength(1);
+    it.each(['GET /me', 'PATCH /me', 'DELETE /me'])(
+        '%s exige autenticação',
+        (key) => {
+            expect(preHandlersOf(key)).toHaveLength(1);
+        },
+    );
+
+    /**
+     * Apagar a conta exige sessão e **mais nada**.
+     *
+     * Não leva permissão nenhuma de propósito: o titular vem da sessão
+     * e não do endereço, e por isso não há forma de pedir a conta de
+     * outra pessoa. Uma permissão aqui daria a entender que há contas
+     * que uns podem apagar e outros não.
+     */
+    it('apagar a conta exige sessão e mais nada', () => {
+        expect(preHandlersOf('DELETE /me')).toHaveLength(1);
+        expect(planoPorRota.get('DELETE /me')).toEqual([]);
+    });
+
+    /**
+     * E valida o corpo: é lá que vai a confirmação, e um pedido sem ela
+     * chegava ao serviço a perguntar por `undefined`.
+     */
+    it('apagar a conta valida o corpo do pedido', () => {
+        expect(registered.get('DELETE /me')?.schema?.body).toBeDefined();
     });
 
     /**

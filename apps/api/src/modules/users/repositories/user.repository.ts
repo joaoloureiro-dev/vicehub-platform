@@ -1,5 +1,9 @@
 import type { DatabaseClient } from '@vicehub/database';
 
+import {
+    eraseAccount,
+    findAccountDeletionBlockers,
+} from '../../../shared/account-erasure.js';
 import { buildAccountExport } from '../../../shared/account-export.js';
 import { listAchievements } from '../../../shared/list-achievements.js';
 
@@ -16,6 +20,39 @@ interface UpdateProfileInput {
  */
 export class UserRepository {
     constructor(private readonly database: DatabaseClient) { }
+
+    /**
+     * O que impede esta conta de ser apagada.
+     *
+     * A leitura vive no módulo partilhado e não aqui: é a mesma
+     * pergunta feita a três tabelas ao mesmo tempo, e o que interessa é
+     * ficar ao lado da eliminação que ela protege.
+     */
+    findAccountDeletionBlockers(userId: string) {
+        return findAccountDeletionBlockers(this.database, userId);
+    }
+
+    /**
+     * Apaga a conta: leva o que é da pessoa, deixa o que é das
+     * comunidades.
+     */
+    eraseAccount(userId: string) {
+        return eraseAccount(this.database, userId);
+    }
+
+    /**
+     * A credencial de quem tem password.
+     *
+     * `null` para quem entra só pelo Discord ou pela Google, que é a
+     * resposta certa e não um erro: essas contas não têm password
+     * nenhuma.
+     */
+    findCredential(userId: string) {
+        return this.database.userCredential.findFirst({
+            where: { userId, is_deleted: false },
+            select: { password_hash: true },
+        });
+    }
 
     /**
      * Tudo o que a plataforma tem sobre esta pessoa.

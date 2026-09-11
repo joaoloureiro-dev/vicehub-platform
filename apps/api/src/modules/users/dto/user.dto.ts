@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+    deleteAccountSchema,
     privateProfileSchema,
     publicProfileSchema,
     updateProfileSchema,
@@ -14,3 +15,5 @@ export type PrivateProfileDto = z.infer<typeof privateProfileSchema>;
 export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;
 
 export type UsernameParamDto = z.infer<typeof usernameParamSchema>;
+
+export type DeleteAccountDto = z.infer<typeof deleteAccountSchema>;
