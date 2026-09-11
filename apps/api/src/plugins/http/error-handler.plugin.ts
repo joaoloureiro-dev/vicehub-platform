@@ -204,6 +204,12 @@ const billingErrorStatusCodes: Record<BillingErrorCode, number> = {
      */
     BILLING_NOT_CONFIGURED: 503,
     BILLING_OWNER_NOT_FOUND: 404,
+    /**
+     * 400 e não 403: quem pede tem toda a autorização para comprar um
+     * plano para si. O que não existe é o plano — é o pedido que não faz
+     * sentido, não quem o faz.
+     */
+    PLAN_IS_FOR_COMMUNITIES: 400,
     /** Já tem acesso para sempre: cobrar seria receber duas vezes. */
     ALREADY_LIFETIME: 409,
     /**

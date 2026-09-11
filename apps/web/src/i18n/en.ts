@@ -48,15 +48,15 @@ export const en = (p: Tools) => ({
             p.plural(n, { one: '1 player', other: `${n} players` }),
         planosTitulo: 'What it costs',
         planosGratis:
-            'Playing is free, and stays free: your profile, your banner, applying to crews, being a member, seeing who is recruiting. What is paid is running a community.',
+            'Playing is free, and stays free: your profile, your banner, applying to crews, being a member, running events, turning up. What is paid is moving the money.',
         planoCrew: 'Crew',
         planoCrewPreco: '\u20ac4.99 / month',
         planoCrewTexto:
-            'A treasury that adds up, applications you answer instead of losing, ranks, events, and attendance nobody can argue with.',
+            'A treasury that adds up: propose, approve, and split what the crew earns — everyone paid at once, or nobody. Thirty days free to try it.',
         planoServidor: 'Server',
-        planoServidorPreco: '\u20ac14.99 / month',
+        planoServidorPreco: '\u20acfrom 14.99 / month',
         planoServidorTexto:
-            'Everything a crew gets, for the server and for the crews that play on it. Pay the crews you hire straight from the server treasury.',
+            'Up to 10 crews playing on your server, and a treasury to pay them from. More crews, a bigger plan.',
         crewsTitulo: 'Crews and servers',
         crewsTexto:
             'Bring your people together under ranks that mean something. Applications get answered, not ignored.',
@@ -335,32 +335,36 @@ export const en = (p: Tools) => ({
 
     premium: {
         etiqueta: 'Premium',
-        titulo: 'Back the platform, get the extras',
+        titulo: 'The plan is the crew\u2019s, not yours',
         subtitulo:
-            'ViceHub works without paying. Premium is for people who want the platform to keep being built — and who like their profile looking like theirs.',
+            'Playing on ViceHub is free, and stays free. What is paid for is running a community: moving the money a crew earns, and having crews play on your server.',
         tituloComunidade: (nome: string) => `Premium for ${nome}`,
         subtituloCrew:
-            'The plan belongs to the crew, not to whoever pays for it. Anyone who runs the crew can set its banner and colour while it is active.',
+            'The plan belongs to the crew, not to whoever pays for it. While it is active, anyone who runs the crew can move its money — and set its banner and colour.',
         crewCobertaPeloServidor: (servidor: string) =>
             `This crew is already covered by ${servidor}'s plan, the server it plays on. It keeps it while it plays there.`,
         crewTemPlano: 'This crew already has an active plan.',
         irParaCrew: 'Go to the crew',
         subtituloServidor:
-            'The plan belongs to the server, not to whoever pays for it. Anyone who runs the server can set its banner and colour while it is active.',
+            'The plan belongs to the server, not to whoever pays for it. It sets how many crews can play there, and opens the server treasury.',
         servidorDaPersonalizacao:
-            "Customise the server: banner and accent colour on the server's public page.",
+            'Pay the crews that play on your server, straight from the server treasury.',
         servidorDaEquipa:
-            'One plan for the whole server. Anyone who runs it can change the look — it does not depend on who paid.',
+            'One plan for the whole server, and for the crews playing on it. It does not depend on who paid.',
         servidorTemPlano: 'This server already has an active plan.',
         irParaServidor: 'Go to the server',
         porMes: 'per month',
+        planoEDeComunidade:
+            'There is nothing here to buy for your own account. The plan belongs to a crew or a server — open the one you run and buy it there.',
+        asMinhasComunidades: 'My communities',
         oQueDaPersonalizacao:
-            'Customise your profile: banner and accent colour on your public page.',
-        oQueDaCrew: 'Premium can be bought for a crew or a server, not just for you.',
+            'A treasury that adds up: a crew proposes, approves and splits what it earns — everyone paid at once, or nobody.',
+        oQueDaCrew:
+            'Applying, being a member, running events and turning up stay free for everyone. So does your profile.',
         crewDaPersonalizacao:
-            "Customise the crew: banner and accent colour on the crew's public page.",
+            'A treasury that adds up: propose, approve, and split what the crew earns — everyone paid at once, or nobody.',
         crewDaEquipa:
-            'One plan for the whole crew. Anyone who runs it can change the look — it does not depend on who paid.',
+            'One plan for the whole crew. Anyone who runs it can move the money — it does not depend on who paid.',
         oQueDaApoio:
             'It keeps the platform running, and pays for the time that goes into it.',
         comprar: 'Get premium',

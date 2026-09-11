@@ -454,16 +454,24 @@ export class BillingService {
      * cegas qual delas passou.
      */
     private async assertMayCommit(input: StartCheckoutInput): Promise<void> {
+        /**
+         * Não há plano nenhum para uma pessoa comprar para si.
+         *
+         * Durante um tempo houve: dava para personalizar o perfil. A
+         * personalização passou a ser de graça para toda a gente, e o
+         * que ficou do lado pago é gestão de uma comunidade — a
+         * tesouraria de uma crew, os lugares de um servidor. Nada disso
+         * é de uma pessoa.
+         *
+         * Deixar comprar na mesma seria cobrar por coisa nenhuma. Não é
+         * 403: quem pede tem toda a autorização para comprar para si; o
+         * que não existe é o que estaria a comprar.
+         */
         if (input.ownerKind === 'user') {
-            if (input.ownerId !== input.buyerId) {
-                throw new AuthorizationError(
-                    'INSUFFICIENT_PERMISSIONS',
-                    'Não tens autorização para comprar um plano para este titular.',
-                    [],
-                );
-            }
-
-            return;
+            throw new BillingError(
+                'PLAN_IS_FOR_COMMUNITIES',
+                'O plano é de uma crew ou de um servidor. Para uma conta não há nada a comprar.',
+            );
         }
 
         const necessaria =
