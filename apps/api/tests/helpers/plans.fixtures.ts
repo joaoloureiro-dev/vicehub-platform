@@ -18,11 +18,20 @@ import { prisma } from '@vicehub/database';
  */
 export const darPlano = async (
     owner: { crewId: string } | { serverId: string },
+    /**
+     * Qual plano. Por omissão o da crew, que é o que quase todas as
+     * suites querem — o que lhes interessa é haver plano, e não qual.
+     *
+     * As que passam um escalão de servidor são as que estão a medir o
+     * escalão em si: quantos lugares para crews é que ele dá.
+     */
+    plan: 'premium' | 'server_base' | 'server_plus' | 'server_unlimited' =
+        'premium',
 ): Promise<void> => {
     await prisma.subscription.create({
         data: {
             ...owner,
-            plan: 'premium',
+            plan,
             status: 'active',
             price_cents: 1_000,
             currency: 'USD',

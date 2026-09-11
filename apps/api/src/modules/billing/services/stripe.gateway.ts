@@ -10,6 +10,15 @@ export interface CheckoutRequest {
     /** Quem clicou. Serve de cliente no Stripe e para o recibo. */
     buyerId: string;
     buyerEmail: string;
+    /**
+     * O preço do plano que se está a comprar.
+     *
+     * Vem de fora e não da configuração: a configuração tem um preço
+     * por plano, e quem sabe qual é o plano é o serviço. Antes era o
+     * contrário — a gateway vendia sempre o mesmo preço fosse qual
+     * fosse o plano pedido.
+     */
+    priceId: string;
     /** Cliente já existente no Stripe, quando este titular já comprou. */
     customerId?: string | undefined;
 }
@@ -29,6 +38,16 @@ export interface StripePeriod {
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
+    /**
+     * O preço que o Stripe está mesmo a cobrar nesta subscrição.
+     *
+     * É por ele que se sabe **que plano** isto é, e não pelos metadados
+     * que lhe pendurámos: os metadados são o que dissemos na altura, o
+     * preço é o que está a ser cobrado todos os meses. Quando os dois
+     * discordam — uma mudança de escalão feita no painel do Stripe —, o
+     * que vale é a fatura.
+     */
+    priceId: string;
     priceCents: number;
     currency: string;
 }
@@ -85,6 +104,7 @@ export const toStripePeriod = (
         currentPeriodStart: new Date(item.current_period_start * 1000),
         currentPeriodEnd: new Date(item.current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        priceId: item.price.id,
         /**
          * O preço vem da linha da subscrição, e não do catálogo local:
          * o que interessa gravar é o que foi mesmo cobrado, para que o
@@ -134,7 +154,7 @@ export const createStripeGateway = (): StripeGateway | null => {
             wrap(async () => {
                 const session = await stripe.checkout.sessions.create({
                     mode: 'subscription',
-                    line_items: [{ price: config.priceId, quantity: 1 }],
+                    line_items: [{ price: request.priceId, quantity: 1 }],
                     success_url: config.successUrl,
                     cancel_url: config.cancelUrl,
                     ...(request.customerId === undefined

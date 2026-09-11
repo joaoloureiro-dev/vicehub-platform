@@ -34,6 +34,7 @@ export class BillingController {
             ownerKind: request.body.ownerKind,
             ownerId: request.body.ownerId,
             buyerId: user.id,
+            plan: request.body.plan,
         });
 
         await this.auditService.record({
@@ -44,6 +45,12 @@ export class BillingController {
             after: {
                 ownerKind: request.body.ownerKind,
                 ownerId: request.body.ownerId,
+                /**
+                 * O escalão fica no registo: quando alguém perguntar
+                 * porque é que um servidor tem o plano que tem, a
+                 * resposta é o que foi pedido aqui.
+                 */
+                plan: request.body.plan,
             },
             ...AuditService.contextOf(request),
         });

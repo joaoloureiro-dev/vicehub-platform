@@ -1862,6 +1862,136 @@ button.link:hover {
     color: var(--muted);
 }
 
+/* ---------- a lista de preços pública ---------- */
+
+/*
+ * A mesma grelha dos escalões, sem o radio: quem não veio de uma
+ * comunidade não tem nada a escolher aqui, e uma escolha que não leva a
+ * lado nenhum é pior do que lista nenhuma.
+ */
+.lista-precos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lista-precos li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+}
+
+.lista-precos .escalao-crews {
+    grid-column: 1;
+}
+
+.lista-precos .escalao-preco {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+}
+
+/* ---------- escolher escalão ---------- */
+
+/*
+ * Três preços a subir precisam de ser comparados, e comparar-se faz de
+ * cima a baixo: uma linha por escalão, com o preço sempre no mesmo
+ * sítio, em vez de três cartões lado a lado que ao telemóvel se
+ * empilham na mesma e a meio caminho ficam esmagados.
+ *
+ * É um fieldset de radios a sério, e não divs com onClick: assim vem de
+ * origem o que faria falta escrever à mão — navegação por teclado,
+ * agrupamento pelo `name`, e o leitor de ecrã a anunciar "1 de 3".
+ */
+.escaloes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.escaloes legend {
+    padding: 0 0 10px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.escalao {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 4px 12px;
+    min-height: var(--tap);
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/*
+ * O nome ocupa a coluna do meio e as crews correm por baixo dele, do
+ * lado do texto: o preço fica sozinho à direita, alinhado entre
+ * escalões, que é o que permite lê-los em coluna.
+ */
+.escalao-nome {
+    font-weight: 650;
+}
+
+.escalao-crews {
+    grid-column: 2;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.escalao-preco {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.escalao input {
+    grid-row: 1 / span 2;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--cyan);
+    cursor: pointer;
+}
+
+.escalao:hover {
+    border-color: var(--cyan);
+}
+
+.escalao.escolhido {
+    border-color: var(--cyan);
+    background: color-mix(in srgb, var(--cyan) 8%, var(--surface));
+}
+
+/*
+ * O foco do teclado vive no input, que é pequeno. Passá-lo para a
+ * linha inteira é o que torna visível onde se está a navegar.
+ */
+.escalao:focus-within {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
 .premium-lista {
     display: flex;
     flex-direction: column;

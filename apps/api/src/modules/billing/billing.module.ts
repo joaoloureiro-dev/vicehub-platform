@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 
 import { AuditRepository } from '../audit/repositories/audit.repository.js';
 import { AuditService } from '../audit/services/audit.service.js';
+import { stripePriceIds } from '../../config/env.js';
 import billingRoutes from './billing.routes.js';
 import { BillingController } from './controllers/billing.controller.js';
 import { BillingRepository } from './repositories/billing.repository.js';
@@ -29,6 +30,12 @@ const billingModule: FastifyPluginAsync = async (fastify) => {
          * a responder.
          */
         new AuthorizationService(new AuthorizationRepository(fastify.prisma)),
+        /**
+         * Os preços configurados, um por plano. É o que decide quais os
+         * escalões que esta instalação vende: pôr um preço novo abre um
+         * escalão sem tocar em código.
+         */
+        stripePriceIds,
     );
 
     await fastify.register(billingRoutes, {

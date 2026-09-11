@@ -10,4 +10,13 @@ import { z } from 'zod';
 export const startCheckoutSchema = z.object({
     ownerKind: z.enum(['user', 'crew', 'server']),
     ownerId: z.string().uuid(),
+    /**
+     * Qual dos escalões se está a comprar.
+     *
+     * Não se valida aqui contra a lista de planos: o que está à venda
+     * depende do que esta instalação tem configurado no Stripe, e isso
+     * é do serviço. O que aqui se garante é que veio alguma coisa — um
+     * pedido sem plano chegava ao serviço a perguntar por `undefined`.
+     */
+    plan: z.string().min(1),
 });

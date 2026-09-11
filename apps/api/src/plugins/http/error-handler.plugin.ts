@@ -210,6 +210,12 @@ const billingErrorStatusCodes: Record<BillingErrorCode, number> = {
      * sentido, não quem o faz.
      */
     PLAN_IS_FOR_COMMUNITIES: 400,
+    /**
+     * 404 e não 400: para quem pede, um escalão que esta instalação não
+     * vende e um que não existe são a mesma coisa — não está ali.
+     */
+    PLAN_NOT_PURCHASABLE: 404,
+    PLAN_WRONG_OWNER: 400,
     /** Já tem acesso para sempre: cobrar seria receber duas vezes. */
     ALREADY_LIFETIME: 409,
     /**

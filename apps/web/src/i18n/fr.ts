@@ -357,6 +357,15 @@ export const fr = (p: Tools): Messages => ({
             "Une offre pour tout le serveur, et pour les crews qui y jouent. Ça ne dépend pas de qui a payé.",
         servidorTemPlano: 'Ce serveur a déjà une offre active.',
         irParaServidor: 'Aller au serveur',
+        aTesourariaDaCrew: 'La trésorerie d\u2019une crew',
+        escolheEscalao: 'Choisis ton palier',
+        ateCrews: (n: number) =>
+            p.plural(n, {
+                one: 'Jusqu\u2019à 1 crew jouant sur ton serveur',
+                other: `Jusqu\u2019à ${n} crews jouant sur ton serveur`,
+            }),
+        semLimiteDeCrews: 'Aucune limite de crews jouant là-bas',
+        todosPorMes: 'Tous les prix sont par mois.',
         porMes: 'par mois',
         planoEDeComunidade:
             "Il n'y a rien à acheter ici pour votre compte. L'offre appartient à une crew ou à un serveur — ouvrez celle que vous gérez et achetez-la là.",

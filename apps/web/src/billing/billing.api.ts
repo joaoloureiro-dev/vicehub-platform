@@ -9,6 +9,14 @@ export interface PurchasablePlan {
     priceCents: number;
     currency: string;
     intervalMonths: number;
+    /** Quem compra este plano. Uma pessoa não compra nenhum. */
+    ownerKind: 'crew' | 'server';
+    /**
+     * Quantas crews este escalão deixa jogar no servidor. `null` é sem
+     * limite, e ausente é o plano não ter opinião nenhuma sobre crews —
+     * o da crew.
+     */
+    maxCrews?: number | null;
 }
 
 export interface PlanCatalogue {
@@ -70,5 +78,10 @@ export const getMySubscription = (): Promise<SubscriptionSummary> =>
 export const startCheckout = (input: {
     ownerKind: 'user' | 'crew' | 'server';
     ownerId: string;
+    /**
+     * Qual escalão. Sem isto, a API vendia sempre o mesmo preço fosse
+     * qual fosse o botão em que se carregou.
+     */
+    plan: string;
 }): Promise<{ url: string }> =>
     api<{ url: string }>('/billing/checkout', { method: 'POST', body: input });

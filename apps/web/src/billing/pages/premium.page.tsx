@@ -13,6 +13,7 @@ import {
     getMySubscription,
     getPlans,
     startCheckout,
+    type PurchasablePlan,
     type SubscriptionSummary,
 } from '../billing.api.js';
 
@@ -106,18 +107,14 @@ export const PremiumPage = () => {
     const [aComprar, setAComprar] = useState(false);
     const [falhou, setFalhou] = useState<string | null>(null);
 
+    /**
+     * Qual escalão está escolhido. Vazio até alguém escolher, e aí vale
+     * o primeiro da lista.
+     */
+    const [escalao, setEscalao] = useState<string | null>(null);
+
     if (catalogo.loading || plano.loading || comunidade.loading) {
         return <p className="centered">{t.comum.aCarregar}</p>;
-    }
-
-    const premium = catalogo.data?.plans.find((linha) => linha.key === 'premium');
-
-    if (!premium) {
-        return (
-            <section className="panel">
-                <Alert kind="bad">{t.comum.naoFoiPossivel}</Alert>
-            </section>
-        );
     }
 
     /**
@@ -125,6 +122,30 @@ export const PremiumPage = () => {
      * de uma, e o de quem está a ver quando não.
      */
     const paraComunidade = comunidade.data;
+
+    /**
+     * Os escalões que se podem comprar para este titular.
+     *
+     * Uma crew vê o dela, um servidor vê os seus. Sem comunidade no
+     * caminho não há compra nenhuma a fazer, e a lista serve só para
+     * mostrar quanto custa — que é o que quem ainda não tem conta
+     * veio cá ver.
+     *
+     * A API já só devolve o que esta instalação sabe cobrar: um escalão
+     * sem preço configurado no Stripe não chega aqui, e por isso não há
+     * maneira de este ecrã oferecer um botão que a compra recusa.
+     */
+    const paraVenda = (catalogo.data?.plans ?? []).filter(
+        (linha) => !paraComunidade || linha.ownerKind === paraComunidade.kind,
+    );
+
+    /**
+     * O escalão escolhido, ou o primeiro — que é o mais barato, pela
+     * ordem do catálogo. Começar no mais caro seria escolher pela
+     * pessoa a favor de quem vende.
+     */
+    const escolhido =
+        paraVenda.find((linha) => linha.key === escalao) ?? paraVenda[0];
 
     const meu = paraComunidade
         ? {
@@ -140,7 +161,28 @@ export const PremiumPage = () => {
         }
         : plano.data;
 
-    const aberto = catalogo.data?.available === true;
+    /**
+     * Aberto é a cobrança estar configurada **e** haver escalão para
+     * este titular. Um servidor numa instalação que só configurou o
+     * preço da crew não tem nada a comprar aqui, e dizer-lhe "ainda não
+     * abriu" é a verdade — ao contrário de um botão que a API recusa.
+     */
+    const aberto = catalogo.data?.available === true && escolhido !== undefined;
+
+    /**
+     * Se há mesmo uma escolha a fazer.
+     *
+     * Só quando há comunidade — sem ela não se compra nada aqui — e
+     * quando ela ainda não tem plano. A um servidor que já paga, ou que
+     * está nos trinta dias de avaliação, os escalões continuam à vista:
+     * o que ele não leva é a escolha, porque abaixo não há botão nenhum
+     * onde a usar, e uma escolha que não leva a lado nenhum é pior do
+     * que escolha nenhuma.
+     */
+    const podeEscolher =
+        Boolean(paraComunidade) &&
+        meu?.isPremium !== true &&
+        meu?.isLifetime !== true;
 
     /**
      * As frases do titular, escolhidas de uma vez.
@@ -168,6 +210,31 @@ export const PremiumPage = () => {
                 irPara: t.premium.irParaCrew,
             };
 
+    /**
+     * O que este escalão dá, na única medida em que os escalões
+     * diferem: quantas crews podem jogar no servidor.
+     *
+     * Sem esta frase, três linhas com preços diferentes sobem sem dizer
+     * porquê — e um preço que sobe sem razão visível lê-se como
+     * arbitrário.
+     */
+    const crewsDoEscalao = (linha: PurchasablePlan): string =>
+        linha.maxCrews === null || linha.maxCrews === undefined
+            ? t.premium.semLimiteDeCrews
+            : t.premium.ateCrews(linha.maxCrews);
+
+    /**
+     * A linha de baixo de cada preço: o que este plano dá.
+     *
+     * A descrição que vem do catálogo **não** serve aqui: está escrita
+     * numa língua só, e este ecrã existe em quatro. Um plano de
+     * servidor diz quantos lugares dá; o da crew diz o que abre.
+     */
+    const oQueDa = (linha: PurchasablePlan): string =>
+        linha.maxCrews === undefined
+            ? t.premium.aTesourariaDaCrew
+            : crewsDoEscalao(linha);
+
     const comprar = async () => {
         if (!user) {
             return;
@@ -177,11 +244,15 @@ export const PremiumPage = () => {
         setFalhou(null);
 
         try {
-            const sessao = await startCheckout(
-                paraComunidade
-                    ? { ownerKind: paraComunidade.kind, ownerId: paraComunidade.id }
-                    : { ownerKind: 'user', ownerId: user.id },
-            );
+            if (!escolhido || !paraComunidade) {
+                return;
+            }
+
+            const sessao = await startCheckout({
+                ownerKind: paraComunidade.kind,
+                ownerId: paraComunidade.id,
+                plan: escolhido.key,
+            });
 
             /**
              * Sai-se do site para o Stripe. `replace` não serve: quem
@@ -219,12 +290,91 @@ export const PremiumPage = () => {
                 </p>
             </header>
 
-            <div className="preco">
-                <strong>
-                    {formatarPreco(premium.priceCents, premium.currency, idioma)}
-                </strong>
-                <span>{t.premium.porMes}</span>
-            </div>
+            {/*
+              Três formas de mostrar o preço, e a diferença entre elas é
+              o que se pode fazer a seguir.
+
+              Sem comunidade no caminho não há nada a comprar, e este
+              ecrã é a lista de preços pública: mostra a escada toda,
+              porque quem vem ver quanto custa quer ver quanto custa
+              tudo, e não só a linha mais barata.
+
+              Com comunidade, mostra o que se pode comprar para ela: um
+              preço quando há um escalão, e uma escolha quando há vários.
+            */}
+            {!podeEscolher ? (
+                <ul className="lista-precos">
+                    {paraVenda.map((linha) => (
+                        <li key={linha.key}>
+                            <span className="escalao-nome">{linha.name}</span>
+                            <span className="escalao-crews">
+                                {oQueDa(linha)}
+                            </span>
+                            <span className="escalao-preco">
+                                {formatarPreco(
+                                    linha.priceCents,
+                                    linha.currency,
+                                    idioma,
+                                )}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            ) : paraVenda.length > 1 ? (
+                <fieldset className="escaloes">
+                    <legend>{t.premium.escolheEscalao}</legend>
+
+                    {paraVenda.map((linha) => (
+                        <label
+                            className={
+                                linha.key === escolhido?.key
+                                    ? 'escalao escolhido'
+                                    : 'escalao'
+                            }
+                            key={linha.key}
+                        >
+                            <input
+                                checked={linha.key === escolhido?.key}
+                                name="escalao"
+                                onChange={() => setEscalao(linha.key)}
+                                type="radio"
+                                value={linha.key}
+                            />
+                            <span className="escalao-nome">{linha.name}</span>
+                            <span className="escalao-crews">
+                                {crewsDoEscalao(linha)}
+                            </span>
+                            <span className="escalao-preco">
+                                {formatarPreco(
+                                    linha.priceCents,
+                                    linha.currency,
+                                    idioma,
+                                )}
+                            </span>
+                        </label>
+                    ))}
+                </fieldset>
+            ) : escolhido ? (
+                <div className="preco">
+                    <strong>
+                        {formatarPreco(
+                            escolhido.priceCents,
+                            escolhido.currency,
+                            idioma,
+                        )}
+                    </strong>
+                    <span>{t.premium.porMes}</span>
+                </div>
+            ) : null}
+
+            {/*
+              O "por mês" é dito uma vez para a lista toda: repeti-lo em
+              cada linha era ruído, e o que interessa comparar entre
+              escalões é o número.
+            */}
+            {paraVenda.length > 1 ? (
+                <p className="hint">{t.premium.todosPorMes}</p>
+            ) : null}
 
             {/*
               O que o plano dá muda com o titular. Dizer "personaliza o
@@ -239,6 +389,14 @@ export const PremiumPage = () => {
                         : t.premium.oQueDaPersonalizacao}
                 </li>
                 <li>{paraComunidade ? frases.umPlano : t.premium.oQueDaCrew}</li>
+                {/*
+                  Os lugares só aqui quando não há escolha a fazer: com
+                  a escolha à vista, cada linha já o diz, e repeti-lo
+                  logo abaixo era dizer duas vezes a mesma coisa.
+                */}
+                {paraVenda.length === 1 && escolhido?.maxCrews !== undefined ? (
+                    <li>{crewsDoEscalao(escolhido)}</li>
+                ) : null}
                 <li>{t.premium.oQueDaApoio}</li>
             </ul>
 

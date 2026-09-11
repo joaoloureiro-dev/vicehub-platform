@@ -29,19 +29,18 @@ export interface PlanDefinition {
      */
     maxCrews?: number | null;
     /**
-     * Se este plano pode ser comprado sozinho, no ecrã de preços.
+     * Que espécie de titular compra este plano.
      *
-     * A cobrança tem **um** preço configurado, e o checkout vende esse.
-     * Anunciar um escalão que ele não sabe cobrar era prometer uma
-     * coisa e cobrar outra — o pior erro que uma lista de preços pode
-     * ter. Enquanto cada escalão não tiver o seu preço no Stripe e o
-     * checkout não souber escolher entre eles, os escalões de servidor
-     * concedem-se à mão, como o vitalício.
+     * É o que impede uma crew de comprar um escalão de servidor e um
+     * servidor de comprar o de uma crew — duas compras que a plataforma
+     * aceitaria de bom grado e que não davam nada a quem as fizesse. O
+     * preço de um servidor vende lugares para crews; a crew não tem
+     * onde os pôr.
      *
-     * Ausente é comprável: é o caso do premium, e o que menos surpreende
-     * quem acrescentar um plano novo sem pensar nisto.
+     * Ausente quer dizer que não se compra: é o vitalício, que é um
+     * gesto e se concede à mão.
      */
-    purchasable?: boolean;
+    ownerKind?: 'crew' | 'server';
     /**
      * Meses de cada período, ou `null` quando o plano não renova.
      *
@@ -76,6 +75,7 @@ export const PLANS = {
         currency: 'EUR',
         /** Mensal. É o único período cobrado. */
         intervalMonths: 1,
+        ownerKind: 'crew',
     },
     /**
      * Os escalões de um servidor.
@@ -94,7 +94,7 @@ export const PLANS = {
         currency: 'EUR',
         intervalMonths: 1,
         maxCrews: 10,
-        purchasable: false,
+        ownerKind: 'server',
     },
     server_plus: {
         plan: SubscriptionPlan.server_plus,
@@ -104,7 +104,7 @@ export const PLANS = {
         currency: 'EUR',
         intervalMonths: 1,
         maxCrews: 50,
-        purchasable: false,
+        ownerKind: 'server',
     },
     server_unlimited: {
         plan: SubscriptionPlan.server_unlimited,
@@ -114,7 +114,7 @@ export const PLANS = {
         currency: 'EUR',
         intervalMonths: 1,
         maxCrews: null,
-        purchasable: false,
+        ownerKind: 'server',
     },
     lifetime: {
         plan: SubscriptionPlan.lifetime,
@@ -143,13 +143,44 @@ export const isPerpetualPlan = (plan: SubscriptionPlan): boolean =>
     plan === SubscriptionPlan.lifetime;
 
 /**
- * Se este plano aparece no ecrã de preços para ser comprado.
+ * Se este plano se compra, e por quem.
  *
- * A ausência do campo é sim: um plano novo entra à venda por omissão, e
- * quem o quiser fora da lista tem de o dizer.
+ * A ausência do campo é não: um plano sem titular declarado não entra
+ * à venda sozinho. É o contrário do que aqui esteve — antes bastava não
+ * dizer nada para um plano aparecer no ecrã de preços, e foi assim que
+ * três escalões de servidor estiveram anunciados sem que a cobrança os
+ * soubesse cobrar.
  */
 export const isPurchasablePlan = (definicao: PlanDefinition): boolean =>
-    definicao.purchasable !== false;
+    definicao.ownerKind !== undefined;
+
+/**
+ * Os planos que esta espécie de titular pode comprar.
+ *
+ * Uma crew compra o dela; um servidor compra um escalão. Ninguém compra
+ * o do outro: o que um escalão de servidor vende são lugares para
+ * crews, e uma crew não tem onde os pôr.
+ *
+ * Uma pessoa não aparece aqui de propósito — não há plano de pessoa
+ * nenhum, e a lista vazia é a resposta certa a "o que posso comprar
+ * para mim".
+ */
+export const plansForOwner = (
+    ownerKind: 'user' | 'crew' | 'server',
+): readonly PlanKey[] =>
+    PLAN_KEYS.filter((key) => planDefinition(key).ownerKind === ownerKind);
+
+/**
+ * A definição de um plano, com o tipo largo.
+ *
+ * `PLANS` é `as const`, o que guarda os literais — e faz com que os
+ * planos sem `ownerKind` ou sem `maxCrews` não tenham sequer a
+ * propriedade: lê-la é um erro de compilação em vez do `undefined` que
+ * se procura. Esta função devolve o mesmo objeto com o tipo declarado,
+ * que é o que permite perguntar por um campo opcional sem saber de
+ * antemão qual dos planos é.
+ */
+export const planDefinition = (key: PlanKey): PlanDefinition => PLANS[key];
 
 /**
  * Quantos dias dura a avaliação de uma comunidade acabada de criar.

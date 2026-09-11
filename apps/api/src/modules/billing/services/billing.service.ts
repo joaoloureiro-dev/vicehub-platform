@@ -3,10 +3,12 @@ import type Stripe from 'stripe';
 import {
     PLANS,
     PLAN_KEYS,
+    SubscriptionPlan,
     SubscriptionStatus,
     isPerpetualPlan,
-    isPurchasablePlan,
+    planDefinition,
 } from '@vicehub/database';
+import type { PlanKey } from '@vicehub/database';
 
 import { AuthorizationError } from '../../authorization/errors/authorization.errors.js';
 import type { AuthorizationService } from '../../authorization/services/authorization.service.js';
@@ -22,6 +24,8 @@ interface StartCheckoutInput {
     ownerKind: SubscriptionOwnerKind;
     ownerId: string;
     buyerId: string;
+    /** Qual dos escalões. Antes não existia, e vendia-se sempre o mesmo. */
+    plan: string;
 }
 
 /**
@@ -34,6 +38,23 @@ export interface PurchasablePlan {
     priceCents: number;
     currency: string;
     intervalMonths: number;
+    /**
+     * Quem compra este plano: uma crew ou um servidor.
+     *
+     * Vai para o ecrã para que ele mostre os escalões de servidor a
+     * quem veio de um servidor, e o da crew a quem veio de uma crew,
+     * sem ter aqui a lista escrita uma segunda vez.
+     */
+    ownerKind: 'crew' | 'server';
+    /**
+     * Quantas crews este escalão deixa jogar no servidor, quando o
+     * plano é de servidor. `null` é sem limite.
+     *
+     * É a única coisa que distingue os três escalões uns dos outros, e
+     * sem ela a lista de preços mostrava três linhas cujo preço sobe
+     * sem dizer porquê.
+     */
+    maxCrews?: number | null;
 }
 
 /**
@@ -99,6 +120,18 @@ export class BillingService {
         private readonly billingRepository: BillingRepository,
         private readonly stripe: StripeGateway | null,
         private readonly authorizationService: AuthorizationService,
+        /**
+         * O preço do Stripe de cada plano que esta instalação vende.
+         *
+         * Entra por aqui e não é lido do ambiente, como a gateway: o que
+         * está à venda é uma propriedade da instalação, e um serviço que
+         * a fosse buscar sozinho não podia ser posto a vender outra
+         * coisa num teste sem lhe mexer no ambiente inteiro.
+         *
+         * Um plano sem entrada aqui não se vende: não aparece na lista
+         * de preços e o checkout recusa-o.
+         */
+        private readonly priceIds: Readonly<Record<string, string>> = {},
     ) { }
 
     /**
@@ -118,7 +151,7 @@ export class BillingService {
         return {
             available: this.stripe !== null,
             plans: PLAN_KEYS.flatMap((key) => {
-                const plano = PLANS[key];
+                const plano = planDefinition(key);
 
                 /**
                  * Sem período não há o que cobrar todos os meses. As duas
@@ -131,15 +164,22 @@ export class BillingService {
                 }
 
                 /**
-                 * E os que a cobrança ainda não sabe vender.
+                 * E os que **esta instalação** não sabe cobrar.
                  *
-                 * Há **um** preço configurado no Stripe, e o checkout
-                 * vende esse. Anunciar um escalão de servidor aqui era
-                 * prometer um preço e cobrar outro — o pior erro que uma
-                 * lista de preços pode ter. Até cada escalão ter o seu
-                 * preço e o checkout saber escolher, concedem-se à mão.
+                 * Um plano vende-se aqui se, e só se, tiver um preço do
+                 * Stripe configurado. Anunciar um escalão sem preço era
+                 * prometer uma coisa e cobrar outra — o pior erro que
+                 * uma lista de preços pode ter —, e é por isso que a
+                 * condição é a existência do preço e não uma marca no
+                 * catálogo: o catálogo não sabe o que está configurado.
+                 *
+                 * Também deixa de fora os que não se compram de todo,
+                 * porque esses nunca têm preço.
                  */
-                if (!isPurchasablePlan(plano)) {
+                if (
+                    plano.ownerKind === undefined ||
+                    this.priceIds[key] === undefined
+                ) {
                     return [];
                 }
 
@@ -151,6 +191,10 @@ export class BillingService {
                         priceCents: plano.priceCents,
                         currency: plano.currency,
                         intervalMonths: plano.intervalMonths,
+                        ownerKind: plano.ownerKind,
+                        ...(plano.maxCrews === undefined
+                            ? {}
+                            : { maxCrews: plano.maxCrews }),
                     },
                 ];
             }),
@@ -170,7 +214,25 @@ export class BillingService {
          */
         await this.assertMayCommit(input);
 
+        /**
+         * Que plano é este, e se é sequer para este titular.
+         *
+         * Vem antes da configuração pela mesma razão que a autorização:
+         * pedir o escalão errado é uma propriedade do **pedido**, e não
+         * da instalação. Pela ordem contrária, um sítio sem chaves
+         * respondia 503 a quem pedisse um plano que nem existe.
+         */
+        this.assertPlanFits(input.plan, input.ownerKind);
+
         const stripe = this.requireStripe();
+
+        /**
+         * E só agora o preço, que é uma propriedade da **instalação**:
+         * o escalão existe e serve, o que falta é esta instalação
+         * tê-lo aberto. Um 503 antes disto escondia a diferença entre
+         * "a cobrança não está ligada" e "esse escalão ainda não abriu".
+         */
+        const priceId = this.requirePriceId(input.plan);
 
         const owner = this.buildOwner(input.ownerKind, input.ownerId);
 
@@ -213,8 +275,90 @@ export class BillingService {
             ownerId: input.ownerId,
             buyerId: input.buyerId,
             buyerEmail: comprador.email,
+            priceId,
             ...(customerId === null ? {} : { customerId }),
         });
+    }
+
+    /**
+     * Se este plano existe e se vende a esta espécie de titular.
+     *
+     * É a metade da pergunta que depende só do pedido, e por isso é
+     * feita antes de se olhar para a configuração.
+     */
+    private assertPlanFits(
+        plan: string,
+        ownerKind: SubscriptionOwnerKind,
+    ): void {
+        const definicao = (PLAN_KEYS as readonly string[]).includes(plan)
+            ? planDefinition(plan as PlanKey)
+            : undefined;
+
+        if (definicao === undefined || definicao.ownerKind === undefined) {
+            throw new BillingError(
+                'PLAN_NOT_PURCHASABLE',
+                'Esse plano não existe ou não está à venda.',
+            );
+        }
+
+        /**
+         * O que um escalão de servidor vende são lugares para crews, e
+         * uma crew não tem onde os pôr; o da crew abre a tesouraria de
+         * uma crew, e um servidor não é uma. Nenhuma das duas compras
+         * dava nada a quem a fizesse, e ambas eram cobradas.
+         */
+        if (definicao.ownerKind !== ownerKind) {
+            throw new BillingError(
+                'PLAN_WRONG_OWNER',
+                definicao.ownerKind === 'server'
+                    ? 'Esse plano é de um servidor, e este titular não é um.'
+                    : 'Esse plano é de uma crew, e este titular não é uma.',
+            );
+        }
+    }
+
+    /**
+     * O preço do Stripe para este plano nesta instalação.
+     *
+     * A metade que depende da configuração. O escalão já se sabe que
+     * existe e que serve: o que falta é esta instalação tê-lo aberto,
+     * que é uma coisa de quem a opera e não de quem clica.
+     */
+    private requirePriceId(plan: string): string {
+        const priceId = this.priceIds[plan];
+
+        if (priceId === undefined) {
+            throw new BillingError(
+                'PLAN_NOT_PURCHASABLE',
+                'Esse plano ainda não está à venda nesta instalação.',
+            );
+        }
+
+        return priceId;
+    }
+
+    /**
+     * Que plano é o que o Stripe está a cobrar nesta subscrição.
+     *
+     * Lê-se do preço e não dos metadados que lhe pendurámos na compra:
+     * os metadados são o que dissemos na altura, o preço é o que está a
+     * ser cobrado agora. Uma mudança de escalão feita no painel do
+     * Stripe muda o preço e não os metadados, e nesse caso o que vale é
+     * a fatura.
+     *
+     * Um preço que não conhecemos — um criado à mão no painel, ou o de
+     * uma instalação anterior — fica com o plano de crew, que é o mais
+     * pequeno: na dúvida dá-se o menos, porque o contrário é oferecer
+     * lugares que ninguém pagou.
+     */
+    private planForPrice(priceId: string): SubscriptionPlan {
+        const chave = Object.keys(this.priceIds).find(
+            (plano) => this.priceIds[plano] === priceId,
+        );
+
+        return chave === undefined
+            ? SubscriptionPlan.premium
+            : planDefinition(chave as PlanKey).plan;
     }
 
     /**
@@ -299,6 +443,7 @@ export class BillingService {
             owner,
             providerSubscriptionId: periodo.subscriptionId,
             providerCustomerId: periodo.customerId,
+            plan: this.planForPrice(periodo.priceId),
             status,
             priceCents: periodo.priceCents,
             currency: periodo.currency,

@@ -5,6 +5,8 @@ import {
     PLAN_KEYS,
     addPlanInterval,
     crewAllowance,
+    planDefinition,
+    plansForOwner,
 } from '@vicehub/database';
 import { describe, expect, it } from 'vitest';
 
@@ -72,6 +74,68 @@ describe('catálogo de planos', () => {
      * caladamente erradas, e um ecrã de preços a misturar € com $ é uma
      * pergunta a que ninguém quer responder.
      */
+    /**
+     * **Quem compra cada plano.**
+     *
+     * Um escalão de servidor vende lugares para crews jogarem lá, e uma
+     * crew não tem onde os pôr; o da crew abre a tesouraria de uma
+     * crew, e um servidor não é uma. Um plano no titular errado era uma
+     * compra cobrada que não dava nada a quem a fez.
+     */
+    describe('de quem é cada plano', () => {
+        it('o da crew é de uma crew', () => {
+            expect(planDefinition('premium').ownerKind).toBe('crew');
+        });
+
+        it.each(['server_base', 'server_plus', 'server_unlimited'] as const)(
+            '%s é de um servidor',
+            (chave) => {
+                expect(planDefinition(chave).ownerKind).toBe('server');
+            },
+        );
+
+        /**
+         * O vitalício é um gesto, e concede-se à mão. Sem titular
+         * declarado, não entra à venda em lado nenhum — que é o
+         * contrário do que aqui esteve: antes bastava não dizer nada
+         * para um plano aparecer no ecrã de preços.
+         */
+        it('o vitalício não é de ninguém, porque não se compra', () => {
+            expect(planDefinition('lifetime').ownerKind).toBeUndefined();
+        });
+
+        it('uma crew compra um plano e um servidor compra três', () => {
+            expect(plansForOwner('crew')).toEqual(['premium']);
+            expect(plansForOwner('server')).toEqual([
+                'server_base',
+                'server_plus',
+                'server_unlimited',
+            ]);
+        });
+
+        /**
+         * Não há plano de pessoa nenhum. A lista vazia é a resposta
+         * certa, e é o que o ecrã lê para não oferecer um botão que a
+         * API recusa.
+         */
+        it('uma pessoa não compra plano nenhum', () => {
+            expect(plansForOwner('user')).toEqual([]);
+        });
+
+        /**
+         * Os escalões aparecem do mais barato para o mais caro, e o
+         * ecrã escolhe o primeiro por omissão. Ao contrário, começaria
+         * no mais caro — escolher pela pessoa a favor de quem vende.
+         */
+        it('os escalões de servidor estão por preço crescente', () => {
+            const precos = plansForOwner('server').map(
+                (chave) => planDefinition(chave).priceCents,
+            );
+
+            expect(precos).toEqual([...precos].sort((a, b) => a - b));
+        });
+    });
+
     it('tudo no catálogo está na mesma moeda', () => {
         for (const key of PLAN_KEYS) {
             expect(PLANS[key].currency, key).toBe('EUR');

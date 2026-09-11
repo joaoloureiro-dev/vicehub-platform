@@ -354,6 +354,15 @@ export const en = (p: Tools) => ({
             'One plan for the whole server, and for the crews playing on it. It does not depend on who paid.',
         servidorTemPlano: 'This server already has an active plan.',
         irParaServidor: 'Go to the server',
+        aTesourariaDaCrew: 'The treasury of one crew',
+        escolheEscalao: 'Choose your tier',
+        ateCrews: (n: number) =>
+            p.plural(n, {
+                one: 'Up to 1 crew playing on your server',
+                other: `Up to ${n} crews playing on your server`,
+            }),
+        semLimiteDeCrews: 'No limit on how many crews play there',
+        todosPorMes: 'All prices are per month.',
         porMes: 'per month',
         planoEDeComunidade:
             'There is nothing here to buy for your own account. The plan belongs to a crew or a server — open the one you run and buy it there.',
