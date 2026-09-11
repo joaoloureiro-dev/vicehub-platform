@@ -1,10 +1,11 @@
+import { AuthProviderType } from '@vicehub/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthError } from '../../src/modules/auth/errors/auth.errors.js';
 import {
-    DiscordAuthService,
+    FederatedAuthService,
     limparUsername,
-} from '../../src/modules/auth/services/discord-auth.service.js';
+} from '../../src/modules/auth/services/federated-auth.service.js';
 
 const createRepositoryMock = () => ({
     findByProviderIdentity: vi.fn().mockResolvedValue(null),
@@ -15,26 +16,23 @@ const createRepositoryMock = () => ({
     findDefaultRoleId: vi.fn().mockResolvedValue('role-player'),
 });
 
-const createClientMock = (utilizador: {
+interface Perfil {
     id: string;
     username: string;
     email: string | null;
     emailVerified: boolean;
-}) => ({
-    buildAuthorizeUrl: vi.fn().mockReturnValue('https://discord.com/oauth2/authorize?x=1'),
-    exchangeCode: vi.fn().mockResolvedValue('token-do-discord'),
-    fetchUser: vi.fn().mockResolvedValue(utilizador),
+}
+
+const createClientMock = (perfil: Perfil) => ({
+    buildAuthorizeUrl: vi.fn().mockReturnValue('https://fornecedor.test/authorize?x=1'),
+    exchangeCode: vi.fn().mockResolvedValue('token-do-fornecedor'),
+    fetchUser: vi.fn().mockResolvedValue(perfil),
 });
 
-const doDiscord: {
-    id: string;
-    username: string;
-    email: string | null;
-    emailVerified: boolean;
-} = {
+const deFora: Perfil = {
     id: '4242',
     username: 'ViceGuy',
-    email: 'vice@discord.test',
+    email: 'vice@fornecedor.test',
     emailVerified: true,
 };
 
@@ -46,17 +44,22 @@ const expectAuthError = async (
     await expect(promise).rejects.toMatchObject({ code });
 };
 
-describe('DiscordAuthService', () => {
+describe('FederatedAuthService', () => {
     let repository: ReturnType<typeof createRepositoryMock>;
 
-    const construir = (utilizador = doDiscord) => {
-        const client = createClientMock(utilizador);
+    const construir = (
+        perfil = deFora,
+        provider: AuthProviderType = AuthProviderType.discord,
+    ) => {
+        const client = createClientMock(perfil);
 
         return {
             client,
-            service: new DiscordAuthService(
+            service: new FederatedAuthService(
                 repository as never,
                 client as never,
+                provider,
+                'O fornecedor',
             ),
         };
     };
@@ -65,71 +68,91 @@ describe('DiscordAuthService', () => {
         repository = createRepositoryMock();
     });
 
-    describe('a que conta pertence esta identidade', () => {
-        it('entra na conta já ligada, sem criar nada', async () => {
-            repository.findByProviderIdentity.mockResolvedValue({
-                user: { id: 'user-1' },
+    /**
+     * A decisão sobre a conta é a mesma para todos os fornecedores, mas
+     * **com que valor a identidade fica gravada** não é: uma identidade
+     * de Google guardada como `discord` faria a entrada seguinte pela
+     * Google não encontrar nada e abrir uma segunda conta com o mesmo
+     * email — que é o conflito que a base de dados recusa.
+     *
+     * Por isso as três respostas correm contra os dois fornecedores.
+     */
+    describe.each([AuthProviderType.discord, AuthProviderType.google])(
+        'a que conta pertence esta identidade (%s)',
+        (provider) => {
+            it('entra na conta já ligada, sem criar nada', async () => {
+                repository.findByProviderIdentity.mockResolvedValue({
+                    user: { id: 'user-1' },
+                });
+
+                const { service } = construir(deFora, provider);
+
+                expect(await service.resolveAccount('code')).toEqual({
+                    userId: 'user-1',
+                    criada: false,
+                });
+                expect(repository.findByProviderIdentity).toHaveBeenCalledWith(
+                    provider,
+                    '4242',
+                );
+                expect(repository.createFederatedUser).not.toHaveBeenCalled();
+                expect(repository.linkProvider).not.toHaveBeenCalled();
             });
 
-            const { service } = construir();
+            it('cria conta quando não há identidade nem email conhecido', async () => {
+                const { service } = construir(deFora, provider);
 
-            expect(await service.resolveAccount('code')).toEqual({
-                userId: 'user-1',
-                criada: false,
+                expect(await service.resolveAccount('code')).toEqual({
+                    userId: 'user-novo',
+                    criada: true,
+                });
+                expect(repository.createFederatedUser).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        email: 'vice@fornecedor.test',
+                        provider,
+                        providerUserId: '4242',
+                        emailVerified: true,
+                    }),
+                );
             });
-            expect(repository.createFederatedUser).not.toHaveBeenCalled();
-            expect(repository.linkProvider).not.toHaveBeenCalled();
-        });
 
-        it('cria conta quando não há identidade nem email conhecido', async () => {
-            const { service } = construir();
+            it('liga-se à conta que já usa esse email, em vez de abrir uma segunda', async () => {
+                repository.findByEmail.mockResolvedValue({ id: 'user-antigo' });
 
-            expect(await service.resolveAccount('code')).toEqual({
-                userId: 'user-novo',
-                criada: true,
-            });
-            expect(repository.createFederatedUser).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    email: 'vice@discord.test',
-                    provider: 'discord',
+                const { service } = construir(deFora, provider);
+
+                expect(await service.resolveAccount('code')).toEqual({
+                    userId: 'user-antigo',
+                    criada: false,
+                });
+                expect(repository.linkProvider).toHaveBeenCalledWith({
+                    userId: 'user-antigo',
+                    provider,
                     providerUserId: '4242',
-                    emailVerified: true,
-                }),
-            );
-        });
-
-        it('liga-se à conta que já usa esse email, em vez de abrir uma segunda', async () => {
-            repository.findByEmail.mockResolvedValue({ id: 'user-antigo' });
-
-            const { service } = construir();
-
-            expect(await service.resolveAccount('code')).toEqual({
-                userId: 'user-antigo',
-                criada: false,
+                    providerEmail: 'vice@fornecedor.test',
+                });
+                expect(repository.createFederatedUser).not.toHaveBeenCalled();
             });
-            expect(repository.linkProvider).toHaveBeenCalledWith({
-                userId: 'user-antigo',
-                provider: 'discord',
-                providerUserId: '4242',
-                providerEmail: 'vice@discord.test',
-            });
-            expect(repository.createFederatedUser).not.toHaveBeenCalled();
-        });
+        },
+    );
 
+    describe('o email tem de estar confirmado', () => {
         /**
          * **O buraco que esta regra tapa.** O Discord deixa mudar de
-         * email sem confirmar. Sem exigir a confirmação, qualquer pessoa
-         * punha no Discord o email de outra e entrava na conta dela
-         * aqui, com um clique e sem password nenhuma.
+         * email sem confirmar, e há contas de Google de domínio próprio
+         * onde o endereço nunca foi confirmado. Sem exigir a
+         * confirmação, qualquer pessoa punha lá o email de outra e
+         * entrava na conta dela aqui, com um clique e sem password
+         * nenhuma.
          */
         it('recusa ligar-se a uma conta quando o email não está confirmado', async () => {
             repository.findByEmail.mockResolvedValue({ id: 'user-antigo' });
 
-            const { service } = construir({ ...doDiscord, emailVerified: false });
+            const { service } = construir({ ...deFora, emailVerified: false });
 
             await expectAuthError(
                 service.resolveAccount('code'),
-                'DISCORD_EMAIL_UNUSABLE',
+                'FEDERATED_EMAIL_UNUSABLE',
             );
 
             expect(repository.linkProvider).not.toHaveBeenCalled();
@@ -138,14 +161,14 @@ describe('DiscordAuthService', () => {
 
         /**
          * Sem email não se cria conta: ficaria uma conta sem forma
-         * nenhuma de recuperação no dia em que o Discord se perdesse.
+         * nenhuma de recuperação no dia em que o fornecedor se perdesse.
          */
         it('recusa criar conta sem email', async () => {
-            const { service } = construir({ ...doDiscord, email: null });
+            const { service } = construir({ ...deFora, email: null });
 
             await expectAuthError(
                 service.resolveAccount('code'),
-                'DISCORD_EMAIL_UNUSABLE',
+                'FEDERATED_EMAIL_UNUSABLE',
             );
         });
 
@@ -158,7 +181,7 @@ describe('DiscordAuthService', () => {
                 user: { id: 'user-1' },
             });
 
-            const { service } = construir({ ...doDiscord, emailVerified: false });
+            const { service } = construir({ ...deFora, emailVerified: false });
 
             expect(await service.resolveAccount('code')).toEqual({
                 userId: 'user-1',
@@ -168,14 +191,14 @@ describe('DiscordAuthService', () => {
 
         it('normaliza o email antes de procurar a conta', async () => {
             const { service } = construir({
-                ...doDiscord,
-                email: 'VICE@Discord.TEST',
+                ...deFora,
+                email: 'VICE@Fornecedor.TEST',
             });
 
             await service.resolveAccount('code');
 
             expect(repository.findByEmail).toHaveBeenCalledWith(
-                'vice@discord.test',
+                'vice@fornecedor.test',
             );
         });
     });
@@ -213,7 +236,7 @@ describe('DiscordAuthService', () => {
     });
 
     describe('o nome de utilizador', () => {
-        it('usa o do Discord quando está livre', async () => {
+        it('usa o que veio de fora quando está livre', async () => {
             const { service } = construir();
 
             await service.resolveAccount('code');
@@ -224,7 +247,7 @@ describe('DiscordAuthService', () => {
         });
 
         /**
-         * O nome do Discord repete-se e o nosso é único. Sem procurar um
+         * O nome de fora repete-se e o nosso é único. Sem procurar um
          * livre, a segunda pessoa com o mesmo nome não conseguia entrar
          * — e o erro que via era um conflito de base de dados.
          */

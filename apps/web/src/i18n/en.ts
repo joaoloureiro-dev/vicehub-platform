@@ -77,6 +77,7 @@ export const en = (p: Tools) => ({
     auth: {
         ouEntao: 'or',
         entrarComDiscord: 'Continue with Discord',
+        entrarComGoogle: 'Continue with Google',
         entrarTitulo: 'Sign in',
         entrarSub: 'Welcome back to ViceHub.',
         email: 'Email',

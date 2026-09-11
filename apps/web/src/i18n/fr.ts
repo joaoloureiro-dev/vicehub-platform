@@ -79,6 +79,7 @@ export const fr = (p: Tools): Messages => ({
     auth: {
         ouEntao: 'ou',
         entrarComDiscord: 'Continuer avec Discord',
+        entrarComGoogle: 'Continuer avec Google',
         entrarTitulo: 'Se connecter',
         entrarSub: 'Bon retour sur ViceHub.',
         email: 'E-mail',

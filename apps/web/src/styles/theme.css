@@ -1098,18 +1098,20 @@ button.link:hover {
     cursor: pointer;
 }
 
-/* ---------- entrar com Discord ---------- */
+/* ---------- entrar por outro sítio ---------- */
 
 /*
- * O botão leva a cor do Discord e não a nossa, de propósito: quem o
- * procura procura aquele azul, e pintá-lo de rosa fá-lo passar
- * despercebido no meio do resto.
+ * A forma é partilhada, a cor é de cada um.
  *
- * É uma âncora e não um <button> — a entrada é uma navegação a sério —,
- * pelo que precisa do que um botão traz de origem: altura de toque,
+ * Cada botão leva a cor do seu fornecedor e não a nossa, de propósito:
+ * quem procura o do Discord procura aquele azul, e pintá-lo de rosa
+ * fá-lo passar despercebido no meio do resto.
+ *
+ * São âncoras e não <button> — a entrada é uma navegação a sério —,
+ * pelo que precisam do que um botão traz de origem: altura de toque,
  * centragem e cursor.
  */
-.discord {
+.federado {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1120,20 +1122,52 @@ button.link:hover {
     font-size: 16px;
     font-weight: 650;
     letter-spacing: 0.01em;
-    color: #FFFFFF;
     text-decoration: none;
-    background: #5865F2;
     border-radius: var(--radius);
-    box-shadow: 0 6px 22px -10px rgba(88, 101, 242, 0.75);
     transition: filter 0.15s ease, transform 0.1s ease;
 }
 
-.discord:hover {
+/*
+ * Dois seguidos precisam de ar entre eles. O primeiro já vem separado
+ * do resto pelo "ou".
+ */
+.federado + .federado {
+    margin-top: 10px;
+}
+
+.federado:hover {
     filter: brightness(1.1);
 }
 
-.discord:active {
+.federado:active {
     transform: translateY(1px);
+}
+
+.discord {
+    color: #FFFFFF;
+    background: #5865F2;
+    box-shadow: 0 6px 22px -10px rgba(88, 101, 242, 0.75);
+}
+
+/*
+ * A Google não tem uma cor de marca para isto: a regra dela é fundo
+ * branco com texto escuro, ou o inverso. O branco é o que se destaca
+ * aqui, onde o resto do ecrã é escuro — e o contorno é o que impede
+ * que um botão branco sobre fundo claro desapareça.
+ */
+.google {
+    color: #1F1F1F;
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    box-shadow: 0 6px 22px -12px rgba(0, 0, 0, 0.6);
+}
+
+/*
+ * `brightness` num branco não muda nada. O que dá resposta ao rato é
+ * escurecer um nada.
+ */
+.google:hover {
+    filter: brightness(0.96);
 }
 
 /*

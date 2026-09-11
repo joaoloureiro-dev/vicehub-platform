@@ -4,7 +4,8 @@ import type { RouteOptions } from 'fastify';
 
 import authRoutes from '../../src/modules/auth/auth.routes.js';
 import type { AuthController } from '../../src/modules/auth/controllers/auth.controller.js';
-import type { DiscordAuthController } from '../../src/modules/auth/controllers/discord-auth.controller.js';
+import type { AuthProvidersController } from '../../src/modules/auth/controllers/auth-providers.controller.js';
+import type { FederatedAuthController } from '../../src/modules/auth/controllers/federated-auth.controller.js';
 import validationPlugin from '../../src/plugins/http/validation.plugin.js';
 
 /**
@@ -48,13 +49,20 @@ describe('ligação das rotas de autenticação ao middleware', () => {
             verifyEmail: vi.fn(),
         } as unknown as AuthController;
 
-        const discordController = {
-            providers: vi.fn(),
-            start: vi.fn(),
-            callback: vi.fn(),
-        } as unknown as DiscordAuthController;
+        const federado = () =>
+            ({
+                start: vi.fn(),
+                callback: vi.fn(),
+            }) as unknown as FederatedAuthController;
 
-        await app.register(authRoutes, { controller, discordController });
+        await app.register(authRoutes, {
+            controller,
+            providersController: {
+                list: vi.fn(),
+            } as unknown as AuthProvidersController,
+            discordController: federado(),
+            googleController: federado(),
+        });
         await app.ready();
         await app.close();
     });
@@ -86,6 +94,24 @@ describe('ligação das rotas de autenticação ao middleware', () => {
         'POST /login',
         'POST /refresh',
     ])('%s permanece pública', (key) => {
+        expect(preHandlersOf(key)).toHaveLength(0);
+    });
+
+    /**
+     * Entrar por outro sítio é para quem ainda não está dentro.
+     *
+     * Exigir sessão em qualquer destas seria exigir que se entrasse
+     * antes de entrar: a ida seria recusada com 401 e ninguém chegava a
+     * ver o ecrã de autorização. O `state` é que faz o papel de guarda
+     * aqui, e é ele que o regresso verifica.
+     */
+    it.each([
+        'GET /providers',
+        'GET /discord',
+        'GET /discord/callback',
+        'GET /google',
+        'GET /google/callback',
+    ])('%s permanece sem sessão, por ser a forma de a obter', (key) => {
         expect(preHandlersOf(key)).toHaveLength(0);
     });
 
