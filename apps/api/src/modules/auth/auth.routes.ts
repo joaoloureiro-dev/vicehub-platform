@@ -3,7 +3,8 @@ import type { FastifyPluginAsync } from 'fastify';
 import { env } from '../../config/env.js';
 
 import type { AuthController } from './controllers/auth.controller.js';
-import type { DiscordAuthController } from './controllers/discord-auth.controller.js';
+import type { AuthProvidersController } from './controllers/auth-providers.controller.js';
+import type { FederatedAuthController } from './controllers/federated-auth.controller.js';
 import {
     loginSchema,
     registerSchema,
@@ -13,7 +14,9 @@ import {
 } from './schemas/auth.schemas.js';
 
 interface AuthRoutesOptions {
-    discordController: DiscordAuthController;
+    providersController: AuthProvidersController;
+    discordController: FederatedAuthController;
+    googleController: FederatedAuthController;
     controller: AuthController;
 }
 
@@ -28,7 +31,12 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
     fastify,
     options,
 ) => {
-    const { controller, discordController } = options;
+    const {
+        controller,
+        providersController,
+        discordController,
+        googleController,
+    } = options;
 
     /**
      * Rotas públicas.
@@ -48,16 +56,21 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
     );
 
     /**
-     * Entrar com Discord.
+     * Entrar por outro sítio.
      *
-     * Duas rotas e nenhum corpo: a ida manda para o Discord, e o
+     * Duas rotas por fornecedor e nenhum corpo: a ida manda para lá, e o
      * regresso traz um código no endereço. Ambas terminam num
      * encaminhamento, e é por isso que não devolvem JSON — quem as
      * percorre é o browser, e não a aplicação.
+     *
+     * As rotas existem sempre, mesmo onde o fornecedor não está
+     * configurado; nesse caso a ida responde 503. É `/providers` que diz
+     * ao ecrã de entrada que botões mostrar, e é por isso que ela é a
+     * única das três que responde JSON.
      */
     fastify.get(
         '/providers',
-        discordController.providers.bind(discordController),
+        providersController.list.bind(providersController),
     );
 
     fastify.get(
@@ -70,6 +83,18 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
     }>(
         '/discord/callback',
         discordController.callback.bind(discordController),
+    );
+
+    fastify.get(
+        '/google',
+        googleController.start.bind(googleController),
+    );
+
+    fastify.get<{
+        Querystring: { code?: string; state?: string; error?: string };
+    }>(
+        '/google/callback',
+        googleController.callback.bind(googleController),
     );
 
     /**

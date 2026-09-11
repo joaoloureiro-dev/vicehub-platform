@@ -163,6 +163,18 @@ const envSchema = z.object({
     DISCORD_CLIENT_SECRET: z.string().min(1).optional(),
     DISCORD_REDIRECT_URI: z.string().url().optional(),
 
+    /**
+     * Entrar com Google, nos mesmos termos do Discord.
+     *
+     * Os três vêm da consola da Google e o de retorno tem de estar lá
+     * registado tal e qual — a Google é ainda mais literal do que o
+     * Discord a compará-lo, e uma barra a mais devolve `redirect_uri_mismatch`
+     * antes de a pessoa chegar a ver o ecrã de autorização.
+     */
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+    GOOGLE_REDIRECT_URI: z.string().url().optional(),
+
     CORS_ALLOWED_ORIGINS: z
         .string()
         .min(1)
@@ -325,51 +337,66 @@ if (stripeFieldsPresent.length > 0 && stripeFieldsPresent.length !== STRIPE_FIEL
 export const isStripeConfigured = stripeFieldsPresent.length === STRIPE_FIELDS.length;
 
 /**
- * Os campos que entrar com Discord exige, todos ao mesmo tempo.
- */
-const DISCORD_FIELDS = [
-    'DISCORD_CLIENT_ID',
-    'DISCORD_CLIENT_SECRET',
-    'DISCORD_REDIRECT_URI',
-] as const;
-
-const discordFieldsPresent = DISCORD_FIELDS.filter(
-    (field) => env[field] !== undefined,
-);
-
-/**
- * Meia configuração do Discord é recusada ao arrancar.
+ * A configuração de uma forma de entrar por outro sítio, quando existe.
  *
- * Ter o identificador sem o segredo daria um botão que leva ao Discord
- * e volta com um erro que ninguém sabe ler. Mais vale não arrancar.
+ * Lê os três campos de um fornecedor e devolve-os já sem `undefined`,
+ * ou `null` se nenhum deles estiver posto.
+ *
+ * **Meia configuração é recusada ao arrancar.** Ter o identificador sem
+ * o segredo daria um botão que leva ao fornecedor e volta com um erro
+ * que ninguém sabe ler; mais vale não arrancar. O erro tem de aparecer
+ * aqui e não na primeira entrada de alguém.
  */
-if (
-    discordFieldsPresent.length > 0 &&
-    discordFieldsPresent.length !== DISCORD_FIELDS.length
-) {
-    const emFalta = DISCORD_FIELDS.filter((field) => env[field] === undefined);
+const lerFederado = (fornecedor: string, prefixo: 'DISCORD' | 'GOOGLE') => {
+    const campos = [
+        `${prefixo}_CLIENT_ID`,
+        `${prefixo}_CLIENT_SECRET`,
+        `${prefixo}_REDIRECT_URI`,
+    ] as const;
 
-    throw new Error(
-        `[ViceHub API] Configuração do Discord incompleta. Em falta: ${emFalta.join(', ')}.`,
-    );
-}
+    const postos = campos.filter((campo) => env[campo] !== undefined);
 
-/**
- * Se entrar com Discord está configurado.
- */
-export const isDiscordConfigured =
-    discordFieldsPresent.length === DISCORD_FIELDS.length;
+    if (postos.length > 0 && postos.length !== campos.length) {
+        const emFalta = campos.filter((campo) => env[campo] === undefined);
+
+        throw new Error(
+            `[ViceHub API] Configuração do ${fornecedor} incompleta. Em falta: ${emFalta.join(', ')}.`,
+        );
+    }
+
+    if (postos.length !== campos.length) {
+        return null;
+    }
+
+    return Object.freeze({
+        clientId: env[campos[0]] as string,
+        clientSecret: env[campos[1]] as string,
+        redirectUri: env[campos[2]] as string,
+    });
+};
 
 /**
  * A configuração do Discord, quando existe.
  */
-export const discordConfig = isDiscordConfigured
-    ? Object.freeze({
-        clientId: env.DISCORD_CLIENT_ID as string,
-        clientSecret: env.DISCORD_CLIENT_SECRET as string,
-        redirectUri: env.DISCORD_REDIRECT_URI as string,
-    })
-    : null;
+export const discordConfig = lerFederado('Discord', 'DISCORD');
+
+/**
+ * Se entrar com Discord está configurado.
+ */
+export const isDiscordConfigured = discordConfig !== null;
+
+/**
+ * A configuração da Google, quando existe.
+ */
+export const googleConfig = lerFederado('Google', 'GOOGLE');
+
+/**
+ * Se entrar com Google está configurado.
+ *
+ * Um fornecedor não depende do outro: dá para ter só o Discord, só a
+ * Google, os dois ou nenhum, e o ecrã de entrada mostra o que houver.
+ */
+export const isGoogleConfigured = googleConfig !== null;
 
 /**
  * A configuração do Stripe, quando existe.

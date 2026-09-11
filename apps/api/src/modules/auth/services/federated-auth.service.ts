@@ -1,50 +1,63 @@
-import { AuthProviderType } from '@vicehub/database';
+import type { AuthProviderType } from '@vicehub/database';
 import { randomBytes } from 'node:crypto';
 
-import { normalizeEmail } from './email.js';
-import type { DiscordClient, DiscordUser } from '../discord/discord.client.js';
 import { AuthError } from '../errors/auth.errors.js';
+import type {
+    FederatedClient,
+    FederatedProfile,
+} from '../federated/federated.client.js';
 import type { AuthRepository } from '../repositories/auth.repository.js';
+
+import { normalizeEmail } from './email.js';
 
 /**
  * Quantas variações de um nome se tentam antes de desistir dele.
  *
- * Nomes de Discord repetem-se, e o nosso é único. Ao fim destas o nome
+ * Nomes de fora repetem-se, e o nosso é único. Ao fim destas o nome
  * passa a levar aleatoriedade em vez de um número — tentar
  * indefinidamente seria uma consulta por cada tentativa.
  */
 const TENTATIVAS_DE_NOME = 5;
 
-export interface DiscordLoginOutcome {
+export interface FederatedLoginOutcome {
     userId: string;
     /** Se a conta foi criada agora, para quem chama poder distinguir. */
     criada: boolean;
 }
 
 /**
- * Entrar com Discord.
+ * Entrar por outro sítio — Discord, Google, ou o que venha a seguir.
  *
  * O que aqui se decide é uma coisa só: **a que conta pertence esta
- * identidade do Discord**. As três respostas possíveis, por ordem:
+ * identidade**. As três respostas possíveis, por ordem:
  *
  * 1. Já esteve cá — há uma identidade ligada, e entra nessa conta.
  * 2. Nunca cá esteve, mas o email já tem conta — liga-se a essa, e só
- *    **se o Discord confirmar o endereço**.
+ *    **se o fornecedor confirmar o endereço**.
  * 3. Nem uma coisa nem outra — cria conta.
  *
  * O `se` do ponto 2 é a regra que não se pode perder de vista: sem ele,
- * registar no Discord o email de outra pessoa dava entrada na conta
- * dela aqui. O Discord deixa mudar de email sem confirmar, e o campo
- * `verified` é precisamente a diferença.
+ * registar noutro sítio o email de outra pessoa dava entrada na conta
+ * dela aqui. O Discord deixa mudar de email sem confirmar, e há contas
+ * de Google de domínio próprio onde o endereço nunca foi confirmado —
+ * `verified`/`email_verified` é precisamente a diferença.
+ *
+ * A decisão é a mesma para todos os fornecedores de propósito: é a
+ * parte onde um engano dá a conta de alguém a outra pessoa, e não deve
+ * haver duas cópias dela para manter em dia.
  */
-export class DiscordAuthService {
+export class FederatedAuthService {
     constructor(
         private readonly authRepository: AuthRepository,
-        private readonly discordClient: DiscordClient,
+        private readonly client: FederatedClient,
+        /** Com que valor fica gravada a identidade. */
+        private readonly provider: AuthProviderType,
+        /** Como o fornecedor se chama nas mensagens de erro. */
+        private readonly fornecedor: string,
     ) { }
 
     /**
-     * O segredo que liga a ida ao Discord ao regresso.
+     * O segredo que liga a ida ao fornecedor ao regresso.
      *
      * Sem ele, qualquer pessoa podia mandar-te um link de retorno com o
      * código dela e deixar-te a usar a plataforma na conta dela sem
@@ -56,7 +69,7 @@ export class DiscordAuthService {
     }
 
     buildAuthorizeUrl(state: string): string {
-        return this.discordClient.buildAuthorizeUrl(state);
+        return this.client.buildAuthorizeUrl(state);
     }
 
     /**
@@ -73,55 +86,55 @@ export class DiscordAuthService {
             recebido !== esperado
         ) {
             throw new AuthError(
-                'DISCORD_STATE_MISMATCH',
-                'Este regresso do Discord não corresponde a nenhum pedido feito aqui.',
+                'FEDERATED_STATE_MISMATCH',
+                `${this.fornecedor} devolveu um regresso que não corresponde a nenhum pedido feito aqui.`,
             );
         }
     }
 
     /**
-     * Troca o código pelo utilizador do Discord e resolve a conta.
+     * Troca o código pelo perfil do fornecedor e resolve a conta.
      */
-    async resolveAccount(code: string): Promise<DiscordLoginOutcome> {
-        const accessToken = await this.discordClient.exchangeCode(code);
-        const discord = await this.discordClient.fetchUser(accessToken);
+    async resolveAccount(code: string): Promise<FederatedLoginOutcome> {
+        const accessToken = await this.client.exchangeCode(code);
+        const perfil = await this.client.fetchUser(accessToken);
 
         const existente = await this.authRepository.findByProviderIdentity(
-            AuthProviderType.discord,
-            discord.id,
+            this.provider,
+            perfil.id,
         );
 
         if (existente) {
             return { userId: existente.user.id, criada: false };
         }
 
-        return this.ligarOuCriar(discord);
+        return this.ligarOuCriar(perfil);
     }
 
     private async ligarOuCriar(
-        discord: DiscordUser,
-    ): Promise<DiscordLoginOutcome> {
+        perfil: FederatedProfile,
+    ): Promise<FederatedLoginOutcome> {
         /**
          * Sem endereço confirmado não se cria conta nem se liga a
          * nenhuma. Criar sem email deixaria uma conta sem forma de
          * recuperação; ligar sem confirmação é o buraco descrito acima.
          */
-        if (discord.email === null || !discord.emailVerified) {
+        if (perfil.email === null || !perfil.emailVerified) {
             throw new AuthError(
-                'DISCORD_EMAIL_UNUSABLE',
-                'O Discord não deu um email confirmado, e sem isso não é possível entrar por aqui.',
+                'FEDERATED_EMAIL_UNUSABLE',
+                `${this.fornecedor} não deu um email confirmado, e sem isso não é possível entrar por aqui.`,
             );
         }
 
-        const email = normalizeEmail(discord.email);
+        const email = normalizeEmail(perfil.email);
 
         const daCasa = await this.authRepository.findByEmail(email);
 
         if (daCasa) {
             await this.authRepository.linkProvider({
                 userId: daCasa.id,
-                provider: AuthProviderType.discord,
-                providerUserId: discord.id,
+                provider: this.provider,
+                providerUserId: perfil.id,
                 providerEmail: email,
             });
 
@@ -132,10 +145,10 @@ export class DiscordAuthService {
 
         const utilizador = await this.authRepository.createFederatedUser({
             email,
-            username: await this.escolherUsername(discord.username),
+            username: await this.escolherUsername(perfil.username),
             defaultRoleId,
-            provider: AuthProviderType.discord,
-            providerUserId: discord.id,
+            provider: this.provider,
+            providerUserId: perfil.id,
             emailVerified: true,
         });
 
@@ -143,15 +156,16 @@ export class DiscordAuthService {
     }
 
     /**
-     * Um nome livre a partir do nome de Discord.
+     * Um nome livre a partir do nome que veio de fora.
      *
-     * O nosso é único e o do Discord não, por isso o primeiro que se
-     * tenta é o dele e os seguintes levam sufixo. O nome também tem de
-     * caber nas nossas regras — um nome de Discord pode ter caracteres
-     * que aqui não valem —, e por isso é limpo antes de ser tentado.
+     * O nosso é único e o de lá não, por isso o primeiro que se tenta é
+     * o de lá e os seguintes levam sufixo. O nome também tem de caber
+     * nas nossas regras — um nome de Discord ou de Google pode ter
+     * caracteres que aqui não valem —, e por isso é limpo antes de ser
+     * tentado.
      */
-    private async escolherUsername(doDiscord: string): Promise<string> {
-        const base = limparUsername(doDiscord);
+    private async escolherUsername(deFora: string): Promise<string> {
+        const base = limparUsername(deFora);
 
         for (let tentativa = 0; tentativa < TENTATIVAS_DE_NOME; tentativa += 1) {
             const candidato =
@@ -172,13 +186,13 @@ export class DiscordAuthService {
 }
 
 /**
- * Reduz um nome de Discord ao que as nossas regras aceitam.
+ * Reduz um nome vindo de fora ao que as nossas regras aceitam.
  *
  * Exportada para ser testada sozinha: é a parte com mais casos de
  * fronteira e a que menos precisa de base de dados.
  */
-export const limparUsername = (doDiscord: string): string => {
-    const limpo = doDiscord
+export const limparUsername = (deFora: string): string => {
+    const limpo = deFora
         .toLowerCase()
         .replaceAll(/[^a-z0-9_]/g, '')
         .slice(0, 20);

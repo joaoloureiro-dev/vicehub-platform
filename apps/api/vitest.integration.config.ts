@@ -34,14 +34,17 @@ export default defineConfig({
             AUTH_RECOVERY_RATE_LIMIT_MAX: '1000',
 
             /**
-             * Entrar com Discord precisa de estar configurado para as
-             * rotas existirem. As chamadas ao Discord são substituídas
-             * dentro do teste: o que se quer verificar é a decisão sobre
-             * a conta, e não a rede.
+             * Entrar por outro sítio precisa de estar configurado para a
+             * ida responder em vez de recusar. As chamadas ao Discord e
+             * à Google são substituídas dentro do teste: o que se quer
+             * verificar é a decisão sobre a conta, e não a rede.
              */
             DISCORD_CLIENT_ID: 'client-de-teste',
             DISCORD_CLIENT_SECRET: 'segredo-de-teste',
             DISCORD_REDIRECT_URI: 'http://localhost:3000/api/v1/auth/discord/callback',
+            GOOGLE_CLIENT_ID: 'client-de-teste',
+            GOOGLE_CLIENT_SECRET: 'segredo-de-teste',
+            GOOGLE_REDIRECT_URI: 'http://localhost:3000/api/v1/auth/google/callback',
         },
 
         include: ['tests/integration/**/*.test.ts'],

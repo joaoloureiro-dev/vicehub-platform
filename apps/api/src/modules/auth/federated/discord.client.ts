@@ -1,6 +1,12 @@
 import { discordConfig } from '../../../config/env.js';
 import { AuthError } from '../errors/auth.errors.js';
 
+import {
+    pedirAoFornecedor,
+    type FederatedClient,
+    type FederatedProfile,
+} from './federated.client.js';
+
 const AUTORIZACAO = 'https://discord.com/oauth2/authorize';
 const TOKEN = 'https://discord.com/api/oauth2/token';
 const EU = 'https://discord.com/api/users/@me';
@@ -16,29 +22,9 @@ const EU = 'https://discord.com/api/users/@me';
 const ESCOPOS = 'identify email';
 
 /**
- * Quanto tempo se espera pelo Discord antes de desistir.
- *
- * Sem limite, um Discord lento prendia um pedido nosso até o browser
- * desistir, e quem entrasse não ficava a saber porquê.
- */
-const ESPERA_MS = 10_000;
-
-export interface DiscordUser {
-    id: string;
-    username: string;
-    email: string | null;
-    /** Se o Discord confirmou o endereço. É disto que depende ligar contas. */
-    emailVerified: boolean;
-}
-
-/**
  * Fala com o Discord.
- *
- * Separado do serviço para que a decisão — quem entra, quem se liga a
- * que conta — seja testável sem rede, e para que o que aqui se faz seja
- * apenas HTTP.
  */
-export class DiscordClient {
+export class DiscordClient implements FederatedClient {
     /**
      * O endereço para onde se manda quem carrega em "entrar com Discord".
      */
@@ -72,7 +58,7 @@ export class DiscordClient {
     async exchangeCode(code: string): Promise<string> {
         const config = this.requireConfig();
 
-        const resposta = await this.pedir(TOKEN, {
+        const resposta = await pedirAoFornecedor('o Discord', TOKEN, {
             method: 'POST',
             headers: { 'content-type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
@@ -86,7 +72,7 @@ export class DiscordClient {
 
         if (!resposta.ok) {
             throw new AuthError(
-                'DISCORD_EXCHANGE_FAILED',
+                'FEDERATED_EXCHANGE_FAILED',
                 'O Discord recusou o código de autorização.',
             );
         }
@@ -95,7 +81,7 @@ export class DiscordClient {
 
         if (typeof corpo.access_token !== 'string') {
             throw new AuthError(
-                'DISCORD_EXCHANGE_FAILED',
+                'FEDERATED_EXCHANGE_FAILED',
                 'O Discord respondeu sem token de acesso.',
             );
         }
@@ -106,14 +92,14 @@ export class DiscordClient {
     /**
      * Quem é o dono deste token.
      */
-    async fetchUser(accessToken: string): Promise<DiscordUser> {
-        const resposta = await this.pedir(EU, {
+    async fetchUser(accessToken: string): Promise<FederatedProfile> {
+        const resposta = await pedirAoFornecedor('o Discord', EU, {
             headers: { authorization: `Bearer ${accessToken}` },
         });
 
         if (!resposta.ok) {
             throw new AuthError(
-                'DISCORD_EXCHANGE_FAILED',
+                'FEDERATED_EXCHANGE_FAILED',
                 'O Discord recusou dizer quem é o dono do token.',
             );
         }
@@ -127,7 +113,7 @@ export class DiscordClient {
 
         if (typeof corpo.id !== 'string' || typeof corpo.username !== 'string') {
             throw new AuthError(
-                'DISCORD_EXCHANGE_FAILED',
+                'FEDERATED_EXCHANGE_FAILED',
                 'O Discord respondeu sem identificar o utilizador.',
             );
         }
@@ -144,24 +130,10 @@ export class DiscordClient {
         };
     }
 
-    private async pedir(url: string, init: RequestInit): Promise<Response> {
-        try {
-            return await fetch(url, {
-                ...init,
-                signal: AbortSignal.timeout(ESPERA_MS),
-            });
-        } catch {
-            throw new AuthError(
-                'DISCORD_UNAVAILABLE',
-                'Não foi possível falar com o Discord.',
-            );
-        }
-    }
-
     private requireConfig() {
         if (discordConfig === null) {
             throw new AuthError(
-                'DISCORD_NOT_CONFIGURED',
+                'FEDERATED_NOT_CONFIGURED',
                 'Entrar com Discord não está configurado nesta instalação.',
             );
         }
