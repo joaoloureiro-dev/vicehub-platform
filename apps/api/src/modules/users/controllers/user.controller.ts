@@ -67,6 +67,36 @@ export class UserController {
     }
 
     /**
+     * GET /users/me/export
+     *
+     * Tudo o que a plataforma tem sobre a própria conta, num JSON.
+     *
+     * Vai com `Content-Disposition: attachment` para o browser o
+     * guardar em vez de o desenhar no ecrã: são dezenas de kilobytes de
+     * JSON, e ninguém os lê num separador. O nome do ficheiro leva a
+     * data, porque a segunda exportação não deve escrever por cima da
+     * primeira na pasta dos Downloads.
+     */
+    async exportOwnAccount(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const exportacao = await this.userService.exportOwnAccount(user.id);
+
+        const dia = exportacao.exportedAt.slice(0, 10);
+
+        reply
+            .header(
+                'content-disposition',
+                `attachment; filename="vicehub-${exportacao.account.username}-${dia}.json"`,
+            )
+            .type('application/json')
+            .send(exportacao);
+    }
+
+    /**
      * GET /users/me
      */
     async getOwnProfile(
