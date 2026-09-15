@@ -10,6 +10,7 @@ import {
 
 import { useAuth } from './auth/auth.context.js';
 import { logout } from './auth/auth.api.js';
+import { useAsync } from './lib/use-async.js';
 import { useT } from './i18n/i18n.js';
 import { LanguagePicker } from './i18n/language-picker.js';
 import { LoginPage } from './auth/pages/login.page.js';
@@ -28,6 +29,7 @@ import { EventPage } from './events/pages/event.page.js';
 import { EventsPage } from './events/pages/events.page.js';
 import { LandingPage } from './pages/landing.page.js';
 import { Navegacao } from './components/navegacao.js';
+import { getPending } from './pages/pending.api.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
@@ -74,10 +76,41 @@ const DESTINOS = [
     { to: '/eu', chave: 'perfil' },
 ] as const;
 
+/**
+ * O número que aparece ao lado de "as minhas".
+ *
+ * Existe para que não seja preciso abrir a página para saber que há
+ * qualquer coisa à espera. Só aparece quando há: um zero permanente ao
+ * lado de um item de menu deixa de se ler ao fim de dois dias.
+ */
+const Pendencia = ({ quantos }: { quantos: number }) => {
+    const t = useT();
+
+    return quantos === 0 ? null : (
+        <span className="pendencia" title={t.pendentes.porResponder(quantos)}>
+            {quantos}
+        </span>
+    );
+};
+
 const Shell = () => {
     const t = useT();
     const { user } = useAuth();
     const { pathname } = useLocation();
+
+    /**
+     * Pedido uma vez por carregamento da aplicação, e não a cada
+     * navegação: o Shell não se volta a montar ao mudar de rota.
+     *
+     * Sem sessão não há nada a contar, e pedi-lo dava 401 a quem só
+     * está a ver o diretório de crews.
+     */
+    const pendente = useAsync(
+        () => (user ? getPending() : Promise.resolve(null)),
+        [user?.id],
+    );
+
+    const porResponder = pendente.data?.total ?? 0;
 
     return (
         <div className="shell">
@@ -99,6 +132,9 @@ const Shell = () => {
                                 {DESTINOS.map((destino) => (
                                     <NavLink key={destino.to} to={destino.to} end>
                                         {t.nav[destino.chave]}
+                                        {destino.chave === 'asMinhas' ? (
+                                            <Pendencia quantos={porResponder} />
+                                        ) : null}
                                     </NavLink>
                                 ))}
                             </span>
@@ -139,6 +175,9 @@ const Shell = () => {
                     {DESTINOS.map((destino) => (
                         <NavLink key={destino.to} to={destino.to} end>
                             {t.nav[destino.chave]}
+                            {destino.chave === 'asMinhas' ? (
+                                <Pendencia quantos={porResponder} />
+                            ) : null}
                         </NavLink>
                     ))}
                 </nav>

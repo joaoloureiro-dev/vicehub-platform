@@ -8,6 +8,7 @@ import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { personalAppearance } from '../../../shared/appearance.js';
 import type { ConquistaVisivel } from '../../../shared/list-achievements.js';
 import type { AccountExport } from '../../../shared/account-export.js';
+import type { PendingForUser } from '../../../shared/pending-for-user.js';
 import { UserError } from '../errors/user.errors.js';
 import type { UserRepository } from '../repositories/user.repository.js';
 import type { PasswordService } from '../../auth/services/password.service.js';
@@ -259,6 +260,17 @@ export class UserService {
      * coisa que deve ser fácil. O que a protege é a sessão e o limite
      * de pedidos da rota.
      */
+    /**
+     * O que está à espera de mim.
+     *
+     * Não exige confirmação nem permissão nenhuma à entrada: o que sai
+     * daqui já está filtrado pelo que **esta** pessoa pode fazer, e o
+     * titular vem da sessão.
+     */
+    async pendingForMe(userId: string): Promise<PendingForUser> {
+        return this.userRepository.pendingFor(userId);
+    }
+
     async exportOwnAccount(userId: string): Promise<AccountExport> {
         const exportacao = await this.userRepository.exportAccount(userId);
 

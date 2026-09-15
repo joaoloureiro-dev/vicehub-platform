@@ -5,6 +5,7 @@ import { Alert } from '../auth/components/alert.js';
 import { listMyMemberships } from '../crews/crew.api.js';
 import { listMyServerMemberships } from '../servers/server.api.js';
 import { Feed } from './feed.js';
+import { Pendentes } from './pendentes.js';
 import { useIdioma, useT } from '../i18n/i18n.js';
 
 /**
@@ -67,9 +68,17 @@ export const MyCommunitiesPage = () => {
             </div>
 
             {/*
-              O que aconteceu vem primeiro: é a pergunta com que se
+              O que precisa de mim vem antes do que aconteceu, e é a
+              única ordem defensável: uma é trabalho à espera de alguém,
+              a outra é notícia. Quando não há nada pendente esta secção
+              não aparece de todo, e a página fica como estava.
+            */}
+            <Pendentes />
+
+            {/*
+              O que aconteceu vem a seguir: é a pergunta com que se
               chega a esta página depois de uns dias fora, e as listas
-              de crews e servidores continuam logo a seguir.
+              de crews e servidores continuam logo abaixo.
             */}
             <Feed />
 

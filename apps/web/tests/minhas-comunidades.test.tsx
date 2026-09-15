@@ -35,6 +35,9 @@ const adesaoServidor = (extra: Record<string, unknown> = {}) => ({
     ...extra,
 });
 
+/** Nada à espera: estes casos são sobre as listas, não sobre pendências. */
+const SEM_PENDENTES = { items: [], friendRequests: 0, total: 0 };
+
 /**
  * Responde a cada diretório com o que o caso quiser.
  *
@@ -46,6 +49,16 @@ const adesaoServidor = (extra: Record<string, unknown> = {}) => ({
 const servirAmbos = (crews: unknown[], servidores: unknown[]) =>
     vi.fn((url: string) => {
         const endereco = String(url);
+
+        /**
+         * O que está à espera vem antes das crews: a rota é
+         * `/users/me/pending` e não passa por `/crews`, mas nomeá-la
+         * primeiro deixa claro que tem resposta própria em vez de cair
+         * no ramo de baixo.
+         */
+        if (endereco.includes('/users/me/pending')) {
+            return Promise.resolve(json(200, SEM_PENDENTES));
+        }
 
         if (endereco.includes('/crews')) {
             return Promise.resolve(json(200, crews));
@@ -60,11 +73,17 @@ const servirAmbos = (crews: unknown[], servidores: unknown[]) =>
 
 /** As crews vêm da rota de crews; tudo o resto responde vazio. */
 const servir = (crews: unknown[]) =>
-    vi.fn((url: string) =>
-        Promise.resolve(
-            json(200, String(url).includes('/crews') ? crews : []),
-        ),
-    );
+    vi.fn((url: string) => {
+        const endereco = String(url);
+
+        if (endereco.includes('/users/me/pending')) {
+            return Promise.resolve(json(200, SEM_PENDENTES));
+        }
+
+        return Promise.resolve(
+            json(200, endereco.includes('/crews') ? crews : []),
+        );
+    });
 
 afterEach(() => {
     vi.unstubAllGlobals();

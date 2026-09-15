@@ -63,6 +63,7 @@ describe('ligação das rotas de utilizador', () => {
             updateOwnAppearance: vi.fn(),
             deleteOwnAccount: vi.fn(),
             exportOwnAccount: vi.fn(),
+            pendingForMe: vi.fn(),
         } as unknown as UserController;
 
         await app.register(userRoutes, { controller });
@@ -136,6 +137,18 @@ describe('ligação das rotas de utilizador', () => {
             expect(config?.rateLimit?.max).toBeLessThan(100);
             expect(config?.rateLimit?.timeWindow).toBeTruthy();
         });
+    });
+
+    /**
+     * O que está à espera de mim exige sessão e mais nada.
+     *
+     * Nenhuma permissão à entrada, de propósito: o que sai já vem
+     * filtrado pelo que **esta** pessoa pode fazer em cada comunidade,
+     * e uma permissão aqui não teria âmbito nenhum a que se aplicar.
+     */
+    it('o que está à espera de mim exige sessão', () => {
+        expect(preHandlersOf('GET /me/pending')).toHaveLength(1);
+        expect(planoPorRota.get('GET /me/pending')).toEqual([]);
     });
 
     it('o perfil público não exige autenticação', () => {

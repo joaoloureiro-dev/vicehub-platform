@@ -300,6 +300,33 @@ export const fr = (p: Tools): Messages => ({
         },
     },
 
+    pendentes: {
+        titulo: 'Ce qui t\u2019attend',
+        pedidosDeEntrada: (n: number) =>
+            p.plural(n, {
+                one: '1 demande d\u2019adhésion',
+                other: `${n} demandes d\u2019adhésion`,
+            }),
+        pedidosDeFiliacao: (n: number) =>
+            p.plural(n, {
+                one: '1 crew qui demande à jouer là',
+                other: `${n} crews qui demandent à jouer là`,
+            }),
+        decisoesDeDinheiro: (n: number) =>
+            p.plural(n, {
+                one: '1 décision en attente dans la trésorerie',
+                other: `${n} décisions en attente dans la trésorerie`,
+            }),
+        amizades: 'Amitiés',
+        pedidosDeAmizade: (n: number) =>
+            p.plural(n, {
+                one: '1 demande d\u2019ami',
+                other: `${n} demandes d\u2019ami`,
+            }),
+        porResponder: (n: number) =>
+            p.plural(n, { one: '1 en attente', other: `${n} en attente` }),
+    },
+
     perfil: {
         apagarConta: 'Supprimer mon compte',
         apagarContaExplicacao:

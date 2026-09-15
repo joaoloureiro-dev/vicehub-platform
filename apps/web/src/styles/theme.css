@@ -1862,6 +1862,94 @@ button.link:hover {
     color: var(--muted);
 }
 
+/* ---------- o que precisa de mim ---------- */
+
+/*
+ * A moldura leva a cor da marca e não a do perigo: isto não é um aviso
+ * de que algo correu mal, é trabalho à espera de alguém. Vermelho aqui
+ * fazia uma caixa de entrada normal parecer uma avaria.
+ */
+.grupo.pendentes {
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid rgba(233, 60, 239, 0.35);
+    border-radius: var(--radius);
+}
+
+.grupo.pendentes h2 {
+    color: var(--magenta);
+}
+
+.lista-pendentes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/*
+ * A linha inteira é o alvo, e não só o nome: no telemóvel é a
+ * diferença entre acertar à primeira e acertar à terceira.
+ */
+.lista-pendentes a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: var(--tap);
+    padding: 12px 14px;
+    background: var(--ground);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: border-color 0.15s ease;
+}
+
+.lista-pendentes a:hover {
+    border-color: var(--magenta);
+    text-decoration: none;
+}
+
+.pendente-onde {
+    font-weight: 650;
+    color: var(--ink);
+}
+
+/*
+ * O que falta fazer não quebra de linha a meio de um número: "3
+ * pedidos" partido em duas linhas lê-se como duas coisas.
+ */
+.pendente-o-que {
+    font-size: 14px;
+    color: var(--muted);
+    text-align: right;
+    text-wrap: balance;
+}
+
+/*
+ * O número ao lado do item de menu. Pequeno, redondo e com a cor da
+ * marca: é para ser visto de passagem, não para competir com o nome do
+ * destino.
+ */
+.pendencia {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    padding: 0 5px;
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: #FFFFFF;
+    background: var(--magenta);
+    border-radius: 9px;
+}
+
 /* ---------- a lista de preços pública ---------- */
 
 /*
