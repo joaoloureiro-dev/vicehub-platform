@@ -67,6 +67,23 @@ export class UserController {
     }
 
     /**
+     * GET /users/me/pending
+     *
+     * O que está à espera de mim, em toda a plataforma.
+     *
+     * Um número e uma lista curta: é lido ao desenhar a navegação, e
+     * uma resposta pesada aqui pesava em todos os ecrãs.
+     */
+    async pendingForMe(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        reply.send(await this.userService.pendingForMe(user.id));
+    }
+
+    /**
      * GET /users/me/export
      *
      * Tudo o que a plataforma tem sobre a própria conta, num JSON.

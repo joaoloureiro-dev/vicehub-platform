@@ -66,6 +66,19 @@ const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
     );
 
     /**
+     * O que está à espera de mim.
+     *
+     * Sem limite próprio, ao contrário da exportação: são contagens
+     * agrupadas, é lida ao desenhar a navegação, e pô-la debaixo de um
+     * limite apertado dava um erro a quem apenas navegasse depressa.
+     */
+    fastify.get(
+        '/me/pending',
+        { preHandler: [fastify.authenticate] },
+        controller.pendingForMe.bind(controller),
+    );
+
+    /**
      * Levar os dados consigo.
      *
      * Leva um limite próprio, muito mais apertado do que o global: é a

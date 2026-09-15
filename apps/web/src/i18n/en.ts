@@ -298,6 +298,33 @@ export const en = (p: Tools) => ({
         },
     },
 
+    pendentes: {
+        titulo: 'What needs you',
+        pedidosDeEntrada: (n: number) =>
+            p.plural(n, {
+                one: '1 request to join',
+                other: `${n} requests to join`,
+            }),
+        pedidosDeFiliacao: (n: number) =>
+            p.plural(n, {
+                one: '1 crew asking to play there',
+                other: `${n} crews asking to play there`,
+            }),
+        decisoesDeDinheiro: (n: number) =>
+            p.plural(n, {
+                one: '1 decision waiting in the treasury',
+                other: `${n} decisions waiting in the treasury`,
+            }),
+        amizades: 'Friends',
+        pedidosDeAmizade: (n: number) =>
+            p.plural(n, {
+                one: '1 friend request',
+                other: `${n} friend requests`,
+            }),
+        porResponder: (n: number) =>
+            p.plural(n, { one: '1 waiting', other: `${n} waiting` }),
+    },
+
     perfil: {
         apagarConta: 'Delete my account',
         apagarContaExplicacao:

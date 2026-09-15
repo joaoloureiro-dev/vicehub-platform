@@ -5,6 +5,7 @@ import {
     findAccountDeletionBlockers,
 } from '../../../shared/account-erasure.js';
 import { buildAccountExport } from '../../../shared/account-export.js';
+import { buildPendingForUser } from '../../../shared/pending-for-user.js';
 import { listAchievements } from '../../../shared/list-achievements.js';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
@@ -63,6 +64,13 @@ export class UserRepository {
      */
     exportAccount(userId: string) {
         return buildAccountExport(this.database, userId);
+    }
+
+    /**
+     * O que está à espera desta pessoa, em toda a plataforma.
+     */
+    pendingFor(userId: string) {
+        return buildPendingForUser(this.database, userId);
     }
 
     /**

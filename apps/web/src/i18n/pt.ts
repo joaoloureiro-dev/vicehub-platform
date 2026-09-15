@@ -299,6 +299,33 @@ export const pt = (p: Tools): Messages => ({
         },
     },
 
+    pendentes: {
+        titulo: 'O que precisa de ti',
+        pedidosDeEntrada: (n: number) =>
+            p.plural(n, {
+                one: '1 pedido de entrada',
+                other: `${n} pedidos de entrada`,
+            }),
+        pedidosDeFiliacao: (n: number) =>
+            p.plural(n, {
+                one: '1 crew a pedir para jogar lá',
+                other: `${n} crews a pedir para jogar lá`,
+            }),
+        decisoesDeDinheiro: (n: number) =>
+            p.plural(n, {
+                one: '1 decisão à espera na tesouraria',
+                other: `${n} decisões à espera na tesouraria`,
+            }),
+        amizades: 'Amizades',
+        pedidosDeAmizade: (n: number) =>
+            p.plural(n, {
+                one: '1 pedido de amizade',
+                other: `${n} pedidos de amizade`,
+            }),
+        porResponder: (n: number) =>
+            p.plural(n, { one: '1 à espera', other: `${n} à espera` }),
+    },
+
     perfil: {
         apagarConta: 'Apagar a minha conta',
         apagarContaExplicacao:
