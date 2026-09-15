@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 
+import { env } from '../../config/env.js';
 import type { UserController } from './controllers/user.controller.js';
 import type { UpdateAppearanceDto } from '../../shared/appearance.js';
 import { updateAppearanceSchema } from '../../shared/appearance.js';
@@ -62,6 +63,33 @@ const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
             schema: { body: deleteAccountSchema },
         },
         controller.deleteOwnAccount.bind(controller),
+    );
+
+    /**
+     * Levar os dados consigo.
+     *
+     * Leva um limite próprio, muito mais apertado do que o global: é a
+     * leitura mais pesada que uma conta pode pedir — dez consultas, e
+     * uma delas percorre a tesouraria inteira — e chamá-la em ciclo
+     * seria a forma mais barata de pôr a base de dados de joelhos com
+     * uma conta só.
+     *
+     * O mesmo limite das rotas de recuperação, e pela mesma espécie de
+     * razão: são as duas rotas em que um pedido custa muito mais do que
+     * aparenta.
+     */
+    fastify.get(
+        '/me/export',
+        {
+            preHandler: [fastify.authenticate],
+            config: {
+                rateLimit: {
+                    max: env.AUTH_RECOVERY_RATE_LIMIT_MAX,
+                    timeWindow: env.AUTH_RECOVERY_RATE_LIMIT_WINDOW,
+                },
+            },
+        },
+        controller.exportOwnAccount.bind(controller),
     );
 
     /**

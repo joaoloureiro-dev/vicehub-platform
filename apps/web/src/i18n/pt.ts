@@ -307,6 +307,12 @@ export const pt = (p: Tools): Messages => ({
             'O email, o nome, a imagem e o texto são apagados, e a password e as entradas por Discord ou Google também. O que fica: os movimentos que propuseste ou aprovaste, e os eventos em que estiveste — isso é das tuas crews e não teu, e retirá-lo deixava as contas delas a não somar.',
         apagarContaPassword: 'A tua password, se a conta tiver uma',
         apagarContaConfirmar: 'Apagar a conta de vez',
+        levarDados: 'Levar os teus dados',
+        levarDadosExplicacao:
+            'Um ficheiro com tudo o que o ViceHub tem sobre ti: a conta, as comunidades onde estás, os eventos em que estiveste, o que propuseste e decidiste numa tesouraria, e o que a plataforma te deu. A password e as tuas entradas não vão lá — isso são chaves da conta, e não factos sobre ti.',
+        levarDadosBotao: 'Descarregar os meus dados',
+        levarDadosAPreparar: 'A preparar…',
+        levarDadosFalhou: 'Não foi possível preparar o ficheiro. Tenta daqui a pouco.',
         titulo: 'O meu perfil',
         verPublico: 'Ver como público',
         naoCarregou: 'Não foi possível carregar o teu perfil.',
