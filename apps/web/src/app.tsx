@@ -31,6 +31,7 @@ import { Navegacao } from './components/navegacao.js';
 import { PrivacyPage, TermsPage } from './legal/pages/legal.page.js';
 import { Rodape } from './components/rodape.js';
 import { usePendente } from './pages/pending.context.js';
+import { MyWalletPage } from './treasury/pages/my-wallet.page.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
@@ -282,6 +283,12 @@ export const App = () => (
 
             <Route element={<RequireAuth />}>
                 <Route path="/eu" element={<MyProfilePage />} />
+                {/*
+                  A carteira de quem está a ver, e por isso debaixo de
+                  /eu: não leva identificador nenhum no caminho porque
+                  não há carteira de outra pessoa para ver.
+                */}
+                <Route path="/eu/carteira" element={<MyWalletPage />} />
                 <Route path="/crews/nova" element={<CreateCrewPage />} />
                 <Route path="/servidores/novo" element={<CreateServerPage />} />
                 <Route path="/eu/comunidades" element={<MyCommunitiesPage />} />

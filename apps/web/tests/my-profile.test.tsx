@@ -204,6 +204,22 @@ describe('o meu perfil', () => {
      * Um plano sem data de fim é vitalício — é a ausência da data que os
      * distingue, e não uma data no ano 9999.
      */
+    /**
+     * Apagar a conta é recusado enquanto a carteira tiver saldo, e a
+     * mensagem manda transferi-lo ou gastá-lo. Sem uma entrada para a
+     * carteira, isso era mandar procurar às escuras uma coisa que não
+     * se via em lado nenhum.
+     */
+    it('leva à carteira de quem está a ver', async () => {
+        servir(perfil());
+
+        montar();
+
+        const link = await screen.findByText(t.carteira.verCarteira);
+
+        expect(link.closest('a')?.getAttribute('href')).toBe('/eu/carteira');
+    });
+
     describe('como o plano é descrito', () => {
         it('sem data de fim, é vitalício', async () => {
             servir(perfil({ isPremium: true, premiumUntil: null }));

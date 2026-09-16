@@ -477,6 +477,14 @@ export const en = (p: Tools) => ({
             'Lifetime premium is not for sale. It is given by hand, one at a time, to people who backed ViceHub early.',
     },
 
+    carteira: {
+        titulo: 'My wallet',
+        dondeVem:
+            'What a crew paid you lands here. It is yours to see, not to move: there is no way to send it anywhere, so nothing here pretends otherwise.',
+        aindaSemNada: 'Nothing has reached your wallet yet.',
+        verCarteira: 'My wallet',
+    },
+
     tesouraria: {
         montanteAEnviar: 'Amount to send',
         transferirTitulo: 'Send money to a crew',
@@ -542,6 +550,8 @@ export const en = (p: Tools) => ({
         aprovado: 'Movement approved.',
         recusado: 'Movement declined.',
         cancelado: 'Proposal cancelled.',
+        pagar: 'Pay it out',
+        divisaoPaga: 'Split paid. Each share is now in its own wallet.',
         naoFoiPossivel: 'The operation could not be completed.',
         divisoes: 'Earnings splits',
         pessoas: (n: number) =>
