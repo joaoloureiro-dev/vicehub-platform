@@ -468,6 +468,11 @@ export const en = (p: Tools) => ({
         aindaNaoAbriu:
             'Buying is not open yet — it opens shortly. Everything else on ViceHub works as normal in the meantime.',
         naoFoiPossivelComprar: 'Checkout could not be opened. Try again shortly.',
+        gerirPlano: 'Manage plan',
+        gerirOndeSeCancela:
+            'Cancel, change the card, or download invoices. Cancelling stops the next renewal — the period you already paid for runs to the end.',
+        naoFoiPossivelGerir:
+            'The billing page could not be opened. Try again shortly.',
         notaVitalicio:
             'Lifetime premium is not for sale. It is given by hand, one at a time, to people who backed ViceHub early.',
     },

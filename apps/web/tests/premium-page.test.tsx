@@ -59,7 +59,23 @@ const CATALOGO = {
     plans: [PLANO_CREW, ...ESCALOES],
 };
 
-const SEM_PLANO = { isPremium: false, isLifetime: false, activeUntil: null };
+const SEM_PLANO = {
+    isPremium: false,
+    isLifetime: false,
+    activeUntil: null,
+    managedByStripe: false,
+};
+
+/** O plano de uma comunidade, visto por quem o gere. */
+const PLANO_DO_STRIPE = {
+    isPremium: true,
+    isLifetime: false,
+    isTrial: false,
+    activeUntil: '2026-10-16T00:00:00.000Z',
+    managedByStripe: true,
+    via: null,
+    history: [],
+};
 
 const SERVIDOR = {
     id: 'server-1',
@@ -100,6 +116,15 @@ interface Cenario {
     checkout?: Response;
     crew?: unknown;
     servidor?: unknown;
+    /**
+     * O plano da comunidade tal como responde a rota que exige geri-la.
+     *
+     * Por omissão 403, que é o caso normal: quem passa pela página de
+     * uma crew não decide sobre o plano dela. A rota diz isso com 403, e
+     * o ecrã trata-o como resposta e não como avaria.
+     */
+    gestao?: Response;
+    portal?: Response;
 }
 
 const servidor = (cenario: Cenario) =>
@@ -134,6 +159,25 @@ const servidor = (cenario: Cenario) =>
             return Promise.resolve(json(200, cenario.plano ?? SEM_PLANO));
         }
 
+        /**
+         * Antes do perfil público, e de propósito: os dois endereços
+         * têm `/crews/` no meio, e a ordem é o que os separa. Com a
+         * ordem trocada, o ecrã recebia um perfil de crew onde esperava
+         * um plano — e o botão de gerir desaparecia sem ninguém notar,
+         * porque o campo que o decide vinha `undefined`.
+         */
+        if (endereco.includes('/subscriptions/crews/')) {
+            return Promise.resolve(
+                cenario.gestao ?? json(403, { code: 'INSUFFICIENT_PERMISSIONS' }),
+            );
+        }
+
+        if (endereco.includes('/subscriptions/servers/')) {
+            return Promise.resolve(
+                cenario.gestao ?? json(403, { code: 'INSUFFICIENT_PERMISSIONS' }),
+            );
+        }
+
         if (endereco.includes('/crews/')) {
             return Promise.resolve(json(200, cenario.crew ?? CREW));
         }
@@ -149,7 +193,19 @@ const servidor = (cenario: Cenario) =>
             );
         }
 
-        return Promise.resolve(json(404, {}));
+        if (endereco.endsWith('/billing/portal')) {
+            return Promise.resolve(
+                cenario.portal ??
+                    json(200, { url: 'https://billing.stripe.com/p/session/x' }),
+            );
+        }
+
+        /**
+         * Um endereço que este duplo não conhece é um engano de quem
+         * escreve o teste, e tem de se ver. Devolver 404 em silêncio
+         * deixava passar um ecrã a pedir uma coisa que ninguém serve.
+         */
+        throw new Error(`Endereço sem resposta no duplo: ${endereco}`);
     });
 
 const montar = (endereco = '/premium') =>
@@ -790,5 +846,112 @@ describe('comprar para um servidor', () => {
         montar('/premium?crew=crew-1');
 
         expect(await screen.findByText(t.premium.crewTemPlano)).toBeTruthy();
+    });
+});
+
+/**
+ * A promessa que estava por cumprir.
+ *
+ * A página diz, debaixo do botão de comprar, "cancelas quando
+ * quiseres". Até aqui não havia por onde: a única rota de
+ * cancelamento exigia administração da plataforma, ou seja, um
+ * pedido a alguém.
+ */
+describe('gerir o plano que já se comprou', () => {
+    const CREW_COM_PLANO = { ...CREW, isPremium: true };
+
+    it('oferece gerir a quem tem plano do Stripe', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                crew: CREW_COM_PLANO,
+                gestao: json(200, PLANO_DO_STRIPE),
+            }),
+        );
+
+        montar('/premium?crew=crew-1');
+
+        expect(await screen.findByText(t.premium.gerirPlano)).toBeTruthy();
+    });
+
+    it('leva quem clica para o painel de faturação', async () => {
+        const fetchMock = servidor({
+            crew: CREW_COM_PLANO,
+            gestao: json(200, PLANO_DO_STRIPE),
+        });
+
+        vi.stubGlobal('fetch', fetchMock);
+        montar('/premium?crew=crew-1');
+
+        await userEvent.click(await screen.findByText(t.premium.gerirPlano));
+
+        await waitFor(() => {
+            expect(irPara).toHaveBeenCalledWith(
+                'https://billing.stripe.com/p/session/x',
+            );
+        });
+
+        /**
+         * E abre o painel **desta** crew. Sem esta verificação, o
+         * ecrã podia mandar o titular errado e o teste continuava
+         * verde — o endereço que volta é o mesmo.
+         */
+        const chamada = fetchMock.mock.calls.find((argumentos) =>
+            String(argumentos[0]).endsWith('/billing/portal'),
+        );
+
+        expect(
+            JSON.parse(
+                String(
+                    (chamada?.[1] as { body?: string } | undefined)?.body ??
+                        '{}',
+                ),
+            ),
+        ).toEqual({ ownerKind: 'crew', ownerId: 'crew-1' });
+    });
+
+    /**
+     * Um vitalício, um plano dado à mão e uma crew coberta pelo
+     * servidor onde joga têm todos plano ativo e nenhum tem painel.
+     * O botão só podia falhar — e falhava a quem veio aqui
+     * precisamente para cancelar.
+     */
+    it('não o oferece quando o plano não veio do Stripe', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                crew: CREW_COM_PLANO,
+                gestao: json(200, {
+                    ...PLANO_DO_STRIPE,
+                    managedByStripe: false,
+                }),
+            }),
+        );
+
+        montar('/premium?crew=crew-1');
+
+        /**
+         * Esperar por uma coisa que aparece, antes de exigir a
+         * ausência da outra: sem isso, o teste passava só por ter
+         * corrido antes de a página acabar de carregar.
+         */
+        expect(await screen.findByText(t.premium.irParaCrew)).toBeTruthy();
+
+        expect(screen.queryByText(t.premium.gerirPlano)).toBeNull();
+    });
+
+    /**
+     * Quem passa pela página de uma crew que não gere recebe 403 na
+     * rota do plano. É resposta, não avaria: a página continua a
+     * mostrar-se, sem o botão.
+     */
+    it('não o oferece a quem não gere a comunidade', async () => {
+        vi.stubGlobal('fetch', servidor({ crew: CREW_COM_PLANO }));
+
+        montar('/premium?crew=crew-1');
+
+        expect(await screen.findByText(t.premium.irParaCrew)).toBeTruthy();
+
+        expect(screen.queryByText(t.premium.gerirPlano)).toBeNull();
     });
 });

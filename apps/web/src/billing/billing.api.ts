@@ -57,6 +57,16 @@ export interface SubscriptionSummary {
      */
     isTrial: boolean;
     activeUntil: string | null;
+    /**
+     * Se há um plano do Stripe que se possa gerir aqui.
+     *
+     * Existe para o ecrã não oferecer "gerir o plano" a quem não tem
+     * nada que gerir: um vitalício, um plano concedido à mão, ou uma
+     * crew coberta pelo servidor onde joga têm todos plano ativo e
+     * nenhum tem painel — o botão só podia falhar, e falhava a quem
+     * veio ali para cancelar.
+     */
+    managedByStripe: boolean;
 }
 
 /**
@@ -99,3 +109,17 @@ export const startCheckout = (input: {
     plan: string;
 }): Promise<{ url: string }> =>
     api<{ url: string }>('/billing/checkout', { method: 'POST', body: input });
+
+/**
+ * Abre o painel do Stripe onde se cancela, se troca o cartão e se
+ * tiram as faturas.
+ *
+ * Devolve um endereço de uso único e de validade curta, para onde o
+ * ecrã encaminha. O cancelamento acontece lá e volta por webhook: nada
+ * do que este pedido devolve diz que já está cancelado.
+ */
+export const openBillingPortal = (input: {
+    ownerKind: 'user' | 'crew' | 'server';
+    ownerId: string;
+}): Promise<{ url: string }> =>
+    api<{ url: string }>('/billing/portal', { method: 'POST', body: input });

@@ -456,6 +456,11 @@ export const fr = (p: Tools): Messages => ({
         aindaNaoAbriu:
             "L'achat n'est pas encore ouvert — il ouvre bientôt. En attendant, tout le reste de ViceHub fonctionne normalement.",
         naoFoiPossivelComprar: 'Le paiement n’a pas pu s’ouvrir. Réessaie dans un moment.',
+        gerirPlano: 'Gérer l’abonnement',
+        gerirOndeSeCancela:
+            'Résilier, changer de carte ou télécharger les factures. Résilier arrête le renouvellement suivant — la période déjà payée va jusqu’à son terme.',
+        naoFoiPossivelGerir:
+            'La page de facturation n’a pas pu s’ouvrir. Réessaie dans un moment.',
         notaVitalicio:
             'Le premium à vie n’est pas en vente. Il est donné à la main, un par un, à celles et ceux qui ont soutenu ViceHub au début.',
     },

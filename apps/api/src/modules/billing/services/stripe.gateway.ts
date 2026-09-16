@@ -24,6 +24,21 @@ export interface CheckoutRequest {
 }
 
 /**
+ * Abertura do painel de faturação do Stripe.
+ *
+ * O endereço de regresso não vem do cliente: um endereço enviado no
+ * pedido seria um redirecionamento aberto com o nome do Stripe em cima,
+ * e um sítio que imita o nosso é o pior lado para onde mandar quem
+ * acabou de gerir um cartão. Sai de `APP_PUBLIC_URL`, que é o único
+ * sítio onde esta instalação está.
+ */
+export interface PortalRequest {
+    /** O cliente do Stripe deste titular, de uma compra anterior. */
+    customerId: string;
+    returnUrl: string;
+}
+
+/**
  * Um período de plano tal como o Stripe o descreve.
  *
  * As datas vêm do Stripe e não são calculadas por nós. Quando é ele que
@@ -61,6 +76,17 @@ export interface StripePeriod {
  */
 export interface StripeGateway {
     createCheckoutSession(request: CheckoutRequest): Promise<{ url: string }>;
+    /**
+     * Abre o painel onde quem paga cancela, troca de cartão e tira as
+     * faturas.
+     *
+     * É do Stripe e não nosso de propósito. Cancelar bem quer dizer
+     * parar a renovação sem apagar o período já pago, trocar um cartão
+     * quer dizer receber dados de cartão, e as faturas têm regras
+     * fiscais por país. Escrever isso aqui seria reescrever, pior, o
+     * que o Stripe já faz — e passaria a ser nosso o dever de o manter.
+     */
+    createPortalSession(request: PortalRequest): Promise<{ url: string }>;
     /**
      * Verifica a assinatura e devolve o evento.
      *
@@ -184,6 +210,23 @@ export const createStripeGateway = (): StripeGateway | null => {
                     throw new BillingError(
                         'STRIPE_REQUEST_FAILED',
                         'O Stripe não devolveu um endereço de pagamento.',
+                    );
+                }
+
+                return { url: session.url };
+            }),
+
+        createPortalSession: (request) =>
+            wrap(async () => {
+                const session = await stripe.billingPortal.sessions.create({
+                    customer: request.customerId,
+                    return_url: request.returnUrl,
+                });
+
+                if (!session.url) {
+                    throw new BillingError(
+                        'STRIPE_REQUEST_FAILED',
+                        'O Stripe não devolveu um endereço para o painel.',
                     );
                 }
 

@@ -77,6 +77,9 @@ const createGatewayMock = () => ({
     createCheckoutSession: vi
         .fn()
         .mockResolvedValue({ url: 'https://checkout.stripe.com/x' }),
+    createPortalSession: vi
+        .fn()
+        .mockResolvedValue({ url: 'https://billing.stripe.com/p/session/x' }),
     constructEvent: vi.fn(),
     readSubscription: vi.fn().mockResolvedValue(periodo()),
     cancelAtPeriodEnd: vi.fn().mockResolvedValue(undefined),
@@ -666,6 +669,121 @@ describe('BillingService', () => {
             >;
 
             expect('customerId' in pedido).toBe(false);
+        });
+    });
+
+    /**
+     * A outra metade de comprar.
+     *
+     * A página de preços promete "cancelas quando quiseres" e os termos
+     * dizem o mesmo. Até isto existir, a única rota de cancelamento
+     * exigia `system:manage` — uma promessa que só se cumpria a pedido
+     * de quem administra a plataforma.
+     */
+    describe('gerir o plano já comprado', () => {
+        const gerir = {
+            ownerKind: 'crew' as const,
+            ownerId: UMA_CREW,
+            actorId: EU,
+        };
+
+        it('abre o painel do cliente deste titular', async () => {
+            repository.findCustomerId.mockResolvedValue('cus_123');
+
+            await expect(service.openPortal(gerir)).resolves.toEqual({
+                url: 'https://billing.stripe.com/p/session/x',
+            });
+
+            expect(gateway.createPortalSession).toHaveBeenCalledWith(
+                expect.objectContaining({ customerId: 'cus_123' }),
+            );
+        });
+
+        /**
+         * O endereço de regresso é construído aqui e não vem do pedido.
+         * Um endereço enviado pelo cliente seria um redirecionamento
+         * aberto com o nome do Stripe em cima — e quem acabou de mexer
+         * num cartão é exatamente quem não convém mandar para um sítio
+         * que imita o nosso.
+         */
+        it('manda de volta para uma página desta instalação', async () => {
+            repository.findCustomerId.mockResolvedValue('cus_123');
+
+            await service.openPortal(gerir);
+
+            const pedido = gateway.createPortalSession.mock.calls[0]?.[0] as {
+                returnUrl: string;
+            };
+
+            expect(new URL(pedido.returnUrl).origin).toBe(
+                new URL(process.env['APP_PUBLIC_URL'] ?? 'http://localhost:5173')
+                    .origin,
+            );
+        });
+
+        /**
+         * Sem cliente no Stripe não há painel que abrir: um vitalício,
+         * um plano dado à mão, uma crew coberta pelo servidor onde joga.
+         * Todos têm plano ativo e nenhum tem onde o cancelar.
+         */
+        it('recusa quando o plano não veio do Stripe', async () => {
+            repository.findCustomerId.mockResolvedValue(null);
+
+            await expectBillingError(
+                service.openPortal(gerir),
+                'SUBSCRIPTION_NOT_FROM_STRIPE',
+            );
+
+            expect(gateway.createPortalSession).not.toHaveBeenCalled();
+        });
+
+        /**
+         * A mesma regra da compra, e é essa a questão: se cancelar
+         * fosse mais apertado, uma comunidade ficava a pagar sem
+         * ninguém que lhe pudesse pôr fim.
+         */
+        it('recusa a quem não decide sobre o titular', async () => {
+            repository.findCustomerId.mockResolvedValue('cus_123');
+            autorizacao.hasPermissions.mockReturnValue(false);
+
+            await expect(service.openPortal(gerir)).rejects.toBeInstanceOf(
+                AuthorizationError,
+            );
+
+            expect(gateway.createPortalSession).not.toHaveBeenCalled();
+        });
+
+        /**
+         * E a autorização vem antes da configuração, como na compra:
+         * "não podes" é do pedido, "não está ligado" é da instalação.
+         * Pela ordem contrária, um sítio sem chaves respondia o mesmo a
+         * toda a gente e a recusa deixava de ser observável.
+         */
+        it('recusa por falta de autorização mesmo sem Stripe', async () => {
+            const semStripe = new BillingService(
+                repository as unknown as BillingRepository,
+                null,
+                autorizacao as unknown as AuthorizationService,
+                PRECOS,
+            );
+
+            autorizacao.hasPermissions.mockReturnValue(false);
+
+            await expect(semStripe.openPortal(gerir)).rejects.toBeInstanceOf(
+                AuthorizationError,
+            );
+        });
+
+        /**
+         * Uma pessoa não compra plano nenhum para si, e por isso não
+         * tem nada que gerir. A recusa é a mesma da compra: não é falta
+         * de autorização, é não haver o que gerir.
+         */
+        it('recusa para uma conta, porque não há plano de pessoa', async () => {
+            await expectBillingError(
+                service.openPortal({ ...gerir, ownerKind: 'user', ownerId: EU }),
+                'PLAN_IS_FOR_COMMUNITIES',
+            );
         });
     });
 

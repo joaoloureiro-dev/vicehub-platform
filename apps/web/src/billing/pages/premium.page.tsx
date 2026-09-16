@@ -11,8 +11,11 @@ import { getCrew } from '../../crews/crew.api.js';
 import { getServer } from '../../servers/server.api.js';
 import { formatarPreco } from '../billing.format.js';
 import {
+    getCrewSubscription,
     getMySubscription,
     getPlans,
+    getServerSubscription,
+    openBillingPortal,
     startCheckout,
     type PurchasablePlan,
     type SubscriptionSummary,
@@ -117,7 +120,40 @@ export const PremiumPage = () => {
         [user?.id],
     );
 
+    /**
+     * O plano da comunidade visto por quem decide sobre ele.
+     *
+     * O perfil público diz se a comunidade tem plano; não diz — nem
+     * deve — de onde ele vem. Quem gere a comunidade pode perguntar,
+     * e é essa resposta que sabe se há painel de faturação a abrir.
+     *
+     * Um 403 aqui é a resposta e não uma avaria: quer dizer "não é teu
+     * para gerires", que é exatamente o que o ecrã precisa de saber.
+     * Por isso vira `null` em vez de erro — nada nesta página depende
+     * dele senão o botão de gerir.
+     */
+    const gestao = useAsync<SubscriptionSummary | null>(async () => {
+        if (!user) {
+            return null;
+        }
+
+        try {
+            if (crewId) {
+                return await getCrewSubscription(crewId);
+            }
+
+            if (servidorId) {
+                return await getServerSubscription(servidorId);
+            }
+        } catch {
+            return null;
+        }
+
+        return null;
+    }, [user?.id, crewId, servidorId]);
+
     const [aComprar, setAComprar] = useState(false);
+    const [aGerir, setAGerir] = useState(false);
     const [falhou, setFalhou] = useState<string | null>(null);
 
     /**
@@ -126,7 +162,12 @@ export const PremiumPage = () => {
      */
     const [escalao, setEscalao] = useState<string | null>(null);
 
-    if (catalogo.loading || plano.loading || comunidade.loading) {
+    if (
+        catalogo.loading ||
+        plano.loading ||
+        comunidade.loading ||
+        gestao.loading
+    ) {
         return <p className="centered">{t.comum.aCarregar}</p>;
     }
 
@@ -286,6 +327,35 @@ export const PremiumPage = () => {
             );
 
             setAComprar(false);
+        }
+    };
+
+    /**
+     * Abre o painel do Stripe onde se cancela e se trocam os dados de
+     * pagamento.
+     *
+     * Sai-se do site, como na compra, e por `assign` e não `replace`:
+     * quem for lá só ver e carregar em "voltar" tem de voltar para
+     * aqui.
+     */
+    const gerir = async () => {
+        if (!paraComunidade) {
+            return;
+        }
+
+        setAGerir(true);
+        setFalhou(null);
+
+        try {
+            const sessao = await openBillingPortal({
+                ownerKind: paraComunidade.kind,
+                ownerId: paraComunidade.id,
+            });
+
+            window.location.assign(sessao.url);
+        } catch {
+            setFalhou(t.premium.naoFoiPossivelGerir);
+            setAGerir(false);
         }
     };
 
@@ -469,12 +539,34 @@ export const PremiumPage = () => {
                                   ),
                               )}
                     </p>
+                    {/*
+                      "Gerir o plano" só a quem tem plano que se giri.
+                      Um vitalício, um plano dado à mão e uma crew
+                      coberta pelo servidor onde joga têm todos plano
+                      ativo e nenhum tem painel — o botão só podia
+                      falhar, e falhava a quem veio aqui para cancelar.
+                    */}
+                    {gestao.data?.managedByStripe ? (
+                        <button
+                            className="primary"
+                            type="button"
+                            disabled={aGerir}
+                            onClick={() => void gerir()}
+                        >
+                            {aGerir ? t.premium.aAbrir : t.premium.gerirPlano}
+                        </button>
+                    ) : null}
                     <Link
-                        className="primary"
+                        className={
+                            gestao.data?.managedByStripe ? undefined : 'primary'
+                        }
                         to={paraComunidade ? paraComunidade.voltarPara : '/eu'}
                     >
                         {paraComunidade ? frases.irPara : t.premium.irParaPerfil}
                     </Link>
+                    {gestao.data?.managedByStripe ? (
+                        <p className="hint">{t.premium.gerirOndeSeCancela}</p>
+                    ) : null}
                 </div>
             ) : !aberto ? (
                 /*

@@ -10,6 +10,7 @@ import {
 } from '@vicehub/database';
 import type { PlanKey } from '@vicehub/database';
 
+import { env } from '../../../config/env.js';
 import { AuthorizationError } from '../../authorization/errors/authorization.errors.js';
 import type { AuthorizationService } from '../../authorization/services/authorization.service.js';
 import { BillingError } from '../errors/billing.errors.js';
@@ -26,6 +27,18 @@ interface StartCheckoutInput {
     buyerId: string;
     /** Qual dos escalões. Antes não existia, e vendia-se sempre o mesmo. */
     plan: string;
+}
+
+/**
+ * Quem quer gerir o plano de um titular.
+ *
+ * Não traz plano nenhum: gerir é mexer no que já foi comprado, e qual
+ * escalão é o Stripe que sabe.
+ */
+interface OpenPortalInput {
+    ownerKind: SubscriptionOwnerKind;
+    ownerId: string;
+    actorId: string;
 }
 
 /**
@@ -211,7 +224,11 @@ export class BillingService {
          * a recusa por falta de autorização deixava de ser observável —
          * incluindo para quem a quisesse testar.
          */
-        await this.assertMayCommit(input);
+        await this.assertMayCommit({
+            ownerKind: input.ownerKind,
+            ownerId: input.ownerId,
+            actorId: input.buyerId,
+        });
 
         /**
          * Que plano é este, e se é sequer para este titular.
@@ -276,6 +293,57 @@ export class BillingService {
             buyerEmail: comprador.email,
             priceId,
             ...(customerId === null ? {} : { customerId }),
+        });
+    }
+
+
+    /**
+     * Abre o painel onde quem paga gere o que comprou.
+     *
+     * Cancelar, trocar de cartão, tirar as faturas. A página de preços
+     * promete "cancelas quando quiseres" e os termos dizem o mesmo; até
+     * aqui a única rota de cancelamento exigia `system:manage`, ou seja,
+     * um pedido a quem administra a plataforma. Uma promessa que só se
+     * cumpre por favor não é uma promessa.
+     *
+     * O que se devolve é um endereço do Stripe, de uso único e com
+     * validade curta. O cancelamento em si acontece lá, e volta por
+     * webhook — `customer.subscription.updated` quando fica marcado para
+     * terminar no fim do período, `deleted` quando termina. Nada aqui
+     * escreve no plano: o que vale é o que o Stripe cobra.
+     */
+    async openPortal(input: OpenPortalInput): Promise<{ url: string }> {
+        /**
+         * A autorização primeiro, pela mesma razão que na compra: "não
+         * podes" é uma propriedade do pedido, e não da instalação. Pela
+         * ordem contrária, um sítio sem chaves respondia 503 a toda a
+         * gente e a recusa deixava de ser observável.
+         */
+        await this.assertMayCommit(input);
+
+        const stripe = this.requireStripe();
+
+        const owner = this.buildOwner(input.ownerKind, input.ownerId);
+        const customerId = await this.billingRepository.findCustomerId(owner);
+
+        /**
+         * Sem cliente no Stripe não há painel que abrir. É o caso de
+         * quem recebeu o plano à mão, de um vitalício, de uma crew
+         * coberta pelo plano do servidor onde joga, e de quem nunca
+         * comprou nada — todos com a mesma resposta, porque todos têm o
+         * mesmo problema: o que está a dar direito não veio do Stripe e
+         * não é lá que se mexe nele.
+         */
+        if (customerId === null) {
+            throw new BillingError(
+                'SUBSCRIPTION_NOT_FROM_STRIPE',
+                'Este titular não tem nenhum plano comprado no Stripe para gerir.',
+            );
+        }
+
+        return stripe.createPortalSession({
+            customerId,
+            returnUrl: new URL('/premium', env.APP_PUBLIC_URL).toString(),
         });
     }
 
@@ -578,7 +646,13 @@ export class BillingService {
      * configuração.
      */
     /**
-     * Quem pode comprometer este titular a uma cobrança recorrente.
+     * Quem pode decidir sobre a cobrança recorrente deste titular.
+     *
+     * Serve as duas decisões, e é de propósito que é uma só: quem pode
+     * comprometer uma comunidade a pagar é exatamente quem a pode
+     * desligar de pagar. Duas regras separadas acabariam por discordar,
+     * e o lado que ficasse mais apertado seria o de cancelar — deixando
+     * uma cobrança sem ninguém que lhe possa pôr fim.
      *
      * A rota exige conta e mais nada porque a resposta depende do titular
      * pedido no corpo, que o guard de autorização não sabe ler: para si
@@ -597,7 +671,11 @@ export class BillingService {
      * diferente conforme a verificação que falhou diria a quem tenta às
      * cegas qual delas passou.
      */
-    private async assertMayCommit(input: StartCheckoutInput): Promise<void> {
+    private async assertMayCommit(input: {
+        ownerKind: SubscriptionOwnerKind;
+        ownerId: string;
+        actorId: string;
+    }): Promise<void> {
         /**
          * Não há plano nenhum para uma pessoa comprar para si.
          *
@@ -622,7 +700,7 @@ export class BillingService {
             input.ownerKind === 'crew' ? 'crew:manage' : 'server:manage';
 
         const efetivas = await this.authorizationService.getEffectivePermissions(
-            input.buyerId,
+            input.actorId,
             input.ownerKind === 'crew'
                 ? { crewId: input.ownerId }
                 : { serverId: input.ownerId },
@@ -631,7 +709,7 @@ export class BillingService {
         if (!this.authorizationService.hasPermissions(efetivas, [necessaria])) {
             throw new AuthorizationError(
                 'INSUFFICIENT_PERMISSIONS',
-                'Não tens autorização para comprar um plano para este titular.',
+                'Não tens autorização para decidir sobre o plano deste titular.',
                 [necessaria],
             );
         }
