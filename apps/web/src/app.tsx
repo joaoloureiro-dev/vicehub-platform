@@ -29,6 +29,8 @@ import { EventPage } from './events/pages/event.page.js';
 import { EventsPage } from './events/pages/events.page.js';
 import { LandingPage } from './pages/landing.page.js';
 import { Navegacao } from './components/navegacao.js';
+import { PrivacyPage, TermsPage } from './legal/pages/legal.page.js';
+import { Rodape } from './components/rodape.js';
 import { getPending } from './pages/pending.api.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
@@ -170,6 +172,8 @@ const Shell = () => {
                 <Outlet />
             </main>
 
+            <Rodape />
+
             {user ? (
                 <nav className="barra-baixo" aria-label="Navegação principal">
                     {DESTINOS.map((destino) => (
@@ -248,6 +252,14 @@ export const App = () => (
               antes de a criar.
             */}
             <Route path="/premium" element={<PremiumPage />} />
+
+            {/*
+              Públicas e sem sessão, como têm de ser: quem as precisa de
+              ler antes de criar conta é precisamente quem ainda não a
+              tem — e a Stripe lê-as sem conta nenhuma.
+            */}
+            <Route path="/termos" element={<TermsPage />} />
+            <Route path="/privacidade" element={<PrivacyPage />} />
 
             <Route path="/crews" element={<CrewDirectoryPage />} />
             {/*

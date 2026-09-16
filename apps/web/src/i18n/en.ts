@@ -325,6 +325,27 @@ export const en = (p: Tools) => ({
             p.plural(n, { one: '1 waiting', other: `${n} waiting` }),
     },
 
+    /**
+     * Só o que envolve as páginas legais: o título, o aviso, os links.
+     *
+     * O corpo dos documentos não passa por aqui. Está em inglês, num
+     * sítio só, pela razão que o próprio documento explica — e é
+     * precisamente por isso que a chave `idioma` existe.
+     */
+    legal: {
+        atualizado: (iso: string) => `Last updated ${p.data(iso)}`,
+        rascunho: 'Draft — not yet in force',
+        rascunhoTexto:
+            'This document is still missing the details of the company behind ViceHub, so it does not bind anyone yet. It is published so it can be read and reviewed, not relied on.',
+        idioma:
+            'Published in English. Any translation is offered for convenience; the English text is the one that applies.',
+        termos: 'Terms',
+        privacidade: 'Privacy',
+        rodape: 'Legal',
+        marcas:
+            'ViceHub is an independent platform, not affiliated with or endorsed by Rockstar Games, Take-Two Interactive, or any game publisher. Game names and trademarks belong to their owners.',
+    },
+
     perfil: {
         apagarConta: 'Delete my account',
         apagarContaExplicacao:
