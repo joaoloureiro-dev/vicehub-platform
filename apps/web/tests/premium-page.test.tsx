@@ -5,6 +5,8 @@ import userEvent from '@testing-library/user-event';
 import { AuthProvider } from '../src/auth/auth.context.js';
 import { PremiumPage } from '../src/billing/pages/premium.page.js';
 import { montarEcra, t } from './helpers.js';
+import { fr } from '../src/i18n/fr.js';
+import { criarTools } from '../src/i18n/tools.js';
 
 const json = (status: number, body: unknown): Response =>
     ({
@@ -15,8 +17,6 @@ const json = (status: number, body: unknown): Response =>
 
 const PLANO_CREW = {
     key: 'premium',
-    name: 'Crew',
-    description: 'A tesouraria da crew.',
     priceCents: 499,
     currency: 'EUR',
     intervalMonths: 1,
@@ -30,8 +30,6 @@ const PLANO_CREW = {
 const ESCALOES = [
     {
         key: 'server_base',
-        name: 'Servidor',
-        description: 'Para o servidor e para as crews que lá jogam.',
         priceCents: 1_499,
         currency: 'EUR',
         intervalMonths: 1,
@@ -40,8 +38,6 @@ const ESCALOES = [
     },
     {
         key: 'server_plus',
-        name: 'Servidor +',
-        description: 'Para servidores com muitas crews.',
         priceCents: 1_999,
         currency: 'EUR',
         intervalMonths: 1,
@@ -50,8 +46,6 @@ const ESCALOES = [
     },
     {
         key: 'server_unlimited',
-        name: 'Servidor sem limite',
-        description: 'Sem limite de crews.',
         priceCents: 9_999,
         currency: 'EUR',
         intervalMonths: 1,
@@ -194,6 +188,13 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.unstubAllGlobals();
+
+    /*
+     * O idioma é uma preferência guardada neste browser, e o jsdom é o
+     * mesmo browser de teste para teste: sem isto, o francês escolhido
+     * por um ficava a valer para todos os que viessem a seguir.
+     */
+    window.localStorage.removeItem('vicehub.idioma');
 });
 
 describe('o ecrã do premium', () => {
@@ -213,6 +214,81 @@ describe('o ecrã do premium', () => {
         expect(screen.getByText('\u20ac19.99')).toBeTruthy();
         expect(screen.getByText('\u20ac99.99')).toBeTruthy();
         expect(screen.getByText(t.premium.todosPorMes)).toBeTruthy();
+    });
+
+    /**
+     * O nome do escalão no idioma de quem o lê.
+     *
+     * Esteve escrito no catálogo de dados, em português, e saía de lá
+     * para o ecrã sem passar por dicionário nenhum: quem abria os
+     * preços em inglês escolhia entre "Servidor" e "Servidor sem
+     * limite" com o resto da página — título, subtítulos, botões e até
+     * o formato do preço — traduzido à volta. Era a única linha por
+     * traduzir da página, e era aquela onde o olho pousa para decidir o
+     * que vai pagar.
+     */
+    it('dá aos escalões o nome do idioma de quem os lê', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar();
+
+        expect(await screen.findByText(t.planos.server_unlimited)).toBeTruthy();
+        expect(screen.getByText(t.planos.server_base)).toBeTruthy();
+        expect(screen.getByText(t.planos.premium)).toBeTruthy();
+    });
+
+    /**
+     * Um escalão que este cliente ainda não conhece.
+     *
+     * Traduzir por chave troca um problema por outro: a API pode passar
+     * a vender um escalão que este browser, carregado há uma semana,
+     * não sabe nomear. Mostrar a chave é feio; mostrar um espaço em
+     * branco onde devia estar o que se vai comprar, com o preço ao
+     * lado, é que não pode acontecer.
+     */
+    it('mostra a chave quando ainda não sabe nomear o escalão', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                catalogo: {
+                    available: true,
+                    plans: [
+                        {
+                            key: 'server_pro',
+                            priceCents: 4_999,
+                            currency: 'EUR',
+                            intervalMonths: 1,
+                            ownerKind: 'server' as const,
+                            maxCrews: 200,
+                        },
+                    ],
+                },
+            }),
+        );
+
+        montar();
+
+        expect(await screen.findByText('server_pro')).toBeTruthy();
+    });
+
+    /**
+     * A prova de que o nome muda mesmo com o idioma, e não é apenas
+     * outra string fixa: os mesmos escalões, lidos em francês.
+     */
+    it('e outro nome noutro idioma', async () => {
+        const frances = fr(criarTools('fr'));
+
+        window.localStorage.setItem('vicehub.idioma', 'fr');
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar();
+
+        expect(
+            await screen.findByText(frances.planos.server_unlimited),
+        ).toBeTruthy();
+        expect(frances.planos.server_unlimited).not.toBe(
+            t.planos.server_unlimited,
+        );
     });
 
     /**
@@ -551,7 +627,7 @@ describe('comprar para um servidor', () => {
         montar('/premium?servidor=server-1');
 
         await userEvent.click(
-            await screen.findByText('Servidor sem limite'),
+            await screen.findByText(t.planos.server_unlimited),
         );
         await userEvent.click(screen.getByText(t.premium.comprar));
 

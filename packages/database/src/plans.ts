@@ -10,12 +10,20 @@ import { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
  * O preço aqui é o preço em vigor. O preço cobrado em cada período fica
  * gravado na própria subscrição, para que o histórico continue exato
  * depois de uma alteração de preços.
+ *
+ * **Não há aqui nome nem descrição**, e é de propósito. Um plano tinha
+ * as duas coisas, escritas em português, e chegavam ao ecrã tal e qual:
+ * quem abria os preços em inglês escolhia entre "Crew", "Servidor" e
+ * "Servidor sem limite", com todo o resto da página traduzido à volta.
+ *
+ * Um nome para ler é texto de interface, e texto de interface vive nos
+ * dicionários — como os cargos, que também se guardam por chave e se
+ * traduzem por chave. O que daqui sai é `premium` ou `server_plus`, e o
+ * que se lê sai de `t.planos`.
  */
 
 export interface PlanDefinition {
     plan: SubscriptionPlan;
-    name: string;
-    description: string;
     /** Em cêntimos, para não haver aritmética de vírgula flutuante em dinheiro. */
     priceCents: number;
     currency: string;
@@ -68,9 +76,6 @@ export const PLANS = {
      */
     premium: {
         plan: SubscriptionPlan.premium,
-        name: 'Crew',
-        description:
-            'A tesouraria da crew: propor, aprovar e dividir o que a crew ganha.',
         priceCents: 499,
         currency: 'EUR',
         /** Mensal. É o único período cobrado. */
@@ -87,9 +92,6 @@ export const PLANS = {
      */
     server_base: {
         plan: SubscriptionPlan.server_base,
-        name: 'Servidor',
-        description:
-            'Tudo o que uma crew tem, para o servidor e para as crews que lá jogam.',
         priceCents: 1_499,
         currency: 'EUR',
         intervalMonths: 1,
@@ -98,8 +100,6 @@ export const PLANS = {
     },
     server_plus: {
         plan: SubscriptionPlan.server_plus,
-        name: 'Servidor +',
-        description: 'Para servidores com muitas crews a jogar lá.',
         priceCents: 1_999,
         currency: 'EUR',
         intervalMonths: 1,
@@ -108,8 +108,6 @@ export const PLANS = {
     },
     server_unlimited: {
         plan: SubscriptionPlan.server_unlimited,
-        name: 'Servidor sem limite',
-        description: 'Sem limite de crews.',
         priceCents: 9_999,
         currency: 'EUR',
         intervalMonths: 1,
@@ -118,9 +116,6 @@ export const PLANS = {
     },
     lifetime: {
         plan: SubscriptionPlan.lifetime,
-        name: 'Vitalício',
-        description:
-            'Acesso premium que não termina, para quem apoiou a plataforma no princípio.',
         /**
          * Zero, e não o preço do premium: o histórico tem de dizer que
          * não foi cobrado nada, ou uma soma de receita passava a contar

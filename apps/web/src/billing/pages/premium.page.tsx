@@ -6,6 +6,7 @@ import { ApiError } from '../../lib/api.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
+import type { Messages } from '../../i18n/en.js';
 import { getCrew } from '../../crews/crew.api.js';
 import { getServer } from '../../servers/server.api.js';
 import { formatarPreco } from '../billing.format.js';
@@ -16,6 +17,18 @@ import {
     type PurchasablePlan,
     type SubscriptionSummary,
 } from '../billing.api.js';
+
+/**
+ * O nome de um escalão, no idioma de quem o lê.
+ *
+ * O mesmo padrão dos cargos, e pela mesma razão: a chave vem da API e o
+ * nome sai do dicionário. Com recurso à própria chave, que é o que
+ * mantém honesto um cliente antigo perante um escalão novo — melhor
+ * mostrar `server_pro` do que um espaço em branco onde devia estar o
+ * que se vai comprar.
+ */
+const nomeDoPlano = (t: Messages, chave: string): string =>
+    t.planos[chave as keyof typeof t.planos] ?? chave;
 
 /**
  * O ecrã de onde se compra o plano.
@@ -306,7 +319,7 @@ export const PremiumPage = () => {
                 <ul className="lista-precos">
                     {paraVenda.map((linha) => (
                         <li key={linha.key}>
-                            <span className="escalao-nome">{linha.name}</span>
+                            <span className="escalao-nome">{nomeDoPlano(t, linha.key)}</span>
                             <span className="escalao-crews">
                                 {oQueDa(linha)}
                             </span>
@@ -340,7 +353,7 @@ export const PremiumPage = () => {
                                 type="radio"
                                 value={linha.key}
                             />
-                            <span className="escalao-nome">{linha.name}</span>
+                            <span className="escalao-nome">{nomeDoPlano(t, linha.key)}</span>
                             <span className="escalao-crews">
                                 {crewsDoEscalao(linha)}
                             </span>

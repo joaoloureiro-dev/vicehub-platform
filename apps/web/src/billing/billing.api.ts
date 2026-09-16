@@ -1,10 +1,15 @@
 import { api } from '../lib/api.js';
 
-/** Um plano tal como aparece a quem ainda não o tem. */
+/**
+ * Um plano tal como aparece a quem ainda não o tem.
+ *
+ * Vem a chave e não um nome: o nome que se lê está em `t.planos`, como
+ * o dos cargos. A `description` também não vem — a página escreve o seu
+ * próprio subtítulo a partir de `maxCrews`, e a que a API mandava era
+ * prosa portuguesa que nenhum ecrã chegou a ler.
+ */
 export interface PurchasablePlan {
     key: string;
-    name: string;
-    description: string;
     /** Em cêntimos, como vem da API. */
     priceCents: number;
     currency: string;

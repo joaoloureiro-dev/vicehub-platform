@@ -332,6 +332,21 @@ export const en = (p: Tools) => ({
      * sítio só, pela razão que o próprio documento explica — e é
      * precisamente por isso que a chave `idioma` existe.
      */
+    /**
+     * Os nomes dos planos, por chave.
+     *
+     * Lidos por índice a partir do que a API devolve, como os cargos.
+     * Estiveram escritos no catálogo de dados, em português, e era isso
+     * que toda a gente lia: a página de preços em inglês oferecia
+     * "Servidor sem limite" com tudo o resto traduzido à volta.
+     */
+    planos: {
+        premium: 'Crew',
+        server_base: 'Server',
+        server_plus: 'Server +',
+        server_unlimited: 'Server unlimited',
+    },
+
     legal: {
         atualizado: (iso: string) => `Last updated ${p.data(iso)}`,
         rascunho: 'Draft — not yet in force',

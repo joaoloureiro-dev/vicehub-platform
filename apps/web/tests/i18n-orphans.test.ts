@@ -27,6 +27,7 @@ const raiz = join(import.meta.dirname, '..');
  */
 const POR_INDICE = new Set([
     'cargos',
+    'planos',
     'categorias',
     'estadosMovimento',
     'estadosEvento',

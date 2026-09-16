@@ -30,11 +30,12 @@ interface StartCheckoutInput {
 
 /**
  * Um plano tal como aparece a quem ainda não o tem.
+ *
+ * Sai a chave, e não um nome escrito. Quem desenha o ecrã é que sabe em
+ * que idioma o está a desenhar; daqui saía sempre em português.
  */
 export interface PurchasablePlan {
     key: string;
-    name: string;
-    description: string;
     priceCents: number;
     currency: string;
     intervalMonths: number;
@@ -186,8 +187,6 @@ export class BillingService {
                 return [
                     {
                         key,
-                        name: plano.name,
-                        description: plano.description,
                         priceCents: plano.priceCents,
                         currency: plano.currency,
                         intervalMonths: plano.intervalMonths,
