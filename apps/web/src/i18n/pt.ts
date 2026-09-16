@@ -460,6 +460,21 @@ export const pt = (p: Tools): Messages => ({
     },
 
     tesouraria: {
+        totalADividir: 'Montante a dividir',
+        dividirTitulo: 'Dividir o que a crew ganhou',
+        dividirAviso:
+            'Nada se mexe enquanto alguém com poder para decidir não aprovar — como em qualquer outro movimento.',
+        comoDividir: 'Como dividir',
+        deQueEvento: 'De que evento',
+        escolheEvento: 'Escolhe um evento',
+        semEventosComPresencas:
+            'Ainda não há presenças confirmadas em evento nenhum. Confirma quem apareceu num evento e passas a poder dividir por aí.',
+        presencas: (n: number) =>
+            p.plural(n, { one: '1 apareceu', other: `${n} apareceram` }),
+        nota: 'Nota',
+        dividir: 'Propor a divisão',
+        aDividir: 'A propor…',
+        divisaoProposta: 'Divisão proposta. Fica à espera de decisão.',
         titulo: 'Tesouraria',
         verCrew: 'Ver a crew',
         precisaDePlano:

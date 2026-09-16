@@ -63,7 +63,16 @@ export interface Distribution {
     decidedBy: string | null;
     decidedAt: string | null;
     createdAt: string;
-    /** Uma linha por pessoa: é isto que se paga se for aprovada. */
+    /**
+     * O que se move se a divisão for aprovada, em partida dobrada.
+     *
+     * **Não é uma linha por pessoa**, por muito que a leitura rápida o
+     * sugira: é uma linha a débito — a tesouraria a pagar o total — mais
+     * uma linha a crédito por cada pessoa que recebe. Quem contar as
+     * linhas para dizer quantos receberam conta sempre mais um, que foi
+     * exatamente o que aqui aconteceu enquanto este comentário dizia o
+     * contrário.
+     */
     lines: TreasuryMovement[];
 }
 

@@ -461,6 +461,21 @@ export const fr = (p: Tools): Messages => ({
     },
 
     tesouraria: {
+        totalADividir: 'Montant à partager',
+        dividirTitulo: 'Partager ce que la crew a gagné',
+        dividirAviso:
+            'Rien ne bouge tant que quelqu’un qui peut décider ne l’a pas approuvé — comme pour tout autre mouvement.',
+        comoDividir: 'Comment le partager',
+        deQueEvento: 'De quel événement',
+        escolheEvento: 'Choisis un événement',
+        semEventosComPresencas:
+            'Aucune présence n’est encore confirmée sur un événement. Confirme qui est venu à un événement et tu pourras partager comme ça.',
+        presencas: (n: number) =>
+            p.plural(n, { one: '1 est venu', other: `${n} sont venus` }),
+        nota: 'Note',
+        dividir: 'Proposer le partage',
+        aDividir: 'Proposition…',
+        divisaoProposta: 'Partage proposé. En attente d’une décision.',
         titulo: 'Trésorerie',
         verCrew: 'Voir la crew',
         precisaDePlano:

@@ -6,6 +6,7 @@ import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { getCrewSubscription } from '../../billing/billing.api.js';
 import { getCrew } from '../../crews/crew.api.js';
+import { ProporDivisao } from '../components/propor-divisao.js';
 import {
     approveMovement,
     cancelMovement,
@@ -373,6 +374,21 @@ export const TreasuryPage = () => {
             </section>
             )}
 
+            {/*
+              Dividir vive ao lado de propor, e debaixo do mesmo plano:
+              mexer no dinheiro é o que o plano paga, e dividir é mexer
+              no dinheiro de toda a gente de uma vez.
+            */}
+            {podeMexer === false ? null : (
+                <ProporDivisao
+                    crewId={crewId as string}
+                    onDividido={() => {
+                        tesouraria.reload();
+                        divisoes.reload();
+                    }}
+                />
+            )}
+
             <section className="grupo">
                 <h2>{t.tesouraria.extrato}</h2>
 
@@ -478,7 +494,18 @@ export const TreasuryPage = () => {
                                     </span>
                                     <span>
                                         {t.tesouraria.pessoas(
-                                            divisao.lines.length,
+                                            /*
+                                              Só as entradas. A saída da
+                                              tesouraria é uma linha
+                                              como as outras, e contá-la
+                                              dizia que uma divisão de
+                                              quatro pagou a cinco.
+                                            */
+                                            divisao.lines.filter(
+                                                (linha) =>
+                                                    linha.direction
+                                                    === 'credit',
+                                            ).length,
                                         )}
                                     </span>
                                 </div>

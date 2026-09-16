@@ -473,6 +473,21 @@ export const en = (p: Tools) => ({
     },
 
     tesouraria: {
+        totalADividir: 'Amount to split',
+        dividirTitulo: 'Split what the crew earned',
+        dividirAviso:
+            'Nothing moves until someone with the power to decide approves it — the same as any other movement.',
+        comoDividir: 'How to split it',
+        deQueEvento: 'From which event',
+        escolheEvento: 'Choose an event',
+        semEventosComPresencas:
+            'No event has confirmed attendance yet. Confirm who turned up on an event and you can split by that.',
+        presencas: (n: number) =>
+            p.plural(n, { one: '1 turned up', other: `${n} turned up` }),
+        nota: 'Note',
+        dividir: 'Propose the split',
+        aDividir: 'Proposing…',
+        divisaoProposta: 'Split proposed. It is waiting on a decision.',
         titulo: 'Treasury',
         verCrew: 'See the crew',
         precisaDePlano:
