@@ -473,6 +473,17 @@ export const en = (p: Tools) => ({
     },
 
     tesouraria: {
+        montanteAEnviar: 'Amount to send',
+        transferirTitulo: 'Send money to a crew',
+        transferirAviso:
+            'What a server earns funds the crews that play there. This moves straight away — it is your own treasury paying out.',
+        paraQueCrew: 'To which crew',
+        escolheCrew: 'Choose a crew',
+        semCrewsNoServidor:
+            'No crew plays here yet. Accept a crew and you can fund it from here.',
+        transferir: 'Send it',
+        aTransferir: 'Sending…',
+        transferida: 'Sent.',
         totalADividir: 'Amount to split',
         dividirTitulo: 'Split what the crew earned',
         dividirAviso:

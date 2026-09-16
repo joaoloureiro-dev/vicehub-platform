@@ -460,6 +460,17 @@ export const pt = (p: Tools): Messages => ({
     },
 
     tesouraria: {
+        montanteAEnviar: 'Montante a enviar',
+        transferirTitulo: 'Enviar dinheiro a uma crew',
+        transferirAviso:
+            'O que um servidor ganha financia as crews que lá jogam. Isto mexe já — é a tua própria tesouraria a pagar.',
+        paraQueCrew: 'Para que crew',
+        escolheCrew: 'Escolhe uma crew',
+        semCrewsNoServidor:
+            'Ainda não há nenhuma crew a jogar aqui. Aceita uma e passas a poder financiá-la daqui.',
+        transferir: 'Enviar',
+        aTransferir: 'A enviar…',
+        transferida: 'Enviado.',
         totalADividir: 'Montante a dividir',
         dividirTitulo: 'Dividir o que a crew ganhou',
         dividirAviso:
