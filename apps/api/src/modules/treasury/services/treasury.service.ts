@@ -9,6 +9,7 @@ import {
 
 import { TreasuryError } from '../errors/treasury.errors.js';
 import {
+    BalanceOverflowSignal,
     InsufficientFundsSignal,
     type TreasuryRepository,
 } from '../repositories/treasury.repository.js';
@@ -194,6 +195,13 @@ export class TreasuryService {
                 );
             }
 
+            if (erro instanceof BalanceOverflowSignal) {
+                throw new TreasuryError(
+                    'BALANCE_WOULD_OVERFLOW',
+                    'A tesouraria da crew não tem espaço para esta transferência.',
+                );
+            }
+
             throw erro;
         }
     }
@@ -236,6 +244,13 @@ export class TreasuryService {
                 throw new TreasuryError(
                     'INSUFFICIENT_FUNDS',
                     'A tesouraria não tem saldo suficiente para este movimento.',
+                );
+            }
+
+            if (error instanceof BalanceOverflowSignal) {
+                throw new TreasuryError(
+                    'BALANCE_WOULD_OVERFLOW',
+                    'Esta entrada faria o saldo passar o máximo que a tesouraria guarda.',
                 );
             }
 
@@ -399,6 +414,13 @@ export class TreasuryService {
                 throw new TreasuryError(
                     'INSUFFICIENT_FUNDS',
                     'A tesouraria não tem saldo suficiente para esta divisão.',
+                );
+            }
+
+            if (error instanceof BalanceOverflowSignal) {
+                throw new TreasuryError(
+                    'BALANCE_WOULD_OVERFLOW',
+                    'Há quem não tenha espaço na carteira para a parte que lhe cabe.',
                 );
             }
 

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    BalanceOverflowSignal,
     InsufficientFundsSignal,
     TreasuryRepository,
 } from '../../src/modules/treasury/repositories/treasury.repository.js';
-import type { DatabaseClient } from '@vicehub/database';
+import { SALDO_MAXIMO, type DatabaseClient } from '@vicehub/database';
 
 /**
  * Testes à forma das escritas da tesouraria.
@@ -301,21 +302,43 @@ describe('TreasuryRepository', () => {
         });
 
         /**
-         * Uma entrada não pode ser condicional ao saldo: receber dinheiro
-         * nunca deixa a tesouraria a descoberto.
+         * Uma entrada não é condicional ao saldo chegar — receber
+         * dinheiro nunca deixa a tesouraria a descoberto — mas é
+         * condicional a **caber**. A coluna é um inteiro de 64 bits, e a
+         * condição é o tecto menos o montante: o que se pergunta é se
+         * ainda há espaço para esta entrada, não se o saldo já lá está.
          */
-        it('a entrada soma sem condição de saldo', async () => {
+        it('a entrada só passa se couber no que já lá está', async () => {
             const tx = withTransaction();
 
             await repository.approveMovement(credito);
 
-            expect(tx.wallet.updateMany).not.toHaveBeenCalled();
+            expect(tx.wallet.update).not.toHaveBeenCalled();
 
-            const args = tx.wallet.update.mock.calls[0]?.[0] as {
+            const args = tx.wallet.updateMany.mock.calls[0]?.[0] as {
+                where: Record<string, unknown>;
                 data: Record<string, unknown>;
             };
 
+            expect(args.where).toEqual({
+                id: 'wallet-1',
+                balance: { lte: SALDO_MAXIMO - 4_000n },
+            });
             expect(args.data['balance']).toEqual({ increment: 4_000n });
+        });
+
+        /**
+         * E quando não cabe, desfaz tudo em vez de deixar a base de
+         * dados recusar a escrita: isso sairia como 500, e o movimento
+         * ficava pendente para sempre sem ninguém saber porquê.
+         */
+        it('desfaz tudo quando a entrada não cabe', async () => {
+            const tx = withTransaction();
+            tx.wallet.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(
+                repository.approveMovement(credito),
+            ).rejects.toBeInstanceOf(BalanceOverflowSignal);
         });
 
         it('regista quem aprovou e quando', async () => {
@@ -505,18 +528,42 @@ describe('TreasuryRepository', () => {
             ).rejects.toBeInstanceOf(InsufficientFundsSignal);
         });
 
+        /**
+         * Quatro escritas condicionais: a saída da tesouraria e as três
+         * entradas. A primeira é o débito de quem paga — daí o `slice`.
+         */
         it('credita todas as carteiras que recebem', async () => {
             const tx = withDistributionTransaction();
 
             await repository.approveDistribution(input);
 
-            expect(tx.wallet.update).toHaveBeenCalledTimes(3);
+            expect(tx.wallet.update).not.toHaveBeenCalled();
+            expect(tx.wallet.updateMany).toHaveBeenCalledTimes(4);
 
-            const creditadas = tx.wallet.update.mock.calls.map(
-                (chamada) => (chamada[0] as { where: { id: string } }).where.id,
-            );
+            const creditadas = tx.wallet.updateMany.mock.calls
+                .slice(1)
+                .map((chamada) => (chamada[0] as { where: { id: string } }).where.id);
 
             expect(creditadas).toEqual(['wallet-a', 'wallet-b', 'wallet-c']);
+        });
+
+        /**
+         * A carteira de quem recebe também tem tecto, e uma parte que lá
+         * não caiba desfaz a divisão inteira: ninguém fica com metade de
+         * uma repartição.
+         *
+         * O duplo deixa passar a saída e recusa a primeira entrada, que é
+         * a única forma de separar este caso do da falta de saldo.
+         */
+        it('desfaz a divisão quando uma parte não cabe a quem a recebe', async () => {
+            const tx = withDistributionTransaction();
+            tx.wallet.updateMany
+                .mockResolvedValueOnce({ count: 1 })
+                .mockResolvedValue({ count: 0 });
+
+            await expect(
+                repository.approveDistribution(input),
+            ).rejects.toBeInstanceOf(BalanceOverflowSignal);
         });
 
         /**
@@ -571,7 +618,7 @@ describe('TreasuryRepository', () => {
                 repository.approveDistribution({ ...input, crewId: null }),
             ).resolves.toEqual({ outcome: 'approved' });
 
-            expect(tx.wallet.update).toHaveBeenCalledTimes(3);
+            expect(tx.wallet.updateMany).toHaveBeenCalledTimes(4);
         });
 
         it('marca as linhas pendentes como aprovadas', async () => {
