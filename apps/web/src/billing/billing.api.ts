@@ -71,6 +71,15 @@ export const getCrewSubscription = (
 ): Promise<SubscriptionSummary> =>
     api<SubscriptionSummary>(`/subscriptions/crews/${crewId}`);
 
+/**
+ * O plano de um servidor, para quem o gere. Como o das crews, e com o
+ * mesmo 403 a quem não decide sobre isto.
+ */
+export const getServerSubscription = (
+    serverId: string,
+): Promise<SubscriptionSummary> =>
+    api<SubscriptionSummary>(`/subscriptions/servers/${serverId}`);
+
 export const getMySubscription = (): Promise<SubscriptionSummary> =>
     api<SubscriptionSummary>('/subscriptions/me');
 

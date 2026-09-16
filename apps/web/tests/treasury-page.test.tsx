@@ -71,6 +71,20 @@ const pendente = {
  * bugs neste repositório mais do que uma vez: o ecrã recebia a forma
  * errada, não mostrava nada, e os testes passavam à mesma.
  */
+const servidor = (isPremium: boolean) => ({
+    id: 'srv-1',
+    name: 'Leonida Life',
+    region: 'EU',
+    description: null,
+    joinRequirements: null,
+    isOnline: true,
+    playersOnline: 12,
+    isPremium,
+    appearance: { bannerUrl: null, accentColor: null },
+    memberCount: 9,
+    createdAt: '2026-01-01T00:00:00.000Z',
+});
+
 const servir = (opcoes: {
     premium: boolean;
     movimentos?: unknown[];
@@ -80,6 +94,8 @@ const servir = (opcoes: {
     eventos?: unknown[];
     /** As divisões já existentes, como a API as devolve. */
     divisoes?: unknown[];
+    /** As crews que jogam no servidor, para as transferências. */
+    afiliacoes?: unknown[];
 }) =>
     /*
      * Dois argumentos, como o `fetch` a sério: os casos da divisão leem
@@ -94,6 +110,45 @@ const servir = (opcoes: {
          * da crew, e o ecrã lia `isTrial` de onde ele não existe — sem
          * erro nenhum, e com os testes a passar.
          */
+        if (endereco.includes('/subscriptions/servers/')) {
+            return Promise.resolve(
+                json(200, {
+                    isPremium: opcoes.premium,
+                    isLifetime: false,
+                    isTrial: false,
+                    activeUntil: null,
+                    via: null,
+                    history: [],
+                }),
+            );
+        }
+
+        if (endereco.includes('/affiliations')) {
+            return Promise.resolve(json(200, opcoes.afiliacoes ?? []));
+        }
+
+        /*
+         * Antes de `/servers/`, porque a tesouraria de um servidor é
+         * `/treasury/servers/:id` e cairia no ramo do perfil.
+         */
+        if (endereco.includes('/treasury/servers/')) {
+            return Promise.resolve(
+                json(200, {
+                    balances: {
+                        settled: '1000',
+                        pendingIn: '0',
+                        pendingOut: '0',
+                        available: '1000',
+                    },
+                    movements: opcoes.movimentos ?? [],
+                }),
+            );
+        }
+
+        if (endereco.includes('/servers/')) {
+            return Promise.resolve(json(200, servidor(opcoes.premium)));
+        }
+
         if (endereco.includes('/subscriptions/crews/')) {
             if (opcoes.plano === 403) {
                 return Promise.resolve(json(403, { code: 'FORBIDDEN' }));
@@ -145,13 +200,21 @@ const servir = (opcoes: {
         throw new Error(`rota não prevista pelo duplo: ${endereco}`);
     });
 
-const montar = () =>
-    montarEcra(
-        <Routes>
-            <Route path="/crews/:crewId/tesouraria" element={<TreasuryPage />} />
-        </Routes>,
-        '/crews/crew-1/tesouraria',
-    );
+/** As duas rotas, como a aplicação as monta. */
+const AS_ROTAS = (
+    <Routes>
+        <Route path="/crews/:crewId/tesouraria" element={<TreasuryPage />} />
+        <Route
+            path="/servidores/:serverId/tesouraria"
+            element={<TreasuryPage />}
+        />
+    </Routes>
+);
+
+const montar = () => montarEcra(AS_ROTAS, '/crews/crew-1/tesouraria');
+
+const montarServidor = () =>
+    montarEcra(AS_ROTAS, '/servidores/srv-1/tesouraria');
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -716,5 +779,286 @@ describe('dividir o que a crew ganhou', () => {
                 String((pedido?.[1] as { body?: string } | undefined)?.body),
             ),
         ).toEqual({ basis: 'equal', total: '400' });
+    });
+});
+
+/**
+ * A tesouraria de um servidor.
+ *
+ * Não tinha ecrã nenhum. A API trata as duas tesourarias com as mesmas
+ * rotas — saldos, movimentos, aprovar, rejeitar — e o cliente desta
+ * aplicação já sabia pedir as duas; só faltava a porta. Um servidor a
+ * pagar o escalão mais caro não tinha por onde mexer no dinheiro que o
+ * plano lhe abria.
+ *
+ * E a caixa de entrada já mandava para cá as decisões de dinheiro de um
+ * servidor: sem a rota, o catch-all despejava quem clicasse na página
+ * inicial.
+ */
+describe('a tesouraria de um servidor', () => {
+    const afiliada = (extra: Record<string, unknown> = {}) => ({
+        crewId: 'crew-9',
+        crewName: 'Vice Kings',
+        crewTag: 'VICE',
+        status: 'active',
+        requestedAt: '2026-01-01T00:00:00.000Z',
+        respondedAt: '2026-01-02T00:00:00.000Z',
+        ...extra,
+    });
+
+    it('abre, em vez de atirar para a página inicial', async () => {
+        vi.stubGlobal('fetch', servir({ premium: true }));
+
+        montarServidor();
+
+        expect(await screen.findByText(t.tesouraria.titulo)).toBeDefined();
+        expect(screen.getByText('Leonida Life')).toBeDefined();
+    });
+
+    /**
+     * O coração disto: a tesouraria lida é a **do servidor**.
+     *
+     * A página monta-se na mesma nas duas rotas, e sem isto nada
+     * provava que ela pergunta pelo titular certo — podia estar a
+     * mostrar as contas de outra pessoa com o nome desta.
+     */
+    it('lê a tesouraria do servidor, e não a de uma crew', async () => {
+        const fetchMock = servir({ premium: true });
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        montarServidor();
+
+        await waitFor(() => {
+            expect(screen.getByText(t.tesouraria.titulo)).toBeDefined();
+        });
+
+        const enderecos = fetchMock.mock.calls.map((argumentos) =>
+            String(argumentos[0]),
+        );
+
+        expect(
+            enderecos.some((endereco) =>
+                endereco.includes('/treasury/servers/srv-1'),
+            ),
+        ).toBe(true);
+        expect(
+            enderecos.some((endereco) => endereco.includes('/treasury/crews/')),
+        ).toBe(false);
+    });
+
+    /**
+     * Sem crew escolhida o pedido não sai. A API recusava-o na mesma,
+     * mas com um erro que se lê como avaria em vez de "falta escolher".
+     */
+    it('não deixa transferir sem escolher para quem', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: true, afiliacoes: [afiliada()] }),
+        );
+
+        montarServidor();
+
+        await userEvent.type(
+            await screen.findByLabelText(t.tesouraria.montanteAEnviar),
+            '250',
+        );
+
+        expect(
+            screen.getByRole('button', { name: t.tesouraria.transferir }),
+        ).toHaveProperty('disabled', true);
+    });
+
+    /**
+     * Transferir e não ver o saldo mudar é indistinguível de não ter
+     * transferido — e aqui o dinheiro mexe-se já, ao contrário de um
+     * movimento proposto.
+     */
+    it('recarrega a tesouraria depois de transferir', async () => {
+        const fetchMock = servir({
+            premium: true,
+            afiliacoes: [afiliada()],
+        });
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        montarServidor();
+
+        /* As leituras da tesouraria, sem contar a própria transferência. */
+        const leituras = () =>
+            fetchMock.mock.calls.filter((argumentos) => {
+                const endereco = String(argumentos[0]);
+
+                return (
+                    endereco.includes('/treasury/servers/srv-1')
+                    && !endereco.includes('/transfers')
+                );
+            }).length;
+
+        await userEvent.selectOptions(
+            await screen.findByLabelText(t.tesouraria.paraQueCrew),
+            'crew-9',
+        );
+        await userEvent.type(
+            screen.getByLabelText(t.tesouraria.montanteAEnviar),
+            '250',
+        );
+
+        const antes = leituras();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: t.tesouraria.transferir }),
+        );
+
+        await waitFor(() => {
+            expect(leituras()).toBeGreaterThan(antes);
+        });
+    });
+
+    /**
+     * Um servidor não reparte o que ganha pelos membros: financia as
+     * crews. A API nem tem a rota de divisões para servidores.
+     */
+    it('transfere para crews, e não divide por membros', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: true, afiliacoes: [afiliada()] }),
+        );
+
+        montarServidor();
+
+        expect(
+            await screen.findByText(t.tesouraria.transferirTitulo),
+        ).toBeDefined();
+        expect(screen.queryByText(t.tesouraria.dividirTitulo)).toBeNull();
+    });
+
+    it('e uma crew continua a dividir, e não a transferir', async () => {
+        vi.stubGlobal('fetch', servir({ premium: true }));
+
+        montar();
+
+        expect(await screen.findByText(t.tesouraria.dividirTitulo)).toBeDefined();
+        expect(screen.queryByText(t.tesouraria.transferirTitulo)).toBeNull();
+    });
+
+    it('não deixa mexer no dinheiro sem plano', async () => {
+        vi.stubGlobal('fetch', servir({ premium: false }));
+
+        montarServidor();
+
+        await waitFor(() => {
+            expect(screen.getByText(t.tesouraria.titulo)).toBeDefined();
+        });
+
+        expect(screen.queryByText(t.tesouraria.transferirTitulo)).toBeNull();
+        expect(screen.getByText(t.tesouraria.precisaDePlano)).toBeDefined();
+    });
+
+    /**
+     * O plano é **do servidor**. Sem o identificador certo no link,
+     * quem carregasse comprava para si próprio e a tesouraria
+     * continuava fechada — que é o erro que o link da crew já
+     * documenta ao lado.
+     */
+    it('manda comprar o plano para o servidor, e não para quem clica', async () => {
+        vi.stubGlobal('fetch', servir({ premium: false }));
+
+        montarServidor();
+
+        const link = await screen.findByText(t.tesouraria.verPlano);
+
+        expect(link.getAttribute('href')).toBe('/premium?servidor=srv-1');
+    });
+
+    /**
+     * Uma crew que ainda está a candidatar-se, ou que já saiu, não é
+     * destino para dinheiro nenhum: a API recusa-a. Oferecê-la era
+     * oferecer uma escolha que só pode falhar.
+     */
+    it('só oferece as crews que lá jogam mesmo', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({
+                premium: true,
+                afiliacoes: [
+                    afiliada(),
+                    afiliada({
+                        crewId: 'crew-8',
+                        crewName: 'Candidata',
+                        crewTag: 'CAND',
+                        status: 'pending',
+                    }),
+                    afiliada({
+                        crewId: 'crew-7',
+                        crewName: 'Saiu',
+                        crewTag: 'SAIU',
+                        status: 'left',
+                    }),
+                ],
+            }),
+        );
+
+        montarServidor();
+
+        expect(await screen.findByText('[VICE] Vice Kings')).toBeDefined();
+        expect(screen.queryByText('[CAND] Candidata')).toBeNull();
+        expect(screen.queryByText('[SAIU] Saiu')).toBeNull();
+    });
+
+    it('diz o que falta quando nenhuma crew lá joga', async () => {
+        vi.stubGlobal('fetch', servir({ premium: true, afiliacoes: [] }));
+
+        montarServidor();
+
+        expect(
+            await screen.findByText(t.tesouraria.semCrewsNoServidor),
+        ).toBeDefined();
+    });
+
+    it('transfere para a crew escolhida', async () => {
+        const fetchMock = servir({
+            premium: true,
+            afiliacoes: [afiliada()],
+        });
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        montarServidor();
+
+        await userEvent.selectOptions(
+            await screen.findByLabelText(t.tesouraria.paraQueCrew),
+            'crew-9',
+        );
+        await userEvent.type(
+            screen.getByLabelText(t.tesouraria.montanteAEnviar),
+            '250',
+        );
+        await userEvent.type(
+            screen.getByLabelText(t.tesouraria.nota),
+            'Para o assalto',
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: t.tesouraria.transferir }),
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText(t.tesouraria.transferida)).toBeDefined();
+        });
+
+        const pedido = fetchMock.mock.calls.find((argumentos) =>
+            String(argumentos[0]).includes('/transfers'),
+        );
+
+        expect(String(pedido?.[0])).toContain('/treasury/servers/srv-1/transfers');
+        expect(
+            JSON.parse(
+                String((pedido?.[1] as { body?: string } | undefined)?.body),
+            ),
+        ).toEqual({
+            crewId: 'crew-9',
+            amount: '250',
+            description: 'Para o assalto',
+        });
     });
 });

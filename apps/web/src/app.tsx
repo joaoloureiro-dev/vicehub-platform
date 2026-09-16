@@ -289,6 +289,19 @@ export const App = () => (
                     path="/crews/:crewId/tesouraria"
                     element={<TreasuryPage />}
                 />
+                {/*
+                  A tesouraria de um servidor, que não tinha porta.
+
+                  A caixa de entrada já mandava para aqui as decisões de
+                  dinheiro de um servidor, e sem esta rota o catch-all
+                  despejava quem clicasse na página inicial: o aviso
+                  dizia que havia dinheiro à espera e o clique não levava
+                  a lado nenhum.
+                */}
+                <Route
+                    path="/servidores/:serverId/tesouraria"
+                    element={<TreasuryPage />}
+                />
                 <Route path="/crews/:crewId/eventos" element={<EventsPage />} />
                 <Route
                     path="/crews/:crewId/eventos/:eventId"

@@ -241,6 +241,17 @@ export const ServerPage = () => {
                               Oferecê-lo a mais gente era oferecer um
                               link que responde 403.
                             */}
+                            {/*
+                              A tesouraria, pela mesma regra do
+                              calendário: só a quem pertence, porque só
+                              a quem pertence a API a mostra.
+                            */}
+                            <Link
+                                className="btn-secondary"
+                                to={`/servidores/${perfil.id}/tesouraria`}
+                            >
+                                {t.crews.tesouraria}
+                            </Link>
                             <Link
                                 className="btn-secondary"
                                 to={`/servidores/${perfil.id}/eventos`}

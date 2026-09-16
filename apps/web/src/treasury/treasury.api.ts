@@ -82,6 +82,26 @@ export interface ProporDivisao {
     note?: string;
 }
 
+/**
+ * Passa dinheiro do servidor para uma crew que lá joga.
+ *
+ * Só os servidores a fazem, e é a razão de um servidor ter tesouraria:
+ * o que ele ganha não se divide por membros, financia as crews. O
+ * endereço leva o servidor porque é dele que o dinheiro sai.
+ */
+export const transferToCrew = (
+    serverId: string,
+    input: { crewId: string; amount: string; description?: string },
+): Promise<unknown> =>
+    api<unknown>(`/treasury/servers/${serverId}/transfers`, {
+        method: 'POST',
+        body: {
+            crewId: input.crewId,
+            amount: input.amount,
+            ...(input.description ? { description: input.description } : {}),
+        },
+    });
+
 export const listDistributions = (crewId: string): Promise<Distribution[]> =>
     api<Distribution[]>(`/treasury/crews/${crewId}/distributions`);
 

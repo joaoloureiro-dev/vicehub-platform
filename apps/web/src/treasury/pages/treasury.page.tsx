@@ -4,9 +4,14 @@ import { Link, useParams } from 'react-router';
 import { ApiError } from '../../lib/api.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
-import { getCrewSubscription } from '../../billing/billing.api.js';
+import {
+    getCrewSubscription,
+    getServerSubscription,
+} from '../../billing/billing.api.js';
 import { getCrew } from '../../crews/crew.api.js';
+import { getServer } from '../../servers/server.api.js';
 import { ProporDivisao } from '../components/propor-divisao.js';
+import { TransferirParaCrew } from '../components/transferir-para-crew.js';
 import {
     approveMovement,
     cancelMovement,
@@ -41,18 +46,63 @@ const CATEGORIAS: MovementCategory[] = [
 const MONTANTE_VALIDO = /^[1-9][0-9]{0,18}$/;
 
 /**
- * A tesouraria de uma crew.
+ * O que esta página precisa de saber sobre o titular da tesouraria.
+ *
+ * Deliberadamente estreito: o perfil de uma crew e o de um servidor são
+ * muito diferentes, e o que os dois têm em comum — e o que aqui se usa
+ * — são duas coisas. Escrevê-las em vez de aceitar um dos dois perfis
+ * inteiros diz a quem vier a seguir o que pode mudar sem partir isto.
+ */
+interface TitularDaTesouraria {
+    name: string;
+    isPremium: boolean;
+}
+
+/**
+ * A tesouraria de uma crew ou de um servidor.
  *
  * O que aqui se propõe **não move nada**. Fica por decidir até alguém
  * com autoridade aprovar, e é nesse momento que o saldo muda — ou toda a
  * gente é paga, ou não é paga ninguém.
+ *
+ * Um ecrã para os dois, e não dois ecrãs. A API trata as duas
+ * tesourarias com as mesmas rotas há muito, e o cliente desta aplicação
+ * já sabia pedir as duas — só o servidor é que não tinha por onde lá
+ * chegar. Duas páginas quase iguais divergiam: a correção de um saldo
+ * ou de um aviso entrava numa e ficava esquecida na outra.
+ *
+ * O que muda entre elas é pouco e está marcado: uma crew divide o que
+ * ganha pelos membros, um servidor transfere para as crews que lá
+ * jogam.
  */
 export const TreasuryPage = () => {
     const t = useT();
     const { idioma } = useIdioma();
     const separador = separadorDoIdioma(idioma);
-    const { crewId } = useParams<{ crewId: string }>();
-    const dono: Dono = { tipo: 'crews', id: crewId as string };
+
+    /**
+     * De quem é esta tesouraria, lido do endereço.
+     *
+     * As duas rotas montam este mesmo componente, e é o parâmetro que
+     * lá vem que decide tudo o resto.
+     */
+    const { crewId, serverId } = useParams<{
+        crewId?: string;
+        serverId?: string;
+    }>();
+
+    const eCrew = crewId !== undefined;
+    const id = (eCrew ? crewId : serverId) as string;
+
+    const dono: Dono = eCrew
+        ? { tipo: 'crews', id }
+        : { tipo: 'servers', id };
+
+    /** Para onde se volta, e onde se compra o plano desta tesouraria. */
+    const paginaDoDono = eCrew ? `/crews/${id}` : `/servidores/${id}`;
+    const comprarPlano = eCrew
+        ? `/premium?crew=${encodeURIComponent(id)}`
+        : `/premium?servidor=${encodeURIComponent(id)}`;
 
     const [montante, setMontante] = useState('');
     const [direcao, setDirecao] = useState<MovementDirection>('credit');
@@ -65,7 +115,14 @@ export const TreasuryPage = () => {
     } | null>(null);
     const [aAgir, setAAgir] = useState(false);
 
-    const crew = useAsync(() => getCrew(crewId as string), [crewId]);
+    /**
+     * O perfil do titular. Os dois trazem `name` e `isPremium`, que é
+     * tudo o que esta página lhe pede.
+     */
+    const perfil = useAsync<TitularDaTesouraria>(
+        () => (eCrew ? getCrew(id) : getServer(id)),
+        [id, eCrew],
+    );
 
     /**
      * Ler a tesouraria exige `treasury:read`. Um 403 aqui é a resposta —
@@ -80,11 +137,11 @@ export const TreasuryPage = () => {
 
                 throw falha;
             }),
-        [crewId],
+        [id],
     );
 
     /**
-     * O plano da crew, só para quem a gere.
+     * O plano do titular, só para quem o gere.
      *
      * Serve uma coisa só: avisar de que a avaliação acaba. Um 403 é a
      * resposta a quem não decide sobre isto, e não uma avaria — quem
@@ -92,26 +149,38 @@ export const TreasuryPage = () => {
      */
     const plano = useAsync(
         () =>
-            getCrewSubscription(crewId as string).catch((falha: unknown) => {
-                if (falha instanceof ApiError && falha.status === 403) {
-                    return null;
-                }
+            (eCrew ? getCrewSubscription(id) : getServerSubscription(id)).catch(
+                (falha: unknown) => {
+                    if (falha instanceof ApiError && falha.status === 403) {
+                        return null;
+                    }
 
-                throw falha;
-            }),
-        [crewId],
+                    throw falha;
+                },
+            ),
+        [id, eCrew],
     );
 
+    /**
+     * As divisões são das crews e só delas.
+     *
+     * Um servidor não reparte o que ganha pelos seus membros: financia
+     * as crews que lá jogam, e isso é uma transferência. A API nem
+     * sequer tem a rota para o outro caso, por isso aqui nem se
+     * pergunta.
+     */
     const divisoes = useAsync(
         () =>
-            listDistributions(crewId as string).catch((falha: unknown) => {
-                if (falha instanceof ApiError && falha.status === 403) {
-                    return null;
-                }
+            !eCrew
+                ? Promise.resolve(null)
+                : listDistributions(id).catch((falha: unknown) => {
+                    if (falha instanceof ApiError && falha.status === 403) {
+                        return null;
+                    }
 
-                throw falha;
-            }),
-        [crewId],
+                    throw falha;
+                }),
+        [id, eCrew],
     );
 
     const montanteMau = montante.length > 0 && !MONTANTE_VALIDO.test(montante);
@@ -127,7 +196,7 @@ export const TreasuryPage = () => {
      * `undefined` enquanto o perfil não chegou: aí não se decide nada,
      * porque mostrar o aviso e tirá-lo a seguir era pior do que esperar.
      */
-    const podeMexer = crew.data?.isPremium;
+    const podeMexer = perfil.data?.isPremium;
 
     /**
      * Quantos dias faltam à avaliação, quando é uma avaliação que está
@@ -180,7 +249,7 @@ export const TreasuryPage = () => {
             <div className="panel">
                 <Alert kind="bad">{t.tesouraria.soParaMembros}</Alert>
                 <div className="foot">
-                    <Link to={`/crews/${crewId}`}>Ver a crew</Link>
+                    <Link to={paginaDoDono}>{t.tesouraria.verCrew}</Link>
                 </div>
             </div>
         );
@@ -192,8 +261,8 @@ export const TreasuryPage = () => {
         <div className="panel wide">
             <div className="panel-head">
                 <h1>{t.tesouraria.titulo}</h1>
-                <Link className="btn-secondary" to={`/crews/${crewId}`}>
-                    {crew.data ? crew.data.name : t.tesouraria.verCrew}
+                <Link className="btn-secondary" to={paginaDoDono}>
+                    {perfil.data ? perfil.data.name : t.tesouraria.verCrew}
                 </Link>
             </div>
 
@@ -251,7 +320,7 @@ export const TreasuryPage = () => {
                     */}
                     <Link
                         className="link-premium"
-                        to={`/premium?crew=${encodeURIComponent(crewId as string)}`}
+                        to={comprarPlano}
                     >
                         {t.tesouraria.verPlano}
                     </Link>
@@ -272,7 +341,7 @@ export const TreasuryPage = () => {
                     <p className="hint">
                         {t.tesouraria.avaliacaoAcaba(diasDeAvaliacao)}{' '}
                         <Link
-                            to={`/premium?crew=${encodeURIComponent(crewId as string)}`}
+                            to={comprarPlano}
                         >
                             {t.tesouraria.verPlano}
                         </Link>
@@ -379,9 +448,23 @@ export const TreasuryPage = () => {
               mexer no dinheiro é o que o plano paga, e dividir é mexer
               no dinheiro de toda a gente de uma vez.
             */}
-            {podeMexer === false ? null : (
+            {/*
+              O que um servidor faz com o que ganha: financiar as crews
+              que lá jogam. Onde a crew tem divisões, o servidor tem
+              isto — e atrás do mesmo plano, porque é mexer no dinheiro.
+            */}
+            {podeMexer === false || eCrew ? null : (
+                <TransferirParaCrew
+                    serverId={id}
+                    onTransferido={() => {
+                        tesouraria.reload();
+                    }}
+                />
+            )}
+
+            {podeMexer === false || !eCrew ? null : (
                 <ProporDivisao
-                    crewId={crewId as string}
+                    crewId={id}
                     onDividido={() => {
                         tesouraria.reload();
                         divisoes.reload();
