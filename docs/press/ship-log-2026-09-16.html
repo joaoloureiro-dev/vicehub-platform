@@ -1,0 +1,371 @@
+<title>ViceHub Ship Log</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+    /*
+      Os tokens são os do ViceHub, não uns meus: esta página é sobre o
+      produto e deve parecer o produto. Tema único e assumido — o mundo
+      do ViceHub é escuro e néon, e uma versão clara seria outra coisa.
+    */
+    :root {
+        --ground: #08060F;
+        --surface: #120E20;
+        --surface-high: #1A1430;
+        --edge: #2A2145;
+        --edge-lit: #453770;
+        --ink: #EDEAF7;
+        --muted: #A79FC4;
+        --faint: #7A729A;
+        --magenta: #E93CEF;
+        --violet: #8B5CF6;
+        --cyan: #22D3EE;
+        --sunset: #FF6B35;
+        --brand: linear-gradient(103deg, #E93CEF 0%, #8B5CF6 46%, #22D3EE 100%);
+
+        --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --display: 'Chakra Petch', 'Inter', system-ui, sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    body {
+        margin: 0;
+        background:
+            radial-gradient(120% 70% at 8% 0%, rgba(233, 60, 239, 0.13) 0%, transparent 58%),
+            radial-gradient(110% 60% at 96% 12%, rgba(34, 211, 238, 0.11) 0%, transparent 55%),
+            var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .folha {
+        max-width: 880px;
+        margin: 0 auto;
+        padding-inline: 24px;
+        padding-block: 56px 64px;
+        display: flex;
+        flex-direction: column;
+        gap: 44px;
+    }
+
+    /* ---------- cabeçalho ---------- */
+
+    .cabeca {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px 20px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--edge);
+    }
+
+    .marca {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 34px;
+        letter-spacing: -0.015em;
+        background: var(--brand);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .etiqueta {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--faint);
+    }
+
+    /* ---------- a história ---------- */
+
+    .tese {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .tese h1 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: clamp(30px, 6vw, 46px);
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        margin: 0;
+        text-wrap: balance;
+        max-width: 17ch;
+    }
+
+    .tese p {
+        margin: 0;
+        max-width: 62ch;
+        color: var(--muted);
+        font-size: 17px;
+    }
+
+    .tese strong {
+        color: var(--ink);
+        font-weight: 600;
+    }
+
+    /* ---------- os números ---------- */
+
+    .medidas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 28px;
+        padding: 14px 18px;
+        border: 1px solid var(--edge);
+        border-radius: 10px;
+        background: rgba(18, 14, 32, 0.6);
+        font-family: var(--mono);
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+    }
+
+    .medidas b {
+        color: var(--ink);
+        font-weight: 500;
+    }
+
+    /* ---------- o livro de registos ---------- */
+
+    .registo {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .registo h2 {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin: 0 0 14px;
+    }
+
+    /*
+      Cada entrada tem uma barra na cor da sua área. A cor diz de que
+      parte do produto se trata — acesso, dinheiro, os teus dados,
+      avisos, legal — e isso é informação verdadeira, não enfeite.
+    */
+    .entrada {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 4px 18px;
+        padding: 16px 0 16px 16px;
+        border-left: 2px solid var(--area, var(--edge-lit));
+        border-bottom: 1px solid var(--edge);
+    }
+
+    .entrada:last-child {
+        border-bottom: 0;
+    }
+
+    .area {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--area, var(--muted));
+        padding-top: 4px;
+    }
+
+    .entrada h3 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+        text-wrap: balance;
+    }
+
+    .entrada p {
+        grid-column: 2;
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+        max-width: 58ch;
+    }
+
+    .emrevisao {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 1px 7px;
+        border: 1px solid var(--sunset);
+        border-radius: 999px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--sunset);
+        vertical-align: 2px;
+    }
+
+    /* ---------- fecho ---------- */
+
+    .fecho {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding-top: 26px;
+        border-top: 1px solid var(--edge);
+    }
+
+    .fecho p {
+        margin: 0;
+        max-width: 60ch;
+        color: var(--muted);
+        font-size: 15px;
+    }
+
+    .fecho .assinatura {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faint);
+    }
+
+    @media (max-width: 560px) {
+        .entrada {
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        .entrada p {
+            grid-column: 1;
+        }
+
+        .area {
+            padding-top: 0;
+        }
+    }
+</style>
+
+<div class="folha">
+    <header class="cabeca">
+        <span class="marca">ViceHub</span>
+        <span class="etiqueta">Ship log &middot; 16 Sep 2026</span>
+    </header>
+
+    <section class="tese">
+        <h1>Applying was a place with no way back.</h1>
+        <p>
+            You asked to join a crew, and then nothing happened. The answer was
+            already sitting on your page &mdash; accepted, or turned down, with the
+            reason the leader wrote. <strong>Nobody ever went to fetch it.</strong>
+            So people who got in never came in, and people who were turned down
+            kept waiting for an answer that had already arrived.
+        </p>
+        <p>
+            That is the one I keep thinking about, and it is the smallest thing
+            here. Eight changes shipped this week.
+        </p>
+    </section>
+
+    <div class="medidas">
+        <span><b>8</b> shipped</span>
+        <span><b>1,835</b> tests passing</span>
+        <span><b>0</b> skipped</span>
+    </div>
+
+    <section class="registo">
+        <h2>What changed for the people using it</h2>
+
+        <article class="entrada" style="--area: var(--sunset)">
+            <span class="area">Signal</span>
+            <h3>You are told when your application is answered</h3>
+            <p>
+                One nullable column, no new table. The application already knew
+                when it was answered; what was missing was when you last looked.
+            </p>
+        </article>
+
+        <article class="entrada" style="--area: var(--sunset)">
+            <span class="area">Signal</span>
+            <h3>An inbox for what actually needs you</h3>
+            <p>
+                Join requests, crews asking to play on your server, money waiting
+                on a decision. Running three crews and a server meant checking
+                four pages, over and over, forever.
+            </p>
+        </article>
+
+        <article class="entrada" style="--area: var(--magenta)">
+            <span class="area">Money</span>
+            <h3>Every tier actually sells</h3>
+            <p>
+                Checkout took no plan at all and the webhook wrote the cheapest
+                one for everything. A server buying the &euro;99.99 tier would
+                have paid &euro;4.99 and received three crew seats.
+            </p>
+        </article>
+
+        <article class="entrada" style="--area: var(--magenta)">
+            <span class="area">Money</span>
+            <h3>Plans named in the reader&rsquo;s language</h3>
+            <p>
+                The single untranslated line on the pricing page was the one your
+                eye lands on to choose what to pay for. The name now comes from
+                the dictionary, like every other word on the page.
+            </p>
+        </article>
+
+        <article class="entrada" style="--area: var(--violet)">
+            <span class="area">Yours</span>
+            <h3>Delete your account</h3>
+            <p>
+                It refuses while something would be stranded by your leaving:
+                money still in your wallet, a crew only you can run, a plan still
+                billing a card. Each is something you could no longer reach.
+            </p>
+        </article>
+
+        <article class="entrada" style="--area: var(--violet)">
+            <span class="area">Yours</span>
+            <h3>Take your data with you</h3>
+            <p>
+                One file with everything we hold. No password hash and no session
+                tokens &mdash; those are keys to the account, not facts about
+                you, and a file in your Downloads is not where keys belong.
+            </p>
+        </article>
+
+        <article class="entrada" style="--area: var(--cyan)">
+            <span class="area">Access</span>
+            <h3>Sign in with Google</h3>
+            <p>
+                Discord was generalised into a provider contract on the way, so
+                the next one is a file rather than a rewrite.
+            </p>
+        </article>
+
+        <article class="entrada" style="--area: var(--muted)">
+            <span class="area">Legal</span>
+            <h3>Terms and a privacy policy written from the code</h3>
+            <p>
+                No analytics, no tracking, nothing sold. Two cookies, both
+                strictly necessary &mdash; which is exactly why there is no
+                cookie banner asking about them.
+            </p>
+        </article>
+    </section>
+
+    <footer class="fecho">
+        <p>
+            ViceHub is tooling for GTA&nbsp;VI roleplay communities: run your
+            crew, move what it earns, and prove who actually turned up.
+        </p>
+        <p class="assinatura">Built in the open &middot; MVP September 2026</p>
+    </footer>
+</div>

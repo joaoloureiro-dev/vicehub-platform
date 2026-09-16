@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+    :root {
+        --ground: #08060F;
+        --edge: #2A2145;
+        --ink: #EDEAF7;
+        --muted: #A79FC4;
+        --faint: #7A729A;
+        --magenta: #E93CEF;
+        --violet: #8B5CF6;
+        --cyan: #22D3EE;
+        --sunset: #FF6B35;
+        --brand: linear-gradient(103deg, #E93CEF 0%, #8B5CF6 46%, #22D3EE 100%);
+        --sans: 'Inter', system-ui, sans-serif;
+        --display: 'Chakra Petch', 'Inter', system-ui, sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; }
+
+    /* 1200 x 1500 — o retrato mais alto que o X mostra sem cortar. */
+    .cartao {
+        width: 1200px;
+        height: 1500px;
+        background:
+            radial-gradient(120% 60% at 6% 0%, rgba(233, 60, 239, 0.16) 0%, transparent 56%),
+            radial-gradient(110% 55% at 98% 10%, rgba(34, 211, 238, 0.13) 0%, transparent 52%),
+            var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        padding: 72px 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 44px;
+        justify-content: space-between;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .cabeca {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding-bottom: 26px;
+        border-bottom: 1px solid var(--edge);
+    }
+
+    .marca {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 42px;
+        letter-spacing: -0.015em;
+        background: var(--brand);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .selo {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--faint);
+    }
+
+    h1 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 66px;
+        line-height: 1.04;
+        letter-spacing: -0.022em;
+        margin: 0;
+        max-width: 16ch;
+    }
+
+    .conta {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.5;
+        color: var(--muted);
+        max-width: 46ch;
+    }
+
+    .conta b { color: var(--ink); font-weight: 600; }
+
+    .lista {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .linha {
+        display: grid;
+        grid-template-columns: 112px 1fr;
+        align-items: center;
+        gap: 22px;
+        padding: 21px 0 21px 18px;
+        border-left: 3px solid var(--area);
+        border-bottom: 1px solid var(--edge);
+        font-size: 23px;
+        font-weight: 600;
+        letter-spacing: -0.004em;
+    }
+
+    .linha:last-child { border-bottom: 0; }
+
+    .area {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--area);
+    }
+
+    .revisao {
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--sunset);
+        border: 1px solid var(--sunset);
+        border-radius: 999px;
+        padding: 2px 10px;
+        margin-left: 12px;
+        vertical-align: 3px;
+        font-weight: 400;
+    }
+
+    .rodape {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
+        padding-top: 26px;
+        border-top: 1px solid var(--edge);
+        font-family: var(--mono);
+        font-size: 16px;
+        letter-spacing: 0.06em;
+        color: var(--faint);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .rodape b { color: var(--ink); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="cartao">
+    <header class="cabeca">
+        <span class="marca">ViceHub</span>
+        <span class="selo">Ship log &middot; 16 Sep 2026</span>
+    </header>
+
+    <h1>Applying was a place with no way back.</h1>
+
+    <p class="conta">
+        You asked to join a crew, and then nothing happened. The answer was
+        already on your page &mdash; accepted, or turned down, with the reason.
+        <b>Nobody ever went to fetch it.</b>
+    </p>
+
+    <div class="lista">
+        <div class="linha" style="--area: var(--sunset)">
+            <span class="area">Signal</span>
+            <span>You are told when you get an answer</span>
+        </div>
+        <div class="linha" style="--area: var(--sunset)">
+            <span class="area">Signal</span>
+            <span>An inbox for what actually needs you</span>
+        </div>
+        <div class="linha" style="--area: var(--magenta)">
+            <span class="area">Money</span>
+            <span>Every tier actually sells</span>
+        </div>
+        <div class="linha" style="--area: var(--magenta)">
+            <span class="area">Money</span>
+            <span>Plans named in the reader&rsquo;s language</span>
+        </div>
+        <div class="linha" style="--area: var(--violet)">
+            <span class="area">Yours</span>
+            <span>Delete your account</span>
+        </div>
+        <div class="linha" style="--area: var(--violet)">
+            <span class="area">Yours</span>
+            <span>Take your data with you</span>
+        </div>
+        <div class="linha" style="--area: var(--cyan)">
+            <span class="area">Access</span>
+            <span>Sign in with Google</span>
+        </div>
+        <div class="linha" style="--area: var(--muted)">
+            <span class="area">Legal</span>
+            <span>Terms and privacy, written from the code</span>
+        </div>
+    </div>
+
+    <footer class="rodape">
+        <span><b>8</b> shipped &nbsp;&middot;&nbsp; <b>1,835</b> tests &nbsp;&middot;&nbsp; <b>0</b> skipped</span>
+        <span>Built in the open</span>
+    </footer>
+</div>
+</body>
+</html>
