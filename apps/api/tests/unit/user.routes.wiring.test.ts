@@ -64,6 +64,7 @@ describe('ligação das rotas de utilizador', () => {
             deleteOwnAccount: vi.fn(),
             exportOwnAccount: vi.fn(),
             pendingForMe: vi.fn(),
+            markAnswersSeen: vi.fn(),
         } as unknown as UserController;
 
         await app.register(userRoutes, { controller });
@@ -85,12 +86,18 @@ describe('ligação das rotas de utilizador', () => {
         return Array.isArray(preHandler) ? preHandler : [preHandler];
     };
 
-    it.each(['GET /me', 'PATCH /me', 'DELETE /me'])(
-        '%s exige autenticação',
-        (key) => {
-            expect(preHandlersOf(key)).toHaveLength(1);
-        },
-    );
+    it.each([
+        'GET /me',
+        'PATCH /me',
+        'DELETE /me',
+        /**
+         * Dizer que já vi as respostas muda uma data na minha conta, e
+         * a conta vem da sessão: sem token não há de quem falar.
+         */
+        'POST /me/pending/answers/seen',
+    ])('%s exige autenticação', (key) => {
+        expect(preHandlersOf(key)).toHaveLength(1);
+    });
 
     /**
      * Apagar a conta exige sessão e **mais nada**.

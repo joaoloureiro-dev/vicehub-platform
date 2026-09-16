@@ -16,6 +16,14 @@ export interface PendingItem {
 export interface PendingForUser {
     items: PendingItem[];
     friendRequests: number;
+    /** Respostas às minhas candidaturas que ainda não fui ver. */
+    answers: number;
+    /**
+     * Quando fui ver pela última vez. Serve para marcar as novas sem
+     * pedir nada outra vez: a página já tem o `respondedAt` de cada
+     * candidatura, e comparar as duas datas chega.
+     */
+    answersSeenAt: string | null;
     total: number;
 }
 
@@ -27,3 +35,12 @@ export interface PendingForUser {
  */
 export const getPending = (): Promise<PendingForUser> =>
     api<PendingForUser>('/users/me/pending');
+
+/**
+ * Dizer que já vi as respostas.
+ *
+ * Quem chama isto tem de voltar a pedir o pendente a seguir — é o que
+ * apaga o número da navegação. O contexto trata disso.
+ */
+export const markAnswersSeen = (): Promise<void> =>
+    api<void>('/users/me/pending/answers/seen', { method: 'POST' });

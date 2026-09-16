@@ -79,6 +79,19 @@ const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
     );
 
     /**
+     * Dizer que já vi as respostas às minhas candidaturas.
+     *
+     * `POST` e não `GET` porque muda uma data — e sem limite próprio
+     * pela mesma razão da rota acima: é chamada ao abrir uma página
+     * normal, e apertá-la dava um erro a quem navegasse depressa.
+     */
+    fastify.post(
+        '/me/pending/answers/seen',
+        { preHandler: [fastify.authenticate] },
+        controller.markAnswersSeen.bind(controller),
+    );
+
+    /**
      * Levar os dados consigo.
      *
      * Leva um limite próprio, muito mais apertado do que o global: é a

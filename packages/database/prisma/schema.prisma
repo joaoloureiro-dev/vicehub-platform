@@ -240,6 +240,19 @@ model User {
   token_version     Int       @default(1)
   last_login_at     DateTime?
 
+  /// Quando esta pessoa viu pela última vez as respostas às candidaturas
+  /// que fez.
+  ///
+  /// Guarda-se o momento de ter olhado, e não uma marca por candidatura:
+  /// o que se quer saber é se alguma resposta é mais recente do que a
+  /// última vez que se foi ver, e isso responde-se comparando datas. Uma
+  /// linha por candidatura seria uma segunda cópia de um facto que a
+  /// própria candidatura já tem — e a cópia é que acaba por dizer o que
+  /// a origem já não diz.
+  ///
+  /// `null` é quem nunca foi ver: tudo o que já foi respondido conta.
+  answers_seen_at DateTime?
+
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?

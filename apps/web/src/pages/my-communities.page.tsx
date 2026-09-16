@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useAsync } from '../lib/use-async.js';
+import { markAnswersSeen } from './pending.api.js';
+import { usePendente } from './pending.context.js';
 import { Alert } from '../auth/components/alert.js';
 import { listMyMemberships } from '../crews/crew.api.js';
 import { listMyServerMemberships } from '../servers/server.api.js';
@@ -25,6 +28,64 @@ export const MyCommunitiesPage = () => {
 
     const crews = useAsync(() => listMyMemberships(), []);
     const servidores = useAsync(() => listMyServerMemberships(), []);
+
+    const { pendente, recarregar } = usePendente();
+
+    /**
+     * Desde quando é que uma resposta é nova — fixado à chegada.
+     *
+     * Tem de ser lido **antes** de marcar como vistas, senão já nada
+     * seria novo: a marca que estamos prestes a escrever apagava
+     * precisamente aquilo que ela serve para assinalar.
+     *
+     * `undefined` é "ainda não sei", e é diferente de `null`, que é
+     * "nunca cá vim" — e quem nunca cá veio tem por ver tudo o que já
+     * foi respondido.
+     */
+    const [vistoAoChegar, setVistoAoChegar] = useState<
+        string | null | undefined
+    >(undefined);
+
+    useEffect(() => {
+        if (pendente === null || vistoAoChegar !== undefined) {
+            return;
+        }
+
+        setVistoAoChegar(pendente.answersSeenAt);
+    }, [pendente, vistoAoChegar]);
+
+    /**
+     * Estar aqui é ter visto. Marca, e volta a pedir para que o número
+     * ao lado de "as minhas" desapareça sem ser preciso recarregar.
+     *
+     * Falhar não é para mostrar: o pior que acontece é o número ficar
+     * mais um bocado, e um aviso de erro por causa disso era pior do
+     * que o número.
+     */
+    useEffect(() => {
+        if (vistoAoChegar === undefined) {
+            return;
+        }
+
+        void markAnswersSeen()
+            .then(recarregar)
+            .catch(() => undefined);
+    }, [vistoAoChegar, recarregar]);
+
+    /**
+     * Se esta resposta chegou depois da última vez que cá vim.
+     *
+     * Enquanto não se souber desde quando contar, nada é novo: marcar
+     * primeiro e corrigir a seguir dava um piscar de etiquetas a cada
+     * visita.
+     */
+    const respostaNova = (respondedAt: string | null): boolean => {
+        if (respondedAt === null || vistoAoChegar === undefined) {
+            return false;
+        }
+
+        return vistoAoChegar === null || respondedAt > vistoAoChegar;
+    };
 
     const aCarregar =
         (crews.loading && !crews.data) || (servidores.loading && !servidores.data);
@@ -160,6 +221,11 @@ export const MyCommunitiesPage = () => {
                                 <span className="pill recusada">
                                     {t.crews.candidaturaRecusada}
                                 </span>
+                                {respostaNova(adesao.respondedAt) ? (
+                                    <span className="pill nova">
+                                        {t.crews.respostaNova}
+                                    </span>
+                                ) : null}
 
                                 {/*
                                   O motivo, quando quem recusou escreveu
@@ -185,6 +251,11 @@ export const MyCommunitiesPage = () => {
                                 <span className="pill recusada">
                                     {t.crews.candidaturaRecusada}
                                 </span>
+                                {respostaNova(adesao.respondedAt) ? (
+                                    <span className="pill nova">
+                                        {t.crews.respostaNova}
+                                    </span>
+                                ) : null}
 
                                 {adesao.decisionNote ? (
                                     <p className="carta pre-linha">
@@ -210,6 +281,18 @@ export const MyCommunitiesPage = () => {
                                 <span className="cargo">
                                     {cargo(adesao.role, 'crew_member')}
                                 </span>
+                                {/*
+                                  Entrei agora e ainda não tinha vindo
+                                  cá saber. Uma crew onde estou há meses
+                                  não leva marca nenhuma: o que a põe é
+                                  a data da resposta, e a dessa é
+                                  antiga.
+                                */}
+                                {respostaNova(adesao.respondedAt) ? (
+                                    <span className="pill nova">
+                                        {t.crews.entrasteAgora}
+                                    </span>
+                                ) : null}
                             </li>
                         ))}
                     </ul>
@@ -234,6 +317,11 @@ export const MyCommunitiesPage = () => {
                                 <span className="cargo">
                                     {cargo(adesao.role, 'server_member')}
                                 </span>
+                                {respostaNova(adesao.respondedAt) ? (
+                                    <span className="pill nova">
+                                        {t.crews.entrasteAgora}
+                                    </span>
+                                ) : null}
                             </li>
                         ))}
                     </ul>

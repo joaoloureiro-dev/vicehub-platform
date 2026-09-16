@@ -1,0 +1,17 @@
+-- Quando alguém viu pela última vez as respostas às suas candidaturas.
+--
+-- Candidatar-se era um sítio sem volta: pedia-se para entrar numa crew e
+-- depois não acontecia nada. A resposta ficava à espera em /eu/comunidades,
+-- com a razão da recusa e tudo, mas ninguém a ia lá buscar — quem foi
+-- aceite não sabia que já podia entrar, e quem foi recusado ficava à
+-- espera de uma resposta que já tinha chegado.
+--
+-- Uma data, e não uma marca por candidatura. A candidatura já sabe quando
+-- foi respondida (`responded_at`); o que faltava era saber quando é que a
+-- pessoa olhou. Comparar as duas responde à pergunta sem guardar uma
+-- segunda cópia do facto — e é a cópia que acaba por dizer o que a origem
+-- já não diz.
+--
+-- Nulo em toda a gente que já existe, e é o que se quer: quem nunca foi
+-- ver tem por ver tudo o que já foi respondido.
+ALTER TABLE "User" ADD COLUMN "answers_seen_at" TIMESTAMP(3);

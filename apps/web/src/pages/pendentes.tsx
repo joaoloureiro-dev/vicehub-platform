@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
 
-import { useAsync } from '../lib/use-async.js';
 import { useT } from '../i18n/i18n.js';
-import { getPending, type PendingItem } from './pending.api.js';
+import { usePendente } from './pending.context.js';
+import { type PendingItem } from './pending.api.js';
 
 /**
  * O que precisa de mim.
@@ -19,7 +19,7 @@ import { getPending, type PendingItem } from './pending.api.js';
  */
 export const Pendentes = () => {
     const t = useT();
-    const pendente = useAsync(() => getPending(), []);
+    const { pendente } = usePendente();
 
     /**
      * A lista é derivada, e não lida do `total`.
@@ -29,8 +29,8 @@ export const Pendentes = () => {
      * Sem nada para mostrar, isto não mostra nada, que é o mesmo que
      * faz quando não há mesmo nada pendente.
      */
-    const items = pendente.data?.items ?? [];
-    const amizades = pendente.data?.friendRequests ?? 0;
+    const items = pendente?.items ?? [];
+    const amizades = pendente?.friendRequests ?? 0;
 
     if (items.length === 0 && amizades === 0) {
         return null;

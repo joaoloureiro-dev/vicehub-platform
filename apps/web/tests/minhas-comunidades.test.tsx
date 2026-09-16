@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 
+import { AuthProvider } from '../src/auth/auth.context.js';
 import { MyCommunitiesPage } from '../src/pages/my-communities.page.js';
+import { PendingProvider } from '../src/pages/pending.context.js';
 import { montarEcra, t } from './helpers.js';
 
 const json = (status: number, body: unknown): Response =>
@@ -36,7 +38,13 @@ const adesaoServidor = (extra: Record<string, unknown> = {}) => ({
 });
 
 /** Nada à espera: estes casos são sobre as listas, não sobre pendências. */
-const SEM_PENDENTES = { items: [], friendRequests: 0, total: 0 };
+const SEM_PENDENTES = {
+    items: [],
+    friendRequests: 0,
+    answers: 0,
+    answersSeenAt: null,
+    total: 0,
+};
 
 /**
  * Responde a cada diretório com o que o caso quiser.
@@ -88,6 +96,71 @@ const servir = (crews: unknown[]) =>
 afterEach(() => {
     vi.unstubAllGlobals();
 });
+
+/**
+ * O duplo completo: sessão, pendente, e a marca de "já vi".
+ *
+ * Cada rota é nomeada e as que não estiverem previstas rebentam. Um
+ * duplo que responde a tudo o mesmo mente ao teste — foi assim que a
+ * primeira versão do duplo daqui ao lado devolveu servidores à rota do
+ * feed.
+ */
+const servirComSessao = (cenario: {
+    crews?: unknown[];
+    servidores?: unknown[];
+    vistoEm?: string | null;
+    aoMarcar?: () => void;
+}) =>
+    vi.fn((url: string, opcoes?: { method?: string }) => {
+        const endereco = String(url);
+
+        if (endereco.endsWith('/auth/refresh')) {
+            return Promise.resolve(
+                json(200, {
+                    accessToken: 'token',
+                    user: {
+                        id: 'u1',
+                        email: 'jogador@vicehub.test',
+                        username: 'jogador',
+                    },
+                }),
+            );
+        }
+
+        if (endereco.endsWith('/users/me/pending/answers/seen')) {
+            cenario.aoMarcar?.();
+
+            return Promise.resolve(json(204, null));
+        }
+
+        if (endereco.includes('/users/me/pending')) {
+            return Promise.resolve(
+                json(200, {
+                    ...SEM_PENDENTES,
+                    answersSeenAt: cenario.vistoEm ?? null,
+                }),
+            );
+        }
+
+        if (endereco.includes('/crews')) {
+            return Promise.resolve(json(200, cenario.crews ?? []));
+        }
+
+        if (endereco.includes('/servers')) {
+            return Promise.resolve(json(200, cenario.servidores ?? []));
+        }
+
+        throw new Error(`pedido inesperado a ${opcoes?.method ?? 'GET'} ${endereco}`);
+    });
+
+const montarComSessao = () =>
+    montarEcra(
+        <AuthProvider>
+            <PendingProvider>
+                <MyCommunitiesPage />
+            </PendingProvider>
+        </AuthProvider>,
+    );
 
 /**
  * O que uma pessoa vê sobre as candidaturas que fez.
@@ -236,5 +309,156 @@ describe('as minhas comunidades', () => {
 
         expect(await screen.findByText(t.crews.responderamQueNao)).toBeDefined();
         expect(screen.getByText('Sem vagas de momento.')).toBeDefined();
+    });
+});
+
+/**
+ * Saber que já houve resposta.
+ *
+ * A recusa e o aceite já apareciam nesta página — o que faltava era
+ * **ser avisado**. Candidatar-se era um sítio sem volta: pedia-se
+ * entrada e depois era preciso lembrar-se de voltar cá para saber. Quem
+ * foi aceite não sabia que já podia entrar, e quem foi recusado ficava
+ * à espera de uma resposta que já cá estava.
+ */
+describe('as respostas que ainda não tinha visto', () => {
+    const RESPONDIDA_EM = '2026-09-16T10:00:00.000Z';
+
+    it('marca como nova a recusa que chegou depois da última visita', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servirComSessao({
+                crews: [
+                    adesao({
+                        status: 'rejected',
+                        respondedAt: RESPONDIDA_EM,
+                        decisionNote: 'Procuramos gente com mais horas.',
+                    }),
+                ],
+                vistoEm: '2026-09-15T00:00:00.000Z',
+            }),
+        );
+
+        montarComSessao();
+
+        expect(await screen.findByText(t.crews.respostaNova)).toBeDefined();
+    });
+
+    /**
+     * O outro desfecho leva a mesma marca: o que ela diz é "isto é novo
+     * para ti", e não se a notícia é boa.
+     */
+    it('e marca também a crew em que acabei de entrar', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servirComSessao({
+                crews: [
+                    adesao({
+                        status: 'active',
+                        role: 'crew_member',
+                        respondedAt: RESPONDIDA_EM,
+                    }),
+                ],
+                vistoEm: '2026-09-15T00:00:00.000Z',
+            }),
+        );
+
+        montarComSessao();
+
+        expect(await screen.findByText(t.crews.entrasteAgora)).toBeDefined();
+    });
+
+    /**
+     * Uma crew onde estou há meses não leva marca nenhuma. Sem isto, a
+     * página inteira ficava a piscar de novidades a cada visita, e uma
+     * marca que está sempre lá deixa de se ler ao fim de dois dias.
+     */
+    it('não marca o que já tinha sido respondido antes de eu cá vir', async () => {
+        /*
+         * Duas crews, e não uma: uma antiga e uma de agora.
+         *
+         * Com uma só, provar a ausência da marca era uma asserção vazia
+         * — a página desenha a lista antes de o pendente chegar, e
+         * nesse instante ainda nada está marcado. Esperar pela marca da
+         * nova é o que garante que já se sabe desde quando contar
+         * quando se olha para a antiga.
+         */
+        vi.stubGlobal(
+            'fetch',
+            servirComSessao({
+                crews: [
+                    adesao({
+                        crewId: 'crew-antiga',
+                        name: 'Veteranos',
+                        status: 'active',
+                        role: 'crew_member',
+                        respondedAt: '2026-08-01T00:00:00.000Z',
+                    }),
+                    adesao({
+                        crewId: 'crew-nova',
+                        name: 'Recentes',
+                        status: 'active',
+                        role: 'crew_member',
+                        respondedAt: RESPONDIDA_EM,
+                    }),
+                ],
+                vistoEm: '2026-09-15T00:00:00.000Z',
+            }),
+        );
+
+        montarComSessao();
+
+        /* A nova traz marca... */
+        expect(await screen.findByText(t.crews.entrasteAgora)).toBeDefined();
+
+        /* ...e é só uma: a antiga não a tem. */
+        expect(screen.getAllByText(t.crews.entrasteAgora)).toHaveLength(1);
+        expect(screen.getByText('Veteranos')).toBeDefined();
+    });
+
+    /**
+     * Quem nunca cá veio tem por ver tudo o que já foi respondido: é o
+     * caso de quem se candidatou antes de isto existir.
+     */
+    it('quem nunca cá veio vê como nova a resposta que já lá estava', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servirComSessao({
+                crews: [
+                    adesao({
+                        status: 'rejected',
+                        respondedAt: '2026-01-01T00:00:00.000Z',
+                    }),
+                ],
+                vistoEm: null,
+            }),
+        );
+
+        montarComSessao();
+
+        expect(await screen.findByText(t.crews.respostaNova)).toBeDefined();
+    });
+
+    /**
+     * Estar aqui é ter visto. Sem isto, o número ao lado de "as minhas"
+     * ficava para sempre a apontar para respostas que a pessoa já leu.
+     */
+    it('diz à API que já vi, ao abrir a página', async () => {
+        const marcou = vi.fn();
+
+        vi.stubGlobal(
+            'fetch',
+            servirComSessao({
+                crews: [adesao({ status: 'rejected', respondedAt: RESPONDIDA_EM })],
+                vistoEm: '2026-09-15T00:00:00.000Z',
+                aoMarcar: marcou,
+            }),
+        );
+
+        montarComSessao();
+
+        await waitFor(() => {
+            expect(marcou).toHaveBeenCalled();
+        });
     });
 });

@@ -198,6 +198,8 @@ export const pt = (p: Tools): Messages => ({
         pedirEntrada: 'Pedir para entrar',
         responderamQueNao: 'Responderam que não',
         candidaturaRecusada: 'Desta vez não',
+        respostaNova: 'Nova',
+        entrasteAgora: 'Entraste',
         enviadaEm: (data: string) => `Enviada a ${data}`,
         candidaturaEnviada: 'Candidatura enviada',
         retirarCandidatura: 'Retirar candidatura',

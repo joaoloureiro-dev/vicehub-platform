@@ -84,6 +84,29 @@ export class UserController {
     }
 
     /**
+     * POST /users/me/pending/answers/seen
+     *
+     * Diz que já vi as respostas às minhas candidaturas.
+     *
+     * Vive debaixo de `/pending` porque é o que apaga: o número que a
+     * navegação mostra é o mesmo de onde estas saem.
+     *
+     * Responde 204. Não há nada para devolver, e devolver a contagem a
+     * zero seria pedir ao ecrã que acreditasse numa segunda fonte em vez
+     * de voltar a perguntar à primeira.
+     */
+    async markAnswersSeen(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        await this.userService.markAnswersSeen(user.id);
+
+        reply.code(204).send();
+    }
+
+    /**
      * GET /users/me/export
      *
      * Tudo o que a plataforma tem sobre a própria conta, num JSON.
