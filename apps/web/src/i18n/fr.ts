@@ -327,6 +327,13 @@ export const fr = (p: Tools): Messages => ({
             p.plural(n, { one: '1 en attente', other: `${n} en attente` }),
     },
 
+    planos: {
+        premium: 'Crew',
+        server_base: 'Serveur',
+        server_plus: 'Serveur +',
+        server_unlimited: 'Serveur illimité',
+    },
+
     legal: {
         atualizado: (iso: string) => `Mis à jour le ${p.data(iso)}`,
         rascunho: 'Brouillon — pas encore en vigueur',

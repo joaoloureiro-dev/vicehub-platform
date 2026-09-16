@@ -26,6 +26,30 @@ describe('catálogo de planos', () => {
     });
 
     /**
+     * Nada aqui é texto para ler.
+     *
+     * Um plano teve `name` e `description`, escritos em português, e
+     * chegavam ao ecrã tal e qual: a página de preços em inglês
+     * oferecia "Servidor sem limite" com tudo o resto traduzido à
+     * volta. Um nome para ler é texto de interface, e texto de
+     * interface vive nos dicionários — este catálogo dá a chave, como
+     * o dos cargos.
+     *
+     * Este teste existe para que voltar a pô-los aqui custe uma
+     * decisão em vez de passar despercebido: são o campo que qualquer
+     * pessoa acrescenta sem pensar ao definir um plano novo.
+     */
+    it('não guarda texto para mostrar a ninguém', () => {
+        for (const key of PLAN_KEYS) {
+            const definicao: Record<string, unknown> = PLANS[key];
+
+            for (const campo of ['name', 'description', 'label', 'title']) {
+                expect(definicao[campo]).toBeUndefined();
+            }
+        }
+    });
+
+    /**
      * O vitalício é o único plano de graça, e tem de o ser: um preço
      * qualquer aqui faria uma soma de receita contar dinheiro que nunca
      * entrou.
