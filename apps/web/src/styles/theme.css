@@ -2906,3 +2906,143 @@ button.link:hover {
 .conquistas b {
     font-size: 14px;
 }
+
+/* ================= documentos legais ================= */
+
+/*
+  Um texto legal é para ser lido de uma ponta à outra, e não varrido.
+
+  Daí a medida: cerca de 68 caracteres por linha. A largura do resto da
+  plataforma serve listas e cartões, onde o olho salta; aqui obrigaria a
+  percorrer trinta centímetros para encontrar o princípio da linha
+  seguinte, que é exactamente como se desiste de ler uma página destas.
+*/
+.legal {
+    width: 100%;
+    max-width: 68ch;
+    margin: 0 auto;
+}
+
+.legal h1 {
+    margin: 0 0 4px;
+}
+
+.legal-data {
+    margin: 0 0 20px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--faint);
+}
+
+.legal-idioma {
+    margin: 0 0 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--edge);
+}
+
+.legal section {
+    margin-top: 32px;
+}
+
+.legal h2 {
+    font-size: 19px;
+    margin: 0 0 10px;
+}
+
+/*
+  O número da secção recuado para a margem.
+
+  Fica onde se procura quando se cita "a secção 4", sem entrar no meio
+  do título nem competir com ele.
+*/
+.legal-numero {
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 15px;
+}
+
+.legal p {
+    margin: 0 0 12px;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.legal ul {
+    margin: 0 0 12px;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.legal li {
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+/*
+  O aviso de que o documento ainda não vincula.
+
+  Em cor de perigo e não de nota: enquanto estiver aqui, a página está a
+  afirmar uma coisa que ainda não pode afirmar, e isso não é um
+  pormenor de estilo.
+*/
+.legal-rascunho {
+    margin: 0 0 24px;
+    padding: 14px 16px;
+    border: 1px solid var(--danger);
+    border-left-width: 3px;
+    border-radius: 0 10px 10px 0;
+    background: rgba(255, 92, 122, 0.08);
+}
+
+.legal-rascunho b {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--danger);
+}
+
+.legal-rascunho p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ================= rodapé ================= */
+
+.rodape {
+    border-top: 1px solid var(--edge);
+    padding: 20px var(--pad);
+    padding-left: max(var(--pad), env(safe-area-inset-left));
+    padding-right: max(var(--pad), env(safe-area-inset-right));
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    text-align: center;
+}
+
+.rodape nav {
+    display: flex;
+    gap: 20px;
+}
+
+.rodape a {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.rodape a:hover {
+    color: var(--ink);
+}
+
+/*
+  O aviso de marcas, à medida do texto que o rodeia e não à da página:
+  esticado a toda a largura ficava uma linha só, de um lado ao outro do
+  ecrã, que é a forma de garantir que não se lê.
+*/
+.rodape .hint {
+    max-width: 68ch;
+    margin: 0;
+    font-size: 12px;
+}

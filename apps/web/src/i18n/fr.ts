@@ -327,6 +327,20 @@ export const fr = (p: Tools): Messages => ({
             p.plural(n, { one: '1 en attente', other: `${n} en attente` }),
     },
 
+    legal: {
+        atualizado: (iso: string) => `Mis à jour le ${p.data(iso)}`,
+        rascunho: 'Brouillon — pas encore en vigueur',
+        rascunhoTexto:
+            'Il manque à ce document les coordonnées de la société derrière ViceHub : il n’engage donc encore personne. Il est publié pour être lu et relu, pas pour servir de référence.',
+        idioma:
+            'Publié en anglais. Toute traduction est fournie par commodité ; c’est le texte anglais qui fait foi.',
+        termos: 'Conditions',
+        privacidade: 'Confidentialité',
+        rodape: 'Mentions légales',
+        marcas:
+            'ViceHub est une plateforme indépendante, sans lien ni aval de Rockstar Games, Take-Two Interactive ou d’un quelconque éditeur. Les noms et marques des jeux appartiennent à leurs détenteurs.',
+    },
+
     perfil: {
         apagarConta: 'Supprimer mon compte',
         apagarContaExplicacao:
