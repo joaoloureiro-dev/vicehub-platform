@@ -112,7 +112,7 @@ export const termsDocument = (operator: LegalOperator): LegalDocument => {
                 heading: 'Refunds and your right to cancel',
                 body: [
                     'If you are a consumer in the EU you have 14 days to withdraw from a purchase of digital services, without giving a reason.',
-                    'Because a plan takes effect immediately, you are asked at checkout to agree that it starts at once, and you acknowledge that doing so ends that right once the service has been fully performed. Where it has only partly been performed, you pay for the part you used and we refund the rest.',
+                    'A plan takes effect immediately, which means that by the time you change your mind some of it has already been delivered. Where that is the case you pay for the part you used and we refund the rest. We do not treat starting a plan as giving up the right.',
                     `Outside that, refunds are not automatic, but ask: write to ${email} and we will look at it. If a paid feature did not work, we do not keep the money for it.`,
                 ],
             },
