@@ -74,6 +74,21 @@ export class UserRepository {
     }
 
     /**
+     * Fica a saber que esta pessoa já viu as respostas às candidaturas.
+     *
+     * A data é a de agora e não a da resposta mais recente: o que se
+     * regista é **quando se olhou**. Com a data da resposta, uma que
+     * chegasse entre a leitura da página e esta gravação ficava marcada
+     * como vista sem ninguém a ter visto.
+     */
+    markAnswersSeen(userId: string, agora: Date = new Date()) {
+        return this.database.user.updateMany({
+            where: { id: userId, is_deleted: false },
+            data: { answers_seen_at: agora },
+        });
+    }
+
+    /**
      * Procura um utilizador pelo username.
      *
      * Contas eliminadas por soft delete não são encontradas: para quem

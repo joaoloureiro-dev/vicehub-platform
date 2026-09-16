@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 
+import { AuthProvider } from '../src/auth/auth.context.js';
 import { Pendentes } from '../src/pages/pendentes.js';
+import { PendingProvider } from '../src/pages/pending.context.js';
 import { montarEcra, t } from './helpers.js';
 
 const json = (status: number, body: unknown): Response =>
@@ -15,6 +17,24 @@ const servir = (corpo: unknown) =>
     vi.fn((url: string) => {
         const endereco = String(url);
 
+        /*
+         * O pendente agora vem de um contexto, e o contexto só pergunta
+         * havendo sessão — por isso o duplo tem de saber responder à
+         * troca do cookie por um token, como a aplicação a faz.
+         */
+        if (endereco.endsWith('/auth/refresh')) {
+            return Promise.resolve(
+                json(200, {
+                    accessToken: 'token',
+                    user: {
+                        id: 'u1',
+                        email: 'jogador@vicehub.test',
+                        username: 'jogador',
+                    },
+                }),
+            );
+        }
+
         if (endereco.includes('/users/me/pending')) {
             return Promise.resolve(json(200, corpo));
         }
@@ -22,7 +42,23 @@ const servir = (corpo: unknown) =>
         throw new Error(`pedido inesperado a ${endereco}`);
     });
 
-const VAZIO = { items: [], friendRequests: 0, total: 0 };
+/** Como a aplicação o monta: com sessão, e com o pendente partilhado. */
+const montar = () =>
+    montarEcra(
+        <AuthProvider>
+            <PendingProvider>
+                <Pendentes />
+            </PendingProvider>
+        </AuthProvider>,
+    );
+
+const VAZIO = {
+    items: [],
+    friendRequests: 0,
+    answers: 0,
+    answersSeenAt: null,
+    total: 0,
+};
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -41,7 +77,7 @@ describe('o que precisa de mim', () => {
     it('não aparece de todo quando não há nada à espera', async () => {
         vi.stubGlobal('fetch', servir(VAZIO));
 
-        montarEcra(<Pendentes />);
+        montar();
 
         await waitFor(() => {
             expect(screen.queryByText(t.pendentes.titulo)).toBeNull();
@@ -66,7 +102,7 @@ describe('o que precisa de mim', () => {
             }),
         );
 
-        montarEcra(<Pendentes />);
+        montar();
 
         expect(await screen.findByText('Vice Kings')).toBeTruthy();
         expect(screen.getByText(t.pendentes.pedidosDeEntrada(3))).toBeTruthy();
@@ -101,7 +137,7 @@ describe('o que precisa de mim', () => {
             }),
         );
 
-        montarEcra(<Pendentes />);
+        montar();
 
         const ligacao = await screen.findByText('Onde');
 
@@ -114,7 +150,7 @@ describe('o que precisa de mim', () => {
             servir({ items: [], friendRequests: 2, total: 2 }),
         );
 
-        montarEcra(<Pendentes />);
+        montar();
 
         expect(
             await screen.findByText(t.pendentes.pedidosDeAmizade(2)),
@@ -129,7 +165,7 @@ describe('o que precisa de mim', () => {
     it('não rebenta com uma resposta sem a forma esperada', async () => {
         vi.stubGlobal('fetch', servir({}));
 
-        montarEcra(<Pendentes />);
+        montar();
 
         await waitFor(() => {
             expect(screen.queryByText(t.pendentes.titulo)).toBeNull();
@@ -142,7 +178,7 @@ describe('o que precisa de mim', () => {
             vi.fn((_url: string) => Promise.reject(new Error('sem rede'))),
         );
 
-        montarEcra(<Pendentes />);
+        montar();
 
         await waitFor(() => {
             expect(screen.queryByText(t.pendentes.titulo)).toBeNull();

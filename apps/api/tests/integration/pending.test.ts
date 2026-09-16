@@ -66,8 +66,20 @@ describe('o que está à espera de mim', () => {
                 count: number;
             }[];
             friendRequests: number;
+            answers: number;
+            answersSeenAt: string | null;
             total: number;
         };
+    };
+
+    const marcarVistas = async (token: string) => {
+        const resposta = await app.inject({
+            method: 'POST',
+            url: '/api/v1/users/me/pending/answers/seen',
+            headers: auth(token),
+        });
+
+        expect(resposta.statusCode, resposta.body).toBe(204);
     };
 
     const dosTipos = (
@@ -139,6 +151,258 @@ describe('o que está à espera de mim', () => {
         await prisma.$disconnect();
     });
 
+    /**
+     * O outro lado da caixa.
+     *
+     * Tudo o resto aqui é trabalho meu — há alguém à espera de mim.
+     * Isto é o contrário: **eu** estive à espera, e a resposta chegou.
+     * Sem isto, candidatar-se era um sítio sem volta — quem foi aceite
+     * não sabia que já podia entrar, e quem foi recusado continuava à
+     * espera de uma resposta que já lá estava.
+     */
+    describe('as respostas às minhas candidaturas', () => {
+        it('conta a resposta para quem se candidatou, e não para quem respondeu', async () => {
+            const novo = await register(`resp${marca}`);
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${crewId}/join`,
+                headers: auth(novo),
+                payload: {},
+            });
+
+            const perfil = await app.inject({
+                method: 'GET',
+                url: '/api/v1/users/me',
+                headers: auth(novo),
+            });
+
+            const antesDeResponder = await pendentes(novo);
+            expect(antesDeResponder.answers).toBe(0);
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${crewId}/requests/${perfil.json().id as string}/accept`,
+                headers: auth(lider),
+            });
+
+            const depois = await pendentes(novo);
+
+            expect(depois.answers).toBe(1);
+            expect(depois.total).toBeGreaterThanOrEqual(1);
+
+            /*
+             * Quem respondeu não ganha nada com isto: a resposta é dele
+             * e ele já sabe que a deu.
+             */
+            const doLider = await pendentes(lider);
+            expect(doLider.answers).toBe(0);
+        });
+
+        it('uma recusa conta tanto como um aceite', async () => {
+            const novo = await register(`recu${marca}`);
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${crewId}/join`,
+                headers: auth(novo),
+                payload: {},
+            });
+
+            const perfil = await app.inject({
+                method: 'GET',
+                url: '/api/v1/users/me',
+                headers: auth(novo),
+            });
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${crewId}/requests/${perfil.json().id as string}/reject`,
+                headers: auth(lider),
+                payload: { reason: 'Procuramos gente com mais horas.' },
+            });
+
+            expect((await pendentes(novo)).answers).toBe(1);
+        });
+
+        it('deixa de contar depois de eu ir ver, e não volta', async () => {
+            const novo = await register(`vist${marca}`);
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${crewId}/join`,
+                headers: auth(novo),
+                payload: {},
+            });
+
+            const perfil = await app.inject({
+                method: 'GET',
+                url: '/api/v1/users/me',
+                headers: auth(novo),
+            });
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${crewId}/requests/${perfil.json().id as string}/accept`,
+                headers: auth(lider),
+            });
+
+            expect((await pendentes(novo)).answers).toBe(1);
+
+            await marcarVistas(novo);
+
+            const depois = await pendentes(novo);
+            expect(depois.answers).toBe(0);
+            expect(depois.answersSeenAt).not.toBeNull();
+
+            /* Marcar outra vez não é erro, e não ressuscita nada. */
+            await marcarVistas(novo);
+            expect((await pendentes(novo)).answers).toBe(0);
+        });
+
+        /**
+         * A que chega **depois** de eu ter ido ver conta na mesma. Sem
+         * isto, uma ida à página calava todas as respostas futuras.
+         */
+        it('uma resposta nova depois de eu ter ido ver volta a contar', async () => {
+            const novo = await register(`dep${marca}`);
+
+            await marcarVistas(novo);
+            expect((await pendentes(novo)).answers).toBe(0);
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${serverId}/join`,
+                headers: auth(novo),
+                payload: {},
+            });
+
+            const perfil = await app.inject({
+                method: 'GET',
+                url: '/api/v1/users/me',
+                headers: auth(novo),
+            });
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${serverId}/requests/${perfil.json().id as string}/accept`,
+                headers: auth(lider),
+            });
+
+            expect((await pendentes(novo)).answers).toBe(1);
+        });
+
+        it('quem nunca foi ver tem por ver o que já foi respondido', async () => {
+            const nunca = await pendentes(candidato);
+
+            expect(nunca.answersSeenAt).toBeNull();
+        });
+
+        /**
+         * Uma crew apagada depois de me responder não conta.
+         *
+         * A mesma regra do resto desta caixa, e pela mesma razão: o
+         * número existe para me levar a uma página, e essa página já
+         * não abre. Aqui é ainda mais claro — mandar alguém ver uma
+         * resposta de uma crew que deixou de existir é pior do que não
+         * lhe dizer nada.
+         */
+        it('não conta a resposta de uma crew que entretanto foi apagada', async () => {
+            const novo = await register(`apag${marca}`);
+
+            const efemera = await app.inject({
+                method: 'POST',
+                url: '/api/v1/crews',
+                headers: auth(lider),
+                payload: {
+                    name: `Efemera ${marca}`,
+                    tag: `F${marca.slice(-6)}`,
+                },
+            });
+
+            const id = efemera.json().id as string;
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${id}/join`,
+                headers: auth(novo),
+                payload: {},
+            });
+
+            const perfil = await app.inject({
+                method: 'GET',
+                url: '/api/v1/users/me',
+                headers: auth(novo),
+            });
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${id}/requests/${perfil.json().id as string}/accept`,
+                headers: auth(lider),
+            });
+
+            expect((await pendentes(novo)).answers).toBe(1);
+
+            await prisma.crew.update({
+                where: { id },
+                data: { is_deleted: true, deleted_at: new Date() },
+            });
+
+            expect((await pendentes(novo)).answers).toBe(0);
+        });
+
+        /** E o mesmo do outro lado. Os dois ramos, os dois cobertos. */
+        it('nem a de um servidor apagado', async () => {
+            const novo = await register(`apsv${marca}`);
+
+            const efemero = await app.inject({
+                method: 'POST',
+                url: '/api/v1/servers',
+                headers: auth(lider),
+                payload: { name: `Efemero ${marca}` },
+            });
+
+            const id = efemero.json().id as string;
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${id}/join`,
+                headers: auth(novo),
+                payload: {},
+            });
+
+            const perfil = await app.inject({
+                method: 'GET',
+                url: '/api/v1/users/me',
+                headers: auth(novo),
+            });
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${id}/requests/${perfil.json().id as string}/accept`,
+                headers: auth(lider),
+            });
+
+            expect((await pendentes(novo)).answers).toBe(1);
+
+            await prisma.server.update({
+                where: { id },
+                data: { is_deleted: true, deleted_at: new Date() },
+            });
+
+            expect((await pendentes(novo)).answers).toBe(0);
+        });
+
+        it('marcar como vistas exige conta', async () => {
+            const resposta = await app.inject({
+                method: 'POST',
+                url: '/api/v1/users/me/pending/answers/seen',
+            });
+
+            expect(resposta.statusCode).toBe(401);
+        });
+    });
+
     describe('está cá o que me espera', () => {
         it('conta o pedido de entrada para quem gere a crew', async () => {
             const dados = await pendentes(lider);
@@ -188,7 +452,16 @@ describe('o que está à espera de mim', () => {
             const dados = await pendentes(membro);
 
             expect(dosTipos(dados, 'crew_join_request')).toHaveLength(0);
-            expect(dados.total).toBe(0);
+            expect(dados.items).toHaveLength(0);
+
+            /*
+             * O total dele não é zero, e não devia ser: este membro foi
+             * aceite na crew e ainda não veio saber. O que se prova
+             * aqui é que **não há trabalho nenhum à espera dele** — a
+             * lista está vazia —, e não que ele não tenha notícias.
+             */
+            expect(dados.answers).toBe(1);
+            expect(dados.total).toBe(1);
         });
 
         it('não conta nada a quem está de fora', async () => {

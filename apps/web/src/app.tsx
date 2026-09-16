@@ -10,7 +10,6 @@ import {
 
 import { useAuth } from './auth/auth.context.js';
 import { logout } from './auth/auth.api.js';
-import { useAsync } from './lib/use-async.js';
 import { useT } from './i18n/i18n.js';
 import { LanguagePicker } from './i18n/language-picker.js';
 import { LoginPage } from './auth/pages/login.page.js';
@@ -31,7 +30,7 @@ import { LandingPage } from './pages/landing.page.js';
 import { Navegacao } from './components/navegacao.js';
 import { PrivacyPage, TermsPage } from './legal/pages/legal.page.js';
 import { Rodape } from './components/rodape.js';
-import { getPending } from './pages/pending.api.js';
+import { usePendente } from './pages/pending.context.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
@@ -101,18 +100,16 @@ const Shell = () => {
     const { pathname } = useLocation();
 
     /**
-     * Pedido uma vez por carregamento da aplicação, e não a cada
-     * navegação: o Shell não se volta a montar ao mudar de rota.
+     * Lido do contexto, e não pedido aqui.
      *
-     * Sem sessão não há nada a contar, e pedi-lo dava 401 a quem só
-     * está a ver o diretório de crews.
+     * Antes, este ecrã e a secção do topo de `/eu/comunidades` pediam a
+     * mesma coisa cada um por si — três idas à API para desenhar uma
+     * página. E, pior, nada podia dizer a este número que ele já não
+     * estava certo depois de a pessoa ver as respostas.
      */
-    const pendente = useAsync(
-        () => (user ? getPending() : Promise.resolve(null)),
-        [user?.id],
-    );
+    const { pendente } = usePendente();
 
-    const porResponder = pendente.data?.total ?? 0;
+    const porResponder = pendente?.total ?? 0;
 
     return (
         <div className="shell">

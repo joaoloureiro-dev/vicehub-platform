@@ -3046,3 +3046,18 @@ button.link:hover {
     margin: 0;
     font-size: 12px;
 }
+
+/*
+  A marca de uma resposta que ainda não tinha sido vista.
+
+  Na cor do acento e não na de perigo: "entraste" e "responderam que
+  não" levam a mesma marca, porque o que ela diz é "isto é novo para
+  ti" e não se a notícia é boa. O que diz se é boa é a etiqueta ao lado.
+
+  Desaparece sozinha na visita seguinte — chegar aqui é ter visto.
+*/
+.pill.nova {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(34, 211, 238, 0.1);
+}

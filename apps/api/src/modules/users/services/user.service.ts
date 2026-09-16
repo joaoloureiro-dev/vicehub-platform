@@ -271,6 +271,17 @@ export class UserService {
         return this.userRepository.pendingFor(userId);
     }
 
+    /**
+     * Marca como vistas as respostas às candidaturas desta pessoa.
+     *
+     * Não devolve nada e não se queixa se não houver nada por ver:
+     * marcar duas vezes é o que acontece a quem abre a mesma página
+     * duas vezes seguidas, e não é um erro.
+     */
+    async markAnswersSeen(userId: string): Promise<void> {
+        await this.userRepository.markAnswersSeen(userId);
+    }
+
     async exportOwnAccount(userId: string): Promise<AccountExport> {
         const exportacao = await this.userRepository.exportAccount(userId);
 

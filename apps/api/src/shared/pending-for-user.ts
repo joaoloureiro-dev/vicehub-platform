@@ -48,6 +48,29 @@ export interface PendingForUser {
     items: PendingItem[];
     /** Pedidos de amizade recebidos e ainda por responder. */
     friendRequests: number;
+
+    /**
+     * Candidaturas minhas que já foram respondidas e que eu ainda não
+     * fui ver.
+     *
+     * É o outro lado desta caixa. Tudo o resto aqui é trabalho meu — há
+     * alguém à espera de mim. Isto é o contrário: **eu** estive à espera
+     * e a resposta já chegou. Sem isto, candidatar-se era um sítio sem
+     * volta: quem foi aceite não sabia que já podia entrar, e quem foi
+     * recusado continuava à espera de uma resposta que já lá estava.
+     */
+    answers: number;
+
+    /**
+     * Quando esta pessoa foi ver as respostas pela última vez.
+     *
+     * Vai para o ecrã para que ele possa marcar as que são novas sem
+     * pedir nada outra vez: a página das comunidades já traz o
+     * `respondedAt` de cada candidatura, e comparar as duas datas é
+     * tudo o que é preciso. `null` é quem nunca lá foi.
+     */
+    answersSeenAt: string | null;
+
     /** A soma de tudo, que é o que o ecrã mostra no sino. */
     total: number;
 }
@@ -143,6 +166,21 @@ export const buildPendingForUser = async (
     userId: string,
     agora: Date = new Date(),
 ): Promise<PendingForUser> => {
+    /**
+     * Quando esta pessoa foi ver as respostas pela última vez.
+     *
+     * Lido antes de tudo o resto porque as contagens dependem dele. Uma
+     * conta que já não exista não tem nada por ver — e chegar aqui sem
+     * conta não devia acontecer, mas responder zero é melhor do que
+     * rebentar uma caixa de entrada inteira por causa disso.
+     */
+    const dono = await database.user.findFirst({
+        where: { id: userId, is_deleted: false },
+        select: { answers_seen_at: true },
+    });
+
+    const visto = dono?.answers_seen_at ?? null;
+
     const poderes = await ondePode(database, userId);
 
     const crewsQueGere = comEstePoder(poderes, 'crew', 'crew:manage_members');
@@ -175,6 +213,7 @@ export const buildPendingForUser = async (
         filiacoes,
         comPlano,
         amizades,
+        respostas,
     ] = await Promise.all([
         contarPorComunidade(database, 'crew', crewsQueGere),
         contarPorComunidade(database, 'server', servidoresQueGere),
@@ -193,6 +232,7 @@ export const buildPendingForUser = async (
                 OR: [{ userAId: userId }, { userBId: userId }],
             },
         }),
+        contarRespostas(database, userId, visto),
     ]);
 
     const decisoes = await contarDecisoes(database, comPlano);
@@ -207,9 +247,74 @@ export const buildPendingForUser = async (
     return {
         items,
         friendRequests: amizades,
+        answers: respostas,
+        answersSeenAt: visto === null ? null : visto.toISOString(),
         total:
-            items.reduce((soma, item) => soma + item.count, 0) + amizades,
+            items.reduce((soma, item) => soma + item.count, 0)
+            + amizades
+            + respostas,
     };
+};
+
+/**
+ * Quantas respostas às minhas candidaturas chegaram desde a última vez
+ * que fui ver.
+ *
+ * Conta as duas espécies de comunidade de uma vez. Uma candidatura
+ * conta se **já foi respondida** e se essa resposta é posterior ao
+ * momento em que olhei — quem nunca olhou tem todas por ver, que é o
+ * que faz sentido para quem acaba de descobrir que isto existe.
+ *
+ * As comunidades apagadas ficam de fora, pela mesma razão que ficam no
+ * resto desta caixa: contá-las mandava a pessoa a uma página que já não
+ * abre.
+ */
+const contarRespostas = async (
+    database: DatabaseClient,
+    userId: string,
+    visto: Date | null,
+): Promise<number> => {
+    const respondidasDepois = {
+        userId,
+        is_deleted: false,
+        /**
+         * `responded_at` é o que distingue uma candidatura respondida de
+         * uma à espera, e existe nos dois desfechos: quem entrou e quem
+         * levou não.
+         */
+        responded_at: visto === null ? { not: null } : { gt: visto },
+        /**
+         * Uma resposta que dei a mim próprio não é novidade nenhuma.
+         *
+         * Quem funda uma crew entra nela com a adesão já respondida, e
+         * respondida por si: sem esta linha, criar uma crew dava logo
+         * um "entraste" ao lado de "as minhas", a dizer a quem acabou
+         * de a fundar aquilo que ele próprio acabou de fazer.
+         *
+         * É a mesma regra que os pedidos de amizade aqui ao lado já
+         * seguem: o que eu fiz não me espera a mim.
+         */
+        responded_by: { not: userId },
+    };
+
+    const [crews, servidores] = await Promise.all([
+        database.membership.count({
+            where: {
+                ...respondidasDepois,
+                crewId: { not: null },
+                crew: { is_deleted: false },
+            },
+        }),
+        database.membership.count({
+            where: {
+                ...respondidasDepois,
+                serverId: { not: null },
+                server: { is_deleted: false },
+            },
+        }),
+    ]);
+
+    return crews + servidores;
 };
 
 /**

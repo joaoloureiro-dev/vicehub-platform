@@ -199,6 +199,8 @@ export const fr = (p: Tools): Messages => ({
         pedirEntrada: 'Demander à rejoindre',
         responderamQueNao: 'Ils ont répondu non',
         candidaturaRecusada: 'Pas cette fois',
+        respostaNova: 'Nouvelle',
+        entrasteAgora: 'Tu es dedans',
         enviadaEm: (data: string) => `Envoyée le ${data}`,
         candidaturaEnviada: 'Candidature envoyée',
         retirarCandidatura: 'Retirer la candidature',
