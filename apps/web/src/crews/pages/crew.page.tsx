@@ -8,6 +8,8 @@ import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { CrewAffiliation } from '../../affiliations/components/crew-affiliation.js';
+import { CARGOS_DA_CREW } from '../crew.types.js';
+import { EscolherCargo } from '../../components/escolher-cargo.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ApagarComunidade } from '../../components/apagar-comunidade.js';
 import { Conquistas } from '../../components/conquistas.js';
@@ -25,6 +27,7 @@ import {
     listMyMemberships,
     rejectJoinRequest,
     removeMember,
+    setMemberRole,
     requestToJoin,
     updateCrewAppearance,
     withdrawJoinRequest,
@@ -439,12 +442,45 @@ export const CrewPage = () => {
                     {membros.data?.map((membro) => (
                         <li key={membro.userId}>
                             <span className="nome">{membro.username}</span>
-                            <span className="cargo">
-                                {t.cargos[
-                                    (membro.role ??
-                                        'crew_member') as keyof typeof t.cargos
-                                ] ?? membro.role}
-                            </span>
+                            {/*
+                              Quem manda escolhe; quem não manda lê. A
+                              lista mostrava o cargo e não havia por onde
+                              o mudar — nem aqui nem em lado nenhum —, e
+                              sem isso ninguém podia ser feito oficial:
+                              justamente o cargo à volta do qual a
+                              tesouraria foi desenhada.
+
+                              Alterar cargos exige `crew:manage`, e não a
+                              gestão de membros: com a segunda, um
+                              oficial promovia um cúmplice a líder e
+                              tomava a crew a quem a fundou. Por isso o
+                              portão aqui é `souLider` e não
+                              `giroCandidaturas`.
+                            */}
+                            {souLider && membro.userId !== user?.id ? (
+                                <EscolherCargo
+                                    cargos={CARGOS_DA_CREW}
+                                    atual={membro.role ?? 'crew_member'}
+                                    nome={membro.username}
+                                    desativado={aAgir}
+                                    aoEscolher={(cargo) =>
+                                        void agir(() =>
+                                            setMemberRole(
+                                                perfil.id,
+                                                membro.userId,
+                                                cargo,
+                                            ),
+                                        )
+                                    }
+                                />
+                            ) : (
+                                <span className="cargo">
+                                    {t.cargos[
+                                        (membro.role ??
+                                            'crew_member') as keyof typeof t.cargos
+                                    ] ?? membro.role}
+                                </span>
+                            )}
 
                             {giroCandidaturas && membro.userId !== user?.id ? (
                                 <div className="linha-acoes">
@@ -465,6 +501,14 @@ export const CrewPage = () => {
                         </li>
                     ))}
                 </ul>
+
+                {/*
+                  O que um cargo dá, e o que a API recusa, escrito uma
+                  vez por baixo da lista em vez de repetido em cada
+                  linha. Só a quem pode escolher: a quem não pode, era
+                  explicar um botão que não tem.
+                */}
+                {souLider ? <p className="hint">{t.crews.oQueOCargoDa}</p> : null}
             </section>
 
             {/*

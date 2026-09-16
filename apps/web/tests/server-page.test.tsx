@@ -31,6 +31,8 @@ const perfil = {
  */
 const membros = [
     { userId: 'u1', username: 'dono', avatarUrl: null, role: 'server_owner', joinedAt: '2026-01-01T00:00:00.000Z' },
+    /* Alguém além de quem manda, para haver cargo que mudar. */
+    { userId: 'u2', username: 'habitue', avatarUrl: null, role: 'server_member', joinedAt: '2026-01-02T00:00:00.000Z' },
 ];
 
 const membrosSemMandar = [
@@ -62,6 +64,17 @@ const servidor = (opcoes: {
     folga?: { used: number; limit: number | null; canAcceptMore: boolean };
     /** As crews que pediram para jogar no servidor. */
     pedidosDeCrews?: unknown[];
+    /**
+     * A lista de membros, quando o caso quer desligá-la das
+     * candidaturas.
+     *
+     * Por omissão as duas andam juntas — quem gere membros é o dono —,
+     * e isso esconde o caso que importa: um **moderador** gere membros
+     * e não manda no servidor. Sem o poder escrever, um ecrã que
+     * trocasse `server:manage` por a gestão de membros passava a suite
+     * inteira.
+     */
+    membros?: unknown[];
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -101,7 +114,13 @@ const servidor = (opcoes: {
 
         if (endereco.endsWith('/members')) {
             return Promise.resolve(
-                json(200, opcoes.requests.status === 200 ? membros : membrosSemMandar),
+                json(
+                    200,
+                    opcoes.membros
+                        ?? (opcoes.requests.status === 200
+                            ? membros
+                            : membrosSemMandar),
+                ),
             );
         }
 
@@ -681,5 +700,113 @@ describe('a folga de crews de um servidor', () => {
                 String(argumentos[0]).includes('/allowance'),
             ),
         ).toHaveLength(0);
+    });
+});
+
+/**
+ * O cargo de um membro do servidor.
+ *
+ * O mesmo que nas crews, e pela mesma razão: a lista mostrava o cargo e
+ * não havia por onde o mudar, por isso ninguém podia ser feito
+ * moderador.
+ */
+describe('mudar o cargo de um membro do servidor', () => {
+    it('promove um membro ao cargo escolhido', async () => {
+        const fetchMock = servidor({ requests: json(200, []) });
+
+        vi.stubGlobal('fetch', fetchMock);
+        montar();
+
+        const campo = await screen.findByLabelText(t.crews.cargoDe('habitue'));
+
+        await userEvent.selectOptions(campo, 'server_moderator');
+
+        await waitFor(() => {
+            const chamada = fetchMock.mock.calls.find((argumentos) =>
+                String(argumentos[0]).endsWith(
+                    '/servers/server-1/members/u2/role',
+                ),
+            );
+
+            expect(chamada).toBeDefined();
+            expect(
+                JSON.parse(
+                    String(
+                        (chamada?.[1] as { body?: string } | undefined)?.body ??
+                            '{}',
+                    ),
+                ),
+            ).toEqual({ role: 'server_moderator' });
+        });
+    });
+
+    /**
+     * Os cargos oferecidos são os do servidor, e não os de uma crew.
+     * Sem isto, o componente partilhado podia servir a lista errada e o
+     * pedido ia com um cargo que a API recusa.
+     */
+    it('oferece os cargos de um servidor', async () => {
+        vi.stubGlobal('fetch', servidor({ requests: json(200, []) }));
+        montar();
+
+        const campo = await screen.findByLabelText(t.crews.cargoDe('habitue'));
+
+        expect(
+            [...campo.querySelectorAll('option')].map((opcao) => opcao.value),
+        ).toEqual(['server_owner', 'server_moderator', 'server_member']);
+    });
+
+    /**
+     * Um moderador gere membros e não manda no servidor. Com o portão
+     * errado, ficava com o campo dos cargos — e com ele o servidor de
+     * quem o criou.
+     */
+    it('não aparece a um moderador, que gere membros mas não manda', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({
+                requests: json(200, []),
+                membros: [
+                    {
+                        userId: 'u1',
+                        username: 'moderador',
+                        avatarUrl: null,
+                        role: 'server_moderator',
+                        joinedAt: '2026-01-01T00:00:00.000Z',
+                    },
+                    {
+                        userId: 'u2',
+                        username: 'habitue',
+                        avatarUrl: null,
+                        role: 'server_member',
+                        joinedAt: '2026-01-02T00:00:00.000Z',
+                    },
+                ],
+            }),
+        );
+
+        montar();
+
+        /** Remover continua a poder: é essa a permissão que tem. */
+        expect(
+            await screen.findByRole('button', { name: t.crews.remover }),
+        ).toBeDefined();
+
+        expect(screen.queryByLabelText(t.crews.cargoDe('habitue'))).toBeNull();
+    });
+
+    it('não aparece a quem não manda no servidor', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+        );
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText('visita')).toBeDefined();
+        });
+
+        expect(screen.queryByLabelText(t.crews.cargoDe('visita'))).toBeNull();
     });
 });

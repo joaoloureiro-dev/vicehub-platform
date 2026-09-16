@@ -8,6 +8,8 @@ import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { ServerCrews } from '../../affiliations/components/server-crews.js';
+import { CARGOS_DO_SERVIDOR } from '../server.types.js';
+import { EscolherCargo } from '../../components/escolher-cargo.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ApagarComunidade } from '../../components/apagar-comunidade.js';
 import { ServerApiKeys } from '../components/server-api-keys.js';
@@ -22,6 +24,7 @@ import {
     listServerMembers,
     rejectServerJoinRequest,
     removeServerMember,
+    setServerMemberRole,
     requestToJoinServer,
     updateServerAppearance,
     withdrawServerJoinRequest,
@@ -337,12 +340,42 @@ export const ServerPage = () => {
                     {membros.data?.map((membro) => (
                         <li key={membro.userId}>
                             <span className="nome">{membro.username}</span>
-                            <span className="cargo">
-                                {t.cargos[
-                                    (membro.role ??
-                                        'server_member') as keyof typeof t.cargos
-                                ] ?? membro.role}
-                            </span>
+                            {/*
+                              O mesmo das crews, e pela mesma razão: a
+                              lista mostrava o cargo e não havia por onde
+                              o mudar, por isso ninguém podia ser feito
+                              moderador.
+
+                              Alterar cargos exige `server:manage`, e não
+                              a gestão de membros — daí `souDono` e não
+                              `giroCandidaturas`. Com a segunda, um
+                              moderador promovia um cúmplice a dono e
+                              ficava com o servidor de quem o criou.
+                            */}
+                            {souDono && membro.userId !== user?.id ? (
+                                <EscolherCargo
+                                    cargos={CARGOS_DO_SERVIDOR}
+                                    atual={membro.role ?? 'server_member'}
+                                    nome={membro.username}
+                                    desativado={aAgir}
+                                    aoEscolher={(cargo) =>
+                                        void agir(() =>
+                                            setServerMemberRole(
+                                                perfil.id,
+                                                membro.userId,
+                                                cargo,
+                                            ),
+                                        )
+                                    }
+                                />
+                            ) : (
+                                <span className="cargo">
+                                    {t.cargos[
+                                        (membro.role ??
+                                            'server_member') as keyof typeof t.cargos
+                                    ] ?? membro.role}
+                                </span>
+                            )}
 
                             {giroCandidaturas && membro.userId !== user?.id ? (
                                 <div className="linha-acoes">
@@ -366,6 +399,14 @@ export const ServerPage = () => {
                         </li>
                     ))}
                 </ul>
+
+                {/*
+                  O que um cargo dá, e o que a API recusa, escrito uma
+                  vez por baixo da lista em vez de repetido em cada
+                  linha. Só a quem pode escolher: a quem não pode, era
+                  explicar um botão que não tem.
+                */}
+                {souDono ? <p className="hint">{t.crews.oQueOCargoDa}</p> : null}
             </section>
 
             {/*

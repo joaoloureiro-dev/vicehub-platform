@@ -213,6 +213,9 @@ export const en = (p: Tools) => ({
         recusar: 'Decline',
         remover: 'Remove',
         listaMembros: 'Members',
+        cargoDe: (nome: string) => `Role for ${nome}`,
+        oQueOCargoDa:
+            'A role decides what someone may do here. Officers propose and decide on money; leaders also change roles. You cannot change your own, and the last leader cannot be demoted.',
 
         asMinhasTitulo: 'What I belong to',
         minhasCrews: 'Crews',
