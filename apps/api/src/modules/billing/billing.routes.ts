@@ -1,8 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify';
 
 import type { BillingController } from './controllers/billing.controller.js';
-import type { StartCheckoutDto } from './dto/billing.dto.js';
-import { startCheckoutSchema } from './schemas/billing.schemas.js';
+import type { OpenPortalDto, StartCheckoutDto } from './dto/billing.dto.js';
+import {
+    openPortalSchema,
+    startCheckoutSchema,
+} from './schemas/billing.schemas.js';
 
 interface BillingRoutesOptions {
     controller: BillingController;
@@ -41,6 +44,28 @@ const billingRoutes: FastifyPluginAsync<BillingRoutesOptions> = async (
             schema: { body: startCheckoutSchema },
         },
         controller.startCheckout.bind(controller),
+    );
+
+    /**
+     * Gerir o que já se comprou: cancelar, trocar o cartão, tirar as
+     * faturas.
+     *
+     * A autorização é a mesma da compra, e pelo mesmo caminho: exige
+     * conta a este nível, e quem pode decidir sobre o titular é
+     * verificado no serviço, porque o titular vem no corpo e o guard lê
+     * dos parâmetros da rota.
+     *
+     * Ter a mesma regra dos dois lados não é uma comodidade — é a regra.
+     * Se cancelar fosse mais apertado do que comprar, uma comunidade
+     * ficava a pagar sem ninguém que lhe pudesse pôr fim.
+     */
+    fastify.post<{ Body: OpenPortalDto }>(
+        '/portal',
+        {
+            preHandler: [fastify.authenticate],
+            schema: { body: openPortalSchema },
+        },
+        controller.openPortal.bind(controller),
     );
 
     /**

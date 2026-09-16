@@ -21,10 +21,10 @@ interface SubscriptionRoutesOptions {
 /**
  * Rotas do módulo de subscrições.
  *
- * Conceder um plano é, por agora, um ato de administração: não existe
- * ainda compra pelo próprio. Quando o pagamento entrar, o provedor passa
- * a ser outro caminho para o mesmo registo de período, e esta rota fica
- * para ofertas e compensações.
+ * Conceder um plano à mão é um ato de administração, e é o que estas
+ * rotas são: ofertas, compensações e o vitalício. A compra pelo próprio
+ * entra por outro caminho — o Stripe escreve o mesmo registo de período
+ * pelo webhook —, e é lá que quem paga a gere.
  */
 const subscriptionRoutes: FastifyPluginAsync<SubscriptionRoutesOptions> = async (
     fastify,
@@ -42,9 +42,18 @@ const subscriptionRoutes: FastifyPluginAsync<SubscriptionRoutesOptions> = async 
     );
 
     /**
-     * Cancelar é também de administração enquanto não houver compra pelo
-     * próprio: uma subscrição pode ser de uma crew, e decidir quem a pode
-     * cancelar é a mesma pergunta que decidir quem a pode comprar.
+     * Cancelar aqui é de administração, e não é por aqui que quem paga
+     * cancela.
+     *
+     * Quem comprou tem `POST /billing/portal`: o painel do Stripe, com a
+     * mesma autorização exigida para comprar — decidir quem pode
+     * cancelar é a mesma pergunta que decidir quem pode comprar, e as
+     * duas têm de ter a mesma resposta. Se esta fosse a única rota de
+     * cancelamento, uma comunidade ficava a pagar até alguém da
+     * plataforma atender o pedido.
+     *
+     * Esta fica para o que o painel não cobre: um plano concedido à mão,
+     * que não tem cliente no Stripe onde se mexer.
      */
     fastify.post<{ Params: SubscriptionIdParamDto }>(
         '/:subscriptionId/cancel',

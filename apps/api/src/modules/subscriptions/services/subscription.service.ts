@@ -1,6 +1,7 @@
 import {
     PLANS,
     SubscriptionPlan,
+    SubscriptionProvider,
     SubscriptionStatus,
     addPlanInterval,
     isPerpetualPlan,
@@ -57,6 +58,14 @@ export class SubscriptionService {
                 plan: subscription.plan,
                 isTrial: subscription.status === SubscriptionStatus.trialing,
                 activeUntil: subscription.current_period_end,
+                /**
+                 * Com identificador do lado do Stripe, e não apenas com
+                 * o provedor a dizer stripe: é o identificador que o
+                 * painel precisa, e um registo sem ele não abre nada.
+                 */
+                managedByStripe:
+                    subscription.provider === SubscriptionProvider.stripe &&
+                    subscription.provider_subscription_id !== null,
                 via: null,
             };
         }
@@ -100,6 +109,12 @@ export class SubscriptionService {
                     isTrial:
                         doServidor.status === SubscriptionStatus.trialing,
                     activeUntil: doServidor.current_period_end,
+                    /**
+                     * O plano é do servidor. Quem gere esta crew não o
+                     * pode cancelar, e não é por descuido: o cartão é de
+                     * outra comunidade.
+                     */
+                    managedByStripe: false,
                     via: {
                         kind: 'server',
                         id: doServidor.serverId as string,
@@ -116,6 +131,7 @@ export class SubscriptionService {
             plan: null,
             isTrial: false,
             activeUntil: null,
+            managedByStripe: false,
             via: null,
         };
     }

@@ -51,6 +51,17 @@ export interface SubscriptionEntitlement {
     /** Fim do período em vigor, ou null quando não termina. */
     activeUntil: Date | null;
     /**
+     * Se este direito vem de um plano comprado no Stripe.
+     *
+     * Existe para o ecrã poder oferecer "gerir o plano" só a quem tem
+     * plano que se possa gerir. Um vitalício, um plano concedido à mão e
+     * uma crew coberta pelo servidor onde joga têm todos `isPremium`
+     * verdadeiro e nenhum tem painel de faturação — oferecê-lo seria um
+     * botão que só pode falhar, e falhar precisamente a quem foi ali
+     * para cancelar.
+     */
+    managedByStripe: boolean;
+    /**
      * De onde vem o direito, quando não vem do próprio titular.
      *
      * O plano de um servidor cobre as crews que lá jogam. Esse direito é

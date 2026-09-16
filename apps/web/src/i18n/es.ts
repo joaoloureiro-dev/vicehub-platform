@@ -447,6 +447,11 @@ export const es = (p: Tools): Messages => ({
         aindaNaoAbriu:
             'La compra todavía no está abierta: abre pronto. Mientras tanto, todo lo demás en ViceHub funciona con normalidad.',
         naoFoiPossivelComprar: 'No se pudo abrir el pago. Inténtalo dentro de un rato.',
+        gerirPlano: 'Gestionar plan',
+        gerirOndeSeCancela:
+            'Cancela, cambia la tarjeta o descarga las facturas. Cancelar detiene la siguiente renovación: el periodo que ya pagaste sigue hasta el final.',
+        naoFoiPossivelGerir:
+            'No se pudo abrir la página de facturación. Inténtalo dentro de un rato.',
         notaVitalicio:
             'El vitalicio no está a la venta. Se da a mano, uno a uno, a quien apoyó ViceHub al principio.',
     },

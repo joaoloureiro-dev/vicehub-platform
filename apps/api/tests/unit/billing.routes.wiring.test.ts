@@ -32,6 +32,7 @@ describe('ligação das rotas da cobrança', () => {
         const controller = {
             listPlans: vi.fn(),
             startCheckout: vi.fn(),
+            openPortal: vi.fn(),
             handleWebhook: vi.fn(),
         } as unknown as BillingController;
 
@@ -61,6 +62,15 @@ describe('ligação das rotas da cobrança', () => {
      */
     it('a compra exige conta', () => {
         expect(guardas('POST /checkout')).toBe(1);
+    });
+
+    /**
+     * Gerir é a outra metade de comprar, e leva a mesma guarda. Se
+     * cancelar exigisse mais do que comprar, uma comunidade ficava a
+     * pagar sem ninguém que lhe pudesse pôr fim.
+     */
+    it('gerir o plano exige conta, tal como a compra', () => {
+        expect(guardas('POST /portal')).toBe(guardas('POST /checkout'));
     });
 
     it('o catálogo é público', () => {
@@ -103,5 +113,9 @@ describe('ligação das rotas da cobrança', () => {
 
     it('a compra valida o corpo antes de chegar ao serviço', () => {
         expect(registadas.get('POST /checkout')?.schema?.body).toBeDefined();
+    });
+
+    it('o painel também valida o corpo', () => {
+        expect(registadas.get('POST /portal')?.schema?.body).toBeDefined();
     });
 });

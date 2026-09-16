@@ -180,6 +180,13 @@ export class SubscriptionController {
             isTrial: entitlement.isTrial,
             activeUntil: this.toIso(entitlement.activeUntil),
             /**
+             * Se há painel de faturação a abrir para este titular. Sai
+             * daqui, e não do clique, para que o ecrã não ofereça "gerir
+             * o plano" a um vitalício nem a uma crew coberta pelo
+             * servidor — nenhum dos dois tem nada para gerir.
+             */
+            managedByStripe: entitlement.managedByStripe,
+            /**
              * De onde vem o direito, quando não vem do próprio titular.
              *
              * Sem isto, uma crew coberta pelo servidor onde joga via

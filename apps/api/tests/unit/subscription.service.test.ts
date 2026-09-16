@@ -1,4 +1,4 @@
-import { SubscriptionStatus } from '@vicehub/database';
+import { SubscriptionProvider, SubscriptionStatus } from '@vicehub/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SubscriptionError } from '../../src/modules/subscriptions/errors/subscription.errors.js';
@@ -202,6 +202,7 @@ describe('SubscriptionService', () => {
                 plan: 'premium',
                 isTrial: false,
                 activeUntil: periodEnd,
+                managedByStripe: false,
                 via: null,
             });
         });
@@ -225,8 +226,66 @@ describe('SubscriptionService', () => {
                 plan: 'lifetime',
                 isTrial: false,
                 activeUntil: null,
+                managedByStripe: false,
                 via: null,
             });
+        });
+
+
+        /**
+         * O campo que decide se o ecrã oferece "gerir o plano".
+         *
+         * Verdadeiro só quando há mesmo onde ir: provedor Stripe **e**
+         * identificador do lado dele. Um registo do Stripe sem
+         * identificador não abre painel nenhum, e prometê-lo era um
+         * botão que falha a quem veio cancelar.
+         */
+        it('diz que há painel quando o plano veio do Stripe', async () => {
+            repository.findEntitlingSubscription.mockResolvedValue({
+                plan: 'premium',
+                status: SubscriptionStatus.active,
+                current_period_end: periodEnd,
+                provider: SubscriptionProvider.stripe,
+                provider_subscription_id: 'sub_123',
+            });
+
+            const direito = await service.getEntitlement({ crewId: 'crew-1' });
+
+            expect(direito.managedByStripe).toBe(true);
+        });
+
+        it('não promete painel a um plano concedido à mão', async () => {
+            repository.findEntitlingSubscription.mockResolvedValue({
+                plan: 'lifetime',
+                status: SubscriptionStatus.active,
+                current_period_end: null,
+                provider: SubscriptionProvider.manual,
+                provider_subscription_id: null,
+            });
+
+            const direito = await service.getEntitlement({ crewId: 'crew-1' });
+
+            expect(direito.isPremium).toBe(true);
+            expect(direito.managedByStripe).toBe(false);
+        });
+
+        /**
+         * Nem a um registo do Stripe a que falte o identificador: o
+         * provedor sozinho não chega, porque o painel abre-se pelo
+         * cliente e não pelo nome do provedor.
+         */
+        it('não promete painel sem identificador do lado do Stripe', async () => {
+            repository.findEntitlingSubscription.mockResolvedValue({
+                plan: 'premium',
+                status: SubscriptionStatus.active,
+                current_period_end: periodEnd,
+                provider: SubscriptionProvider.stripe,
+                provider_subscription_id: null,
+            });
+
+            const direito = await service.getEntitlement({ crewId: 'crew-1' });
+
+            expect(direito.managedByStripe).toBe(false);
         });
 
         it('quem não tem plano não é vitalício', async () => {
@@ -266,6 +325,7 @@ describe('SubscriptionService', () => {
                 plan: 'premium',
                 isTrial: false,
                 activeUntil: periodEnd,
+                managedByStripe: false,
                 via: { kind: 'server', id: 'server-9', name: 'Vice City RP' },
             });
         });
@@ -438,6 +498,7 @@ describe('SubscriptionService', () => {
                     plan: 'premium' as const,
                     isTrial: false,
                     activeUntil: periodEnd,
+                    managedByStripe: true,
                     via: null,
                 }),
             ).not.toThrow();
@@ -457,6 +518,7 @@ describe('SubscriptionService', () => {
                     plan: 'lifetime' as const,
                     isTrial: false,
                     activeUntil: null,
+                    managedByStripe: false,
                     via: null,
                 }),
             ).not.toThrow();
@@ -471,6 +533,7 @@ describe('SubscriptionService', () => {
                     plan: null,
                     isTrial: false,
                     activeUntil: null,
+                    managedByStripe: false,
                     via: null,
                 });
                 expect.unreachable('devia ter lançado');

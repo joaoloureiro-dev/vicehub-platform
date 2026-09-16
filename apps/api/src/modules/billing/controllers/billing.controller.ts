@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AuditService } from '../../audit/services/audit.service.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
-import type { StartCheckoutDto } from '../dto/billing.dto.js';
+import type { OpenPortalDto, StartCheckoutDto } from '../dto/billing.dto.js';
 import { BillingError } from '../errors/billing.errors.js';
 import type { BillingService } from '../services/billing.service.js';
 
@@ -51,6 +51,46 @@ export class BillingController {
                  * resposta é o que foi pedido aqui.
                  */
                 plan: request.body.plan,
+            },
+            ...AuditService.contextOf(request),
+        });
+
+        reply.send(sessao);
+    }
+
+    /**
+     * POST /billing/portal
+     *
+     * Devolve para onde encaminhar quem quer cancelar, trocar o cartão
+     * ou tirar uma fatura.
+     */
+    async openPortal(
+        request: FastifyRequest<{ Body: OpenPortalDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const sessao = await this.billingService.openPortal({
+            ownerKind: request.body.ownerKind,
+            ownerId: request.body.ownerId,
+            actorId: user.id,
+        });
+
+        /**
+         * Fica no registo quem abriu o painel, e não o que lá fez: o que
+         * lá acontece chega por webhook e é gravado quando chegar. Sem
+         * esta linha, um plano cancelado aparecia sem ninguém por perto
+         * — e saber quem foi lá é metade da resposta a "porque é que
+         * isto deixou de estar pago".
+         */
+        await this.auditService.record({
+            action: 'billing.portal.opened',
+            entityType: 'Subscription',
+            entityId: request.body.ownerId,
+            actorId: user.id,
+            after: {
+                ownerKind: request.body.ownerKind,
+                ownerId: request.body.ownerId,
             },
             ...AuditService.contextOf(request),
         });

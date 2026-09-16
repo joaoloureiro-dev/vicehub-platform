@@ -180,7 +180,7 @@ describe('cobrança pelo Stripe', () => {
          * sítio por configurar respondia 503 a toda a gente e isto deixava
          * de ser observável.
          */
-        describe('comprar para titular alheio', () => {
+        describe('decidir sobre o plano de titular alheio', () => {
             let intrusoToken: string;
             let crewDeOutrem: string;
 
@@ -281,6 +281,66 @@ describe('cobrança pelo Stripe', () => {
 
                 expect(response.statusCode, response.body).toBe(503);
             });
+
+            /**
+             * Gerir o plano leva exatamente as mesmas recusas que
+             * comprá-lo, e é essa a propriedade.
+             *
+             * Se cancelar fosse mais apertado do que comprar, uma
+             * comunidade podia ficar a pagar sem ninguém que lhe
+             * pudesse pôr fim — que é precisamente o estado de que esta
+             * rota nasceu para tirar a plataforma.
+             */
+            const gerir = (token: string, payload: Record<string, unknown>) =>
+                app.inject({
+                    method: 'POST',
+                    url: '/api/v1/billing/portal',
+                    headers: { authorization: `Bearer ${token}` },
+                    payload,
+                });
+
+            it('recusa gerir o plano da crew de outra pessoa', async () => {
+                const response = await gerir(intrusoToken, {
+                    ownerKind: 'crew',
+                    ownerId: crewDeOutrem,
+                });
+
+                expect(response.statusCode, response.body).toBe(403);
+            });
+
+            it('recusa gerir o plano de uma conta, que não existe', async () => {
+                const response = await gerir(intrusoToken, {
+                    ownerKind: 'user',
+                    ownerId: userId,
+                });
+
+                expect(response.statusCode, response.body).toBe(400);
+                expect(response.json().code).toBe('PLAN_IS_FOR_COMMUNITIES');
+            });
+
+            /**
+             * E quem manda na crew passa a autorização, esbarrando só
+             * na configuração. Sem este caso, os dois acima passavam
+             * com uma recusa cega a toda a gente.
+             */
+            it('deixa passar quem manda na crew, e esbarra na configuração', async () => {
+                const response = await gerir(token, {
+                    ownerKind: 'crew',
+                    ownerId: crewDeOutrem,
+                });
+
+                expect(response.statusCode, response.body).toBe(503);
+            });
+        });
+
+        it('gerir o plano também exige conta', async () => {
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/billing/portal',
+                payload: { ownerKind: 'crew', ownerId: userId },
+            });
+
+            expect(response.statusCode).toBe(401);
         });
 
         it('a compra continua a exigir conta', async () => {
