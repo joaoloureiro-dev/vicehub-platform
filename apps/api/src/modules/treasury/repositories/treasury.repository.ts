@@ -10,6 +10,7 @@ import {
     TransactionCategory,
     TransactionDirection,
     TransactionStatus,
+    SALDO_MAXIMO,
     type DatabaseClient,
 } from '@vicehub/database';
 
@@ -28,6 +29,37 @@ export class InsufficientFundsSignal extends Error {
         this.name = 'InsufficientFundsSignal';
     }
 }
+
+/**
+ * O mesmo, do outro lado: o crédito não cabe na carteira.
+ *
+ * Existe porque uma entrada válida sozinha continua a poder não caber
+ * somada ao que já lá está, e essa soma só se conhece aqui. Sem este
+ * sinal a escrita rebentava contra a coluna e levava a transação
+ * inteira — o movimento ficava pendente para sempre, impossível de
+ * aprovar, e cada tentativa devolvia 500.
+ */
+export class BalanceOverflowSignal extends Error {
+    constructor() {
+        super('A carteira não tem espaço para este crédito.');
+
+        this.name = 'BalanceOverflowSignal';
+    }
+}
+
+/**
+ * O filtro que impede um crédito de passar o tecto da coluna.
+ *
+ * Lê-se "o saldo ainda tem espaço para este montante". Está escrito uma
+ * vez porque a conta é ao contrário do que a memória sugere — o tecto
+ * menos o montante, e não o tecto — e três cópias dela seriam três
+ * sítios onde a enganar.
+ *
+ * Como filtro de uma escrita condicional, e não como leitura seguida de
+ * escrita: dois créditos ao mesmo tempo veriam ambos espaço, e um deles
+ * rebentava na mesma.
+ */
+const comEspacoPara = (amount: bigint) => ({ lte: SALDO_MAXIMO - amount });
 
 /**
  * Repositório da tesouraria.
@@ -130,10 +162,13 @@ export class TreasuryRepository {
      * encontra zero e desiste. Sem isso, ambas passariam e o dinheiro
      * saía duas vezes.
      *
-     * Só depois o saldo se mexe, e a saída é igualmente condicional ao
-     * saldo chegar. Duas saídas diferentes aprovadas ao mesmo tempo não
+     * Só depois o saldo se mexe, e mexe-se condicionalmente dos dois
+     * lados. Duas saídas diferentes aprovadas ao mesmo tempo não
      * conseguem ambas levar o mesmo dinheiro: a segunda não encontra
-     * saldo suficiente e a transação inteira é desfeita.
+     * saldo suficiente e a transação inteira é desfeita. E uma entrada
+     * só passa se couber no que já lá está — a coluna tem tecto, e
+     * bater nele a meio da transação seria um 500 em vez de uma
+     * recusa.
      */
     approveMovement(input: {
         movementId: string;
@@ -158,13 +193,20 @@ export class TreasuryRepository {
             }
 
             if (input.direction === TransactionDirection.credit) {
-                await tx.wallet.update({
-                    where: { id: input.walletId },
+                const creditado = await tx.wallet.updateMany({
+                    where: {
+                        id: input.walletId,
+                        balance: comEspacoPara(input.amount),
+                    },
                     data: {
                         balance: { increment: input.amount },
                         version: { increment: 1 },
                     },
                 });
+
+                if (creditado.count !== 1) {
+                    throw new BalanceOverflowSignal();
+                }
 
                 return { outcome: 'approved' as const };
             }
@@ -251,13 +293,20 @@ export class TreasuryRepository {
                 throw new InsufficientFundsSignal();
             }
 
-            await tx.wallet.update({
-                where: { id: input.toWalletId },
+            const creditado = await tx.wallet.updateMany({
+                where: {
+                    id: input.toWalletId,
+                    balance: comEspacoPara(input.amount),
+                },
                 data: {
                     balance: { increment: input.amount },
                     version: { increment: 1 },
                 },
             });
+
+            if (creditado.count !== 1) {
+                throw new BalanceOverflowSignal();
+            }
 
             /**
              * O identificador da transferência é gerado aqui e é o mesmo
@@ -621,13 +670,20 @@ export class TreasuryRepository {
             }
 
             for (const credit of input.credits) {
-                await tx.wallet.update({
-                    where: { id: credit.walletId },
+                const creditada = await tx.wallet.updateMany({
+                    where: {
+                        id: credit.walletId,
+                        balance: comEspacoPara(credit.amount),
+                    },
                     data: {
                         balance: { increment: credit.amount },
                         version: { increment: 1 },
                     },
                 });
+
+                if (creditada.count !== 1) {
+                    throw new BalanceOverflowSignal();
+                }
             }
 
             await tx.transaction.updateMany({

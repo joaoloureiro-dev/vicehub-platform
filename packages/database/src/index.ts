@@ -71,6 +71,8 @@ export {
 
 export type { PlanDefinition, PlanKey } from './plans.js';
 
+export { SALDO_MAXIMO } from './treasury-limits.js';
+
 export {
     HEARTBEAT_JANELA_MS,
     estaOnline,

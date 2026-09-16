@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { SALDO_MAXIMO } from '@vicehub/database';
+
 export const crewTreasuryParamSchema = z.object({
     crewId: z.string().uuid(),
 });
@@ -7,6 +9,33 @@ export const crewTreasuryParamSchema = z.object({
 export const serverTreasuryParamSchema = z.object({
     serverId: z.string().uuid(),
 });
+
+/**
+ * Um montante em unidades inteiras, escrito como texto.
+ *
+ * A forma diz quantos dígitos são aceites; o tecto diz quanto cabe. Não
+ * são a mesma coisa e é aí que estava o buraco: dezanove dígitos vão até
+ * 9 999 999 999 999 999 999, e a coluna pára em
+ * 9 223 372 036 854 775 807. Tudo o que ficava nessa faixa passava a
+ * validação e rebentava na escrita, o que saía como 500 em vez do 400
+ * que é.
+ *
+ * O tecto é lido do pacote da base de dados por ser de lá que é — um
+ * segundo número aqui seria um segundo sítio para o esquecer.
+ */
+const montante = (forma: RegExp, mensagem: string) =>
+    z
+        .string()
+        .regex(forma, mensagem)
+        .refine((valor) => BigInt(valor) <= SALDO_MAXIMO, {
+            message: 'O montante é maior do que uma tesouraria consegue guardar.',
+        });
+
+/** Entradas e saídas são sempre de alguma coisa: zero não é movimento. */
+const POSITIVO = /^[1-9][0-9]{0,18}$/;
+
+/** Uma parte de uma divisão pode ser zero — nem toda a gente recebe. */
+const NAO_NEGATIVO = /^[0-9]{1,19}$/;
 
 /**
  * Filtros do extrato de movimentos.
@@ -25,9 +54,7 @@ export const listMovementsQuerySchema = z.object({
  * um número perde precisão antes sequer de chegar aqui.
  */
 export const proposeMovementSchema = z.object({
-    amount: z
-        .string()
-        .regex(/^[1-9][0-9]{0,18}$/, 'O montante tem de ser um inteiro positivo.'),
+    amount: montante(POSITIVO, 'O montante tem de ser um inteiro positivo.'),
     direction: z.enum(['credit', 'debit']),
     category: z.enum([
         'contribution',
@@ -57,9 +84,7 @@ export const proposeMovementSchema = z.object({
  */
 export const transferToCrewSchema = z.object({
     crewId: z.string().uuid(),
-    amount: z
-        .string()
-        .regex(/^[1-9][0-9]{0,18}$/, 'O montante tem de ser um inteiro positivo.'),
+    amount: montante(POSITIVO, 'O montante tem de ser um inteiro positivo.'),
     description: z.string().trim().min(1).max(280).optional(),
 });
 
@@ -81,10 +106,10 @@ export const serverMovementParamSchema = z.object({
  */
 export const proposeDistributionSchema = z
     .object({
-        total: z
-            .string()
-            .regex(/^[1-9][0-9]{0,18}$/, 'O total tem de ser um inteiro positivo.')
-            .optional(),
+        total: montante(
+            POSITIVO,
+            'O total tem de ser um inteiro positivo.',
+        ).optional(),
         basis: z.enum(['equal', 'by_role', 'manual', 'participation']),
         /**
          * Só para a base por participação: o evento de onde vêm os
@@ -126,9 +151,10 @@ export const proposeDistributionSchema = z
             .array(
                 z.object({
                     userId: z.string().uuid(),
-                    amount: z
-                        .string()
-                        .regex(/^[0-9]{1,19}$/, 'A parte tem de ser um inteiro.'),
+                    amount: montante(
+                        NAO_NEGATIVO,
+                        'A parte tem de ser um inteiro.',
+                    ),
                 }),
             )
             .min(1)

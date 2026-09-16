@@ -297,6 +297,12 @@ const treasuryErrorStatusCodes: Record<TreasuryErrorCode, number> = {
      */
     INSUFFICIENT_FUNDS: 409,
     /**
+     * 409 pela mesma razão, do outro lado: o montante é válido e quem o
+     * propõe tem autorização — o que não há é espaço para ele no saldo
+     * de destino. É estado da tesouraria, não erro de quem pediu.
+     */
+    BALANCE_WOULD_OVERFLOW: 409,
+    /**
      * 403 e não 404: quem cancela sem ser o proponente está identificado
      * e o movimento existe; falta-lhe é legitimidade sobre ele.
      */
