@@ -79,8 +79,26 @@ describe('o quadro de recrutamento', () => {
         expect(response.statusCode, response.body).toBe(200);
 
         return response.json() as {
-            items: { id: string; recruitingSince: string | null }[];
+            items: {
+                id: string;
+                recruitingSince: string | null;
+                joinRequirements: string | null;
+            }[];
             featured: { id: string; isRecruiting: boolean }[];
+        };
+    };
+
+    /** O diretório inteiro, sem o filtro de quem recruta. */
+    const diretorio = async () => {
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/v1/crews?pageSize=50',
+        });
+
+        expect(response.statusCode, response.body).toBe(200);
+
+        return response.json() as {
+            items: { id: string; joinRequirements: string | null }[];
         };
     };
 
@@ -126,6 +144,70 @@ describe('o quadro de recrutamento', () => {
     afterAll(async () => {
         await app.close();
         await prisma.$disconnect();
+    });
+
+    /**
+     * O que a crew procura, no quadro.
+     *
+     * Existia só no perfil, e era a única pergunta que o quadro não
+     * respondia: ficava-se a saber que dez crews recrutam e era preciso
+     * abrir as dez para ver qual servia. A mesma caminhada que a caixa
+     * de entrada veio acabar do outro lado.
+     */
+    describe('o que a crew procura', () => {
+        it('vem no quadro, sem ser preciso abrir a crew', async () => {
+            expect(
+                (
+                    await guardar(aRecrutar, {
+                        joinRequirements: 'Maiores de 18 e voz no Discord.',
+                    })
+                ).statusCode,
+            ).toBe(200);
+
+            const entrada = (await quadro()).items.find(
+                (candidata) => candidata.id === aRecrutar,
+            );
+
+            expect(entrada?.joinRequirements).toBe(
+                'Maiores de 18 e voz no Discord.',
+            );
+        });
+
+        /**
+         * Um requisito de entrada numa crew que não aceita gente não é
+         * informação: é uma exigência para uma porta fechada, e no
+         * cartão ocupa o lugar do que interessa.
+         *
+         * A crew é a mesma do caso anterior, e o texto continua gravado
+         * — o que muda é só o anúncio estar no ar.
+         */
+        it('desaparece do diretório quando a crew deixa de recrutar', async () => {
+            expect(
+                (await guardar(aRecrutar, { isRecruiting: false })).statusCode,
+            ).toBe(200);
+
+            const entrada = (await diretorio()).items.find(
+                (candidata) => candidata.id === aRecrutar,
+            );
+
+            expect(entrada, 'a crew continua no diretório').toBeDefined();
+            expect(entrada?.joinRequirements).toBeNull();
+
+            /* E o texto não se perdeu: continua gravado. */
+            const guardada = await prisma.crew.findFirstOrThrow({
+                where: { id: aRecrutar },
+                select: { join_requirements: true },
+            });
+
+            expect(guardada.join_requirements).toBe(
+                'Maiores de 18 e voz no Discord.',
+            );
+
+            /* Reposto para os casos que vêm a seguir. */
+            expect(
+                (await guardar(aRecrutar, { isRecruiting: true })).statusCode,
+            ).toBe(200);
+        });
     });
 
     it('mostra quem anunciou que recruta', async () => {

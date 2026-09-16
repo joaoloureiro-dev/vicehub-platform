@@ -37,6 +37,14 @@ const ServerCard = ({
 
         {servidor.description ? <p>{servidor.description}</p> : null}
 
+        {/* O mesmo das crews. Ver o comentário no cartão de crew. */}
+        {servidor.joinRequirements ? (
+            <p className="procura">
+                <span className="procura-etiqueta">{t.crews.procuram}</span>
+                <span className="procura-texto">{servidor.joinRequirements}</span>
+            </p>
+        ) : null}
+
         <div className="crewcard-foot">
             <span>
                 {servidor.isOnline ? t.servidores.online : t.servidores.offline}

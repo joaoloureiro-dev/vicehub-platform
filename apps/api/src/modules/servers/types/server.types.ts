@@ -69,6 +69,12 @@ export interface ServerDirectoryEntry {
     name: string;
     region: string | null;
     description: string | null;
+    /**
+     * O que o servidor pede a quem se candidata, ou `null` se ninguém
+     * escreveu nada. Ao contrário do das crews, sai sempre que existe:
+     * um servidor não fecha o recrutamento, está sempre aberto.
+     */
+    joinRequirements: string | null;
     isOnline: boolean;
     /**
      * Quantas pessoas o servidor reportou da última vez. Null enquanto

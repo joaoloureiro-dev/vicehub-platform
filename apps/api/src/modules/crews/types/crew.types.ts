@@ -119,6 +119,11 @@ export interface CrewDirectoryEntry {
     name: string;
     tag: string;
     description: string | null;
+    /**
+     * O que a crew pede a quem se candidata, e `null` quando não está a
+     * recrutar ou quando ninguém escreveu nada.
+     */
+    joinRequirements: string | null;
     isRecruiting: boolean;
     recruitingSince: Date | null;
     level: number;

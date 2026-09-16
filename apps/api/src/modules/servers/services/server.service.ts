@@ -334,6 +334,7 @@ export class ServerService {
             name: string;
             region: string | null;
             description: string | null;
+            join_requirements: string | null;
             banner_url: string | null;
             accent_color: string | null;
             isOnline: boolean;
@@ -349,6 +350,14 @@ export class ServerService {
             name: server.name,
             region: server.region,
             description: server.description,
+            /**
+             * Sai sempre que estiver escrito, ao contrário do das crews.
+             *
+             * Um servidor não tem interruptor de recrutamento: está
+             * sempre aberto a candidaturas, e por isso o que ele pede é
+             * sempre uma pergunta em aberto para quem está a escolher.
+             */
+            joinRequirements: server.join_requirements,
             isOnline: estaOnline(server),
             playersOnline: server.players_online,
             memberCount,

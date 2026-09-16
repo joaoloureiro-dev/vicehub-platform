@@ -22,6 +22,14 @@ export interface CrewDirectoryEntry {
     name: string;
     tag: string;
     description: string | null;
+    /**
+     * O que a crew pede a quem se candidata.
+     *
+     * `null` quando não está a recrutar: um requisito para uma porta
+     * fechada não é informação, e no cartão ocupa o lugar do que
+     * interessa.
+     */
+    joinRequirements: string | null;
     isRecruiting: boolean;
     recruitingSince: string | null;
     level: number;

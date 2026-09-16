@@ -415,6 +415,7 @@ export class CrewService {
             name: string;
             tag: string;
             description: string | null;
+            join_requirements: string | null;
             is_recruiting: boolean;
             recruiting_since: Date | null;
             banner_url: string | null;
@@ -430,6 +431,15 @@ export class CrewService {
             name: crew.name,
             tag: crew.tag,
             description: crew.description,
+            /**
+             * Sai **só quando a crew está a recrutar**.
+             *
+             * Um requisito de entrada numa crew que não aceita gente não
+             * é informação: é uma exigência para uma porta fechada, e no
+             * cartão ocupa o lugar do que interessa. O perfil continua a
+             * mostrá-lo sempre — lá há espaço e contexto.
+             */
+            joinRequirements: crew.is_recruiting ? crew.join_requirements : null,
             isRecruiting: crew.is_recruiting,
             recruitingSince: crew.recruiting_since,
             /** Do xp, como no perfil: uma crew não tem dois níveis. */

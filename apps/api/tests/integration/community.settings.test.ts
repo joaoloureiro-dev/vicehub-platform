@@ -274,6 +274,71 @@ describe('definições de crews e servidores', () => {
             });
         });
 
+        /**
+         * O que o servidor procura, no diretório.
+         *
+         * Ao contrário das crews, sai sempre que estiver escrito: um
+         * servidor não tem interruptor de recrutamento, está sempre
+         * aberto a candidaturas, e por isso o que ele pede é sempre uma
+         * pergunta em aberto para quem está a escolher onde jogar.
+         */
+        it('leva ao diretório o que pede a quem se candidata', async () => {
+            const gravou = await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/servers/${serverId}`,
+                headers: auth(dono),
+                payload: { joinRequirements: 'Whitelist e microfone.' },
+            });
+
+            expect(gravou.statusCode, gravou.body).toBe(200);
+
+            const diretorio = await app.inject({
+                method: 'GET',
+                url: '/api/v1/servers?pageSize=50',
+            });
+
+            expect(diretorio.statusCode, diretorio.body).toBe(200);
+
+            const entrada = (
+                diretorio.json().items as {
+                    id: string;
+                    joinRequirements: string | null;
+                }[]
+            ).find((candidato) => candidato.id === serverId);
+
+            expect(entrada, 'o servidor está no diretório').toBeDefined();
+            expect(entrada?.joinRequirements).toBe('Whitelist e microfone.');
+        });
+
+        /**
+         * Sem nada escrito não vai nada, e não uma cadeia vazia: o
+         * cartão decide mostrar a secção por existir ou não, e uma
+         * cadeia vazia desenhava uma etiqueta "procuram" sem nada
+         * debaixo dela.
+         */
+        it('e não leva nada quando não há nada escrito', async () => {
+            await app.inject({
+                method: 'PATCH',
+                url: `/api/v1/servers/${serverId}`,
+                headers: auth(dono),
+                payload: { joinRequirements: null },
+            });
+
+            const diretorio = await app.inject({
+                method: 'GET',
+                url: '/api/v1/servers?pageSize=50',
+            });
+
+            const entrada = (
+                diretorio.json().items as {
+                    id: string;
+                    joinRequirements: string | null;
+                }[]
+            ).find((candidato) => candidato.id === serverId);
+
+            expect(entrada?.joinRequirements).toBeNull();
+        });
+
         it('continua a recusar o nome de outro servidor', async () => {
             const response = await app.inject({
                 method: 'PATCH',
