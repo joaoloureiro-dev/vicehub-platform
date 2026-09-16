@@ -126,9 +126,21 @@ export const MyProfilePage = () => {
         <div className="panel wide">
             <div className="panel-head">
                 <h1>{t.perfil.titulo}</h1>
-                <Link className="btn-secondary" to={`/u/${eu.username}`}>
-                    {t.perfil.verPublico}
-                </Link>
+                <div className="linha-acoes">
+                    {/*
+                      A carteira entra a partir do perfil porque é daqui
+                      que se apaga a conta, e apagar recusa enquanto ela
+                      tiver saldo. Dizer "a tua carteira ainda tem saldo"
+                      sem haver onde o ver era mandar procurar às
+                      escuras.
+                    */}
+                    <Link className="btn-secondary" to="/eu/carteira">
+                        {t.carteira.verCarteira}
+                    </Link>
+                    <Link className="btn-secondary" to={`/u/${eu.username}`}>
+                        {t.perfil.verPublico}
+                    </Link>
+                </div>
             </div>
 
             <dl className="stats">

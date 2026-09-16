@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router';
 
 import userEvent from '@testing-library/user-event';
@@ -1060,5 +1060,133 @@ describe('a tesouraria de um servidor', () => {
             amount: '250',
             description: 'Para o assalto',
         });
+    });
+});
+
+/**
+ * Pagar a divisão proposta.
+ *
+ * A metade que faltava. Propor uma divisão não move dinheiro nenhum —
+ * está escrito no ecrã e é verdade —, e até aqui não havia por onde a
+ * aprovar: ficava na lista a dizer "pendente" para sempre, com o
+ * dinheiro parado na tesouraria e as pessoas à espera da parte delas.
+ *
+ * A rota da API existia, o cliente sabia chamá-la, e nada no produto o
+ * fazia.
+ */
+describe('pagar uma divisão proposta', () => {
+    const pendente = (estado: string) => ({
+        id: 'div-9',
+        total: '900',
+        basis: 'equal',
+        status: estado,
+        eventId: null,
+        note: null,
+        requestedBy: 'u1',
+        decidedBy: null,
+        decidedAt: null,
+        createdAt: '2026-02-02T00:00:00.000Z',
+        lines: [
+            {
+                id: 'l-0',
+                amount: '900',
+                direction: 'debit',
+                category: 'payout',
+                status: estado,
+                description: 'Divisão de ganhos pelos membros',
+                requestedBy: 'u1',
+                decidedBy: null,
+                decidedAt: null,
+                createdAt: '2026-02-02T00:00:00.000Z',
+            },
+        ],
+    });
+
+    it('paga a divisão que está à espera de decisão', async () => {
+        const fetchMock = servir({
+            premium: true,
+            divisoes: [pendente('pending')],
+        });
+
+        vi.stubGlobal('fetch', fetchMock);
+        montar();
+
+        await userEvent.click(await screen.findByText(t.tesouraria.pagar));
+
+        await waitFor(() => {
+            expect(
+                fetchMock.mock.calls.some(
+                    (argumentos) =>
+                        String(argumentos[0]).endsWith(
+                            '/treasury/crews/crew-1/distributions/div-9/approve',
+                        )
+                        && (argumentos[1] as RequestInit | undefined)?.method
+                            === 'POST',
+                ),
+            ).toBe(true);
+        });
+    });
+
+    it('recusa a divisão que não se quer pagar', async () => {
+        const fetchMock = servir({
+            premium: true,
+            divisoes: [pendente('pending')],
+        });
+
+        vi.stubGlobal('fetch', fetchMock);
+        montar();
+
+        /**
+         * Pelo botão dentro da divisão, e não pelo primeiro "recusar"
+         * da página: os movimentos têm um com o mesmo nome, e clicar no
+         * deles provava outra coisa.
+         */
+        const linha = (await screen.findByText(t.tesouraria.pagar))
+            .closest('li') as HTMLElement;
+
+        await userEvent.click(within(linha).getByText(t.tesouraria.recusar));
+
+        await waitFor(() => {
+            expect(
+                fetchMock.mock.calls.some((argumentos) =>
+                    String(argumentos[0]).endsWith(
+                        '/treasury/crews/crew-1/distributions/div-9/reject',
+                    ),
+                ),
+            ).toBe(true);
+        });
+    });
+
+    /**
+     * Uma divisão já decidida não se decide outra vez, e a API
+     * responderia 409. Um botão que só pode falhar é pior do que botão
+     * nenhum.
+     */
+    it('não oferece pagar o que já foi pago', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: true, divisoes: [pendente('approved')] }),
+        );
+
+        montar();
+
+        expect(await screen.findByText(t.tesouraria.divisoes)).toBeDefined();
+        expect(screen.queryByText(t.tesouraria.pagar)).toBeNull();
+    });
+
+    /**
+     * O mesmo portão do resto do que mexe no dinheiro: sem plano, a
+     * divisão continua à vista e os botões não. Ler é de graça.
+     */
+    it('não oferece pagar sem plano', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: false, divisoes: [pendente('pending')] }),
+        );
+
+        montar();
+
+        expect(await screen.findByText(t.tesouraria.divisoes)).toBeDefined();
+        expect(screen.queryByText(t.tesouraria.pagar)).toBeNull();
     });
 });

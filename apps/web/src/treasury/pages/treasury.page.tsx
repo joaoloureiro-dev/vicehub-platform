@@ -13,11 +13,13 @@ import { getServer } from '../../servers/server.api.js';
 import { ProporDivisao } from '../components/propor-divisao.js';
 import { TransferirParaCrew } from '../components/transferir-para-crew.js';
 import {
+    approveDistribution,
     approveMovement,
     cancelMovement,
     getTreasury,
     listDistributions,
     proposeMovement,
+    rejectDistribution,
     rejectMovement,
     type Dono,
 } from '../treasury.api.js';
@@ -594,6 +596,61 @@ export const TreasuryPage = () => {
                                 </div>
                                 {divisao.note ? (
                                     <p className="hint">{divisao.note}</p>
+                                ) : null}
+
+                                {/*
+                                  Uma divisão proposta não move dinheiro
+                                  nenhum até ser aprovada, e até aqui não
+                                  havia por onde a aprovar: ficava na
+                                  lista para sempre, a dizer "pendente",
+                                  com o dinheiro parado na tesouraria.
+
+                                  O mesmo portão dos movimentos: sem
+                                  plano os botões não aparecem, porque
+                                  todos respondem 402 e um botão que só
+                                  pode recusar é pior do que botão
+                                  nenhum. Só as crews dividem, e é por
+                                  isso que `eCrew` também conta.
+                                */}
+                                {divisao.status === 'pending'
+                                && eCrew
+                                && podeMexer !== false ? (
+                                    <div className="linha-acoes">
+                                        <button
+                                            className="btn-secondary"
+                                            type="button"
+                                            disabled={aAgir}
+                                            onClick={() =>
+                                                void agir(
+                                                    () =>
+                                                        approveDistribution(
+                                                            id,
+                                                            divisao.id,
+                                                        ),
+                                                    t.tesouraria.divisaoPaga,
+                                                )
+                                            }
+                                        >
+                                            {t.tesouraria.pagar}
+                                        </button>
+                                        <button
+                                            className="btn-secondary perigo"
+                                            type="button"
+                                            disabled={aAgir}
+                                            onClick={() =>
+                                                void agir(
+                                                    () =>
+                                                        rejectDistribution(
+                                                            id,
+                                                            divisao.id,
+                                                        ),
+                                                    t.tesouraria.recusado,
+                                                )
+                                            }
+                                        >
+                                            {t.tesouraria.recusar}
+                                        </button>
+                                    </div>
                                 ) : null}
                             </li>
                         ))}

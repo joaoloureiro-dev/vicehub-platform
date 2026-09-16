@@ -465,6 +465,14 @@ export const fr = (p: Tools): Messages => ({
             'Le premium à vie n’est pas en vente. Il est donné à la main, un par un, à celles et ceux qui ont soutenu ViceHub au début.',
     },
 
+    carteira: {
+        titulo: 'Mon portefeuille',
+        dondeVem:
+            'Ce qu’une crew t’a versé arrive ici. C’est à voir, pas à déplacer : il n’existe aucun moyen de l’envoyer ailleurs, et rien ici ne prétend le contraire.',
+        aindaSemNada: 'Rien n’est encore arrivé dans ton portefeuille.',
+        verCarteira: 'Mon portefeuille',
+    },
+
     tesouraria: {
         montanteAEnviar: 'Montant à envoyer',
         transferirTitulo: 'Envoyer de l’argent à une crew',
@@ -531,6 +539,8 @@ export const fr = (p: Tools): Messages => ({
         aprovado: 'Mouvement approuvé.',
         recusado: 'Mouvement refusé.',
         cancelado: 'Proposition annulée.',
+        pagar: 'Payer',
+        divisaoPaga: 'Répartition payée. La part de chacun est dans son portefeuille.',
         naoFoiPossivel: 'L’opération n’a pas pu être menée à bien.',
         divisoes: 'Partages des gains',
         pessoas: (n: number) =>

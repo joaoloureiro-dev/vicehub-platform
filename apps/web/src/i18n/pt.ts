@@ -464,6 +464,14 @@ export const pt = (p: Tools): Messages => ({
             'O vitalício não está à venda. É dado à mão, um a um, a quem apoiou o ViceHub no princípio.',
     },
 
+    carteira: {
+        titulo: 'A minha carteira',
+        dondeVem:
+            'O que uma crew te pagou aterra aqui. É para veres, não para mexeres: não há por onde o enviar para lado nenhum, e por isso nada aqui finge o contrário.',
+        aindaSemNada: 'Ainda não chegou nada à tua carteira.',
+        verCarteira: 'A minha carteira',
+    },
+
     tesouraria: {
         montanteAEnviar: 'Montante a enviar',
         transferirTitulo: 'Enviar dinheiro a uma crew',
@@ -530,6 +538,8 @@ export const pt = (p: Tools): Messages => ({
         aprovado: 'Movimento aprovado.',
         recusado: 'Movimento recusado.',
         cancelado: 'Proposta cancelada.',
+        pagar: 'Pagar',
+        divisaoPaga: 'Divisão paga. A parte de cada um está na carteira dele.',
         naoFoiPossivel: 'Não foi possível completar a operação.',
         divisoes: 'Divisões de ganhos',
         pessoas: (n: number) =>
