@@ -216,10 +216,18 @@ const montar = (endereco = '/premium') =>
         endereco,
     );
 
-/** O corpo com que o checkout foi pedido, para ver a quem vai o plano. */
-const corpoDoCheckout = (fetchMock: ReturnType<typeof vi.fn>): unknown => {
+/**
+ * O corpo com que um pedido foi feito, para ver a que titular ia.
+ *
+ * Serve o checkout e o painel: as duas rotas levam o mesmo par, e a
+ * pergunta é a mesma — a quem é que isto ia mexer no plano.
+ */
+const corpoDoPedido = (
+    fetchMock: ReturnType<typeof vi.fn>,
+    sufixo: string,
+): unknown => {
     const chamada = fetchMock.mock.calls.find((argumentos) =>
-        String(argumentos[0]).endsWith('/billing/checkout'),
+        String(argumentos[0]).endsWith(sufixo),
     );
 
     return JSON.parse(
@@ -525,7 +533,7 @@ describe('comprar para uma crew', () => {
             expect(irPara).toHaveBeenCalled();
         });
 
-        expect(corpoDoCheckout(fetchMock)).toEqual({
+        expect(corpoDoPedido(fetchMock, '/billing/checkout')).toEqual({
             ownerKind: 'crew',
             ownerId: 'crew-1',
             plan: 'premium',
@@ -659,7 +667,7 @@ describe('comprar para um servidor', () => {
             expect(irPara).toHaveBeenCalled();
         });
 
-        expect(corpoDoCheckout(fetchMock)).toEqual({
+        expect(corpoDoPedido(fetchMock, '/billing/checkout')).toEqual({
             ownerKind: 'server',
             ownerId: 'server-1',
             /** Por omissão, o escalão mais barato dos que servem. */
@@ -691,7 +699,7 @@ describe('comprar para um servidor', () => {
             expect(irPara).toHaveBeenCalled();
         });
 
-        expect(corpoDoCheckout(fetchMock)).toMatchObject({
+        expect(corpoDoPedido(fetchMock, '/billing/checkout')).toMatchObject({
             plan: 'server_unlimited',
         });
     });
@@ -896,18 +904,10 @@ describe('gerir o plano que já se comprou', () => {
          * ecrã podia mandar o titular errado e o teste continuava
          * verde — o endereço que volta é o mesmo.
          */
-        const chamada = fetchMock.mock.calls.find((argumentos) =>
-            String(argumentos[0]).endsWith('/billing/portal'),
-        );
-
-        expect(
-            JSON.parse(
-                String(
-                    (chamada?.[1] as { body?: string } | undefined)?.body ??
-                        '{}',
-                ),
-            ),
-        ).toEqual({ ownerKind: 'crew', ownerId: 'crew-1' });
+        expect(corpoDoPedido(fetchMock, '/billing/portal')).toEqual({
+            ownerKind: 'crew',
+            ownerId: 'crew-1',
+        });
     });
 
     /**
