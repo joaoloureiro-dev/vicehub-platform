@@ -2,8 +2,27 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { Route, Routes } from 'react-router';
 
+import userEvent from '@testing-library/user-event';
+
 import { TreasuryPage } from '../src/treasury/pages/treasury.page.js';
 import { montarEcra, t } from './helpers.js';
+
+/** Um evento como a API o devolve, com o que este ecrã lê dele. */
+const evento = (extra: Record<string, unknown> = {}) => ({
+    id: 'ev-1',
+    name: 'Assalto ao banco',
+    description: null,
+    status: 'completed',
+    startsAt: '2026-02-01T21:00:00.000Z',
+    endsAt: null,
+    capacity: null,
+    isPublic: false,
+    organizerId: 'u1',
+    signedUpCount: 6,
+    confirmedCount: 4,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    ...extra,
+});
 
 const json = (status: number, body: unknown): Response =>
     ({
@@ -57,8 +76,16 @@ const servir = (opcoes: {
     movimentos?: unknown[];
     /** O plano da crew, como a rota de quem a gere o devolve. */
     plano?: { isTrial: boolean; activeUntil: string | null } | 403;
+    /** Os eventos da crew, para a divisão por participação. */
+    eventos?: unknown[];
+    /** As divisões já existentes, como a API as devolve. */
+    divisoes?: unknown[];
 }) =>
-    vi.fn((url: string) => {
+    /*
+     * Dois argumentos, como o `fetch` a sério: os casos da divisão leem
+     * o corpo do pedido para provar que campo foi enviado em que base.
+     */
+    vi.fn((url: string, _init?: RequestInit) => {
         const endereco = String(url);
 
         /**
@@ -85,7 +112,16 @@ const servir = (opcoes: {
         }
 
         if (endereco.includes('/distributions')) {
-            return Promise.resolve(json(200, []));
+            return Promise.resolve(json(200, opcoes.divisoes ?? []));
+        }
+
+        /*
+         * Antes de `/crews/`, pela mesma razão que as subscrições: a
+         * rota dos eventos é `/events/crews/:id` e cairia no ramo do
+         * perfil da crew.
+         */
+        if (endereco.includes('/events/crews/')) {
+            return Promise.resolve(json(200, opcoes.eventos ?? []));
         }
 
         if (endereco.includes('/treasury/crews/')) {
@@ -320,5 +356,365 @@ describe('a avaliação de uma crew nova', () => {
         });
 
         expect(screen.queryByText(/trial/i)).toBeNull();
+    });
+});
+
+/**
+ * Quantas pessoas uma divisão paga.
+ *
+ * As linhas de uma divisão são partida dobrada: uma a débito, com a
+ * tesouraria a pagar o total, e uma a crédito por cada pessoa que
+ * recebe. Contá-las todas dizia que uma divisão de duas pessoas pagou a
+ * três — e o comentário no tipo dizia "uma linha por pessoa", que era a
+ * afirmação falsa por onde o erro entrou.
+ */
+describe('quantas pessoas uma divisão paga', () => {
+    const divisaoDeDuas = {
+        id: 'div-1',
+        total: '900',
+        basis: 'participation',
+        status: 'pending',
+        eventId: 'ev-1',
+        note: null,
+        requestedBy: 'u1',
+        decidedBy: null,
+        decidedAt: null,
+        createdAt: '2026-02-02T00:00:00.000Z',
+        lines: [
+            {
+                id: 'l-0',
+                amount: '900',
+                direction: 'debit',
+                category: 'payout',
+                status: 'pending',
+                description: 'Divisão de ganhos pelos membros',
+                requestedBy: 'u1',
+                decidedBy: null,
+                decidedAt: null,
+                createdAt: '2026-02-02T00:00:00.000Z',
+            },
+            ...['l-1', 'l-2'].map((id) => ({
+                id,
+                amount: '450',
+                direction: 'credit',
+                category: 'payout',
+                status: 'pending',
+                description: 'Parte da divisão de ganhos',
+                requestedBy: 'u1',
+                decidedBy: null,
+                decidedAt: null,
+                createdAt: '2026-02-02T00:00:00.000Z',
+            })),
+        ],
+    };
+
+    it('conta quem recebe, e não a saída da tesouraria', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: true, divisoes: [divisaoDeDuas] }),
+        );
+
+        montar();
+
+        expect(await screen.findByText(t.tesouraria.pessoas(2))).toBeDefined();
+        expect(screen.queryByText(t.tesouraria.pessoas(3))).toBeNull();
+    });
+});
+
+/**
+ * Dividir o que a crew ganhou.
+ *
+ * O ecrã não existia. A API dividia por partes iguais, por cargo e por
+ * quem apareceu; o cliente já sabia pedir as três; o dicionário já
+ * tinha nome para elas. Faltava quem as chamasse — e a página de um
+ * evento dizia a quem confirmasse presenças que a crew já podia
+ * dividir a partir dali, o que era uma promessa que o produto não
+ * cumpria.
+ */
+describe('dividir o que a crew ganhou', () => {
+    it('não aparece sem plano, como o resto do que mexe no dinheiro', async () => {
+        vi.stubGlobal('fetch', servir({ premium: false }));
+
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText(t.tesouraria.titulo)).toBeDefined();
+        });
+
+        expect(screen.queryByText(t.tesouraria.dividirTitulo)).toBeNull();
+    });
+
+    it('oferece as bases que a API sabe dividir', async () => {
+        vi.stubGlobal('fetch', servir({ premium: true }));
+
+        montar();
+
+        expect(
+            await screen.findByLabelText(t.tesouraria.comoDividir),
+        ).toBeDefined();
+        expect(screen.getByText(t.bases.equal)).toBeDefined();
+        expect(screen.getByText(t.bases.by_role)).toBeDefined();
+        expect(screen.getByText(t.bases.participation)).toBeDefined();
+    });
+
+    /**
+     * O evento só se pergunta quando a base o usa: a esmagadora maioria
+     * das divisões não é por participação, e pedir a lista ao abrir a
+     * tesouraria era uma ida à API que quase nunca servia.
+     */
+    it('só pergunta pelos eventos quando a base é por participação', async () => {
+        const fetchMock = servir({ premium: true, eventos: [evento()] });
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        const base = await screen.findByLabelText(t.tesouraria.comoDividir);
+
+        const pedidosAEventos = () =>
+            fetchMock.mock.calls.filter((argumentos) =>
+                String(argumentos[0]).includes('/events/crews/'),
+            ).length;
+
+        expect(pedidosAEventos()).toBe(0);
+
+        /* Outra base não pergunta nada. */
+        await userEvent.selectOptions(base, 'by_role');
+        expect(pedidosAEventos()).toBe(0);
+
+        await userEvent.selectOptions(base, 'participation');
+
+        await waitFor(() => {
+            expect(pedidosAEventos()).toBe(1);
+        });
+
+        /*
+         * E volta a escolhê-la sem voltar a perguntar: a lista já cá
+         * está, e pedi-la a cada troca de base castigava quem hesita.
+         */
+        await userEvent.selectOptions(base, 'equal');
+        await userEvent.selectOptions(base, 'participation');
+
+        await screen.findByLabelText(t.tesouraria.deQueEvento);
+
+        expect(pedidosAEventos()).toBe(1);
+    });
+
+    it('mostra quantos apareceram em cada evento', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: true, eventos: [evento({ confirmedCount: 4 })] }),
+        );
+
+        montar();
+
+        await userEvent.selectOptions(
+            await screen.findByLabelText(t.tesouraria.comoDividir),
+            'participation',
+        );
+
+        expect(
+            await screen.findByText(
+                `Assalto ao banco — ${t.tesouraria.presencas(4)}`,
+            ),
+        ).toBeDefined();
+    });
+
+    /**
+     * Um evento sem presenças confirmadas **só pode falhar**: a API
+     * recusa-o com NO_CONFIRMED_PARTICIPANTS porque não há por onde
+     * dividir. Oferecê-lo era oferecer uma escolha impossível, que é
+     * diferente de oferecer e deixar a API recusar.
+     */
+    it('não oferece um evento onde ninguém apareceu', async () => {
+        vi.stubGlobal(
+            'fetch',
+            servir({ premium: true, eventos: [evento({ confirmedCount: 0 })] }),
+        );
+
+        montar();
+
+        await userEvent.selectOptions(
+            await screen.findByLabelText(t.tesouraria.comoDividir),
+            'participation',
+        );
+
+        expect(
+            await screen.findByText(t.tesouraria.semEventosComPresencas),
+        ).toBeDefined();
+        expect(screen.queryByText(/Assalto ao banco/)).toBeNull();
+    });
+
+    it('e diz o que fazer para o destrancar, quando não há nenhum', async () => {
+        vi.stubGlobal('fetch', servir({ premium: true, eventos: [] }));
+
+        montar();
+
+        await userEvent.selectOptions(
+            await screen.findByLabelText(t.tesouraria.comoDividir),
+            'participation',
+        );
+
+        expect(
+            await screen.findByText(t.tesouraria.semEventosComPresencas),
+        ).toBeDefined();
+    });
+
+    /**
+     * Sem evento escolhido o pedido não sai. A API recusava-o na mesma,
+     * mas com um erro que se lê como avaria em vez de "falta escolher".
+     */
+    it('não deixa propor por participação sem escolher o evento', async () => {
+        vi.stubGlobal('fetch', servir({ premium: true, eventos: [evento()] }));
+
+        montar();
+
+        await userEvent.type(
+            await screen.findByLabelText(t.tesouraria.totalADividir),
+            '900',
+        );
+        await userEvent.selectOptions(
+            screen.getByLabelText(t.tesouraria.comoDividir),
+            'participation',
+        );
+
+        await screen.findByLabelText(t.tesouraria.deQueEvento);
+
+        expect(
+            screen.getByRole('button', { name: t.tesouraria.dividir }),
+        ).toHaveProperty('disabled', true);
+    });
+
+    it('propõe a divisão com o evento escolhido', async () => {
+        const fetchMock = servir({ premium: true, eventos: [evento()] });
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        await userEvent.type(
+            await screen.findByLabelText(t.tesouraria.totalADividir),
+            '900',
+        );
+        await userEvent.selectOptions(
+            screen.getByLabelText(t.tesouraria.comoDividir),
+            'participation',
+        );
+        await userEvent.selectOptions(
+            await screen.findByLabelText(t.tesouraria.deQueEvento),
+            'ev-1',
+        );
+        await userEvent.click(
+            screen.getByRole('button', { name: t.tesouraria.dividir }),
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText(t.tesouraria.divisaoProposta)).toBeDefined();
+        });
+
+        const pedido = fetchMock.mock.calls.find(
+            (argumentos) =>
+                String(argumentos[0]).includes('/distributions')
+                && (argumentos[1] as { method?: string } | undefined)?.method
+                    === 'POST',
+        );
+
+        expect(
+            JSON.parse(
+                String((pedido?.[1] as { body?: string } | undefined)?.body),
+            ),
+        ).toEqual({ basis: 'participation', total: '900', eventId: 'ev-1' });
+    });
+
+    /**
+     * Propor e não ver nada mudar é indistinguível de não ter proposto.
+     * A divisão nova fica pendente, e é na lista que ela aparece.
+     */
+    it('recarrega a tesouraria depois de propor', async () => {
+        const fetchMock = servir({ premium: true, eventos: [evento()] });
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        const leituras = () =>
+            fetchMock.mock.calls.filter(
+                (argumentos) =>
+                    String(argumentos[0]).includes('/distributions')
+                    && (argumentos[1] as { method?: string } | undefined)
+                        ?.method !== 'POST',
+            ).length;
+
+        await userEvent.type(
+            await screen.findByLabelText(t.tesouraria.totalADividir),
+            '400',
+        );
+
+        const antes = leituras();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: t.tesouraria.dividir }),
+        );
+
+        await waitFor(() => {
+            expect(leituras()).toBeGreaterThan(antes);
+        });
+    });
+
+    /**
+     * O evento **não** vai nas bases que o ignoram: a API recusa-o, e
+     * mandá-lo à mesma dava um 400 que se lê como avaria em vez de
+     * "esse campo não é desta base".
+     */
+    it('não manda evento nenhum numa divisão por partes iguais', async () => {
+        const fetchMock = servir({ premium: true, eventos: [evento()] });
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        montar();
+
+        await userEvent.type(
+            await screen.findByLabelText(t.tesouraria.totalADividir),
+            '400',
+        );
+
+        /*
+         * Escolher o evento e **mudar de ideias**, que é o único caminho
+         * onde isto se prova.
+         *
+         * Submeter sem nunca lá ter ido deixava o campo vazio, e um
+         * campo vazio não é enviado de qualquer maneira: o caso passava
+         * sem provar nada. Foi assim que este teste nasceu, e foi a
+         * mutação que o apanhou.
+         */
+        const base = screen.getByLabelText(t.tesouraria.comoDividir);
+
+        await userEvent.selectOptions(base, 'participation');
+        await userEvent.selectOptions(
+            await screen.findByLabelText(t.tesouraria.deQueEvento),
+            'ev-1',
+        );
+        await userEvent.selectOptions(base, 'equal');
+
+        await userEvent.click(
+            screen.getByRole('button', { name: t.tesouraria.dividir }),
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText(t.tesouraria.divisaoProposta)).toBeDefined();
+        });
+
+        const pedido = fetchMock.mock.calls.find(
+            (argumentos) =>
+                String(argumentos[0]).includes('/distributions')
+                && (argumentos[1] as { method?: string } | undefined)?.method
+                    === 'POST',
+        );
+
+        expect(
+            JSON.parse(
+                String((pedido?.[1] as { body?: string } | undefined)?.body),
+            ),
+        ).toEqual({ basis: 'equal', total: '400' });
     });
 });
