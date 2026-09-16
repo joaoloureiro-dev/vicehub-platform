@@ -197,6 +197,7 @@ export const en = (p: Tools) => ({
         pedirEntrada: 'Ask to join',
         responderamQueNao: 'They answered no',
         candidaturaRecusada: 'Not this time',
+        procuram: 'Looking for',
         respostaNova: 'New',
         entrasteAgora: 'You are in',
         enviadaEm: (data: string) => `Sent on ${data}`,

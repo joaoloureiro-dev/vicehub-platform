@@ -36,6 +36,22 @@ export const CrewCard = ({
 
         {crew.description ? <p>{crew.description}</p> : null}
 
+        {/*
+          O que a crew procura, para quem está a escolher.
+          Só chega da API quando ela está mesmo a recrutar.
+
+          Cortado a duas linhas de propósito: quem escreve requisitos
+          escreve parágrafos, e um deles esticava um cartão numa grelha
+          onde os outros têm três linhas. Quem quiser o texto todo abre
+          a crew, que é para onde o cartão leva.
+        */}
+        {crew.joinRequirements ? (
+            <p className="procura">
+                <span className="procura-etiqueta">{t.crews.procuram}</span>
+                <span className="procura-texto">{crew.joinRequirements}</span>
+            </p>
+        ) : null}
+
         <div className="crewcard-foot">
             <span>{t.crews.nivel(crew.level)}</span>
             <span>{t.crews.membros(crew.memberCount)}</span>

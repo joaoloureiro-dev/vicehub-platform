@@ -190,6 +190,7 @@ export const es = (p: Tools): Messages => ({
         pedirEntrada: 'Pedir entrar',
         responderamQueNao: 'Respondieron que no',
         candidaturaRecusada: 'Esta vez no',
+        procuram: 'Buscan',
         respostaNova: 'Nueva',
         entrasteAgora: 'Ya estás dentro',
         enviadaEm: (data: string) => `Enviada el ${data}`,

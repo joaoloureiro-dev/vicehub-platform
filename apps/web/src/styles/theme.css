@@ -3061,3 +3061,37 @@ button.link:hover {
     color: var(--cyan);
     background: rgba(34, 211, 238, 0.1);
 }
+
+/*
+  O que uma comunidade procura, no cartão do diretório.
+
+  Cortado a duas linhas. Quem escreve requisitos escreve parágrafos, e
+  um parágrafo inteiro esticava um cartão numa grelha onde os vizinhos
+  têm três linhas — a grelha deixava de se ler como grelha. O texto
+  todo está na página da comunidade, que é para onde o cartão leva.
+*/
+.procura {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+}
+
+.procura-etiqueta {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.procura-texto {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}

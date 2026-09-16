@@ -37,6 +37,8 @@ const DIRECTORY_ENTRY_SELECT = {
     name: true,
     region: true,
     description: true,
+    /** O que o servidor pede a quem se candidata. Ver o de crews. */
+    join_requirements: true,
     banner_url: true,
     accent_color: true,
     isOnline: true,

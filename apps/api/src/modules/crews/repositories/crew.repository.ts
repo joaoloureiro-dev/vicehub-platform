@@ -39,6 +39,14 @@ const DIRECTORY_ENTRY_SELECT = {
     name: true,
     tag: true,
     description: true,
+    /**
+     * O que a crew pede a quem se candidata.
+     *
+     * Estava só no perfil, e era a única pergunta que o quadro de
+     * recrutamento não respondia: ficava-se a saber que dez crews
+     * recrutam e era preciso abrir as dez para ver qual servia.
+     */
+    join_requirements: true,
     is_recruiting: true,
     recruiting_since: true,
     xp: true,
