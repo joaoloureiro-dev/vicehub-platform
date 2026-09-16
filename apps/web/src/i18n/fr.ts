@@ -215,6 +215,9 @@ export const fr = (p: Tools): Messages => ({
         recusar: 'Refuser',
         remover: 'Exclure',
         listaMembros: 'Membres',
+        cargoDe: (nome: string) => `Rôle de ${nome}`,
+        oQueOCargoDa:
+            'Le rôle décide de ce que chacun peut faire ici. Les officiers proposent et décident des dépenses ; les chefs changent aussi les rôles. Le tien, tu ne le changes pas, et le dernier chef ne peut pas être rétrogradé.',
 
         asMinhasTitulo: 'Où j’appartiens',
         minhasCrews: 'Crews',

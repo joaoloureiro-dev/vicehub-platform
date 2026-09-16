@@ -72,11 +72,12 @@ export type ServerRole = 'server_owner' | 'server_moderator' | 'server_member';
  * Os cargos de um servidor são outros: quem tem um servidor é dono, não
  * líder, e quem ajuda a mantê-lo é moderador.
  */
-const NOME_DO_CARGO: Record<string, string> = {
-    server_owner: 'Dono',
-    server_moderator: 'Moderador',
-    server_member: 'Membro',
-};
-
-export const nomeDoCargo = (role: string | null): string =>
-    role === null ? 'Membro' : (NOME_DO_CARGO[role] ?? role);
+/**
+ * Os cargos de um servidor, do mais alto ao mais baixo. Como os das
+ * crews: mesma ordem que o enum da API, e os nomes vêm do dicionário.
+ */
+export const CARGOS_DO_SERVIDOR = [
+    'server_owner',
+    'server_moderator',
+    'server_member',
+] as const;

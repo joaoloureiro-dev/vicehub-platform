@@ -206,6 +206,9 @@ export const es = (p: Tools): Messages => ({
         recusar: 'Rechazar',
         remover: 'Expulsar',
         listaMembros: 'Miembros',
+        cargoDe: (nome: string) => `Rol de ${nome}`,
+        oQueOCargoDa:
+            'El rol decide qué puede hacer cada uno aquí. Los oficiales proponen y deciden sobre el dinero; los líderes cambian además los roles. El tuyo no lo cambias tú, y al último líder no se le puede quitar el cargo.',
 
         asMinhasTitulo: 'Dónde pertenezco',
         minhasCrews: 'Crews',

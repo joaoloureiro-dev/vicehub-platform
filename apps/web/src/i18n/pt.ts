@@ -214,6 +214,9 @@ export const pt = (p: Tools): Messages => ({
         recusar: 'Recusar',
         remover: 'Remover',
         listaMembros: 'Membros',
+        cargoDe: (nome: string) => `Cargo de ${nome}`,
+        oQueOCargoDa:
+            'O cargo decide o que cada um pode fazer aqui. Os oficiais propõem e decidem sobre dinheiro; os líderes mudam também os cargos. O teu não o mudas tu, e o último líder não pode ser despromovido.',
 
         asMinhasTitulo: 'Onde pertenço',
         minhasCrews: 'Crews',

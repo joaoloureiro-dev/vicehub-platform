@@ -993,6 +993,29 @@ button.link:hover {
     white-space: nowrap;
 }
 
+/*
+  O cargo, quando é para escolher em vez de só ler.
+  Fica do tamanho do que lá está e não cresce com a linha: numa lista de
+  membros, um campo largo puxava o olho para a escolha em vez de para
+  quem é a pessoa.
+*/
+.pessoas .cargo-escolha {
+    font: inherit;
+    font-size: 14px;
+    min-height: var(--tap);
+    flex: none;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--edge-lit);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+}
+
+.pessoas .cargo-escolha:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .linha-acoes {
     display: flex;
     gap: 10px;

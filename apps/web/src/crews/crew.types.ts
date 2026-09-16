@@ -150,12 +150,18 @@ export interface CrewMembership {
 
 export type CrewRole = 'crew_leader' | 'crew_officer' | 'crew_member';
 
-/** Os cargos como se dizem a uma pessoa, e não como se gravam. */
-export const NOME_DO_CARGO: Record<string, string> = {
-    crew_leader: 'Líder',
-    crew_officer: 'Oficial',
-    crew_member: 'Membro',
-};
-
-export const nomeDoCargo = (role: string | null): string =>
-    role === null ? 'Membro' : (NOME_DO_CARGO[role] ?? role);
+/**
+ * Os cargos de uma crew, do mais alto ao mais baixo.
+ *
+ * É esta a ordem por que aparecem a escolher, e é a mesma do enum da
+ * API — uma lista com outra ordem lia-se como uma hierarquia diferente.
+ *
+ * Substituiu um mapa de nomes escritos em português que estava aqui e
+ * que ninguém chegou a usar. Foi bom que não: os nomes lêem-se do
+ * dicionário, como os dos planos, e este ecrã existe em quatro idiomas.
+ */
+export const CARGOS_DA_CREW = [
+    'crew_leader',
+    'crew_officer',
+    'crew_member',
+] as const;

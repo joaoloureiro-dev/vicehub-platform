@@ -90,6 +90,17 @@ const servidor = (opcoes: {
     perfil?: Record<string, unknown>;
     /** De onde vem o plano, quando não é da própria crew. */
     via?: { kind: 'server'; id: string; name: string };
+    /**
+     * A lista de membros, quando o caso quer desligá-la das
+     * candidaturas.
+     *
+     * Por omissão as duas andam juntas — quem gere membros é o líder —,
+     * e isso esconde o caso que importa: um **oficial** gere membros e
+     * não lidera. Sem o poder escrever, um ecrã que trocasse
+     * `crew:manage` por `crew:manage_members` passava a suite inteira,
+     * e um oficial promovia um cúmplice a líder.
+     */
+    membros?: unknown[];
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -140,7 +151,13 @@ const servidor = (opcoes: {
          */
         if (endereco.endsWith('/members')) {
             return Promise.resolve(
-                json(200, opcoes.requests.status === 200 ? membros : membrosSemMandar),
+                json(
+                    200,
+                    opcoes.membros
+                        ?? (opcoes.requests.status === 200
+                            ? membros
+                            : membrosSemMandar),
+                ),
             );
         }
 
@@ -578,6 +595,148 @@ describe('o ecrã de uma crew', () => {
             });
 
             expect(screen.getAllByRole('button', { name: t.crews.remover })).toHaveLength(1);
+        });
+    });
+
+    /**
+     * O cargo de um membro.
+     *
+     * A lista dizia o cargo e não havia por onde o mudar — nem aqui nem
+     * em lado nenhum do produto. Ninguém podia ser feito oficial, que é
+     * justamente o cargo à volta do qual a tesouraria foi desenhada; e
+     * a recusa de apagar a conta que manda "passar o cargo a outra
+     * pessoa" pedia uma coisa impossível de fazer.
+     */
+    describe('mudar o cargo de um membro', () => {
+        const comoLider = () =>
+            servidor({
+                requests: json(200, []),
+                memberships: [
+                    {
+                        crewId: 'crew-1',
+                        name: 'Vice Kings',
+                        tag: 'VICE',
+                        status: 'active',
+                        role: 'crew_leader',
+                        since: '2026-01-01T00:00:00.000Z',
+                    },
+                ],
+            });
+
+        it('promove um membro ao cargo escolhido', async () => {
+            const fetchMock = comoLider();
+
+            vi.stubGlobal('fetch', fetchMock);
+            montar();
+
+            const campo = await screen.findByLabelText(t.crews.cargoDe('outro'));
+
+            await userEvent.selectOptions(campo, 'crew_officer');
+
+            await waitFor(() => {
+                const chamada = fetchMock.mock.calls.find((argumentos) =>
+                    String(argumentos[0]).endsWith(
+                        '/crews/crew-1/members/u2/role',
+                    ),
+                );
+
+                expect(chamada).toBeDefined();
+                expect(
+                    (chamada?.[1] as { method?: string } | undefined)?.method,
+                ).toBe('PUT');
+                expect(
+                    JSON.parse(
+                        String(
+                            (chamada?.[1] as { body?: string } | undefined)
+                                ?.body ?? '{}',
+                        ),
+                    ),
+                ).toEqual({ role: 'crew_officer' });
+            });
+        });
+
+        /**
+         * A API recusa mudar o próprio cargo, e por isso o ecrã nem o
+         * oferece: um campo que só pode dar erro é pior do que campo
+         * nenhum.
+         */
+        it('não deixa mudar o próprio cargo', async () => {
+            vi.stubGlobal('fetch', comoLider());
+            montar();
+
+            await screen.findByLabelText(t.crews.cargoDe('outro'));
+
+            expect(
+                screen.queryByLabelText(t.crews.cargoDe('lider')),
+            ).toBeNull();
+        });
+
+
+        /**
+         * O caso que separa as duas permissões.
+         *
+         * Um oficial gere membros — responde a candidaturas, remove
+         * quem entrou — e **não** manda na crew. Trocar `crew:manage`
+         * por `crew:manage_members` aqui dava-lhe o campo dos cargos, e
+         * com ele a crew: promovia um cúmplice a líder e tirava-a a
+         * quem a fundou.
+         */
+        it('não aparece a um oficial, que gere membros mas não lidera', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    requests: json(200, []),
+                    membros: [
+                        {
+                            userId: 'u1',
+                            username: 'oficial',
+                            avatarUrl: null,
+                            role: 'crew_officer',
+                            joinedAt: '2026-01-01T00:00:00.000Z',
+                        },
+                        {
+                            userId: 'u2',
+                            username: 'outro',
+                            avatarUrl: null,
+                            role: 'crew_member',
+                            joinedAt: '2026-01-02T00:00:00.000Z',
+                        },
+                    ],
+                }),
+            );
+
+            montar();
+
+            /**
+             * O oficial continua a poder remover: é essa a permissão que
+             * tem. Sem esta metade, o teste passava com um ecrã que lhe
+             * escondia tudo.
+             */
+            expect(
+                await screen.findByRole('button', { name: t.crews.remover }),
+            ).toBeDefined();
+
+            expect(screen.queryByLabelText(t.crews.cargoDe('outro'))).toBeNull();
+        });
+
+        /**
+         * Mudar cargos exige `crew:manage`, e não a gestão de membros:
+         * com a segunda, um oficial promovia um cúmplice a líder e
+         * tomava a crew a quem a fundou.
+         */
+        it('não aparece a quem não lidera a crew', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ requests: json(403, { code: 'FORBIDDEN' }) }),
+            );
+
+            montar();
+
+            await waitFor(() => {
+                expect(screen.getByText('outro')).toBeDefined();
+            });
+
+            expect(screen.queryByLabelText(t.crews.cargoDe('outro'))).toBeNull();
         });
     });
 
