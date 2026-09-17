@@ -1055,6 +1055,22 @@ button.link:hover {
     flex: none;
 }
 
+/*
+  O primeiro passo de quem ainda não pertence a nada. Destaca-se do
+  resto do perfil porque é a única coisa naquela página que a pessoa
+  ainda não sabe que quer fazer.
+*/
+.primeiro-passo {
+    border: 1px solid var(--edge-lit);
+    border-radius: var(--radius);
+    padding: 18px;
+    background: rgba(233, 60, 239, 0.05);
+}
+
+.primeiro-passo h2 {
+    margin-top: 0;
+}
+
 .linha-acoes {
     display: flex;
     gap: 10px;

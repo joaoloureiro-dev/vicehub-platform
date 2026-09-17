@@ -362,6 +362,11 @@ export const es = (p: Tools): Messages => ({
         terminarSessoesATerminar: 'Cerrando…',
         terminarSessoesFalhou:
             'No se pudieron cerrar las sesiones. Inténtalo dentro de un rato.',
+        primeiroPassoTitulo: 'Empieza por aquí',
+        primeiroPassoExplicacao:
+            'ViceHub gira en torno a una crew: su gente, sus eventos y el dinero que gana. Todavía no estás en ninguna: crea una y lleva a los tuyos, o busca una que esté reclutando.',
+        primeiroPassoCriar: 'Crear una crew',
+        primeiroPassoProcurar: 'Ver quién está reclutando',
         levarDados: 'Llévate tus datos',
         levarDadosExplicacao:
             'Un archivo con todo lo que ViceHub tiene sobre ti: la cuenta, las comunidades en las que estás, los eventos a los que asististe, lo que propusiste y decidiste en una tesorería, y lo que la plataforma te dio. La contraseña y tus accesos no van ahí — eso son llaves de la cuenta, no datos sobre ti.',
