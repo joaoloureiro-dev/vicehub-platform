@@ -38,8 +38,9 @@ from the database to a screen; `🚧` is partly there; `○` has no code yet.
 - ✔ Activity tracking — heartbeats and player counts from the game server
 - ○ Leaderboards
 - ✔ Events integration
-- 🚧 Community engagement metrics — the numbers are collected, no screen
-  reads them yet
+- 🚧 Community engagement metrics — the live player count is collected and
+  shown, but each heartbeat overwrites the last one, so there is no history
+  to trend or rank by
 
 ### 🛒 Marketplace
 - ○ Digital services trading
