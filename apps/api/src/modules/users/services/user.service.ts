@@ -133,13 +133,6 @@ export class UserService {
             return;
         }
 
-        if (impedimentos.funds !== 0n) {
-            throw new UserError(
-                'ACCOUNT_HAS_FUNDS',
-                'A tua carteira ainda tem saldo. Transfere-o ou gasta-o antes de apagares a conta.',
-            );
-        }
-
         if (impedimentos.orphanedCommunities.length > 0) {
             const nomes = impedimentos.orphanedCommunities
                 .map((comunidade) => comunidade.name)

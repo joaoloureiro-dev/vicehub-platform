@@ -41,7 +41,6 @@ describe('UserService', () => {
 
     /** Nada preso atrás: a conta pode sair. */
     const SEM_IMPEDIMENTOS = {
-        funds: 0n,
         orphanedCommunities: [],
         hasActivePaidPlan: false,
     };
@@ -196,18 +195,26 @@ describe('UserService', () => {
             ).not.toHaveBeenCalled();
         });
 
-        it('recusa com saldo na carteira', async () => {
-            repository.findAccountDeletionBlockers.mockResolvedValue({
-                ...SEM_IMPEDIMENTOS,
-                funds: 500n,
-            });
-
-            await esperarErro(
-                service.deleteOwnAccount(pedido),
-                'ACCOUNT_HAS_FUNDS',
+        /**
+         * O saldo já não tranca a porta.
+         *
+         * Trancava, com uma mensagem a mandar transferi-lo ou gastá-lo —
+         * e não existe rota nenhuma por onde uma pessoa tire dinheiro da
+         * sua carteira. A instrução era impossível de cumprir, e quem
+         * alguma vez tivesse recebido de uma crew ficava sem forma de
+         * sair. A decisão é que o saldo se perde, e por isso apagar
+         * segue em frente.
+         */
+        it('apaga a conta mesmo com saldo na carteira', async () => {
+            repository.findAccountDeletionBlockers.mockResolvedValue(
+                SEM_IMPEDIMENTOS,
             );
 
-            expect(repository.eraseAccount).not.toHaveBeenCalled();
+            await expect(
+                service.deleteOwnAccount(pedido),
+            ).resolves.toBeUndefined();
+
+            expect(repository.eraseAccount).toHaveBeenCalledWith(pedido.userId);
         });
 
         /**

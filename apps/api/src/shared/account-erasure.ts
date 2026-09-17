@@ -22,14 +22,6 @@ export interface CommunityLeftBehind {
  */
 export interface AccountDeletionBlockers {
     /**
-     * Dinheiro parado na carteira da própria pessoa.
-     *
-     * A mesma regra das comunidades: apagar tornava-o inalcançável, e
-     * quem o apagasse por engano não tinha como o reaver.
-     */
-    funds: bigint;
-
-    /**
      * Comunidades onde esta pessoa é a única que manda.
      *
      * Apagar a conta deixava-as sem ninguém que as pudesse gerir,
@@ -56,9 +48,7 @@ export interface AccountDeletionBlockers {
 export const blocksAccountDeletion = (
     blockers: AccountDeletionBlockers,
 ): boolean =>
-    blockers.funds !== 0n
-    || blockers.orphanedCommunities.length > 0
-    || blockers.hasActivePaidPlan;
+    blockers.orphanedCommunities.length > 0 || blockers.hasActivePaidPlan;
 
 /**
  * Os cargos que, sozinhos, mandam numa comunidade.
@@ -77,11 +67,7 @@ export const findAccountDeletionBlockers = async (
     userId: string,
     agora: Date = new Date(),
 ): Promise<AccountDeletionBlockers> => {
-    const [carteira, plano, cargos] = await Promise.all([
-        database.wallet.findFirst({
-            where: { userId, is_deleted: false },
-            select: { balance: true },
-        }),
+    const [plano, cargos] = await Promise.all([
         database.subscription.findFirst({
             where: {
                 userId,
@@ -111,7 +97,6 @@ export const findAccountDeletionBlockers = async (
     ]);
 
     return {
-        funds: carteira?.balance ?? 0n,
         hasActivePaidPlan: plano !== null,
         orphanedCommunities: await comunidadesSemOutroDono(
             database,
@@ -322,6 +307,29 @@ export const eraseAccount = async (
         database.userRole.updateMany({
             where: { userId, is_deleted: false },
             data: marca,
+        }),
+
+        /**
+         * A carteira fecha-se a zero.
+         *
+         * Durante muito tempo o saldo **impedia** apagar a conta, com
+         * uma mensagem a mandar transferi-lo ou gastá-lo — e não existe
+         * rota nenhuma por onde uma pessoa tire dinheiro da sua carteira.
+         * A instrução era impossível de cumprir, e quem alguma vez
+         * tivesse recebido de uma crew ficava sem forma de sair.
+         *
+         * A decisão é que o saldo se perde. Então perde-se aqui, à
+         * vista, dentro da mesma transação que apaga o resto: a
+         * alternativa era deixar a carteira de pé com dinheiro lá
+         * dentro, presa a uma conta que já não existe. Isso não é perder
+         * o saldo — é fingir que se apagou a conta.
+         *
+         * A tesouraria de quem pagou não se mexe: o dinheiro saiu de lá
+         * quando saiu, e isso aconteceu mesmo.
+         */
+        database.wallet.updateMany({
+            where: { userId, is_deleted: false },
+            data: { ...marca, balance: 0n },
         }),
 
         /**

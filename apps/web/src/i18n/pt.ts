@@ -359,6 +359,8 @@ export const pt = (p: Tools): Messages => ({
             'Podes sair quando quiseres. A conta e tudo o que te identifica vão-se; o que as tuas crews precisam para as contas baterem certo fica, com um nome que não diz nada sobre ti.',
         apagarContaFica:
             'O email, o nome, a imagem e o texto são apagados, e a password e as entradas por Discord ou Google também. O que fica: os movimentos que propuseste ou aprovaste, e os eventos em que estiveste — isso é das tuas crews e não teu, e retirá-lo deixava as contas delas a não somar.',
+        apagarContaPerdeSaldo: (saldo: string) =>
+            `A tua carteira tem ${saldo}. Apagar a conta perde esse saldo — não há por onde o enviar para lado nenhum antes, e não volta.`,
         apagarContaPassword: 'A tua password, se a conta tiver uma',
         apagarContaConfirmar: 'Apagar a conta de vez',
         levarDados: 'Levar os teus dados',
