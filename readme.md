@@ -1063,6 +1063,37 @@ produção, um link de recuperação escrito no log é um link ao alcance de que
 logs, e ninguém recebe nada. A API não recusa arrancar por causa disto — avisa —
 porque há um deploy legítimo sem email: o primeiro, antes de haver domínio.
 
+#### O encerramento avisa antes de fechar a porta
+
+Num deploy rolante, o orquestrador manda `SIGTERM` e o balanceador só fica a
+saber que esta instância saiu quando voltar a sondar — segundos depois. Se a
+porta fechar primeiro, os pedidos que ele mandar nesse intervalo batem numa
+ligação recusada: o deploy dá-se por bem sucedido e quem está do outro lado vê
+erros.
+
+Por isso a ordem é ao contrário. Recebido o sinal, a sonda de prontidão passa
+logo a responder `503 shutting_down`, a instância continua a servir o que lhe
+chegar durante `SHUTDOWN_DRAIN_MS`, e só depois é que fecha.
+
+```bash
+SHUTDOWN_DRAIN_MS=10000    # acima do intervalo de sondagem de quem está à frente
+```
+
+Zero por omissão, que é o que se quer em desenvolvimento: o `Ctrl+C` é para ser
+imediato, e não há balanceador nenhum à espera de ser avisado.
+
+**A sonda de vida continua a responder 200 durante a espera**, e isso é de
+propósito: uma sonda de vida a falhar faz o orquestrador **reiniciar** o
+processo — desfazendo exatamente o que ele está a tentar fazer, e matando as
+ligações que estava a servir.
+
+As duas sondas, para quem configura o orquestrador:
+
+| Sonda | Endereço | O que significa falhar |
+| --- | --- | --- |
+| Vida | `GET /api/v1/health` | O processo não responde. Reiniciar. |
+| Prontidão | `GET /api/v1/health/ready` | Não consegue fazer o trabalho, ou está de saída. Tirar da rotação, não reiniciar. |
+
 #### O que não tem dono automático
 
 - **A limpeza dos tokens e das sessões expiradas** existe, mas não se
