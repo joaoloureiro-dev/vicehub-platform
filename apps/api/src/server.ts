@@ -10,17 +10,48 @@ import {
 const app = buildApp();
 
 /**
+ * Espera o tempo pedido.
+ *
+ * O temporizador não leva `unref`: é ele que tem de segurar o processo
+ * durante a drenagem. Com `unref`, bastaria o servidor deixar de ter
+ * trabalho para o processo sair a meio da espera — que é precisamente
+ * o que a espera existe para impedir.
+ */
+const esperar = (milissegundos: number): Promise<void> =>
+    new Promise((resolve) => {
+        setTimeout(resolve, milissegundos);
+    });
+
+/**
  * Encerra o processo de forma controlada.
  *
  * Antes de terminar:
+ * - anuncia na sonda de prontidão que está de saída;
+ * - dá ao balanceador tempo de reparar e parar de mandar tráfego;
  * - deixa de aceitar novas ligações;
  * - aguarda o encerramento dos plugins;
  * - liberta recursos associados à aplicação.
+ *
+ * A ordem é o que interessa aqui. Fechar primeiro e avisar depois
+ * deixa um intervalo em que o balanceador ainda manda pedidos para uma
+ * porta já fechada, e quem os fez vê um erro por causa de um deploy
+ * que correu bem.
  */
 const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
     app.log.info({ signal }, 'Sinal de encerramento recebido.');
 
     try {
+        app.comecarAEncerrar();
+
+        if (env.SHUTDOWN_DRAIN_MS > 0) {
+            app.log.info(
+                { drenagemMs: env.SHUTDOWN_DRAIN_MS },
+                'A sonda de prontidão já responde 503. A aguardar que o tráfego saia.',
+            );
+
+            await esperar(env.SHUTDOWN_DRAIN_MS);
+        }
+
         await app.close();
         app.log.info('API encerrada corretamente.');
         process.exit(0);

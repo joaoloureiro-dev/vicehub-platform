@@ -178,3 +178,84 @@ describe('as sondas de saúde', () => {
         }
     });
 });
+
+/**
+ * O que a sonda diz enquanto a instância está a sair.
+ *
+ * Num deploy rolante, o orquestrador manda o sinal e o balanceador só
+ * fica a saber quando voltar a sondar. Entre uma coisa e outra há
+ * pedidos a chegar. Se a porta fechar primeiro, esses pedidos batem
+ * numa ligação recusada — e quem os fez vê um erro por causa de um
+ * deploy que correu bem.
+ *
+ * A instância é sua, e não a partilhada: marcar o encerramento não tem
+ * volta, e os testes acima ficariam a correr contra uma aplicação de
+ * saída consoante a ordem em que corressem.
+ */
+describe('a instância a encerrar', () => {
+    let app: FastifyInstance;
+
+    beforeAll(async () => {
+        app = buildApp();
+        await app.ready();
+        app.comecarAEncerrar();
+    });
+
+    afterAll(async () => {
+        await app.close();
+    });
+
+    it('diz ao balanceador que já não a queira', async () => {
+        const resposta = await app.inject({
+            method: 'GET',
+            url: '/api/v1/health/ready',
+        });
+
+        expect(resposta.statusCode, resposta.body).toBe(503);
+        expect(resposta.json()).toEqual({
+            status: 'shutting_down',
+            checks: { database: 'skipped' },
+        });
+    });
+
+    /**
+     * E continua viva. Uma sonda de vida a falhar durante um
+     * encerramento controlado faz o orquestrador **reiniciar** o
+     * processo — desfazendo exatamente o que ele está a tentar fazer, e
+     * matando as ligações que estavam a ser servidas.
+     */
+    it('continua a responder que está viva', async () => {
+        const resposta = await app.inject({
+            method: 'GET',
+            url: '/api/v1/health',
+        });
+
+        expect(resposta.statusCode).toBe(200);
+        expect(resposta.json().status).toBe('ok');
+    });
+
+    /**
+     * E não chega a perguntar nada à base de dados.
+     *
+     * Não é uma poupança: é o que prova que o 503 vem de estar a sair e
+     * não de a base estar em baixo. Se a verificação ficasse depois da
+     * consulta, uma instância a encerrar com a base saudável responderia
+     * `ready` — e o balanceador continuava a mandar-lhe gente até ao
+     * momento em que a porta fecha.
+     */
+    it('nem chega a perguntar à base de dados', async () => {
+        const consulta = vi.spyOn(prisma, '$queryRaw');
+
+        try {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/health/ready',
+            });
+
+            expect(resposta.statusCode).toBe(503);
+            expect(consulta).not.toHaveBeenCalled();
+        } finally {
+            consulta.mockRestore();
+        }
+    });
+});

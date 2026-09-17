@@ -30,6 +30,8 @@ import jwtPlugin from './plugins/auth/jwt.plugin.js';
 
 import prismaPlugin from './plugins/database/prisma.plugin.js';
 
+import drenagemPlugin from './plugins/lifecycle/drenagem.plugin.js';
+
 import securityPlugin from './plugins/http/security.plugin.js';
 import errorHandlerPlugin from './plugins/http/error-handler.plugin.js';
 import validationPlugin from './plugins/http/validation.plugin.js';
@@ -158,6 +160,11 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Middleware de subscrição
     void app.register(requirePremiumPlugin);
+
+    /**
+     * O estado de encerramento, antes das rotas que o leem.
+     */
+    void app.register(drenagemPlugin);
 
     // Health Check
     void app.register(healthRoutes, {
