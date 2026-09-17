@@ -503,62 +503,16 @@ export class AuthRepository {
     /**
      * Procura um refresh token pelo ID, independentemente do estado.
      *
-     * É necessário para detetar reutilização: um token já rodado ou
-     * revogado que volte a aparecer indica que foi comprometido.
+     * Ignorar o estado **é** a funcionalidade, e não um descuido: é um
+     * token já rodado ou revogado a voltar a aparecer que denuncia que
+     * foi comprometido. Uma procura que só devolvesse tokens ativos
+     * respondia "não existe" ao caso exato que queremos apanhar, e a
+     * sessão comprometida continuava a andar.
      */
     findRefreshTokenById(refreshTokenId: string) {
         return this.database.refreshToken.findUnique({
             where: {
                 id: refreshTokenId,
-            },
-        });
-    }
-
-    /**
-     * Procura um refresh token ativo pelo ID.
-     *
-     * Usado no refresh flow.
-     * O token recebido pelo cliente contém o ID público
-     * e o segredo privado separado.
-     */
-    findActiveRefreshTokenById(refreshTokenId: string) {
-        return this.database.refreshToken.findFirst({
-            where: {
-                id: refreshTokenId,
-                status: RefreshTokenStatus.active,
-                is_deleted: false,
-                expires_at: {
-                    gt: new Date(),
-                },
-            },
-            include: {
-                session: {
-                    include: {
-                        user: true,
-                    },
-                },
-            },
-        });
-    }
-
-    /**
-     * Lista refresh tokens ativos de uma sessão.
-     *
-     * Isto será usado no refresh flow para encontrar o token
-     * cujo hash corresponde ao token recebido do cliente.
-     */
-    findActiveRefreshTokensBySession(sessionId: string) {
-        return this.database.refreshToken.findMany({
-            where: {
-                sessionId,
-                status: RefreshTokenStatus.active,
-                is_deleted: false,
-                expires_at: {
-                    gt: new Date(),
-                },
-            },
-            orderBy: {
-                created_at: 'desc',
             },
         });
     }

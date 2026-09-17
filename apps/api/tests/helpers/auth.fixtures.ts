@@ -36,8 +36,6 @@ export const createAuthRepositoryMock = () => ({
     touchSession: vi.fn(),
     createRefreshToken: vi.fn(),
     findRefreshTokenById: vi.fn(),
-    findActiveRefreshTokenById: vi.fn(),
-    findActiveRefreshTokensBySession: vi.fn(),
     markRefreshTokenAsUsed: vi.fn(),
     rotateRefreshToken: vi.fn(),
     revokeRefreshToken: vi.fn(),
