@@ -384,6 +384,11 @@ export const en = (p: Tools) => ({
         terminarSessoesATerminar: 'Signing out…',
         terminarSessoesFalhou:
             'The sessions could not be ended. Try again shortly.',
+        primeiroPassoTitulo: 'Start here',
+        primeiroPassoExplicacao:
+            'ViceHub works around a crew: its people, its events, and the money it earns. You are not in one yet — make one and bring your people, or find one that is looking.',
+        primeiroPassoCriar: 'Create a crew',
+        primeiroPassoProcurar: 'See who is recruiting',
         levarDados: 'Take your data with you',
         levarDadosExplicacao:
             'A file with everything ViceHub holds about you: your account, the communities you are in, the events you turned up to, what you proposed and decided in a treasury, and what the platform gave you. Your password and your sign-ins are not in it — those are keys to the account, not facts about you.',

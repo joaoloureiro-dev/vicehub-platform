@@ -12,6 +12,7 @@ import { ApagarConta } from '../components/apagar-conta.js';
 import { LevarDados } from '../components/levar-dados.js';
 import { TerminarSessoes } from '../components/terminar-sessoes.js';
 import { ListaDeAmigos } from '../components/lista-de-amigos.js';
+import { PrimeiroPasso } from '../components/primeiro-passo.js';
 import {
     getMyProfile,
     updateMyAppearance,
@@ -143,6 +144,13 @@ export const MyProfilePage = () => {
                     </Link>
                 </div>
             </div>
+
+            {/*
+              Antes das estatísticas, e de propósito: a quem acabou de
+              chegar, o nível 1 e o xp a zero não são a notícia. O que
+              fazer a seguir é.
+            */}
+            <PrimeiroPasso />
 
             <dl className="stats">
                 <div>
