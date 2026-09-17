@@ -13,7 +13,12 @@ import { UserError } from '../errors/user.errors.js';
 import type { UserRepository } from '../repositories/user.repository.js';
 import type { PasswordService } from '../../auth/services/password.service.js';
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
-import type { PrivateProfile, PublicProfile, UserRecord } from '../types/user.types.js';
+import type {
+    PrivateProfile,
+    PublicProfile,
+    ReputationEntry,
+    UserRecord,
+} from '../types/user.types.js';
 
 interface UpdateProfileInput {
     avatarUrl?: string | null | undefined;
@@ -283,6 +288,31 @@ export class UserService {
         }
 
         return exportacao;
+    }
+
+    /**
+     * De onde veio a reputação desta pessoa.
+     *
+     * Só a própria, e é essa a decisão toda desta rota. O **número** é
+     * público — está no perfil de quem quer que lá chegue —, mas a lista
+     * diz os **nomes dos eventos**, e o calendário de uma comunidade é
+     * dela. Pendurada no perfil público, bastava abrir a página de
+     * alguém para saber a que assaltos a crew dele foi.
+     *
+     * É a mesma razão que faz o histórico de xp de uma crew exigir
+     * `event:read`, e a mesma linha: o total pode andar por aí, os
+     * eventos não.
+     */
+    async listReputation(userId: string): Promise<ReputationEntry[]> {
+        const ganhos = await this.userRepository.listReputationAwards(userId);
+
+        return ganhos.map((ganho) => ({
+            id: ganho.id,
+            amount: ganho.amount,
+            reason: ganho.reason,
+            at: ganho.created_at,
+            event: ganho.event,
+        }));
     }
 
     private async isPremium(userId: string): Promise<boolean> {

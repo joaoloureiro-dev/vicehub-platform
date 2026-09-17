@@ -79,6 +79,24 @@ const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
     );
 
     /**
+     * De onde veio a minha reputação.
+     *
+     * Só a própria pessoa, e é essa a decisão toda. O número está no
+     * perfil público de quem quer que lá chegue; a lista diz os nomes
+     * dos eventos, e o calendário de uma comunidade é dela. Pendurada no
+     * perfil público, bastava abrir a página de alguém para saber a que
+     * assaltos a crew dele foi.
+     *
+     * Sem limite próprio, como as contagens acima: é lida ao abrir uma
+     * página normal.
+     */
+    fastify.get(
+        '/me/reputation',
+        { preHandler: [fastify.authenticate] },
+        controller.listReputation.bind(controller),
+    );
+
+    /**
      * Dizer que já vi as respostas às minhas candidaturas.
      *
      * `POST` e não `GET` porque muda uma data — e sem limite próprio

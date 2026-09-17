@@ -64,6 +64,7 @@ describe('ligação das rotas de utilizador', () => {
             deleteOwnAccount: vi.fn(),
             exportOwnAccount: vi.fn(),
             pendingForMe: vi.fn(),
+            listReputation: vi.fn(),
             markAnswersSeen: vi.fn(),
         } as unknown as UserController;
 
@@ -95,6 +96,12 @@ describe('ligação das rotas de utilizador', () => {
          * a conta vem da sessão: sem token não há de quem falar.
          */
         'POST /me/pending/answers/seen',
+        /**
+         * De onde veio a minha reputação. O número é público; a lista
+         * diz os nomes dos eventos, e é sempre a da pessoa da sessão —
+         * não há endereço para a de outrem.
+         */
+        'GET /me/reputation',
     ])('%s exige autenticação', (key) => {
         expect(preHandlersOf(key)).toHaveLength(1);
     });

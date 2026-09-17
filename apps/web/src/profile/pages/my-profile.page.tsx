@@ -13,8 +13,10 @@ import { LevarDados } from '../components/levar-dados.js';
 import { TerminarSessoes } from '../components/terminar-sessoes.js';
 import { ListaDeAmigos } from '../components/lista-de-amigos.js';
 import { PrimeiroPasso } from '../components/primeiro-passo.js';
+import { HistoricoDeReputacao } from '../components/historico-de-reputacao.js';
 import {
     getMyProfile,
+    getMyReputation,
     updateMyAppearance,
     updateMyProfile,
 } from '../profile.api.js';
@@ -45,6 +47,13 @@ export const MyProfilePage = () => {
     const t = useT();
     const { idioma } = useIdioma();
     const perfil = useAsync(() => getMyProfile(), []);
+
+    /**
+     * De onde veio a reputação. Pedido à parte do perfil de propósito: é
+     * uma lista que pode crescer, e prendê-la ao perfil faria o ecrã
+     * inteiro esperar por ela.
+     */
+    const reputacao = useAsync(() => getMyReputation(), []);
 
     const [bio, setBio] = useState('');
     const [avatar, setAvatar] = useState('');
@@ -177,6 +186,16 @@ export const MyProfilePage = () => {
                 xpDoNivel={eu.levelXp}
                 xpDoNivelSeguinte={eu.nextLevelXp}
             />
+
+            {/*
+              De onde veio a reputação, logo a seguir ao número que ela
+              explica. Enquanto a lista não chega não se mostra nada: uma
+              secção a dizer "ainda nada" durante o carregamento diria a
+              coisa errada a quem tem histórico.
+            */}
+            {reputacao.data === null ? null : (
+                <HistoricoDeReputacao entradas={reputacao.data} />
+            )}
 
             <ListaDeAmigos />
 

@@ -258,6 +258,19 @@ export const listReputationAwards = (
             amount: true,
             reason: true,
             created_at: true,
-            event: { select: { id: true, name: true } },
+            /**
+             * O dono vem com o evento porque sem ele não há para onde
+             * apontar: o endereço de um evento é o da crew ou o do
+             * servidor que o marcou, e um nome sem link deixa a pergunta
+             * seguinte — "qual foi esse?" — sem resposta.
+             */
+            event: {
+                select: {
+                    id: true,
+                    name: true,
+                    crewId: true,
+                    serverId: true,
+                },
+            },
         },
     });

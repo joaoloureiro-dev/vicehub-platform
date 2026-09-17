@@ -3,6 +3,27 @@ import type { Appearance } from '../crews/crew.types.js';
 
 export type { Appearance };
 
+/**
+ * Uma mudança na reputação, como o ecrã dela a recebe.
+ *
+ * O `amount` vem assinado: uma presença é `1`, uma falta é `-1`. Quem
+ * desenha o sinal lê-o daqui em vez de o inferir da razão, para que os
+ * dois nunca possam discordar.
+ */
+export interface ReputationEntry {
+    id: string;
+    amount: number;
+    reason: string;
+    at: string;
+    event: {
+        id: string;
+        name: string;
+        /** Exatamente um destes vem preenchido. */
+        crewId: string | null;
+        serverId: string | null;
+    } | null;
+}
+
 export interface PublicProfile {
     id: string;
     username: string;
