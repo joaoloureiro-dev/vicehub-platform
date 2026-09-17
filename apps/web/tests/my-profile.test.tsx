@@ -103,11 +103,34 @@ describe('o meu perfil', () => {
                 );
             }
 
+            /*
+              De onde veio a reputação. Vazio por omissão: o que a lista
+              mostra é assunto do teste dela, e aqui só é preciso que a
+              rota exista.
+            */
+            if (String(url).endsWith('/users/me/reputation')) {
+                return Promise.resolve(json(200, []));
+            }
+
             if (opcoes?.method === 'PATCH') {
                 return Promise.resolve(json(200, eu));
             }
 
-            return Promise.resolve(json(200, eu));
+            if (String(url).endsWith('/users/me')) {
+                return Promise.resolve(json(200, eu));
+            }
+
+            /*
+              E rebenta com o que não estiver previsto, em vez de
+              devolver o perfil a toda a gente.
+
+              Era o que fazia antes, e escondia o caso exato que apareceu
+              a acrescentar a reputação: a página passou a pedir uma
+              lista, o duplo respondeu-lhe com o perfil, e o ecrã foi
+              abaixo por uma razão que nenhum destes testes mede. Um
+              duplo que responde a tudo mente sobre o que a página pede.
+            */
+            throw new Error(`rota não prevista pelo duplo: ${String(url)}`);
         });
 
         vi.stubGlobal('fetch', fetchMock);

@@ -2397,6 +2397,16 @@ button.link:hover {
     color: var(--ok);
 }
 
+/*
+ * A reputação desce, ao contrário do xp, e a cor é o que faz a diferença
+ * ser vista de relance numa lista de linhas todas parecidas. O sinal
+ * está lá escrito de qualquer maneira: a cor acompanha-o, não o
+ * substitui, porque quem não distingue as duas continua a ler o menos.
+ */
+.ganho-quanto.perdeu {
+    color: var(--danger);
+}
+
 .ganho-porque {
     flex: 1 1 auto;
     min-width: 0;

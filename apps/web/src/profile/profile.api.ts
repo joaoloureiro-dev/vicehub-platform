@@ -1,11 +1,24 @@
 import { api } from '../lib/api.js';
-import type { PrivateProfile, PublicProfile } from './profile.types.js';
+import type {
+    PrivateProfile,
+    PublicProfile,
+    ReputationEntry,
+} from './profile.types.js';
 
 export const getMyProfile = (): Promise<PrivateProfile> =>
     api<PrivateProfile>('/users/me');
 
 export const getProfile = (username: string): Promise<PublicProfile> =>
     api<PublicProfile>(`/users/${encodeURIComponent(username)}`);
+
+/**
+ * De onde veio a minha reputação.
+ *
+ * Só a própria pessoa tem esta lista: o número é público, os nomes dos
+ * eventos não. Não há a versão `getReputation(username)` de propósito.
+ */
+export const getMyReputation = (): Promise<ReputationEntry[]> =>
+    api<ReputationEntry[]>('/users/me/reputation');
 
 export const updateMyProfile = (input: {
     avatarUrl?: string | null;

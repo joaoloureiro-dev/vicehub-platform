@@ -23,6 +23,26 @@ export interface UserRecord {
     created_at: Date;
 }
 
+/**
+ * Uma mudança na reputação, como o ecrã dela precisa.
+ *
+ * O `amount` vem assinado: é a diferença entre uma presença e uma falta,
+ * e mandar o sinal à parte obrigaria quem lê a recompô-lo.
+ */
+export interface ReputationEntry {
+    id: string;
+    amount: number;
+    reason: string;
+    at: Date;
+    event: {
+        id: string;
+        name: string;
+        /** Exatamente um destes vem preenchido. */
+        crewId: string | null;
+        serverId: string | null;
+    } | null;
+}
+
 export interface PublicProfile {
     id: string;
     username: string;

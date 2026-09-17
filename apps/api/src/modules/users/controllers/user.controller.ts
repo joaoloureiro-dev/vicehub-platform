@@ -95,6 +95,22 @@ export class UserController {
      * zero seria pedir ao ecrã que acreditasse numa segunda fonte em vez
      * de voltar a perguntar à primeira.
      */
+    async listReputation(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const ganhos = await this.userService.listReputation(user.id);
+
+        reply.send(
+            ganhos.map((ganho) => ({
+                ...ganho,
+                at: ganho.at.toISOString(),
+            })),
+        );
+    }
+
     async markAnswersSeen(
         request: FastifyRequest,
         reply: FastifyReply,

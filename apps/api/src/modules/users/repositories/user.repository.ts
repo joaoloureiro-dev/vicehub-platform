@@ -7,6 +7,7 @@ import {
 import { buildAccountExport } from '../../../shared/account-export.js';
 import { buildPendingForUser } from '../../../shared/pending-for-user.js';
 import { listAchievements } from '../../../shared/list-achievements.js';
+import { listReputationAwards } from '../../../shared/reputation-awards.js';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { toAppearanceColumns } from '../../../shared/appearance.js';
@@ -177,6 +178,15 @@ export class UserRepository {
      */
     listAchievements(userId: string) {
         return listAchievements(this.database, { userId });
+    }
+
+    /**
+     * De onde veio a reputação desta pessoa.
+     *
+     * Delega na função partilhada, pela mesma razão das conquistas.
+     */
+    listReputationAwards(userId: string, take = 20) {
+        return listReputationAwards(this.database, userId, take);
     }
 
 }

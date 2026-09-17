@@ -458,6 +458,156 @@ describe('a reputação de quem aparece', () => {
     });
 
     /**
+     * De onde veio, e não só quanto.
+     *
+     * O número está no perfil público de quem quer que lá chegue, e um
+     * número sozinho só se pode acreditar.
+     */
+    it('conta à própria pessoa de onde veio cada ponto', async () => {
+        const eventId = await eventoCom([lider, pontual, faltoso]);
+
+        await confirmar(eventId, liderId);
+        await confirmar(eventId, pontualId);
+        await marcarFalta(eventId, faltosoId);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        const resposta = await app.inject({
+            method: 'GET',
+            url: '/api/v1/users/me/reputation',
+            headers: auth(pontual),
+        });
+
+        expect(resposta.statusCode, resposta.body).toBe(200);
+
+        const entradas = resposta.json() as {
+            amount: number;
+            reason: string;
+            event: { id: string; name: string; crewId: string | null } | null;
+        }[];
+
+        const desteEvento = entradas.find(
+            (entrada) => entrada.event?.id === eventId,
+        );
+
+        expect(desteEvento).toMatchObject({
+            amount: 1,
+            reason: 'event_attended',
+        });
+
+        /* E diz a que comunidade o evento pertence, senão não há link. */
+        expect(desteEvento?.event?.crewId).toBe(crewId);
+    });
+
+    /** Uma falta aparece com o sinal, e não como uma presença qualquer. */
+    it('mostra a falta com o sinal trocado', async () => {
+        const resposta = await app.inject({
+            method: 'GET',
+            url: '/api/v1/users/me/reputation',
+            headers: auth(faltoso),
+        });
+
+        expect(resposta.statusCode, resposta.body).toBe(200);
+
+        const entradas = resposta.json() as {
+            amount: number;
+            reason: string;
+        }[];
+
+        const faltas = entradas.filter(
+            (entrada) => entrada.reason === 'event_missed',
+        );
+
+        expect(faltas.length).toBeGreaterThan(0);
+        expect(faltas.every((entrada) => entrada.amount < 0)).toBe(true);
+    });
+
+    /**
+     * E é só da própria pessoa.
+     *
+     * Esta é a decisão toda da rota. O número é público; a lista diz os
+     * **nomes dos eventos**, e o calendário de uma comunidade é dela.
+     * Pendurada no perfil público, bastava abrir a página de alguém para
+     * saber a que assaltos a crew dele foi — que é a mesma razão por que
+     * o histórico de xp de uma crew exige `event:read`.
+     */
+    it('não deixa ninguém ver a reputação de outra pessoa', async () => {
+        const semSessao = await app.inject({
+            method: 'GET',
+            url: '/api/v1/users/me/reputation',
+        });
+
+        expect(semSessao.statusCode).toBe(401);
+
+        /* E não existe caminho para a de outrem: só há /me. */
+        const deOutrem = await app.inject({
+            method: 'GET',
+            url: `/api/v1/users/${pontualNome}/reputation`,
+            headers: auth(faltoso),
+        });
+
+        expect(deOutrem.statusCode).toBe(404);
+    });
+
+    /**
+     * E o titular vem da sessão, nunca do pedido.
+     *
+     * É a mesma regra que apagar a conta já segue, e pela mesma razão:
+     * se o assunto do pedido pudesse ser nomeado por quem pergunta,
+     * havia forma de pedir o de outra pessoa. A rota não tem parâmetro
+     * nenhum — e isto é o que garante que continua a não ter, mesmo que
+     * alguém lho acrescente sem reparar.
+     */
+    it('ignora quem o pedido diga que é', async () => {
+        const lista = async (token: string, boleia?: string) => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url:
+                    boleia === undefined
+                        ? '/api/v1/users/me/reputation'
+                        : `/api/v1/users/me/reputation?userId=${boleia}`,
+                headers: auth(token),
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+
+            return resposta.json() as unknown[];
+        };
+
+        const doFaltoso = await lista(faltoso);
+        const doPontual = await lista(pontual);
+
+        /* As duas pessoas têm histórias diferentes, senão nada se prova. */
+        expect(doFaltoso).not.toEqual(doPontual);
+
+        const comBoleia = await lista(faltoso, pontualId);
+
+        /**
+         * Pedir com o nome de outra pessoa dá exatamente o mesmo que
+         * pedir sem nome nenhum: o assunto vem da sessão.
+         */
+        expect(comBoleia).toEqual(doFaltoso);
+        expect(comBoleia).not.toEqual(doPontual);
+    });
+
+    /**
+     * O perfil público continua a dizer o número.
+     *
+     * Esconder a lista não é esconder o total: é o total que serve para
+     * decidir se se aceita alguém numa crew, e é por isso que ele anda
+     * por aí.
+     */
+    it('mas o número continua público', async () => {
+        const resposta = await app.inject({
+            method: 'GET',
+            url: `/api/v1/users/${pontualNome}`,
+        });
+
+        expect(resposta.statusCode).toBe(200);
+        expect(typeof resposta.json().reputation).toBe('number');
+    });
+
+    /**
      * O mesmo evento não conta duas vezes.
      *
      * É a razão de a tabela existir. A segunda conclusão é recusada pelo
