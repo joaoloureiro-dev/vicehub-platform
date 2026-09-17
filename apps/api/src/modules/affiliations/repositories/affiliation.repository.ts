@@ -31,6 +31,8 @@ export class AffiliationRepository {
                 id: true,
                 serverId: true,
                 server: { select: { name: true } },
+                /** O nome da crew, para o rasto de quem a põe fora. */
+                crew: { select: { name: true } },
             },
         });
     }
@@ -76,7 +78,18 @@ export class AffiliationRepository {
                 status: MembershipStatus.pending,
                 is_deleted: false,
             },
-            select: { id: true },
+            /**
+             * Os dois nomes vêm com o pedido porque é deles que o rasto
+             * precisa. Uma entrada que diga só identificadores não
+             * responde à pergunta que a traz ali — que crew, e que
+             * servidor — e ir buscá-los depois eram duas consultas a
+             * mais por cada decisão.
+             */
+            select: {
+                id: true,
+                crew: { select: { name: true } },
+                server: { select: { name: true } },
+            },
         });
     }
 

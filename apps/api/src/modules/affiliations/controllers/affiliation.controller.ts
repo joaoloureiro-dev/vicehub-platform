@@ -1,6 +1,7 @@
 import { MembershipStatus } from '@vicehub/database';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import { AuditService } from '../../audit/services/audit.service.js';
 import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     AffiliationParamDto,
@@ -11,7 +12,57 @@ import type {
 import type { AffiliationService } from '../services/affiliation.service.js';
 
 export class AffiliationController {
-    constructor(private readonly affiliationService: AffiliationService) { }
+    constructor(
+        private readonly affiliationService: AffiliationService,
+        private readonly auditService: AuditService,
+    ) { }
+
+    /**
+     * Uma decisão de filiação fica no rasto **das duas** comunidades.
+     *
+     * Não é duplicação por descuido: são duas perguntas diferentes, com
+     * donos diferentes. Quem manda no servidor quer saber que crews
+     * aceitou e pôs fora; quem lidera a crew, ao dar com ela fora de um
+     * servidor, quer saber quem a tirou de lá — e essa pessoa não é da
+     * crew, por isso o rasto dela nunca lhe chegaria.
+     *
+     * O nome que se guarda é o da **outra** comunidade: no rasto do
+     * servidor fica a crew, no da crew fica o servidor. Repetir o nome
+     * de quem está a ler não acrescenta nada.
+     */
+    private async registarFiliacao(
+        request: FastifyRequest<{ Params: AffiliationParamDto }>,
+        actorId: string,
+        acao: 'accepted' | 'rejected' | 'removed',
+        envolvidos: { crewName: string; serverName: string },
+    ): Promise<void> {
+        const contexto = AuditService.contextOf(request);
+
+        await Promise.all([
+            this.auditService.record({
+                action: `server.affiliation.${acao}`,
+                entityType: 'Server',
+                entityId: request.params.serverId,
+                actorId,
+                after: {
+                    crewId: request.params.crewId,
+                    crewName: envolvidos.crewName,
+                },
+                ...contexto,
+            }),
+            this.auditService.record({
+                action: `crew.affiliation.${acao}`,
+                entityType: 'Crew',
+                entityId: request.params.crewId,
+                actorId,
+                after: {
+                    serverId: request.params.serverId,
+                    serverName: envolvidos.serverName,
+                },
+                ...contexto,
+            }),
+        ]);
+    }
 
     /**
      * Onde a crew joga. É público: faz parte do perfil dela.
@@ -142,11 +193,13 @@ export class AffiliationController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.affiliationService.accept(
+        const envolvidos = await this.affiliationService.accept(
             request.params.serverId,
             request.params.crewId,
             user.id,
         );
+
+        await this.registarFiliacao(request, user.id, 'accepted', envolvidos);
 
         reply.send({ status: 'active' });
     }
@@ -157,11 +210,13 @@ export class AffiliationController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.affiliationService.reject(
+        const envolvidos = await this.affiliationService.reject(
             request.params.serverId,
             request.params.crewId,
             user.id,
         );
+
+        await this.registarFiliacao(request, user.id, 'rejected', envolvidos);
 
         reply.send({ status: 'rejected' });
     }
@@ -172,11 +227,13 @@ export class AffiliationController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.affiliationService.remove(
+        const envolvidos = await this.affiliationService.remove(
             request.params.serverId,
             request.params.crewId,
             user.id,
         );
+
+        await this.registarFiliacao(request, user.id, 'removed', envolvidos);
 
         reply.code(204).send();
     }

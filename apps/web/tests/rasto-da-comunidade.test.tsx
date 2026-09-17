@@ -211,4 +211,107 @@ describe('o rasto de uma comunidade', () => {
         expect(screen.queryByText(t.rasto.titulo)).toBeNull();
         expect(screen.queryByText(t.rasto.aindaNada)).toBeNull();
     });
+
+    /**
+     * As decisões de filiação aparecem nos dois rastos, e a frase muda
+     * com o lado em que se lê.
+     *
+     * Não é duplicação por descuido: quem manda no servidor quer saber
+     * que crews aceitou; quem lidera a crew, ao dar com ela fora de um
+     * servidor, quer saber quem a tirou de lá — e essa pessoa não é da
+     * crew, por isso o rasto dela nunca lhe chegaria.
+     */
+    describe('as decisões de filiação', () => {
+        it('do lado do servidor, nomeia a crew', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servir(
+                    json(200, [
+                        entrada({
+                            action: 'server.affiliation.removed',
+                            before: null,
+                            after: { crewId: 'c1', crewName: 'Vice Kings' },
+                        }),
+                    ]),
+                ),
+            );
+
+            montar('/servers');
+
+            expect(
+                await screen.findByText(
+                    t.rasto.tirouCrew('lider', 'Vice Kings'),
+                ),
+            ).toBeDefined();
+        });
+
+        it('do lado da crew, nomeia o servidor', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servir(
+                    json(200, [
+                        entrada({
+                            action: 'crew.affiliation.removed',
+                            before: null,
+                            after: { serverId: 's1', serverName: 'Vice City RP' },
+                        }),
+                    ]),
+                ),
+            );
+
+            montar();
+
+            expect(
+                await screen.findByText(
+                    t.rasto.foiTiradaDe('lider', 'Vice City RP'),
+                ),
+            ).toBeDefined();
+        });
+
+        it('diz quem deixou a crew jogar', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servir(
+                    json(200, [
+                        entrada({
+                            action: 'server.affiliation.accepted',
+                            before: null,
+                            after: { crewId: 'c1', crewName: 'Vice Kings' },
+                        }),
+                    ]),
+                ),
+            );
+
+            montar('/servers');
+
+            expect(
+                await screen.findByText(
+                    t.rasto.aceitouCrew('lider', 'Vice Kings'),
+                ),
+            ).toBeDefined();
+        });
+
+        it('diz quem recusou a crew', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servir(
+                    json(200, [
+                        entrada({
+                            action: 'crew.affiliation.rejected',
+                            before: null,
+                            after: { serverId: 's1', serverName: 'Vice City RP' },
+                        }),
+                    ]),
+                ),
+            );
+
+            montar();
+
+            expect(
+                await screen.findByText(
+                    t.rasto.foiRecusadaEm('lider', 'Vice City RP'),
+                ),
+            ).toBeDefined();
+        });
+    });
 });
