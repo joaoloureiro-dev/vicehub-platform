@@ -488,6 +488,21 @@ export const en = (p: Tools) => ({
         verCarteira: 'My wallet',
     },
 
+    rasto: {
+        titulo: 'What was decided here',
+        aindaNada: 'Nothing has been decided about anyone yet.',
+        contaApagada: 'a deleted account',
+        alguem: 'someone',
+        semCargo: 'no role',
+        admitiu: (quem: string, alvo: string) => `${quem} let ${alvo} in`,
+        recusou: (quem: string, alvo: string) => `${quem} turned ${alvo} down`,
+        removeu: (quem: string, alvo: string, cargo: string) =>
+            `${quem} removed ${alvo}, who was ${cargo}`,
+        mudouCargo: (quem: string, alvo: string, de: string, para: string) =>
+            `${quem} changed ${alvo} from ${de} to ${para}`,
+        fez: (quem: string, acao: string) => `${quem}: ${acao}`,
+    },
+
     tesouraria: {
         montanteAEnviar: 'Amount to send',
         transferirTitulo: 'Send money to a crew',

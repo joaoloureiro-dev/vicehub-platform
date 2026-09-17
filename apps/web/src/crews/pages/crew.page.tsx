@@ -10,6 +10,7 @@ import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { CrewAffiliation } from '../../affiliations/components/crew-affiliation.js';
 import { CARGOS_DA_CREW } from '../crew.types.js';
 import { EscolherCargo } from '../../components/escolher-cargo.js';
+import { RastoDaComunidade } from '../../components/rasto-da-comunidade.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ApagarComunidade } from '../../components/apagar-comunidade.js';
 import { Conquistas } from '../../components/conquistas.js';
@@ -510,6 +511,16 @@ export const CrewPage = () => {
                 */}
                 {souLider ? <p className="hint">{t.crews.oQueOCargoDa}</p> : null}
             </section>
+
+            {/*
+              O rasto fica ao lado da lista de membros porque é aqui que
+              a pergunta se faz: quem é que o pôs fora, quem é que o fez
+              oficial. Só a quem gere membros — o próprio componente
+              trata do 403 e desaparece.
+            */}
+            {giroCandidaturas ? (
+                <RastoDaComunidade base={'/crews'} id={perfil.id} />
+            ) : null}
 
             {/*
               As definições aparecem a quem gere a crew. Existiam na API

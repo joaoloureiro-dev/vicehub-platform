@@ -204,6 +204,27 @@ const crewRoutes: FastifyPluginAsync<CrewRoutesOptions> = async (
         controller.listJoinRequests.bind(controller),
     );
 
+    /**
+     * O rasto do que se decidiu aqui sobre pessoas.
+     *
+     * A mesma permissão de responder às candidaturas, e de propósito:
+     * quem decide quem entra é quem tem de poder ver o que já foi
+     * decidido — incluindo por outra pessoa, e incluindo quando a
+     * decisão foi sobre si. Abri-lo a qualquer membro era publicar
+     * dentro da comunidade quem recusou quem.
+     */
+    fastify.get<{ Params: CrewIdParamDto }>(
+        '/:crewId/history',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('crew:manage_members'),
+            ],
+            schema: { params: crewIdParamSchema },
+        },
+        controller.listHistory.bind(controller),
+    );
+
     fastify.post<{ Params: CrewMemberParamDto }>(
         '/:crewId/requests/:userId/accept',
         {

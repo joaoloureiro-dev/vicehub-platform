@@ -418,7 +418,7 @@ export class ServerService {
         serverId: string,
         userId: string,
         respondedBy: string,
-    ): Promise<void> {
+    ): Promise<{ username: string }> {
         const adesao = await this.requirePendingMembership(serverId, userId);
 
         await this.serverRepository.setMembershipStatus(
@@ -430,6 +430,8 @@ export class ServerService {
         await this.roleAssignmentService.setScopedRole(userId, 'server_member', {
             serverId,
         });
+
+        return { username: adesao.user.username };
     }
 
     /**
@@ -444,7 +446,7 @@ export class ServerService {
         userId: string,
         respondedBy: string,
         note?: string | undefined,
-    ): Promise<void> {
+    ): Promise<{ username: string }> {
         const adesao = await this.requirePendingMembership(serverId, userId);
 
         await this.serverRepository.setMembershipStatus(
@@ -453,6 +455,8 @@ export class ServerService {
             respondedBy,
             note,
         );
+
+        return { username: adesao.user.username };
     }
 
     /**
@@ -485,7 +489,7 @@ export class ServerService {
         serverId: string,
         userId: string,
         removedBy: string,
-    ): Promise<void> {
+    ): Promise<{ username: string; role: string | null }> {
         if (userId === removedBy) {
             throw new ServerError(
                 'CANNOT_MANAGE_SELF',
@@ -499,6 +503,9 @@ export class ServerService {
             serverId,
         });
 
+        /** Lido antes de ser retirado: depois já não há cargo que dizer. */
+        const anterior = await this.cargoAtual(serverId, userId);
+
         await this.serverRepository.setMembershipStatus(
             adesao.id,
             MembershipStatus.left,
@@ -506,6 +513,8 @@ export class ServerService {
         );
 
         await this.roleAssignmentService.revokeScopedRoles(userId, { serverId });
+
+        return { username: adesao.user.username, role: anterior };
     }
 
     /**
@@ -516,7 +525,7 @@ export class ServerService {
         userId: string,
         role: RoleKey,
         changedBy: string,
-    ): Promise<void> {
+    ): Promise<{ username: string; from: string | null }> {
         if (userId === changedBy) {
             throw new ServerError(
                 'CANNOT_MANAGE_SELF',
@@ -524,7 +533,7 @@ export class ServerService {
             );
         }
 
-        await this.requireActiveMembership(serverId, userId);
+        const adesao = await this.requireActiveMembership(serverId, userId);
 
         /**
          * Despromover o único dono tem o mesmo efeito que ele sair.
@@ -533,7 +542,27 @@ export class ServerService {
             serverId,
         });
 
+        /** De onde veio, lido antes de mudar. Como nas crews. */
+        const anterior = await this.cargoAtual(serverId, userId);
+
         await this.roleAssignmentService.setScopedRole(userId, role, { serverId });
+
+        return { username: adesao.user.username, from: anterior };
+    }
+
+    /**
+     * O cargo que este membro tem agora neste servidor, ou null se não
+     * tem nenhum atribuído.
+     */
+    private async cargoAtual(
+        serverId: string,
+        userId: string,
+    ): Promise<string | null> {
+        const cargos = await this.serverRepository.listScopedRoles(serverId, [
+            userId,
+        ]);
+
+        return cargos[0]?.role.slug ?? null;
     }
 
     async listMembers(serverId: string): Promise<ServerMember[]> {

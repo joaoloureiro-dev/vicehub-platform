@@ -75,6 +75,8 @@ const servidor = (opcoes: {
      * inteira.
      */
     membros?: unknown[];
+    /** O rasto do que se decidiu aqui sobre pessoas. */
+    rasto?: unknown[];
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -110,6 +112,15 @@ const servidor = (opcoes: {
 
         if (endereco.endsWith('/requests')) {
             return Promise.resolve(opcoes.requests);
+        }
+
+        /**
+         * O rasto das decisões sobre pessoas. Vazio por omissão: o que
+         * aqui se testa é o resto do ecrã, e uma lista cheia punha
+         * texto a mais em toda a parte.
+         */
+        if (endereco.endsWith('/history')) {
+            return Promise.resolve(json(200, opcoes.rasto ?? []));
         }
 
         if (endereco.endsWith('/members')) {

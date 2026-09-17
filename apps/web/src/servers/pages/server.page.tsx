@@ -10,6 +10,7 @@ import { AppearanceForm } from '../../appearance/appearance-form.js';
 import { ServerCrews } from '../../affiliations/components/server-crews.js';
 import { CARGOS_DO_SERVIDOR } from '../server.types.js';
 import { EscolherCargo } from '../../components/escolher-cargo.js';
+import { RastoDaComunidade } from '../../components/rasto-da-comunidade.js';
 import { mandaNisto } from '../../lib/manda-nisto.js';
 import { ApagarComunidade } from '../../components/apagar-comunidade.js';
 import { ServerApiKeys } from '../components/server-api-keys.js';
@@ -408,6 +409,16 @@ export const ServerPage = () => {
                 */}
                 {souDono ? <p className="hint">{t.crews.oQueOCargoDa}</p> : null}
             </section>
+
+            {/*
+              O rasto fica ao lado da lista de membros porque é aqui que
+              a pergunta se faz: quem é que o pôs fora, quem é que o fez
+              oficial. Só a quem gere membros — o próprio componente
+              trata do 403 e desaparece.
+            */}
+            {giroCandidaturas ? (
+                <RastoDaComunidade base={'/servers'} id={perfil.id} />
+            ) : null}
 
             {/*
               O estado online aparece no perfil e é por ele que o

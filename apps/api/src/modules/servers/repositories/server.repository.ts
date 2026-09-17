@@ -421,6 +421,8 @@ export class ServerRepository {
                     in: [MembershipStatus.pending, MembershipStatus.active],
                 },
             },
+            /** O nome vem com a adesão, pela mesma razão que nas crews. */
+            include: { user: { select: { username: true } } },
         });
     }
 

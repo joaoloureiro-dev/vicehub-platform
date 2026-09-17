@@ -101,6 +101,8 @@ const servidor = (opcoes: {
      * e um oficial promovia um cúmplice a líder.
      */
     membros?: unknown[];
+    /** O rasto do que se decidiu aqui sobre pessoas. */
+    rasto?: unknown[];
 }) =>
     vi.fn((url: string, init?: { method?: string }) => {
         const endereco = String(url);
@@ -149,6 +151,15 @@ const servidor = (opcoes: {
          * opção impede um cenário impossível: um líder a quem a API
          * recusa a lista dos candidatos.
          */
+        /**
+         * O rasto das decisões sobre pessoas. Vazio por omissão: o que
+         * aqui se testa é o resto do ecrã, e uma lista cheia punha
+         * texto a mais em toda a parte.
+         */
+        if (endereco.endsWith('/history')) {
+            return Promise.resolve(json(200, opcoes.rasto ?? []));
+        }
+
         if (endereco.endsWith('/members')) {
             return Promise.resolve(
                 json(

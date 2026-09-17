@@ -153,6 +153,31 @@ export class ServerController {
         );
     }
 
+    /**
+     * O que se decidiu aqui sobre pessoas: quem entrou, quem foi
+     * recusado, quem saiu por decisão de outro, e quem mudou de cargo.
+     *
+     * O rasto era escrito desde sempre por meia dúzia de módulos e não
+     * havia por onde o ler — nem rota, nem ecrã. Um registo que ninguém
+     * pode consultar não protege ninguém; dá é a impressão de proteger.
+     */
+    async listHistory(
+        request: FastifyRequest<{ Params: ServerIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const rasto = await this.auditService.trailOf(
+            'Server',
+            request.params.serverId,
+        );
+
+        reply.send(
+            rasto.map((entrada) => ({
+                ...entrada,
+                at: entrada.at.toISOString(),
+            })),
+        );
+    }
+
     async requestToJoin(
         request: FastifyRequest<{
             Params: ServerIdParamDto;
@@ -202,11 +227,25 @@ export class ServerController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.serverService.acceptRequest(
+        const { username } = await this.serverService.acceptRequest(
             request.params.serverId,
             request.params.userId,
             user.id,
         );
+
+        /**
+         * Quem entra e quem sai fica no rasto **da comunidade**, e não
+         * da adesão: a pergunta que se faz meses depois é sobre a crew
+         * ou o servidor, não sobre uma linha da tabela de adesões.
+         */
+        await this.auditService.record({
+            action: 'server.member.admitted',
+            entityType: 'Server',
+            entityId: request.params.serverId,
+            actorId: user.id,
+            after: { userId: request.params.userId, username },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }
@@ -220,12 +259,21 @@ export class ServerController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.serverService.rejectRequest(
+        const { username } = await this.serverService.rejectRequest(
             request.params.serverId,
             request.params.userId,
             user.id,
             request.body?.reason,
         );
+
+        await this.auditService.record({
+            action: 'server.member.refused',
+            entityType: 'Server',
+            entityId: request.params.serverId,
+            actorId: user.id,
+            after: { userId: request.params.userId, username },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }
@@ -236,11 +284,21 @@ export class ServerController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.serverService.removeMember(
+        const { username, role } = await this.serverService.removeMember(
             request.params.serverId,
             request.params.userId,
             user.id,
         );
+
+        /** O cargo que tinha: é ele que diz o tamanho do que aconteceu. */
+        await this.auditService.record({
+            action: 'server.member.removed',
+            entityType: 'Server',
+            entityId: request.params.serverId,
+            actorId: user.id,
+            before: { userId: request.params.userId, username, role },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }
@@ -254,12 +312,31 @@ export class ServerController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.serverService.setMemberRole(
+        const { username, from } = await this.serverService.setMemberRole(
             request.params.serverId,
             request.params.userId,
             request.body.role,
             user.id,
         );
+
+        /**
+         * De onde veio e para onde foi. Sem o "de onde", o rasto não
+         * distingue uma promoção de uma despromoção — e é essa a
+         * pergunta que leva alguém a abri-lo.
+         */
+        await this.auditService.record({
+            action: 'server.member.role_changed',
+            entityType: 'Server',
+            entityId: request.params.serverId,
+            actorId: user.id,
+            before: { role: from },
+            after: {
+                userId: request.params.userId,
+                username,
+                role: request.body.role,
+            },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }

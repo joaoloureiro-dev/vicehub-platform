@@ -94,9 +94,15 @@ describe('AuditRepository', () => {
 
         expect(metodos).not.toContain('update');
         expect(metodos).not.toContain('delete');
+        /**
+         * Lista fechada de propósito: um método novo aqui obriga alguém
+         * a olhar para ele. `findActorNames` só lê nomes, e entrou por
+         * isto ter falhado primeiro.
+         */
         expect(metodos.filter((nome) => nome !== 'constructor')).toEqual([
             'record',
             'listForEntity',
+            'findActorNames',
             'toJson',
         ]);
     });

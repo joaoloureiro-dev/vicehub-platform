@@ -454,6 +454,14 @@ export class CrewRepository {
                     in: [MembershipStatus.pending, MembershipStatus.active],
                 },
             },
+            /**
+             * O nome vem com a adesão porque é dela que o rasto precisa.
+             * Um registo que diga só o identificador não responde à
+             * pergunta que se faz daqui a seis meses — quem é que era
+             * este —, e ir buscá-lo depois era uma consulta a mais por
+             * cada decisão sobre um membro.
+             */
+            include: { user: { select: { username: true } } },
         });
     }
 
