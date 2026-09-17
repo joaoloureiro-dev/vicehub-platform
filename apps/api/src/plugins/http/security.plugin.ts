@@ -116,8 +116,8 @@ const securityPlugin = fp(
 
         await app.register(rateLimit, {
             global: true,
-            max: 100,
-            timeWindow: '1 minute',
+            max: env.RATE_LIMIT_MAX,
+            timeWindow: env.RATE_LIMIT_WINDOW,
 
             /**
              * O limite é associado ao IP do cliente.

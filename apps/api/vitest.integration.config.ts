@@ -34,6 +34,14 @@ export default defineConfig({
             AUTH_RECOVERY_RATE_LIMIT_MAX: '1000',
 
             /**
+             * E o global pela mesma razão. Todos os pedidos da suite
+             * chegam do mesmo endereço, e são muitos mais do que cem por
+             * minuto. Que o limite existe fica fixado no teste que o
+             * exercita de propósito.
+             */
+            RATE_LIMIT_MAX: '100000',
+
+            /**
              * Entrar por outro sítio precisa de estar configurado para a
              * ida responder em vez de recusar. As chamadas ao Discord e
              * à Google são substituídas dentro do teste: o que se quer

@@ -16,28 +16,19 @@ export interface DesfechoDeParticipacao {
 export interface ReputationInput {
     eventId: string;
 
-    /** Toda a gente sobre quem o evento se pronunciou. */
+    /** Toda a gente que participou, no estado em que ficou. */
     participantes: DesfechoDeParticipacao[];
 
     actorId: string;
 }
 
 export interface ReputationResultado {
-    /** Falso quando já tinha sido registado, ou não havia nada a registar. */
-    awarded: boolean;
-
     /** A quantas pessoas subiu. */
     presencas: number;
 
     /** A quantas desceu. */
     faltas: number;
 }
-
-const NADA: ReputationResultado = {
-    awarded: false,
-    presencas: 0,
-    faltas: 0,
-};
 
 /**
  * A razão que corresponde a um valor.
@@ -49,19 +40,111 @@ const NADA: ReputationResultado = {
 const razaoDe = (valor: number): ReputationReason =>
     valor > 0 ? ReputationReason.event_attended : ReputationReason.event_missed;
 
+/** A transação em curso. */
+type Escritor = Parameters<
+    Parameters<DatabaseClient['$transaction']>[0] extends (tx: infer T) => unknown
+        ? (tx: T) => void
+        : never
+>[0];
+
 /**
- * A reputação de um evento concluído.
+ * Põe a reputação de uma pessoa neste evento no valor que ela deve ter.
  *
- * Escrever a linha e somá-la à pessoa vai na mesma transação, pela mesma
- * razão que no xp: uma linha sem a soma seria reputação que ninguém tem,
- * e uma soma sem a linha seria um número sem explicação — e que voltaria
- * a ser contado à próxima, porque é a linha gravada que impede a
- * repetição.
+ * Não é "somar": é **assentar**. O que o evento diz sobre alguém pode
+ * mudar depois de dito — quem organiza confirma uma presença e mais
+ * tarde percebe que a pessoa não esteve lá —, e uma função que só
+ * somasse deixava a correção sem efeito ou contava-a duas vezes.
  *
- * Isto corre quando o evento é concluído, e não a cada confirmação:
- * enquanto o evento decorre ainda se confirma e se desmarca gente, e
- * mexer na reputação a cada mudança seria mexer numa lista que ainda
- * está a mudar. No fim há uma lista só, e é essa que conta.
+ * Por isso a linha é uma só por pessoa e evento, e é ela que muda. A
+ * pessoa leva a diferença entre o que a linha dizia e o que passa a
+ * dizer, e não o valor novo: somar o valor novo por cima de uma linha
+ * que já tinha contado dava o dobro.
+ *
+ * Devolve a diferença aplicada, que é zero quando não havia nada a
+ * mudar.
+ */
+const assentar = async (
+    tx: Escritor,
+    entrada: {
+        userId: string;
+        eventId: string;
+        valor: number;
+        actorId: string;
+    },
+): Promise<number> => {
+    const existente = await tx.reputationAward.findFirst({
+        where: {
+            userId: entrada.userId,
+            eventId: entrada.eventId,
+            is_deleted: false,
+        },
+        select: { id: true, amount: true },
+    });
+
+    const anterior = existente?.amount ?? 0;
+    const diferenca = entrada.valor - anterior;
+
+    if (diferenca === 0) {
+        return 0;
+    }
+
+    if (existente === null) {
+        await tx.reputationAward.create({
+            data: {
+                userId: entrada.userId,
+                eventId: entrada.eventId,
+                reason: razaoDe(entrada.valor),
+                amount: entrada.valor,
+                created_by: entrada.actorId,
+            },
+        });
+    } else if (entrada.valor === 0) {
+        /**
+         * O evento deixou de ter alguma coisa a dizer sobre esta pessoa.
+         *
+         * A linha é marcada como apagada em vez de desaparecer: o
+         * registo de que já houve um veredicto, e qual, é precisamente o
+         * que uma correção não deve destruir. O índice único ignora as
+         * linhas apagadas, por isso o lugar volta a ficar livre.
+         */
+        await tx.reputationAward.update({
+            where: { id: existente.id },
+            data: {
+                is_deleted: true,
+                deleted_at: new Date(),
+                updated_by: entrada.actorId,
+                version: { increment: 1 },
+            },
+        });
+    } else {
+        await tx.reputationAward.update({
+            where: { id: existente.id },
+            data: {
+                amount: entrada.valor,
+                reason: razaoDe(entrada.valor),
+                updated_by: entrada.actorId,
+                version: { increment: 1 },
+            },
+        });
+    }
+
+    await tx.user.update({
+        where: { id: entrada.userId },
+        data: {
+            reputation: { increment: diferenca },
+            version: { increment: 1 },
+        },
+    });
+
+    return diferenca;
+};
+
+/**
+ * A reputação de um evento, para toda a gente que participou.
+ *
+ * Corre quando o evento é concluído, e outra vez sempre que um
+ * veredicto mude depois disso. Chamá-la de novo com os mesmos desfechos
+ * não muda nada: cada pessoa já está no valor que lhe corresponde.
  *
  * A reputação **pode descer abaixo de zero**, e é deliberado. Um chão em
  * zero faria a soma das linhas deixar de ser o número — duas verdades
@@ -73,56 +156,86 @@ export const awardEventReputation = async (
     database: DatabaseClient,
     input: ReputationInput,
 ): Promise<ReputationResultado> => {
-    const mudancas = input.participantes
-        .map((participante) => ({
-            userId: participante.userId,
-            valor: reputacaoDe(participante.status),
-        }))
-        .filter((mudanca) => mudanca.valor !== 0);
+    let presencas = 0;
+    let faltas = 0;
 
-    if (mudancas.length === 0) {
-        return NADA;
-    }
+    await database.$transaction(async (tx) => {
+        for (const participante of input.participantes) {
+            const valor = reputacaoDe(participante.status);
+
+            await assentar(tx, {
+                userId: participante.userId,
+                eventId: input.eventId,
+                valor,
+                actorId: input.actorId,
+            });
+
+            if (valor > 0) {
+                presencas += 1;
+            } else if (valor < 0) {
+                faltas += 1;
+            }
+        }
+    });
+
+    return { presencas, faltas };
+};
+
+/**
+ * Assenta a reputação de uma pessoa só.
+ *
+ * Existe para o veredicto que chega **depois** de o evento fechar. Até
+ * aqui, confirmar uma presença num evento já concluído mudava a linha do
+ * participante e não mexia em mais nada: o organizador que fechava o
+ * evento e só depois arrumava quem tinha aparecido ficava sem efeito
+ * nenhum, e sem nada no ecrã que o dissesse.
+ *
+ * Lê o estado da base de dados em vez de o receber: quem chama acabou de
+ * o escrever, e passá-lo à mão abria a porta a assentar um veredicto que
+ * a tabela não tem.
+ */
+export const settleParticipantReputation = async (
+    database: DatabaseClient,
+    entrada: { eventId: string; userId: string; actorId: string },
+): Promise<number> => {
+    const tentar = async (): Promise<number> =>
+        database.$transaction(async (tx) => {
+            const participante = await tx.eventParticipant.findFirst({
+                where: {
+                    eventId: entrada.eventId,
+                    userId: entrada.userId,
+                    is_deleted: false,
+                },
+                select: { status: true },
+            });
+
+            if (participante === null) {
+                return 0;
+            }
+
+            return assentar(tx, {
+                userId: entrada.userId,
+                eventId: entrada.eventId,
+                valor: reputacaoDe(participante.status),
+                actorId: entrada.actorId,
+            });
+        });
 
     try {
-        await database.$transaction(async (tx) => {
-            for (const mudanca of mudancas) {
-                await tx.reputationAward.create({
-                    data: {
-                        userId: mudanca.userId,
-                        eventId: input.eventId,
-                        reason: razaoDe(mudanca.valor),
-                        amount: mudanca.valor,
-                        created_by: input.actorId,
-                    },
-                });
-
-                await tx.user.update({
-                    where: { id: mudanca.userId },
-                    data: {
-                        reputation: { increment: mudanca.valor },
-                        version: { increment: 1 },
-                    },
-                });
-            }
-        });
+        return await tentar();
     } catch (erro) {
         /**
-         * O índice recusou: este evento já tinha sido contado. Nada foi
-         * escrito — a transação inteira caiu com ele.
+         * O índice recusou: entre ler e escrever, alguém assentou esta
+         * mesma pessoa. Uma segunda passagem encontra a linha e corrige-a
+         * em vez de a criar. Uma só, porque a segunda já não tem como
+         * bater no mesmo sítio.
          */
         if (getUniqueConstraintFields(erro) === null) {
             throw erro;
         }
 
-        return NADA;
+        return tentar();
     }
-
-    return {
-        awarded: true,
-        presencas: mudancas.filter((mudanca) => mudanca.valor > 0).length,
-        faltas: mudancas.filter((mudanca) => mudanca.valor < 0).length,
-    };
 };
 
 /**
