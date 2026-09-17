@@ -182,46 +182,67 @@ export class EventService {
          * os servidores não têm nível.
          */
         if (to === 'completed') {
-            /**
-             * Uma leitura só, para as duas contas.
-             *
-             * O xp sai de quem apareceu; a reputação sai de quem
-             * apareceu e de quem faltou. Lidos em consultas separadas,
-             * a mesma pessoa podia ser apanhada em estados diferentes
-             * entre uma e outra — e sair com o xp de quem esteve lá e a
-             * reputação de quem não esteve.
-             */
-            const desfechos
-                = await this.eventRepository.listParticipantOutcomes(eventId);
-
-            await this.eventRepository.awardEventXp({
-                eventId,
-                crewId: owner.crewId ?? null,
-                confirmedUserIds: desfechos
-                    .filter(
-                        (participante) =>
-                            participante.status
-                            === EventParticipantStatus.confirmed,
-                    )
-                    .map((participante) => participante.userId),
-                actorId: changedBy,
-            });
-
-            /**
-             * A reputação vem depois do xp e fora da sua transação, de
-             * propósito. São duas contas independentes: um evento que
-             * não chegou a valer xp — porque apareceu pouca gente —
-             * continua a ser um evento a que essas pessoas foram, e a
-             * reputação conta vezes, não pontos.
-             */
-            await this.eventRepository.awardEventReputation({
-                eventId,
-                participantes: desfechos,
-                actorId: changedBy,
-            });
+            await this.assentar(eventId, owner.crewId ?? null, changedBy);
         }
 
         return this.getEvent(owner, eventId);
+    }
+
+    /**
+     * Faz as contas do evento a partir da lista que ele tem agora.
+     *
+     * Corre ao concluir, e **outra vez** sempre que um veredicto mude
+     * depois disso. Até aqui só corria ao concluir, e quem organiza
+     * confirmava presenças num evento já fechado sem que nada
+     * acontecesse: a linha do participante mudava e mais nada. Fechar o
+     * evento e só depois arrumar quem apareceu é a ordem natural de
+     * trabalhar, e era a ordem que não contava.
+     *
+     * Repetir não duplica: cada ganho é procurado antes de ser escrito,
+     * e a reputação é assentada no valor que deve ter em vez de somada.
+     *
+     * Uma leitura só, para as duas contas. O xp sai de quem apareceu; a
+     * reputação sai de quem apareceu e de quem faltou. Lidos em
+     * consultas separadas, a mesma pessoa podia ser apanhada em estados
+     * diferentes entre uma e outra — e sair com o xp de quem esteve lá e
+     * a reputação de quem não esteve.
+     *
+     * Um evento de servidor paga a quem apareceu e a mais ninguém: os
+     * servidores não têm nível.
+     */
+    private async assentar(
+        eventId: string,
+        crewId: string | null,
+        actorId: string,
+    ): Promise<void> {
+        const desfechos
+            = await this.eventRepository.listParticipantOutcomes(eventId);
+
+        await this.eventRepository.awardEventXp({
+            eventId,
+            crewId,
+            confirmedUserIds: desfechos
+                .filter(
+                    (participante) =>
+                        participante.status
+                        === EventParticipantStatus.confirmed,
+                )
+                .map((participante) => participante.userId),
+            actorId,
+        });
+
+        /**
+         * A reputação vem depois do xp e fora da sua transação, de
+         * propósito. São duas contas independentes: um evento que não
+         * chegou a valer xp — porque apareceu pouca gente — continua a
+         * ser um evento a que essas pessoas foram, e a reputação conta
+         * vezes, não pontos.
+         */
+        await this.eventRepository.awardEventReputation({
+            eventId,
+            participantes: desfechos,
+            actorId,
+        });
     }
 
     async listEvents(
@@ -412,6 +433,30 @@ export class EventService {
             confirmedBy,
             changedBy: confirmedBy,
         });
+
+        await this.assentarSeFechado(evento, eventId, owner, confirmedBy);
+    }
+
+    /**
+     * Refaz as contas quando o veredicto chega depois de o evento fechar.
+     *
+     * Só nesse caso. Enquanto o evento está marcado ou a decorrer ainda
+     * se confirma e se desmarca gente, e pagar a cada confirmação seria
+     * pagar por uma lista que ainda está a mudar — é a conclusão que
+     * fixa a lista. Mas depois de fixada, cada correção tem de ser
+     * refletida, senão volta a não contar nada.
+     */
+    private async assentarSeFechado(
+        evento: { status: string },
+        eventId: string,
+        owner: EventOwner,
+        actorId: string,
+    ): Promise<void> {
+        if (evento.status !== EventStatus.completed) {
+            return;
+        }
+
+        await this.assentar(eventId, owner.crewId ?? null, actorId);
     }
 
     /**
@@ -427,7 +472,7 @@ export class EventService {
         userId: string,
         changedBy: string,
     ): Promise<void> {
-        await this.requireEvent(owner, eventId);
+        const evento = await this.requireEvent(owner, eventId);
 
         const participante = await this.eventRepository.findParticipant(
             eventId,
@@ -454,6 +499,8 @@ export class EventService {
             weight: 1,
             changedBy,
         });
+
+        await this.assentarSeFechado(evento, eventId, owner, changedBy);
     }
 
     async listParticipants(

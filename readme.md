@@ -480,10 +480,25 @@ veio — sem ela o número no perfil só se podia acreditar, e voltava a ser
 contado à próxima. É um índice único por pessoa e evento que impede que o
 mesmo evento conte duas vezes.
 
-**Confirmar presenças depois de concluir não conta**, nem para a
-reputação nem para o xp. As duas contas são feitas no momento em que o
-evento fecha, com a lista que existir nesse momento. Quem organiza deve
-confirmar quem apareceu **antes** de marcar o evento como concluído.
+**Confirmar presenças depois de concluir conta.** Fechar o evento e só
+depois arrumar quem apareceu é a ordem natural de trabalhar, e as contas
+são refeitas a cada correção: quem for confirmado tarde recebe, e quem
+passar a faltoso perde a reputação que tinha ganho. Refazer não duplica —
+cada ganho é procurado antes de ser escrito, e a reputação é assentada no
+valor que deve ter em vez de somada.
+
+Duas coisas **não** são refeitas, e são-no de propósito:
+
+- **O xp já pago não é retirado.** O xp mede o que se fez, e um nível a
+  descer por uma correção de outra pessoa seria um castigo por engano
+  alheio. Quem passa a faltoso perde reputação, que é o número que mede
+  se apareceu.
+- **A crew recebe uma vez.** O que o evento vale à crew foi assentado
+  quando ela o fechou; voltar a pagá-lo a cada correção fazia o total
+  subir por causa de arrumação, e não de eventos.
+
+Antes de o evento fechar, confirmar não mexe em nada: a lista ainda está
+a mudar, e é a conclusão que a fixa.
 
 #### Dividir por participação
 

@@ -321,6 +321,143 @@ describe('a reputação de quem aparece', () => {
     });
 
     /**
+     * O caso que faltava.
+     *
+     * Fechar o evento e só depois arrumar quem apareceu é a ordem
+     * natural de trabalhar, e era a ordem que não contava: a linha do
+     * participante mudava, a reputação não, e não havia nada no ecrã que
+     * o dissesse.
+     */
+    it('conta uma presença confirmada depois de o evento fechar', async () => {
+        const antes = await reputacaoDe(pontualNome);
+
+        const eventId = await eventoCom([lider, pontual]);
+
+        await confirmar(eventId, liderId);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        /* Ainda ninguém se pronunciou sobre esta pessoa. */
+        expect(await reputacaoDe(pontualNome)).toBe(antes);
+
+        /* E agora pronuncia-se, com o evento já fechado. */
+        await confirmar(eventId, pontualId);
+
+        expect(await reputacaoDe(pontualNome)).toBe(antes + 1);
+    });
+
+    /** E o mesmo para a falta marcada tarde. */
+    it('conta uma falta marcada depois de o evento fechar', async () => {
+        const antes = await reputacaoDe(faltosoNome);
+
+        const eventId = await eventoCom([lider, faltoso]);
+
+        await confirmar(eventId, liderId);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        expect(await reputacaoDe(faltosoNome)).toBe(antes);
+
+        await marcarFalta(eventId, faltosoId);
+
+        expect(await reputacaoDe(faltosoNome)).toBe(antes - 1);
+    });
+
+    /**
+     * Uma correção, que é o caso mais difícil.
+     *
+     * A pessoa foi confirmada, o evento fechou, e quem organiza percebe
+     * depois que ela não esteve lá. O número tem de atravessar os dois
+     * pontos: +1 primeiro, −1 no fim, e não +1 seguido de mais nada nem
+     * de um segundo −1 por cima que desse zero.
+     */
+    it('corrige uma presença que afinal foi falta', async () => {
+        const antes = await reputacaoDe(pontualNome);
+
+        const eventId = await eventoCom([lider, pontual]);
+
+        await confirmar(eventId, liderId);
+        await confirmar(eventId, pontualId);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        expect(await reputacaoDe(pontualNome)).toBe(antes + 1);
+
+        await marcarFalta(eventId, pontualId);
+
+        expect(await reputacaoDe(pontualNome)).toBe(antes - 1);
+
+        /* E continua a ser uma linha só, agora a dizer outra coisa. */
+        const linhas = await prisma.reputationAward.findMany({
+            where: { eventId, userId: pontualId, is_deleted: false },
+            select: { amount: true, reason: true },
+        });
+
+        expect(linhas).toHaveLength(1);
+        expect(linhas[0]).toMatchObject({
+            amount: -1,
+            reason: 'event_missed',
+        });
+    });
+
+    /**
+     * E a correção no sentido contrário, que é a que um engano de quem
+     * organiza costuma precisar.
+     */
+    it('corrige uma falta que afinal foi presença', async () => {
+        const antes = await reputacaoDe(faltosoNome);
+
+        const eventId = await eventoCom([lider, faltoso]);
+
+        await confirmar(eventId, liderId);
+        await marcarFalta(eventId, faltosoId);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        expect(await reputacaoDe(faltosoNome)).toBe(antes - 1);
+
+        await confirmar(eventId, faltosoId);
+
+        expect(await reputacaoDe(faltosoNome)).toBe(antes + 1);
+    });
+
+    /**
+     * Confirmar duas vezes não conta duas vezes.
+     *
+     * O veredicto é assentado no valor que deve ter, e não somado — sem
+     * isso, dois cliques no mesmo botão davam dois pontos.
+     */
+    it('confirmar outra vez não soma outra vez', async () => {
+        const eventId = await eventoCom([lider, pontual]);
+
+        await confirmar(eventId, liderId);
+        await confirmar(eventId, pontualId);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        const depois = await reputacaoDe(pontualNome);
+
+        await confirmar(eventId, pontualId);
+        await confirmar(eventId, pontualId);
+
+        expect(await reputacaoDe(pontualNome)).toBe(depois);
+    });
+
+    /**
+     * Enquanto o evento não fechou, confirmar não mexe em nada: a lista
+     * ainda está a mudar, e é a conclusão que a fixa.
+     */
+    it('não mexe na reputação antes de o evento fechar', async () => {
+        const antes = await reputacaoDe(pontualNome);
+
+        const eventId = await eventoCom([lider, pontual]);
+
+        await confirmar(eventId, pontualId);
+
+        expect(await reputacaoDe(pontualNome)).toBe(antes);
+    });
+
+    /**
      * O mesmo evento não conta duas vezes.
      *
      * É a razão de a tabela existir. A segunda conclusão é recusada pelo

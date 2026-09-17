@@ -456,4 +456,151 @@ describe('progressão de crews e jogadores', () => {
             expect(lugar?.of).toBeGreaterThanOrEqual(1);
         });
     });
+
+    /**
+     * Confirmar tarde passou a contar.
+     *
+     * Fechar o evento e só depois arrumar quem apareceu é a ordem
+     * natural de trabalhar, e era a ordem que não pagava nada: a linha
+     * do participante mudava e o xp ficava onde estava. Pior, a segunda
+     * passagem batia no índice e derrubava a transação inteira, pelo que
+     * nem quem faltava receber recebia.
+     */
+    it('paga a quem é confirmado depois de o evento fechar', async () => {
+        /* Um terceiro entra na crew e inscreve-se, como toda a gente. */
+        const terceiro = await register(`prt${marca}`);
+
+        const pedido = await app.inject({
+            method: 'POST',
+            url: `/api/v1/crews/${crewId}/join`,
+            headers: auth(terceiro.token),
+        });
+
+        expect(pedido.statusCode, pedido.body).toBeLessThan(300);
+
+        const aceite = await app.inject({
+            method: 'POST',
+            url: `/api/v1/crews/${crewId}/requests/${terceiro.id}/accept`,
+            headers: auth(lider),
+        });
+
+        expect(aceite.statusCode, aceite.body).toBeLessThan(300);
+
+        const eventId = await eventoCom(2);
+
+        const inscricao = await app.inject({
+            method: 'POST',
+            url: `/api/v1/events/crews/${crewId}/${eventId}/signup`,
+            headers: auth(terceiro.token),
+        });
+
+        expect(inscricao.statusCode, inscricao.body).toBe(204);
+
+        /**
+         * O evento fecha com ele inscrito e por confirmar, que é o que
+         * acontece quando quem organiza arruma a lista só depois.
+         */
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        expect(
+            await prisma.xpAward.count({
+                where: { eventId, reason: 'event_attended' },
+            }),
+        ).toBe(2);
+
+        const antes = await prisma.user.findUniqueOrThrow({
+            where: { id: terceiro.id },
+            select: { xp: true },
+        });
+
+        const confirmacao = await app.inject({
+            method: 'POST',
+            url: `/api/v1/events/crews/${crewId}/${eventId}/participants/${terceiro.id}/confirm`,
+            headers: auth(lider),
+            payload: {},
+        });
+
+        expect(confirmacao.statusCode, confirmacao.body).toBe(204);
+
+        const depois = await prisma.user.findUniqueOrThrow({
+            where: { id: terceiro.id },
+            select: { xp: true },
+        });
+
+        expect(depois.xp).toBeGreaterThan(antes.xp);
+
+        /* E quem já tinha recebido não recebe outra vez. */
+        expect(
+            await prisma.xpAward.count({
+                where: { eventId, reason: 'event_attended' },
+            }),
+        ).toBe(3);
+    });
+
+    /**
+     * E a crew continua a receber uma vez só.
+     *
+     * O que o evento vale à crew foi assentado quando ela o fechou.
+     * Voltar a pagá-lo a cada correção fazia o total da crew subir por
+     * causa de arrumação, e não de eventos.
+     */
+    it('a crew não recebe outra vez por uma confirmação tardia', async () => {
+        const eventId = await eventoCom(2);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        const xpDaCrewDepoisDeFechar = (await perfilDaCrew()).xp;
+
+        const linhasDaCrew = await prisma.xpAward.count({
+            where: { eventId, reason: 'event_completed' },
+        });
+
+        expect(linhasDaCrew).toBe(1);
+
+        /* Uma correção qualquer no evento já fechado. */
+        await app.inject({
+            method: 'POST',
+            url: `/api/v1/events/crews/${crewId}/${eventId}/participants/${membroId}/no-show`,
+            headers: auth(lider),
+        });
+
+        expect((await perfilDaCrew()).xp).toBe(xpDaCrewDepoisDeFechar);
+
+        expect(
+            await prisma.xpAward.count({
+                where: { eventId, reason: 'event_completed' },
+            }),
+        ).toBe(1);
+    });
+
+    /**
+     * E o xp já pago não é retirado.
+     *
+     * O xp mede o que se fez; um nível a descer por uma correção de
+     * outra pessoa seria um castigo por engano alheio. Quem passa a
+     * faltoso perde reputação, que é o número que mede se apareceu.
+     */
+    it('não tira o xp a quem deixa de estar confirmado', async () => {
+        const eventId = await eventoCom(2);
+
+        expect((await concluir(eventId)).statusCode).toBe(200);
+
+        const antes = await prisma.user.findUniqueOrThrow({
+            where: { id: membroId },
+            select: { xp: true },
+        });
+
+        await app.inject({
+            method: 'POST',
+            url: `/api/v1/events/crews/${crewId}/${eventId}/participants/${membroId}/no-show`,
+            headers: auth(lider),
+        });
+
+        const depois = await prisma.user.findUniqueOrThrow({
+            where: { id: membroId },
+            select: { xp: true },
+        });
+
+        expect(depois.xp).toBe(antes.xp);
+    });
 });

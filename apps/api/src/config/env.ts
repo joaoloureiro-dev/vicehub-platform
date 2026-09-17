@@ -61,6 +61,19 @@ const envSchema = z.object({
     AUTH_LOCKOUT_DURATION_SECONDS: z.coerce.number().int().positive().default(900),
 
     /**
+     * Limite global de pedidos por endereço.
+     *
+     * Estava escrito no plugin e não se podia mexer sem editar código.
+     * Cem por minuto é uma boa omissão para uma instância a servir gente
+     * a sério, e é apertado de mais para quem corre a suite de testes ou
+     * para uma instalação pequena atrás de um proxy — onde, sem
+     * `trustProxy`, todos os pedidos chegam com o endereço do proxy e
+     * partilham o mesmo balde.
+     */
+    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+    RATE_LIMIT_WINDOW: z.string().min(1).default('1 minute'),
+
+    /**
      * Limite das rotas de recuperação de conta.
      *
      * Muito mais apertado do que o global: pedir recuperações em massa é
