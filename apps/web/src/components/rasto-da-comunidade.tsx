@@ -28,9 +28,18 @@ const texto = (valor: unknown, campo: string): string | undefined => {
  */
 const frase = (t: Messages, entrada: EntradaDoRasto): string => {
     const quem = entrada.actorUsername ?? t.rasto.contaApagada;
+    /**
+     * De quem ou de quê se trata: uma pessoa, ou a outra comunidade.
+     *
+     * As decisões de filiação não são sobre um membro — são sobre uma
+     * crew inteira ou sobre um servidor —, e por isso o nome vem de
+     * outro campo. O mesmo lugar na frase, coisas diferentes.
+     */
     const alvo =
         texto(entrada.after, 'username')
         ?? texto(entrada.before, 'username')
+        ?? texto(entrada.after, 'crewName')
+        ?? texto(entrada.after, 'serverName')
         ?? t.rasto.alguem;
 
     const cargo = (chave: string | undefined): string =>
@@ -45,6 +54,24 @@ const frase = (t: Messages, entrada: EntradaDoRasto): string => {
             return t.rasto.recusou(quem, alvo);
         case 'member.removed':
             return t.rasto.removeu(quem, alvo, cargo(texto(entrada.before, 'role')));
+        /**
+         * A mesma decisão aparece nos dois rastos, e a frase muda com o
+         * lado em que se está a ler: o servidor aceitou uma crew, a
+         * crew foi aceite por um servidor. O prefixo da ação é o que
+         * diz de que lado é esta entrada.
+         */
+        case 'affiliation.accepted':
+            return entrada.action.startsWith('server.')
+                ? t.rasto.aceitouCrew(quem, alvo)
+                : t.rasto.foiAceiteEm(quem, alvo);
+        case 'affiliation.rejected':
+            return entrada.action.startsWith('server.')
+                ? t.rasto.recusouCrew(quem, alvo)
+                : t.rasto.foiRecusadaEm(quem, alvo);
+        case 'affiliation.removed':
+            return entrada.action.startsWith('server.')
+                ? t.rasto.tirouCrew(quem, alvo)
+                : t.rasto.foiTiradaDe(quem, alvo);
         case 'member.role_changed':
             return t.rasto.mudouCargo(
                 quem,

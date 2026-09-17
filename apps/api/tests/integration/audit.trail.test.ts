@@ -216,6 +216,131 @@ describe('o rasto das decisões sobre pessoas', () => {
      * devolver o registo inteiro da plataforma a quem gere uma crew
      * qualquer.
      */
+    /**
+     * Uma decisão de filiação fica nos rastos **das duas** comunidades.
+     *
+     * São duas perguntas diferentes com donos diferentes. Quem manda no
+     * servidor quer saber que crews aceitou e pôs fora; quem lidera a
+     * crew, ao dar com ela fora de um servidor, quer saber quem a tirou
+     * de lá — e essa pessoa não é da crew, por isso o rasto da crew
+     * nunca lhe chegaria se a entrada só ficasse do lado do servidor.
+     */
+    describe('as decisões de filiação', () => {
+        let serverId: string;
+        let outraCrew: string;
+
+        const rastoDe = async (url: string) => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url,
+                headers: auth(lider),
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+
+            return resposta.json() as {
+                action: string;
+                actorUsername: string | null;
+                after: unknown;
+            }[];
+        };
+
+        beforeAll(async () => {
+            const servidor = await app.inject({
+                method: 'POST',
+                url: '/api/v1/servers',
+                headers: auth(lider),
+                payload: { name: `Rasto ${marca}` },
+            });
+
+            expect(servidor.statusCode, servidor.body).toBe(201);
+            serverId = servidor.json().id as string;
+
+            const crew = await app.inject({
+                method: 'POST',
+                url: '/api/v1/crews',
+                headers: auth(lider),
+                payload: { name: `Filiada ${marca}`, tag: `F${marca.slice(-5)}` },
+            });
+
+            expect(crew.statusCode, crew.body).toBe(201);
+            outraCrew = crew.json().id as string;
+
+            const pedido = await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${outraCrew}/affiliation`,
+                headers: auth(lider),
+                payload: { serverId },
+            });
+
+            expect(pedido.statusCode, pedido.body).toBe(201);
+
+            const aceite = await app.inject({
+                method: 'POST',
+                url: `/api/v1/servers/${serverId}/affiliations/${outraCrew}/accept`,
+                headers: auth(lider),
+            });
+
+            expect(aceite.statusCode, aceite.body).toBe(200);
+        });
+
+        it('fica no rasto do servidor, com o nome da crew', async () => {
+            const entrada = (
+                await rastoDe(`/api/v1/servers/${serverId}/history`)
+            ).find((linha) => linha.action === 'server.affiliation.accepted');
+
+            expect(entrada).toBeDefined();
+            expect(entrada?.actorUsername).toBe(`${marca}l`);
+            expect(entrada?.after).toMatchObject({
+                crewId: outraCrew,
+                crewName: `Filiada ${marca}`,
+            });
+        });
+
+        it('fica no rasto da crew, com o nome do servidor', async () => {
+            const entrada = (
+                await rastoDe(`/api/v1/crews/${outraCrew}/history`)
+            ).find((linha) => linha.action === 'crew.affiliation.accepted');
+
+            expect(entrada).toBeDefined();
+            expect(entrada?.after).toMatchObject({
+                serverId,
+                serverName: `Rasto ${marca}`,
+            });
+        });
+
+        /**
+         * Pôr uma crew fora é a decisão que mais precisa de rasto do
+         * lado dela: quem a tirou não é da crew, e sem isto a crew via
+         * apenas que já não joga ali.
+         */
+        it('pôr a crew fora fica nos dois lados', async () => {
+            const fora = await app.inject({
+                method: 'DELETE',
+                url: `/api/v1/servers/${serverId}/affiliations/${outraCrew}`,
+                headers: auth(lider),
+            });
+
+            expect(fora.statusCode, fora.body).toBe(204);
+
+            const doServidor = await rastoDe(
+                `/api/v1/servers/${serverId}/history`,
+            );
+            const daCrew = await rastoDe(`/api/v1/crews/${outraCrew}/history`);
+
+            expect(
+                doServidor.some(
+                    (linha) => linha.action === 'server.affiliation.removed',
+                ),
+            ).toBe(true);
+            expect(
+                daCrew.some(
+                    (linha) => linha.action === 'crew.affiliation.removed',
+                ),
+            ).toBe(true);
+        });
+    });
+
     it('não mostra o que aconteceu noutra crew', async () => {
         const outraCrew = await app.inject({
             method: 'POST',

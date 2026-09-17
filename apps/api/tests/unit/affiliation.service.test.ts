@@ -14,7 +14,16 @@ const createRepositoryMock = () => ({
     findActiveOfCrew: vi.fn().mockResolvedValue(null),
     findPendingOfCrew: vi.fn().mockResolvedValue(null),
     findOpenPair: vi.fn().mockResolvedValue(null),
-    findPendingPair: vi.fn().mockResolvedValue({ id: 'af-1' }),
+    /*
+      Os dois nomes vêm com o pedido, como na consulta a sério: é deles
+      que o rasto de auditoria precisa para dizer que crew e que
+      servidor.
+    */
+    findPendingPair: vi.fn().mockResolvedValue({
+        id: 'af-1',
+        crew: { name: 'Vice Kings' },
+        server: { name: 'Vice City RP' },
+    }),
     request: vi.fn().mockResolvedValue({ id: 'af-1' }),
     setStatus: vi.fn().mockResolvedValue({ id: 'af-1' }),
     activate: vi.fn().mockResolvedValue(true),
@@ -103,6 +112,7 @@ describe('AffiliationService', () => {
                 id: 'af-0',
                 serverId: 'server-9',
                 server: { name: 'Outro' },
+                crew: { name: 'Vice Kings' },
             });
 
             await expectAffiliationError(
@@ -153,6 +163,7 @@ describe('AffiliationService', () => {
                 id: 'af-0',
                 serverId: 'server-9',
                 server: { name: 'Outro' },
+                crew: { name: 'Vice Kings' },
             });
 
             await expectAffiliationError(
@@ -194,6 +205,7 @@ describe('AffiliationService', () => {
                 id: 'af-2',
                 serverId: 'server-1',
                 server: { name: 'Vice' },
+                crew: { name: 'Vice Kings' },
             });
 
             await service.leave('crew-1', 'lider');
@@ -222,6 +234,7 @@ describe('AffiliationService', () => {
                 id: 'af-3',
                 serverId: 'server-9',
                 server: { name: 'Outro' },
+                crew: { name: 'Vice Kings' },
             });
 
             await expectAffiliationError(

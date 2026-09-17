@@ -497,6 +497,18 @@ export const fr = (p: Tools): Messages => ({
             `${quem} a exclu ${alvo}, qui était ${cargo}`,
         mudouCargo: (quem: string, alvo: string, de: string, para: string) =>
             `${quem} a fait passer ${alvo} de ${de} à ${para}`,
+        aceitouCrew: (quem: string, crew: string) =>
+            `${quem} a laissé ${crew} jouer ici`,
+        foiAceiteEm: (quem: string, servidor: string) =>
+            `${quem} a laissé cette crew jouer sur ${servidor}`,
+        recusouCrew: (quem: string, crew: string) =>
+            `${quem} a refusé ${crew}`,
+        foiRecusadaEm: (quem: string, servidor: string) =>
+            `${quem} a refusé cette crew sur ${servidor}`,
+        tirouCrew: (quem: string, crew: string) =>
+            `${quem} a exclu ${crew} de ce serveur`,
+        foiTiradaDe: (quem: string, servidor: string) =>
+            `${quem} a exclu cette crew de ${servidor}`,
         fez: (quem: string, acao: string) => `${quem} : ${acao}`,
     },
 

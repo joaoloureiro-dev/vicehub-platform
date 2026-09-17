@@ -1,6 +1,8 @@
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
 
+import { AuditRepository } from '../audit/repositories/audit.repository.js';
+import { AuditService } from '../audit/services/audit.service.js';
 import { SubscriptionRepository } from '../subscriptions/repositories/subscription.repository.js';
 import { SubscriptionService } from '../subscriptions/services/subscription.service.js';
 import affiliationRoutes from './affiliation.routes.js';
@@ -18,7 +20,10 @@ const affiliationModule: FastifyPluginAsync = async (fastify) => {
     );
 
     await fastify.register(affiliationRoutes, {
-        controller: new AffiliationController(affiliationService),
+        controller: new AffiliationController(
+            affiliationService,
+            new AuditService(new AuditRepository(fastify.prisma)),
+        ),
     });
 };
 

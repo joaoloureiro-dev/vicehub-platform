@@ -10,6 +10,18 @@ import type {
 } from '../types/affiliation.types.js';
 
 /**
+ * As duas comunidades que uma decisão de filiação envolve.
+ *
+ * Sai com nomes e não com identificadores porque quem lê o rasto quer
+ * saber que crew e que servidor — e daqui a seis meses o identificador
+ * já não diz qual era.
+ */
+interface Envolvidos {
+    crewName: string;
+    serverName: string;
+}
+
+/**
  * Serviço das filiações entre crews e servidores.
  *
  * Uma filiação diz que uma crew joga num servidor, e é a peça que falta
@@ -189,7 +201,7 @@ export class AffiliationService {
         serverId: string,
         crewId: string,
         respondedBy: string,
-    ): Promise<void> {
+    ): Promise<Envolvidos> {
         const pedido = await this.requirePending(crewId, serverId);
 
         const ativa = await this.affiliationRepository.findActiveOfCrew(crewId);
@@ -243,13 +255,15 @@ export class AffiliationService {
                 'Esta crew entretanto passou a jogar noutro servidor.',
             );
         }
+
+        return { crewName: pedido.crew.name, serverName: pedido.server.name };
     }
 
     async reject(
         serverId: string,
         crewId: string,
         respondedBy: string,
-    ): Promise<void> {
+    ): Promise<Envolvidos> {
         const pedido = await this.requirePending(crewId, serverId);
 
         await this.affiliationRepository.setStatus(
@@ -257,6 +271,8 @@ export class AffiliationService {
             MembershipStatus.rejected,
             respondedBy,
         );
+
+        return { crewName: pedido.crew.name, serverName: pedido.server.name };
     }
 
     /**
@@ -266,7 +282,7 @@ export class AffiliationService {
         serverId: string,
         crewId: string,
         removedBy: string,
-    ): Promise<void> {
+    ): Promise<Envolvidos> {
         const ativa = await this.affiliationRepository.findActiveOfCrew(crewId);
 
         if (!ativa || ativa.serverId !== serverId) {
@@ -281,6 +297,8 @@ export class AffiliationService {
             MembershipStatus.left,
             removedBy,
         );
+
+        return { crewName: ativa.crew.name, serverName: ativa.server.name };
     }
 
     private async requirePending(crewId: string, serverId: string) {

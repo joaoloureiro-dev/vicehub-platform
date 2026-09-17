@@ -509,6 +509,18 @@ export const en = (p: Tools) => ({
             `${quem} removed ${alvo}, who was ${cargo}`,
         mudouCargo: (quem: string, alvo: string, de: string, para: string) =>
             `${quem} changed ${alvo} from ${de} to ${para}`,
+        aceitouCrew: (quem: string, crew: string) =>
+            `${quem} let ${crew} play here`,
+        foiAceiteEm: (quem: string, servidor: string) =>
+            `${quem} let this crew play on ${servidor}`,
+        recusouCrew: (quem: string, crew: string) =>
+            `${quem} turned ${crew} away`,
+        foiRecusadaEm: (quem: string, servidor: string) =>
+            `${quem} turned this crew away from ${servidor}`,
+        tirouCrew: (quem: string, crew: string) =>
+            `${quem} put ${crew} off this server`,
+        foiTiradaDe: (quem: string, servidor: string) =>
+            `${quem} put this crew off ${servidor}`,
         fez: (quem: string, acao: string) => `${quem}: ${acao}`,
     },
 

@@ -488,6 +488,18 @@ export const es = (p: Tools): Messages => ({
             `${quem} expulsó a ${alvo}, que era ${cargo}`,
         mudouCargo: (quem: string, alvo: string, de: string, para: string) =>
             `${quem} pasó a ${alvo} de ${de} a ${para}`,
+        aceitouCrew: (quem: string, crew: string) =>
+            `${quem} dejó que ${crew} jugara aquí`,
+        foiAceiteEm: (quem: string, servidor: string) =>
+            `${quem} dejó que esta crew jugara en ${servidor}`,
+        recusouCrew: (quem: string, crew: string) =>
+            `${quem} rechazó a ${crew}`,
+        foiRecusadaEm: (quem: string, servidor: string) =>
+            `${quem} rechazó a esta crew en ${servidor}`,
+        tirouCrew: (quem: string, crew: string) =>
+            `${quem} echó a ${crew} de este servidor`,
+        foiTiradaDe: (quem: string, servidor: string) =>
+            `${quem} echó a esta crew de ${servidor}`,
         fez: (quem: string, acao: string) => `${quem}: ${acao}`,
     },
 
