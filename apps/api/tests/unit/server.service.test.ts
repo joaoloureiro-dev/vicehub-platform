@@ -56,8 +56,20 @@ const createRolesMock = () => ({
     getScopedRoleSlug: vi.fn().mockResolvedValue(null),
 });
 
-const activeMembership = { id: 'membership-1', status: 'active' };
-const pendingMembership = { id: 'membership-1', status: 'pending' };
+/*
+  O nome vem com a adesão, como na consulta a sério: é dele que o rasto
+  de auditoria precisa para dizer de quem foi a decisão.
+*/
+const activeMembership = {
+    id: 'membership-1',
+    status: 'active',
+    user: { username: 'alvo' },
+};
+const pendingMembership = {
+    id: 'membership-1',
+    status: 'pending',
+    user: { username: 'alvo' },
+};
 
 describe('ServerService', () => {
     let repository: ReturnType<typeof createRepositoryMock>;
@@ -263,6 +275,7 @@ describe('ServerService', () => {
          */
         it('leva o motivo, quando quem recusa o escreve', async () => {
             repository.findOpenMembership.mockResolvedValue({
+                user: { username: 'alvo' },
                 id: 'm1',
                 status: 'pending',
             });

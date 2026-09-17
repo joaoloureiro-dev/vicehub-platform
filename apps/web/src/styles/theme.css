@@ -1016,6 +1016,45 @@ button.link:hover {
     cursor: not-allowed;
 }
 
+/*
+  O rasto do que se decidiu sobre pessoas. Uma frase por linha e a data
+  à direita: lê-se de cima para baixo como um relato, que é o que é.
+*/
+.rasto {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--edge);
+}
+
+.rasto li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--edge);
+    font-size: 15px;
+}
+
+.rasto .rasto-frase {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--muted);
+}
+
+.rasto .rasto-quando {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    white-space: nowrap;
+    flex: none;
+}
+
 .linha-acoes {
     display: flex;
     gap: 10px;

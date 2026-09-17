@@ -85,6 +85,7 @@ describe('ligação das rotas de crew', () => {
             update: vi.fn(),
             listMembers: vi.fn(),
             listJoinRequests: vi.fn(),
+            listHistory: vi.fn(),
             requestToJoin: vi.fn(),
             leave: vi.fn(),
             acceptRequest: vi.fn(),
@@ -228,6 +229,29 @@ describe('ligação das rotas de crew', () => {
                 .map(([key]) => key);
 
             expect(pagas).toEqual([rota]);
+        });
+    });
+
+    /**
+     * O rasto do que se decidiu sobre pessoas.
+     *
+     * Leva a mesma permissão de responder às candidaturas, e é isso que
+     * aqui se fixa: quem decide quem entra é quem tem de poder ver o que
+     * já foi decidido. Aberto a qualquer membro, era publicar dentro da
+     * comunidade quem recusou quem; fechado a quem manda apenas,
+     * escondia as decisões de quem as toma todos os dias.
+     */
+    describe('o rasto das decisões sobre pessoas', () => {
+        const rota = 'GET /:crewId/history';
+
+        it('leva a mesma permissão das candidaturas', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(
+                permissoesPorRota.get('GET /:crewId/requests'),
+            );
+        });
+
+        it('e essa permissão é crew:manage_members', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(['crew:manage_members']);
         });
     });
 

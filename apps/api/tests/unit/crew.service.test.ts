@@ -195,13 +195,13 @@ describe('CrewService', () => {
         });
 
         it('recusa quem já tem pedido em aberto', async () => {
-            repository.findOpenMembership.mockResolvedValue({ status: 'pending' });
+            repository.findOpenMembership.mockResolvedValue({ status: 'pending', user: { username: 'alvo' } });
 
             await expectCrewError(service.requestToJoin('crew-1', 'user-2'), 'ALREADY_MEMBER');
         });
 
         it('recusa quem já é membro', async () => {
-            repository.findOpenMembership.mockResolvedValue({ status: 'active' });
+            repository.findOpenMembership.mockResolvedValue({ status: 'active', user: { username: 'alvo' } });
 
             await expectCrewError(service.requestToJoin('crew-1', 'user-2'), 'ALREADY_MEMBER');
         });
@@ -215,7 +215,7 @@ describe('CrewService', () => {
 
     describe('resposta ao pedido', () => {
         it('aceitar torna ativo e atribui cargo de membro', async () => {
-            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending' });
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending', user: { username: 'alvo' } });
 
             await service.acceptRequest('crew-1', 'user-2', 'user-1');
 
@@ -226,7 +226,7 @@ describe('CrewService', () => {
         });
 
         it('recusar não atribui cargo nenhum', async () => {
-            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending' });
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending', user: { username: 'alvo' } });
 
             await service.rejectRequest('crew-1', 'user-2', 'user-1');
 
@@ -245,7 +245,7 @@ describe('CrewService', () => {
          * candidatura sem resposta nenhuma é pior do que um "não" seco.
          */
         it('leva o motivo, quando quem recusa o escreve', async () => {
-            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending' });
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending', user: { username: 'alvo' } });
 
             await service.rejectRequest(
                 'crew-1',
@@ -263,7 +263,7 @@ describe('CrewService', () => {
         });
 
         it('recusa responder a um pedido já respondido', async () => {
-            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'active' });
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'active', user: { username: 'alvo' } });
 
             await expectCrewError(
                 service.acceptRequest('crew-1', 'user-2', 'user-1'),
@@ -283,7 +283,7 @@ describe('CrewService', () => {
 
     describe('saída e remoção', () => {
         beforeEach(() => {
-            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'active' });
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'active', user: { username: 'alvo' } });
         });
 
         it('sair retira os cargos que tinha na crew', async () => {
@@ -326,7 +326,7 @@ describe('CrewService', () => {
         });
 
         it('recusa remover quem não é membro', async () => {
-            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending' });
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'pending', user: { username: 'alvo' } });
 
             await expectCrewError(
                 service.removeMember('crew-1', 'user-2', 'user-1'),
@@ -337,7 +337,7 @@ describe('CrewService', () => {
 
     describe('cargos dos membros', () => {
         beforeEach(() => {
-            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'active' });
+            repository.findOpenMembership.mockResolvedValue({ id: 'm1', status: 'active', user: { username: 'alvo' } });
         });
 
         it('altera o cargo de um membro', async () => {

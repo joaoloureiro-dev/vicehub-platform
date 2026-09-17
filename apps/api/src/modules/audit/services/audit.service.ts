@@ -1,7 +1,7 @@
 import type { FastifyRequest } from 'fastify';
 
 import type { AuditRepository } from '../repositories/audit.repository.js';
-import type { AuditEntry } from '../types/audit.types.js';
+import type { AuditEntry, AuditTrailEntry } from '../types/audit.types.js';
 
 /**
  * Serviço de auditoria.
@@ -35,5 +35,52 @@ export class AuditService {
 
     listForEntity(entityType: string, entityId: string, take = 50) {
         return this.auditRepository.listForEntity(entityType, entityId, take);
+    }
+
+    /**
+     * O rasto de uma entidade, com o nome de quem fez cada coisa.
+     *
+     * Os nomes vêm numa consulta só para todos os autores da página, e
+     * não um por linha: um rasto de cinquenta entradas de cinco pessoas
+     * são duas consultas, e não cinquenta e uma.
+     */
+    async trailOf(
+        entityType: string,
+        entityId: string,
+        take = 50,
+    ): Promise<AuditTrailEntry[]> {
+        const linhas = await this.auditRepository.listForEntity(
+            entityType,
+            entityId,
+            take,
+        );
+
+        const autores = [
+            ...new Set(
+                linhas
+                    .map((linha) => linha.actor_id)
+                    .filter((id): id is string => id !== null),
+            ),
+        ];
+
+        const nomes = new Map(
+            (autores.length === 0
+                ? []
+                : await this.auditRepository.findActorNames(autores)
+            ).map((pessoa) => [pessoa.id, pessoa.username]),
+        );
+
+        return linhas.map((linha) => ({
+            id: linha.id,
+            action: linha.action,
+            actorId: linha.actor_id,
+            actorUsername:
+                linha.actor_id === null
+                    ? null
+                    : (nomes.get(linha.actor_id) ?? null),
+            before: linha.before,
+            after: linha.after,
+            at: linha.created_at,
+        }));
     }
 }

@@ -476,6 +476,21 @@ export const fr = (p: Tools): Messages => ({
         verCarteira: 'Mon portefeuille',
     },
 
+    rasto: {
+        titulo: 'Ce qui a été décidé ici',
+        aindaNada: 'Rien n’a encore été décidé sur personne.',
+        contaApagada: 'un compte supprimé',
+        alguem: 'quelqu’un',
+        semCargo: 'sans rôle',
+        admitiu: (quem: string, alvo: string) => `${quem} a fait entrer ${alvo}`,
+        recusou: (quem: string, alvo: string) => `${quem} a refusé ${alvo}`,
+        removeu: (quem: string, alvo: string, cargo: string) =>
+            `${quem} a exclu ${alvo}, qui était ${cargo}`,
+        mudouCargo: (quem: string, alvo: string, de: string, para: string) =>
+            `${quem} a fait passer ${alvo} de ${de} à ${para}`,
+        fez: (quem: string, acao: string) => `${quem} : ${acao}`,
+    },
+
     tesouraria: {
         montanteAEnviar: 'Montant à envoyer',
         transferirTitulo: 'Envoyer de l’argent à une crew',

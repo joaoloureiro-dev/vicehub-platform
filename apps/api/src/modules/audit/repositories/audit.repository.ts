@@ -36,6 +36,21 @@ export class AuditRepository {
     }
 
     /**
+     * Os nomes de quem fez cada coisa.
+     *
+     * Consulta à parte, e não um `include`, porque a coluna do autor não
+     * tem chave estrangeira: é essa ausência que faz o rasto sobreviver
+     * a uma conta apagada, e o preço é procurar os nomes aqui. Quem já
+     * não existe simplesmente não vem nesta lista.
+     */
+    findActorNames(ids: string[]) {
+        return this.database.user.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, username: true },
+        });
+    }
+
+    /**
      * Um valor ausente fica como JSON nulo da base de dados, e não como a
      * string "null": são coisas diferentes ao consultar.
      */

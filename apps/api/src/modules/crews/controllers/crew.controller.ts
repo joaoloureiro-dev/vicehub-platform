@@ -189,6 +189,31 @@ export class CrewController {
         );
     }
 
+    /**
+     * O que se decidiu aqui sobre pessoas: quem entrou, quem foi
+     * recusado, quem saiu por decisão de outro, e quem mudou de cargo.
+     *
+     * O rasto era escrito desde sempre por meia dúzia de módulos e não
+     * havia por onde o ler — nem rota, nem ecrã. Um registo que ninguém
+     * pode consultar não protege ninguém; dá é a impressão de proteger.
+     */
+    async listHistory(
+        request: FastifyRequest<{ Params: CrewIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const rasto = await this.auditService.trailOf(
+            'Crew',
+            request.params.crewId,
+        );
+
+        reply.send(
+            rasto.map((entrada) => ({
+                ...entrada,
+                at: entrada.at.toISOString(),
+            })),
+        );
+    }
+
     async requestToJoin(
         request: FastifyRequest<{ Params: CrewIdParamDto; Body: JoinRequestDto }>,
         reply: FastifyReply,
@@ -225,11 +250,25 @@ export class CrewController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.crewService.acceptRequest(
+        const { username } = await this.crewService.acceptRequest(
             request.params.crewId,
             request.params.userId,
             user.id,
         );
+
+        /**
+         * Quem entra e quem sai fica no rasto **da comunidade**, e não
+         * da adesão: a pergunta que se faz meses depois é sobre a crew
+         * ou o servidor, não sobre uma linha da tabela de adesões.
+         */
+        await this.auditService.record({
+            action: 'crew.member.admitted',
+            entityType: 'Crew',
+            entityId: request.params.crewId,
+            actorId: user.id,
+            after: { userId: request.params.userId, username },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }
@@ -243,12 +282,21 @@ export class CrewController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.crewService.rejectRequest(
+        const { username } = await this.crewService.rejectRequest(
             request.params.crewId,
             request.params.userId,
             user.id,
             request.body?.reason,
         );
+
+        await this.auditService.record({
+            action: 'crew.member.refused',
+            entityType: 'Crew',
+            entityId: request.params.crewId,
+            actorId: user.id,
+            after: { userId: request.params.userId, username },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }
@@ -259,11 +307,21 @@ export class CrewController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.crewService.removeMember(
+        const { username, role } = await this.crewService.removeMember(
             request.params.crewId,
             request.params.userId,
             user.id,
         );
+
+        /** O cargo que tinha: é ele que diz o tamanho do que aconteceu. */
+        await this.auditService.record({
+            action: 'crew.member.removed',
+            entityType: 'Crew',
+            entityId: request.params.crewId,
+            actorId: user.id,
+            before: { userId: request.params.userId, username, role },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }
@@ -277,12 +335,31 @@ export class CrewController {
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
-        await this.crewService.setMemberRole(
+        const { username, from } = await this.crewService.setMemberRole(
             request.params.crewId,
             request.params.userId,
             request.body.role,
             user.id,
         );
+
+        /**
+         * De onde veio e para onde foi. Sem o "de onde", o rasto não
+         * distingue uma promoção de uma despromoção — e é essa a
+         * pergunta que leva alguém a abri-lo.
+         */
+        await this.auditService.record({
+            action: 'crew.member.role_changed',
+            entityType: 'Crew',
+            entityId: request.params.crewId,
+            actorId: user.id,
+            before: { role: from },
+            after: {
+                userId: request.params.userId,
+                username,
+                role: request.body.role,
+            },
+            ...AuditService.contextOf(request),
+        });
 
         reply.status(204).send();
     }

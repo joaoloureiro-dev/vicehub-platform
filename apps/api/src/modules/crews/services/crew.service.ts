@@ -502,7 +502,7 @@ export class CrewService {
         crewId: string,
         userId: string,
         respondedBy: string,
-    ): Promise<void> {
+    ): Promise<{ username: string }> {
         const adesao = await this.requirePendingMembership(crewId, userId);
 
         await this.crewRepository.setMembershipStatus(
@@ -514,6 +514,8 @@ export class CrewService {
         await this.roleAssignmentService.setScopedRole(userId, 'crew_member', {
             crewId,
         });
+
+        return { username: adesao.user.username };
     }
 
     /**
@@ -528,7 +530,7 @@ export class CrewService {
         userId: string,
         respondedBy: string,
         note?: string | undefined,
-    ): Promise<void> {
+    ): Promise<{ username: string }> {
         const adesao = await this.requirePendingMembership(crewId, userId);
 
         await this.crewRepository.setMembershipStatus(
@@ -537,6 +539,8 @@ export class CrewService {
             respondedBy,
             note,
         );
+
+        return { username: adesao.user.username };
     }
 
     /**
@@ -571,7 +575,7 @@ export class CrewService {
         crewId: string,
         userId: string,
         removedBy: string,
-    ): Promise<void> {
+    ): Promise<{ username: string; role: string | null }> {
         if (userId === removedBy) {
             throw new CrewError(
                 'CANNOT_MANAGE_SELF',
@@ -587,6 +591,9 @@ export class CrewService {
             { crewId },
         );
 
+        /** Lido antes de ser retirado: depois já não há cargo que dizer. */
+        const anterior = await this.cargoAtual(crewId, userId);
+
         await this.crewRepository.setMembershipStatus(
             adesao.id,
             MembershipStatus.left,
@@ -594,6 +601,8 @@ export class CrewService {
         );
 
         await this.roleAssignmentService.revokeScopedRoles(userId, { crewId });
+
+        return { username: adesao.user.username, role: anterior };
     }
 
     /**
@@ -604,7 +613,7 @@ export class CrewService {
         userId: string,
         role: RoleKey,
         changedBy: string,
-    ): Promise<void> {
+    ): Promise<{ username: string; from: string | null }> {
         if (userId === changedBy) {
             throw new CrewError(
                 'CANNOT_MANAGE_SELF',
@@ -612,7 +621,7 @@ export class CrewService {
             );
         }
 
-        await this.requireActiveMembership(crewId, userId);
+        const adesao = await this.requireActiveMembership(crewId, userId);
 
         /**
          * Despromover o único líder tem o mesmo efeito que ele sair.
@@ -623,7 +632,29 @@ export class CrewService {
             { crewId },
         );
 
+        /**
+         * De onde veio, lido antes de mudar. "Passou a oficial" sozinho
+         * não diz se foi uma promoção ou uma despromoção, e é essa a
+         * pergunta que se faz a um rasto de cargos.
+         */
+        const anterior = await this.cargoAtual(crewId, userId);
+
         await this.roleAssignmentService.setScopedRole(userId, role, { crewId });
+
+        return { username: adesao.user.username, from: anterior };
+    }
+
+    /**
+     * O cargo que este membro tem agora nesta crew, ou null se não tem
+     * nenhum atribuído.
+     */
+    private async cargoAtual(
+        crewId: string,
+        userId: string,
+    ): Promise<string | null> {
+        const cargos = await this.crewRepository.listScopedRoles(crewId, [userId]);
+
+        return cargos[0]?.role.slug ?? null;
     }
 
     async listMembers(crewId: string): Promise<CrewMember[]> {

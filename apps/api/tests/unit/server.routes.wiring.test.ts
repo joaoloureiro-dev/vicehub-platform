@@ -80,6 +80,7 @@ describe('ligação das rotas de servidor', () => {
             update: vi.fn(),
             listMembers: vi.fn(),
             listJoinRequests: vi.fn(),
+            listHistory: vi.fn(),
             requestToJoin: vi.fn(),
             withdrawJoinRequest: vi.fn(),
             leave: vi.fn(),
@@ -201,6 +202,29 @@ describe('ligação das rotas de servidor', () => {
                 .map(([key]) => key);
 
             expect(pagas).toEqual([rota]);
+        });
+    });
+
+    /**
+     * O rasto do que se decidiu sobre pessoas.
+     *
+     * Leva a mesma permissão de responder às candidaturas, e é isso que
+     * aqui se fixa: quem decide quem entra é quem tem de poder ver o que
+     * já foi decidido. Aberto a qualquer membro, era publicar dentro da
+     * comunidade quem recusou quem; fechado a quem manda apenas,
+     * escondia as decisões de quem as toma todos os dias.
+     */
+    describe('o rasto das decisões sobre pessoas', () => {
+        const rota = 'GET /:serverId/history';
+
+        it('leva a mesma permissão das candidaturas', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(
+                permissoesPorRota.get('GET /:serverId/requests'),
+            );
+        });
+
+        it('e essa permissão é server:manage_members', () => {
+            expect(permissoesPorRota.get(rota)).toEqual(['server:manage_members']);
         });
     });
 
