@@ -9,7 +9,6 @@ export type UserErrorCode =
      */
     | 'ACCOUNT_DELETION_NOT_CONFIRMED'
     /** Há saldo na carteira. Apagar tornava-o inalcançável. */
-    | 'ACCOUNT_HAS_FUNDS'
     /**
      * Há comunidades que ficariam sem ninguém a mandar nelas.
      *

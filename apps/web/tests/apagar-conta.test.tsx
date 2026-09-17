@@ -24,8 +24,29 @@ const corpoDoPedido = (fetchMock: ReturnType<typeof vi.fn>): unknown => {
     );
 };
 
-const servidor = (resposta = json(204, null)) =>
-    vi.fn((_url: string) => Promise.resolve(resposta));
+/**
+ * `carteira` é o saldo que a rota do saldo devolve. Por omissão zero:
+ * o aviso de o perder é assunto dos testes que o medem, e pô-lo em
+ * todos punha texto a mais onde ele não é o que está a ser testado.
+ */
+const servidor = (resposta = json(204, null), carteira = '0') =>
+    vi.fn((url: string) => {
+        if (String(url).endsWith('/treasury/me')) {
+            return Promise.resolve(
+                json(200, {
+                    balances: {
+                        settled: carteira,
+                        pendingIn: '0',
+                        pendingOut: '0',
+                        available: carteira,
+                    },
+                    movements: [],
+                }),
+            );
+        }
+
+        return Promise.resolve(resposta);
+    });
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -169,5 +190,86 @@ describe('apagar a conta', () => {
 
         expect(screen.getByText(t.perfil.apagarContaFica)).toBeTruthy();
         expect(screen.getByText(t.perfil.apagarContaExplicacao)).toBeTruthy();
+    });
+
+    /**
+     * O saldo perde-se ao apagar a conta, e por isso tem de ser dito
+     * antes.
+     *
+     * Antes disto o saldo **impedia** apagar, com uma mensagem a mandar
+     * transferi-lo ou gastá-lo — e não há rota nenhuma por onde uma
+     * pessoa tire dinheiro da sua carteira. Trocar uma porta trancada
+     * por dinheiro a desaparecer sem aviso não era uma melhoria; o
+     * aviso é que é.
+     */
+    describe('o saldo que se vai perder', () => {
+        /**
+         * Abaixo de mil de propósito: assim o número aparece tal e qual
+         * e a asserção não passa a depender do separador de milhares,
+         * que é assunto de outro teste.
+         */
+        it('diz quanto é, antes de se apagar seja o que for', async () => {
+            vi.stubGlobal('fetch', servidor(json(204, null), '900'));
+
+            montarEcra(<ApagarConta username="player" />);
+
+            expect(
+                await screen.findByText(t.perfil.apagarContaPerdeSaldo('900')),
+            ).toBeDefined();
+        });
+
+        /**
+         * A quem tem a carteira vazia, dizer-lhe que o saldo se perde
+         * era assustar por nada.
+         */
+        it('não avisa quem não tem nada a perder', async () => {
+            vi.stubGlobal('fetch', servidor(json(204, null), '0'));
+
+            montarEcra(<ApagarConta username="player" />);
+
+            await waitFor(() => {
+                expect(
+                    screen.getByText(t.perfil.apagarContaConfirmar),
+                ).toBeDefined();
+            });
+
+            expect(
+                screen.queryByText(t.perfil.apagarContaPerdeSaldo('0')),
+            ).toBeNull();
+        });
+
+        /**
+         * E uma falha a ler o saldo não pode ser o que impede alguém de
+         * sair. Sem aviso, mas com a porta aberta — e nunca um número
+         * inventado.
+         */
+        it('deixa apagar na mesma quando não consegue ler o saldo', async () => {
+            const fetchMock = vi.fn((url: string) =>
+                String(url).endsWith('/treasury/me')
+                    ? Promise.resolve(json(500, { code: 'INTERNAL' }))
+                    : Promise.resolve(json(204, null)),
+            );
+
+            vi.stubGlobal('fetch', fetchMock);
+
+            montarEcra(<ApagarConta username="player" />);
+
+            await userEvent.type(
+                screen.getByLabelText(t.zonaPerigo.confirmacao),
+                'player',
+            );
+
+            await userEvent.click(
+                screen.getByText(t.perfil.apagarContaConfirmar),
+            );
+
+            await waitFor(() => {
+                expect(
+                    fetchMock.mock.calls.some((argumentos) =>
+                        String(argumentos[0]).endsWith('/users/me'),
+                    ),
+                ).toBe(true);
+            });
+        });
     });
 });

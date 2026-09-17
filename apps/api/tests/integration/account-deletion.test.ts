@@ -175,6 +175,107 @@ describe('apagar a própria conta', () => {
         });
     });
 
+    /**
+     * O saldo perde-se, e perde-se mesmo.
+     *
+     * Durante muito tempo o saldo **impedia** apagar a conta, com uma
+     * mensagem a mandar transferi-lo ou gastá-lo — e não existe rota
+     * nenhuma por onde uma pessoa tire dinheiro da sua carteira. Quem
+     * alguma vez tivesse recebido de uma crew ficava sem forma de sair.
+     *
+     * A decisão é que se perde. O que estes testes exigem é que isso
+     * aconteça de facto: deixar a carteira de pé com dinheiro lá dentro,
+     * presa a uma conta apagada, não é perder o saldo — é fingir que se
+     * apagou a conta.
+     */
+    describe('o saldo que fica na carteira', () => {
+        /** Põe saldo na carteira da pessoa, por onde a base de dados o põe. */
+        const encherCarteira = async (userId: string, quanto: bigint) => {
+            await prisma.wallet.updateMany({
+                where: { userId, is_deleted: false },
+                data: { balance: quanto },
+            });
+        };
+
+        const carteiraDe = (userId: string) =>
+            prisma.wallet.findFirst({ where: { userId } });
+
+        it('não impede a saída', async () => {
+            const pessoa = await register(`${marca}saldo`);
+
+            await encherCarteira(pessoa.id, 4_000n);
+
+            const resposta = await apagar(pessoa.token, {
+                confirmation: pessoa.username,
+                password: PASSWORD,
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(204);
+        });
+
+        it('fica a zero, e não pendurado numa conta que já não existe', async () => {
+            const pessoa = await register(`${marca}zero`);
+
+            await encherCarteira(pessoa.id, 9_000n);
+
+            const resposta = await apagar(pessoa.token, {
+                confirmation: pessoa.username,
+                password: PASSWORD,
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(204);
+
+            const carteira = await carteiraDe(pessoa.id);
+
+            expect(carteira?.balance).toBe(0n);
+            expect(carteira?.is_deleted).toBe(true);
+        });
+
+        /**
+         * A tesouraria de quem pagou não se mexe.
+         *
+         * O dinheiro saiu de lá quando saiu, e isso aconteceu mesmo —
+         * desfazê-lo agora era reescrever a contabilidade de outra
+         * pessoa. Quem apaga a conta é alguém **de fora** da crew de
+         * propósito: o que se mede é que apagar uma carteira pessoal não
+         * mexe em carteira nenhuma que não seja a dela.
+         */
+        it('não devolve nada a quem tinha pago', async () => {
+            const dono = await register(`${marca}dono`);
+            const pessoa = await register(`${marca}fora`);
+
+            const crew = await app.inject({
+                method: 'POST',
+                url: '/api/v1/crews',
+                headers: auth(dono.token),
+                payload: { name: `Saldo ${marca}`, tag: `S${marca.slice(-5)}` },
+            });
+
+            expect(crew.statusCode, crew.body).toBe(201);
+
+            const crewId = crew.json().id as string;
+
+            await prisma.wallet.updateMany({
+                where: { crewId, is_deleted: false },
+                data: { balance: 1_000n },
+            });
+
+            await encherCarteira(pessoa.id, 500n);
+
+            const resposta = await apagar(pessoa.token, {
+                confirmation: pessoa.username,
+                password: PASSWORD,
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(204);
+
+            const daCrew = await prisma.wallet.findFirst({ where: { crewId } });
+
+            expect(daCrew?.balance).toBe(1_000n);
+            expect(daCrew?.is_deleted).toBe(false);
+        });
+    });
+
     describe('o que sai e o que fica', () => {
         it('leva tudo o que identifica a pessoa', async () => {
             const eu = await register(`sai${marca}`);

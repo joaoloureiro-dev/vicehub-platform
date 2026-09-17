@@ -3,8 +3,14 @@ import { useNavigate } from 'react-router';
 
 import { Alert } from '../../auth/components/alert.js';
 import { ApiError } from '../../lib/api.js';
+import { getMyMovements } from '../../treasury/treasury.api.js';
+import {
+    formatarMontante,
+    separadorDoIdioma,
+} from '../../treasury/treasury.types.js';
 import { sessionStore } from '../../lib/session.js';
-import { useT } from '../../i18n/i18n.js';
+import { useAsync } from '../../lib/use-async.js';
+import { useIdioma, useT } from '../../i18n/i18n.js';
 import { deleteMyAccount } from '../profile.api.js';
 
 /**
@@ -26,7 +32,29 @@ import { deleteMyAccount } from '../profile.api.js';
  */
 export const ApagarConta = ({ username }: { username: string }) => {
     const t = useT();
+    const { idioma } = useIdioma();
     const navigate = useNavigate();
+
+    /**
+     * O saldo que se vai perder.
+     *
+     * Durante muito tempo o saldo **impedia** apagar a conta, com uma
+     * mensagem a mandar transferi-lo ou gastá-lo — e não há rota
+     * nenhuma por onde uma pessoa tire dinheiro da sua carteira. A
+     * decisão passou a ser que o saldo se perde, e isso obriga a dizê-lo
+     * **antes**: perder dinheiro sem aviso é pior do que a porta trancada
+     * que isto veio substituir.
+     *
+     * Se a leitura falhar, `useAsync` devolve `data: null` e este ecrã
+     * lê isso como "não há aviso a dar" — e não como uma razão para
+     * trancar a porta. Uma avaria a ler o saldo não pode ser o que
+     * impede alguém de sair, e um número inventado era pior do que
+     * aviso nenhum.
+     */
+    const carteira = useAsync(() => getMyMovements(), []);
+
+    const aPerder = carteira.data?.balances.settled ?? '0';
+    const perdeAlgumaCoisa = aPerder !== '0' && aPerder !== '';
 
     const [escrito, setEscrito] = useState('');
     const [password, setPassword] = useState('');
@@ -86,6 +114,19 @@ export const ApagarConta = ({ username }: { username: string }) => {
             <p className="hint">{t.perfil.apagarContaExplicacao}</p>
 
             <p className="hint">{t.perfil.apagarContaFica}</p>
+
+            {/*
+              O aviso aparece só a quem tem alguma coisa a perder. A
+              quem tem a carteira vazia, dizer-lhe que o saldo se perde
+              era assustar por nada.
+            */}
+            {perdeAlgumaCoisa ? (
+                <Alert kind="bad">
+                    {t.perfil.apagarContaPerdeSaldo(
+                        formatarMontante(aPerder, separadorDoIdioma(idioma)),
+                    )}
+                </Alert>
+            ) : null}
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
 

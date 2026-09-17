@@ -62,6 +62,8 @@ describe('o meu perfil', () => {
     const servir = (
         eu: ReturnType<typeof perfil>,
         aoGuardarAparencia: Response = json(200, {}),
+        /** O saldo da carteira, para o aviso de o perder ao apagar. */
+        carteira?: string,
     ) => {
         fetchMock = vi.fn((url: string, opcoes?: RequestInit) => {
             if (String(url).endsWith('/appearance')) {
@@ -80,6 +82,25 @@ describe('o meu perfil', () => {
 
             if (String(url).endsWith('/friends/requests')) {
                 return Promise.resolve(json(200, pedidos));
+            }
+
+            /*
+              A secção de apagar a conta pergunta o saldo para poder
+              avisar do que se vai perder. Vazio por omissão: o aviso é
+              assunto do teste que o mede.
+            */
+            if (String(url).endsWith('/treasury/me')) {
+                return Promise.resolve(
+                    json(200, {
+                        balances: {
+                            settled: carteira ?? '0',
+                            pendingIn: '0',
+                            pendingOut: '0',
+                            available: carteira ?? '0',
+                        },
+                        movements: [],
+                    }),
+                );
             }
 
             if (opcoes?.method === 'PATCH') {

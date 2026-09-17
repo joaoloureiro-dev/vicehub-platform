@@ -125,12 +125,6 @@ const userErrorStatusCodes: Record<UserErrorCode, number> = {
     USER_NOT_FOUND: 404,
     /** 403: a sessão é válida; a confirmação é que não. */
     ACCOUNT_DELETION_NOT_CONFIRMED: 403,
-    /**
-     * 409: o pedido está bem feito — o estado da conta é que ainda não
-     * permite apagá-la. Há sempre alguma coisa a fazer primeiro, e a
-     * mensagem diz qual.
-     */
-    ACCOUNT_HAS_FUNDS: 409,
     ACCOUNT_LEADS_COMMUNITIES: 409,
     ACCOUNT_HAS_ACTIVE_PLAN: 409,
 };
