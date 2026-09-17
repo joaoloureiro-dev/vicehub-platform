@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma, SALDO_MAXIMO } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O tecto da tesouraria, contra PostgreSQL a sério.
@@ -128,7 +129,7 @@ describe('o tecto da tesouraria', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(dono),
-            payload: { name: `Tecto ${marca}`, tag: `T${marca.slice(-6)}` },
+            payload: { name: `Tecto ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

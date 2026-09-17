@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O plano de um servidor a cobrir as crews que lá jogam.
@@ -129,7 +130,7 @@ describe('o plano do servidor cobre as crews que lá jogam', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Crew ${marca}`, tag: `X${marca}`.slice(0, 8) },
+            payload: { name: `Crew ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

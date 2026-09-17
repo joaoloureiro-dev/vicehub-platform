@@ -416,6 +416,16 @@ model Server {
   affiliations Affiliation[]
 
   apiKeys ServerApiKey[]
+
+  /// O índice por onde o diretório filtra os servidores online.
+  ///
+  /// Existe na base de dados desde a migração que criou a coluna, e não
+  /// estava aqui declarado. O esquema é a fonte da próxima migração:
+  /// enquanto o índice fosse invisível daqui, o primeiro `migrate dev`
+  /// que alguém corresse gerava uma migração que o **apagava** — e é
+  /// ele que serve a única consulta que a listagem faz com filtro por
+  /// tempo.
+  @@index([last_heartbeat_at])
 }
 
 /// Uma chave que deixa um servidor de jogo falar com a plataforma.
@@ -549,7 +559,12 @@ model Membership {
   server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([userId, responded_at(sort: Desc)])
+  /// Na base de dados este índice é **parcial** — só as adesões
+  /// recusadas e não eliminadas —, e a linguagem do Prisma não sabe
+  /// dizer isso. O que aqui se pode garantir é o nome: sem ele, cada
+  /// migração gerada propunha renomeá-lo, e uma delas acabaria por o
+  /// recriar sem a condição que o torna pequeno.
+  @@index([userId, responded_at(sort: Desc)], map: "Membership_rejected_idx")
   @@index([crewId])
   @@index([serverId])
   @@index([type])
@@ -1322,7 +1337,9 @@ model AccountToken {
 
   @@index([userId, purpose])
   @@index([expires_at])
-  @@index([userId, purpose, used_at, invalidated_at])
+  /// O nome vem da migração que o criou. Sem o `map`, o Prisma via um
+  /// índice com outro nome e a migração seguinte renomeava-o por nada.
+  @@index([userId, purpose, used_at, invalidated_at], map: "AccountToken_open_idx")
 }
 
 /// Uma conquista de uma pessoa ou de uma crew.
@@ -1368,6 +1385,7 @@ model Achievement {
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   crew Crew? @relation(fields: [crewId], references: [id], onDelete: Cascade)
 
-  @@index([userId, earned_at(sort: Desc)])
-  @@index([crewId, earned_at(sort: Desc)])
+  /// Os nomes vêm das migrações que os criaram, como no AccountToken.
+  @@index([userId, earned_at(sort: Desc)], map: "Achievement_user_earned_idx")
+  @@index([crewId, earned_at(sort: Desc)], map: "Achievement_crew_earned_idx")
 }

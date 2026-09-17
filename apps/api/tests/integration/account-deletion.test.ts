@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Apagar a própria conta, contra PostgreSQL a sério.
@@ -123,7 +124,7 @@ describe('apagar a própria conta', () => {
                 method: 'POST',
                 url: '/api/v1/crews',
                 headers: auth(eu.token),
-                payload: { name: `Crew ${marca}`, tag: `L${marca.slice(-6)}` },
+                payload: { name: `Crew ${marca}`, tag: tagAoAcaso() },
             });
 
             expect(crew.statusCode, crew.body).toBe(201);
@@ -151,7 +152,7 @@ describe('apagar a própria conta', () => {
                 method: 'POST',
                 url: '/api/v1/crews',
                 headers: auth(eu.token),
-                payload: { name: `Solta ${marca}`, tag: `S${marca.slice(-6)}` },
+                payload: { name: `Solta ${marca}`, tag: tagAoAcaso() },
             });
 
             const crewId = crew.json().id as string;
@@ -248,7 +249,7 @@ describe('apagar a própria conta', () => {
                 method: 'POST',
                 url: '/api/v1/crews',
                 headers: auth(dono.token),
-                payload: { name: `Saldo ${marca}`, tag: `S${marca.slice(-5)}` },
+                payload: { name: `Saldo ${marca}`, tag: tagAoAcaso() },
             });
 
             expect(crew.statusCode, crew.body).toBe(201);
@@ -406,7 +407,7 @@ describe('apagar a própria conta', () => {
                 headers: auth(eu.token),
                 payload: {
                     name: `Fantasma ${marca}`,
-                    tag: `F${marca.slice(-6)}`,
+                    tag: tagAoAcaso(),
                 },
             });
 
@@ -491,7 +492,7 @@ describe('apagar a própria conta', () => {
                 method: 'POST',
                 url: '/api/v1/crews',
                 headers: auth(dono.token),
-                payload: { name: `Eventos ${marca}`, tag: `E${marca.slice(-6)}` },
+                payload: { name: `Eventos ${marca}`, tag: tagAoAcaso() },
             });
 
             expect(crew.statusCode, crew.body).toBe(201);

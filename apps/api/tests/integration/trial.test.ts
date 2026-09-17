@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { DIAS_DE_AVALIACAO, prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Os trinta dias com que uma comunidade nasce, contra PostgreSQL a
@@ -65,7 +66,7 @@ describe('a avaliação de trinta dias', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(dono),
-            payload: { name: `Crew ${marca}`, tag: `T${marca.slice(-6)}` },
+            payload: { name: `Crew ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);
@@ -196,7 +197,7 @@ describe('a avaliação de trinta dias', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(outro),
-            payload: { name: `Engano ${marca}`, tag: `E${marca.slice(-6)}` },
+            payload: { name: `Engano ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

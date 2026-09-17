@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano, tirarPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O que está à espera de mim, contra PostgreSQL a sério.
@@ -99,7 +100,7 @@ describe('o que está à espera de mim', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Espera ${marca}`, tag: `E${marca.slice(-6)}` },
+            payload: { name: `Espera ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);
@@ -316,7 +317,7 @@ describe('o que está à espera de mim', () => {
                 headers: auth(lider),
                 payload: {
                     name: `Efemera ${marca}`,
-                    tag: `F${marca.slice(-6)}`,
+                    tag: tagAoAcaso(),
                 },
             });
 
@@ -614,7 +615,7 @@ describe('o que está à espera de mim', () => {
                 headers: auth(lider),
                 payload: {
                     name: `Fantasma ${marca}`,
-                    tag: `G${marca.slice(-6)}`,
+                    tag: tagAoAcaso(),
                 },
             });
 

@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O rasto do que se decide sobre pessoas, contra PostgreSQL a sério.
@@ -85,7 +86,7 @@ describe('o rasto das decisões sobre pessoas', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Rasto ${marca}`, tag: `R${marca.slice(-5)}` },
+            payload: { name: `Rasto ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);
@@ -260,7 +261,7 @@ describe('o rasto das decisões sobre pessoas', () => {
                 method: 'POST',
                 url: '/api/v1/crews',
                 headers: auth(lider),
-                payload: { name: `Filiada ${marca}`, tag: `F${marca.slice(-5)}` },
+                payload: { name: `Filiada ${marca}`, tag: tagAoAcaso() },
             });
 
             expect(crew.statusCode, crew.body).toBe(201);
@@ -346,7 +347,7 @@ describe('o rasto das decisões sobre pessoas', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Outra ${marca}`, tag: `O${marca.slice(-5)}` },
+            payload: { name: `Outra ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(outraCrew.statusCode, outraCrew.body).toBe(201);

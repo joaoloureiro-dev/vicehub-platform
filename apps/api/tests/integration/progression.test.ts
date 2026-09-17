@@ -10,6 +10,7 @@ import {
 } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { awardEventXp } from '../../src/shared/xp-awards.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Subir de nível, contra PostgreSQL a sério.
@@ -136,7 +137,7 @@ describe('progressão de crews e jogadores', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Progresso ${marca}`, tag: `P${marca.slice(-6)}` },
+            payload: { name: `Progresso ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);
@@ -372,7 +373,7 @@ describe('progressão de crews e jogadores', () => {
                 headers: auth(lider),
                 payload: {
                     name: `Lugar ${marca}${sufixo}`,
-                    tag: `L${sufixo}${marca.slice(-4)}`,
+                    tag: tagAoAcaso(),
                 },
             });
 

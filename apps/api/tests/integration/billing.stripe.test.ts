@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Cobrança pelo Stripe, contra PostgreSQL a sério.
@@ -103,9 +104,7 @@ describe('cobrança pelo Stripe', () => {
                  * partida.
                  */
                 name: `Compras ${marca}`,
-                tag: `b${Date.now().toString(36).slice(-4)}${Math.random()
-                    .toString(36)
-                    .slice(2, 5)}`,
+                tag: tagAoAcaso(),
             },
         });
 

@@ -5,6 +5,7 @@ import { ENTITLING_SUBSCRIPTION_STATUSES, prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { tirarPlano } from '../helpers/plans.fixtures.js';
 import { FEATURED_SLOTS } from '../../src/shared/featured.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O que a subscrição desbloqueia, contra PostgreSQL a sério.
@@ -105,7 +106,7 @@ describe('personalização: grátis para pessoas, paga para comunidades', () => 
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(liderCrew),
-            payload: { name: `Premium ${marca}`, tag: `P${marca.slice(-5)}` },
+            payload: { name: `Premium ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);
