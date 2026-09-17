@@ -127,6 +127,20 @@ enum XpReason {
   event_attended
 }
 
+/// De onde veio uma mudança na reputação de alguém.
+///
+/// Enum e não texto livre, pela mesma razão que o do xp: cada razão tem
+/// uma regra de quanto vale e de quando acontece, e uma razão nova é uma
+/// decisão e não uma string.
+enum ReputationReason {
+  /// Apareceu a um evento que chegou ao fim, e quem o organizou
+  /// confirmou-o. Soma.
+  event_attended
+
+  /// Disse que ia e não foi. Tira.
+  event_missed
+}
+
 enum AuthProviderType {
   local
   discord
@@ -274,6 +288,7 @@ model User {
   eventParticipants EventParticipant[]
   accountTokens     AccountToken[]
   xpAwards          XpAward[]
+  reputationAwards  ReputationAward[]
   achievements      Achievement[]
 
   /// As duas pontas da mesma tabela de amizades.
@@ -1115,6 +1130,7 @@ model Event {
   participants  EventParticipant[]
   distributions Distribution[]
   xpAwards      XpAward[]
+  reputationAwards ReputationAward[]
 
   @@index([crewId, status])
   @@index([serverId, status])
@@ -1211,6 +1227,49 @@ model XpAward {
   event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   @@index([crewId, created_at(sort: Desc)])
+  @@index([userId, created_at(sort: Desc)])
+  @@index([eventId])
+}
+
+/// Uma mudança na reputação de alguém, e o facto que a causou.
+///
+/// Existe pela mesma razão que o `XpAward`: sem ela o número no perfil
+/// só se podia acreditar. Com ela, cada ponto tem um evento por trás e
+/// quem o organizou por testemunha.
+///
+/// Só tem dono pessoa. A reputação é de quem aparece, e uma crew não
+/// aparece a lado nenhum — o que a crew ganha com um evento é xp.
+///
+/// O `amount` é assinado: uma falta grava um valor negativo em vez de
+/// uma linha "a menos" de outro tipo. Assim a soma das linhas é o
+/// número, sempre, e não há duas maneiras de chegar ao mesmo sítio.
+model ReputationAward {
+  id String @id @default(uuid())
+
+  userId String
+
+  amount Int
+  reason ReputationReason
+
+  /// O evento de onde veio.
+  ///
+  /// É por esta coluna que o índice impede que o mesmo evento mexa duas
+  /// vezes na reputação da mesma pessoa.
+  eventId String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
   @@index([userId, created_at(sort: Desc)])
   @@index([eventId])
 }

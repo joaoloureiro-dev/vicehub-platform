@@ -40,6 +40,7 @@ export {
     TransactionCategory,
     TransactionDirection,
     TransactionStatus,
+    ReputationReason,
     XpReason,
 } from '@prisma/client';
 
@@ -72,6 +73,12 @@ export {
 export type { PlanDefinition, PlanKey } from './plans.js';
 
 export { SALDO_MAXIMO } from './treasury-limits.js';
+
+export {
+    REPUTACAO_POR_FALTA,
+    REPUTACAO_POR_PRESENCA,
+    reputacaoDe,
+} from './reputation.js';
 
 export {
     HEARTBEAT_JANELA_MS,

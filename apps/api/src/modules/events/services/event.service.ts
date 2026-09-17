@@ -182,15 +182,41 @@ export class EventService {
          * os servidores não têm nível.
          */
         if (to === 'completed') {
-            const confirmados
-                = await this.eventRepository.listConfirmedParticipants(eventId);
+            /**
+             * Uma leitura só, para as duas contas.
+             *
+             * O xp sai de quem apareceu; a reputação sai de quem
+             * apareceu e de quem faltou. Lidos em consultas separadas,
+             * a mesma pessoa podia ser apanhada em estados diferentes
+             * entre uma e outra — e sair com o xp de quem esteve lá e a
+             * reputação de quem não esteve.
+             */
+            const desfechos
+                = await this.eventRepository.listParticipantOutcomes(eventId);
 
             await this.eventRepository.awardEventXp({
                 eventId,
                 crewId: owner.crewId ?? null,
-                confirmedUserIds: confirmados.map(
-                    (participante) => participante.userId,
-                ),
+                confirmedUserIds: desfechos
+                    .filter(
+                        (participante) =>
+                            participante.status
+                            === EventParticipantStatus.confirmed,
+                    )
+                    .map((participante) => participante.userId),
+                actorId: changedBy,
+            });
+
+            /**
+             * A reputação vem depois do xp e fora da sua transação, de
+             * propósito. São duas contas independentes: um evento que
+             * não chegou a valer xp — porque apareceu pouca gente —
+             * continua a ser um evento a que essas pessoas foram, e a
+             * reputação conta vezes, não pontos.
+             */
+            await this.eventRepository.awardEventReputation({
+                eventId,
+                participantes: desfechos,
                 actorId: changedBy,
             });
         }
