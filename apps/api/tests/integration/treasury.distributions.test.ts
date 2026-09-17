@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Atomicidade de uma divisão de ganhos, contra PostgreSQL a sério.
@@ -112,7 +113,7 @@ describe('divisões de ganhos', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(leader),
-            payload: { name: `Divisoes ${marca}`, tag: `D${marca.slice(-5)}` },
+            payload: { name: `Divisoes ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

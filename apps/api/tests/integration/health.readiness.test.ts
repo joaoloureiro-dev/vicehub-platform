@@ -118,8 +118,18 @@ describe('as sondas de saúde', () => {
      * dez segundos para sempre. O estrago não é memória: é o
      * encerramento gracioso, que fica à espera do que ainda está
      * agendado enquanto o orquestrador conta os segundos que deu.
+     *
+     * A margem existe porque o processo não é só isto. Uma primeira
+     * versão exigia que a contagem não subisse nada e falhava de vez em
+     * quando na suite completa: o pool do Prisma, o limitador de
+     * pedidos e o keep-alive do Fastify também agendam coisas, e podem
+     * fazê-lo entre as duas medições. O sinal que se procura é de cinco
+     * — um por sondagem —, e por isso duas de ruído não o escondem.
      */
     it('não deixa temporizadores pendurados atrás de si', async () => {
+        const SONDAGENS = 5;
+        const RUIDO_TOLERADO = 2;
+
         const temporizadores = (): number =>
             process
                 .getActiveResourcesInfo()
@@ -127,7 +137,7 @@ describe('as sondas de saúde', () => {
 
         const antes = temporizadores();
 
-        for (let i = 0; i < 3; i += 1) {
+        for (let i = 0; i < SONDAGENS; i += 1) {
             const resposta = await app.inject({
                 method: 'GET',
                 url: '/api/v1/health/ready',
@@ -136,7 +146,7 @@ describe('as sondas de saúde', () => {
             expect(resposta.statusCode).toBe(200);
         }
 
-        expect(temporizadores()).toBe(antes);
+        expect(temporizadores() - antes).toBeLessThanOrEqual(RUIDO_TOLERADO);
     });
 
     /**

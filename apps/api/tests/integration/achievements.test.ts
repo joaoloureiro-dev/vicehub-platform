@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * As conquistas, contra PostgreSQL a sério.
@@ -124,7 +125,7 @@ describe('conquistas', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Crew ${marca}`, tag: `C${marca.slice(-6)}` },
+            payload: { name: `Crew ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

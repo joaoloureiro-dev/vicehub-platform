@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { tirarPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * A filiação entre uma crew e um servidor, contra PostgreSQL a sério.
@@ -49,26 +50,11 @@ describe('filiação entre crews e servidores', () => {
     };
 
     const criarCrew = async (token: string, sufixo: string): Promise<string> => {
-        /**
-         * A tag é sorteada e não derivada do sufixo.
-         *
-         * Tem oito caracteres e é única na base de dados. Vinda do
-         * sufixo descritivo — `Climp` mais o que coubesse da marca —,
-         * sobravam três caracteres a variar: mil combinações. Corrida
-         * vezes suficientes contra a mesma base, a suite acabava por
-         * bater numa tag já usada, e a falha aparecia num teste sobre
-         * limites de plano que nada tinha a ver com tags.
-         *
-         * O nome continua descritivo, que é o que ajuda a ler o que
-         * falhou; a unicidade é assunto da tag.
-         */
-        const tag = `C${Math.random().toString(36).slice(2, 9)}`.slice(0, 8);
-
         const response = await app.inject({
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(token),
-            payload: { name: `Crew ${sufixo}`, tag },
+            payload: { name: `Crew ${sufixo}`, tag: tagAoAcaso() },
         });
 
         expect(response.statusCode, response.body).toBe(201);

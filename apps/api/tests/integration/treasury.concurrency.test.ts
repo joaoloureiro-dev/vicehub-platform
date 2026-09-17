@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Testes de concorrência da tesouraria, contra PostgreSQL a sério.
@@ -88,7 +89,7 @@ describe('concorrência na tesouraria', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(leader),
-            payload: { name: `Concorrencia ${marca}`, tag: `C${marca.slice(-5)}` },
+            payload: { name: `Concorrencia ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

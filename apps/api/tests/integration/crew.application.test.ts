@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * A candidatura, das palavras de quem a escreve até aos olhos de quem
@@ -73,7 +74,7 @@ describe('a candidatura a uma crew', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Crew ${marca}`, tag: `C${marca.slice(-6)}` },
+            payload: { name: `Crew ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

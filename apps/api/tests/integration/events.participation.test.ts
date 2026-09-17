@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Eventos e divisão por participação, contra PostgreSQL a sério.
@@ -148,7 +149,7 @@ describe('eventos e divisão por participação', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(leader),
-            payload: { name: `Eventos ${marca}`, tag: `E${marca.slice(-5)}` },
+            payload: { name: `Eventos ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);
@@ -376,7 +377,7 @@ describe('eventos e divisão por participação', () => {
                 method: 'POST',
                 url: '/api/v1/crews',
                 headers: auth(outroLider),
-                payload: { name: `Outra ${marca}`, tag: `O${marca.slice(-5)}` },
+                payload: { name: `Outra ${marca}`, tag: tagAoAcaso() },
             });
 
             const outroEvento = await app.inject({

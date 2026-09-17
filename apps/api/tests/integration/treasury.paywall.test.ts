@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano, tirarPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O que a plataforma dá e o que vende, contra PostgreSQL a sério.
@@ -66,7 +67,7 @@ describe('a tesouraria por trás do plano', () => {
             headers: auth(token),
             payload: {
                 name: `Crew ${sufixo}${marca}`,
-                tag: `${sufixo}${marca.slice(-5)}`,
+                tag: tagAoAcaso(),
             },
         });
 

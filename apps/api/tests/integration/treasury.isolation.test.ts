@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 import { darPlano } from '../helpers/plans.fixtures.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * A tesouraria de uma crew é dela.
@@ -55,7 +56,7 @@ describe('a tesouraria não atravessa crews', () => {
             headers: auth(token),
             payload: {
                 name: `Cofre ${marca}${sufixo}`,
-                tag: `C${sufixo}${marca.slice(-4)}`,
+                tag: tagAoAcaso(),
             },
         });
 

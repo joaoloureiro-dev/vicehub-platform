@@ -84,9 +84,21 @@ jobs:
       # As migrações e o seed correm antes dos testes de integração porque
       # eles usam cargos e permissões reais do catálogo.
       - name: Preparar a base de dados de integração
-        run: |
-          npm run db:migrate:deploy
-          npm run db:seed
+        run: npm run db:migrate:deploy
+
+      # O esquema é a fonte da próxima migração, e as migrações são o que
+      # a produção corre. Quando os dois discordam, ninguém dá por isso até
+      # alguém gerar uma migração — e essa migração aplica a diferença, seja
+      # ela qual for. Foi assim que um índice do diretório ficou a um
+      # `migrate dev` de ser apagado.
+      #
+      # A base acabou de ser migrada, por isso comparar contra ela é
+      # comparar contra o que a produção há de ter.
+      - name: Confirmar que as migrações produzem o esquema
+        run: npm run db:drift
+
+      - name: Semear a base de dados de integração
+        run: npm run db:seed
 
       - name: Correr testes de integração
         run: npm run test:integration

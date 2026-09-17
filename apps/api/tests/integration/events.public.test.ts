@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * A montra de eventos, contra PostgreSQL a sério.
@@ -135,7 +136,7 @@ describe('a montra pública de eventos', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(lider),
-            payload: { name: `Montra ${marca}`, tag: `M${marca.slice(-5)}` },
+            payload: { name: `Montra ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);
@@ -345,7 +346,7 @@ describe('a montra pública de eventos', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(outroLider),
-            payload: { name: `Efemera ${marca}`, tag: `F${marca.slice(-5)}` },
+            payload: { name: `Efemera ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

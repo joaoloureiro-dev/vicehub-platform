@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Levar os dados consigo, contra PostgreSQL a sério.
@@ -72,7 +73,7 @@ describe('levar os dados consigo', () => {
             method: 'POST',
             url: '/api/v1/crews',
             headers: auth(eu.token),
-            payload: { name: `Export ${marca}`, tag: `X${marca.slice(-6)}` },
+            payload: { name: `Export ${marca}`, tag: tagAoAcaso() },
         });
 
         expect(crew.statusCode, crew.body).toBe(201);

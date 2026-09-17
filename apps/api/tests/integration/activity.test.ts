@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O feed de atividade, contra PostgreSQL a sério.
@@ -53,7 +54,7 @@ describe('feed de atividade', () => {
             headers: auth(token),
             payload: {
                 name: `Feed ${marca}${sufixo}`,
-                tag: `F${sufixo}${marca.slice(-4)}`,
+                tag: tagAoAcaso(),
             },
         });
 

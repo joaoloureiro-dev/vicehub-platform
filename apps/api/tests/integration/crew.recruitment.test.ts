@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O quadro de recrutamento, contra PostgreSQL a sério.
@@ -114,8 +115,8 @@ describe('o quadro de recrutamento', () => {
 
         dono = await register(`rec${marca}`);
 
-        aRecrutar = await criarCrew(`Recruta ${marca}`, `R${marca}`);
-        calada = await criarCrew(`Calada ${marca}`, `Q${marca}`);
+        aRecrutar = await criarCrew(`Recruta ${marca}`, tagAoAcaso());
+        calada = await criarCrew(`Calada ${marca}`, tagAoAcaso());
 
         expect((await guardar(aRecrutar, { isRecruiting: true })).statusCode).toBe(200);
 
@@ -127,7 +128,7 @@ describe('o quadro de recrutamento', () => {
          * ela, tirar o filtro do destaque não mudava resultado nenhum e
          * o caso passava a dizer que sim a tudo.
          */
-        premiumCalada = await criarCrew(`Paga ${marca}`, `P${marca}`);
+        premiumCalada = await criarCrew(`Paga ${marca}`, tagAoAcaso());
 
         await prisma.subscription.create({
             data: {
@@ -262,7 +263,7 @@ describe('o quadro de recrutamento', () => {
     });
 
     it('desligar o anúncio apaga a data, e não a guarda', async () => {
-        const desligada = await criarCrew(`Desiste ${marca}`, `D${marca}`);
+        const desligada = await criarCrew(`Desiste ${marca}`, tagAoAcaso());
 
         await guardar(desligada, { isRecruiting: true });
         expect((await lida(desligada)).recruiting_since).not.toBeNull();

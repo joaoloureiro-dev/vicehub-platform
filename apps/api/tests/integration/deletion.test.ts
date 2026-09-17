@@ -4,6 +4,12 @@ import type { FastifyInstance } from 'fastify';
 import { prisma, SubscriptionPlan, SubscriptionStatus } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 
+/*
+  Este ficheiro **não** usa `tagAoAcaso`, ao contrário dos outros: o que
+  aqui se prova é precisamente a regra das tags repetidas, e uma tag
+  sorteada nunca repetiria. A colisão é o assunto, não o acidente.
+*/
+
 /**
  * Apagar uma crew ou um servidor, contra PostgreSQL a sério.
  *

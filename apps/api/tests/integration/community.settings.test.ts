@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * Guardar as definições de uma crew ou de um servidor, contra
@@ -89,13 +90,13 @@ describe('definições de crews e servidores', () => {
         dono = await register(`set${marca}`);
         alheio = await register(`alh${marca}`);
 
-        crewId = await criarCrew(dono, `Crew ${marca}`, `C${marca}`);
+        crewId = await criarCrew(dono, `Crew ${marca}`, tagAoAcaso());
         serverId = await criarServidor(dono, `Server ${marca}`);
 
         outraCrew = `Crew alheia ${marca}`;
         outroServer = `Server alheio ${marca}`;
 
-        await criarCrew(alheio, outraCrew, `A${marca}`);
+        await criarCrew(alheio, outraCrew, tagAoAcaso());
         await criarServidor(alheio, outroServer);
     });
 
