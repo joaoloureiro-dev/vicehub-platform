@@ -10,6 +10,7 @@ import { useIdioma, useT } from '../../i18n/i18n.js';
 import { ProgressoDeNivel } from '../../components/progresso-de-nivel.js';
 import { ApagarConta } from '../components/apagar-conta.js';
 import { LevarDados } from '../components/levar-dados.js';
+import { TerminarSessoes } from '../components/terminar-sessoes.js';
 import { ListaDeAmigos } from '../components/lista-de-amigos.js';
 import {
     getMyProfile,
@@ -305,6 +306,13 @@ export const MyProfilePage = () => {
               e demora uma semana a apagar não é uma conta, é uma
               armadilha.
             */}
+            {/*
+              Antes de levar os dados e de apagar a conta, e separada
+              delas: essas duas são o que se faz para sair; esta é o
+              que se faz para ficar e pôr outra pessoa fora.
+            */}
+            <TerminarSessoes />
+
             <LevarDados />
 
             <ApagarConta username={eu.username} />

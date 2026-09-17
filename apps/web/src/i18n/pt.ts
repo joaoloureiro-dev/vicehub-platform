@@ -363,6 +363,13 @@ export const pt = (p: Tools): Messages => ({
             `A tua carteira tem ${saldo}. Apagar a conta perde esse saldo — não há por onde o enviar para lado nenhum antes, e não volta.`,
         apagarContaPassword: 'A tua password, se a conta tiver uma',
         apagarContaConfirmar: 'Apagar a conta de vez',
+        terminarSessoes: 'Terminar sessão em todo o lado',
+        terminarSessoesExplicacao:
+            'Termina todas as sessões em todos os dispositivos, este incluído — vais ficar fora daqui também. Serve para quando desconfias que alguém entrou na tua conta: trocar a password não põe fora quem já lá está dentro.',
+        terminarSessoesConfirmar: 'Terminar todas as sessões',
+        terminarSessoesATerminar: 'A terminar…',
+        terminarSessoesFalhou:
+            'Não foi possível terminar as sessões. Tenta daqui a pouco.',
         levarDados: 'Levar os teus dados',
         levarDadosExplicacao:
             'Um ficheiro com tudo o que o ViceHub tem sobre ti: a conta, as comunidades onde estás, os eventos em que estiveste, o que propuseste e decidiste numa tesouraria, e o que a plataforma te deu. A password e as tuas entradas não vão lá — isso são chaves da conta, e não factos sobre ti.',

@@ -364,6 +364,13 @@ export const fr = (p: Tools): Messages => ({
             `Ton portefeuille contient ${saldo}. Supprimer ton compte le perd : il n’existe aucun moyen de l’envoyer ailleurs avant, et il ne revient pas.`,
         apagarContaPassword: 'Ton mot de passe, si le compte en a un',
         apagarContaConfirmar: 'Supprimer le compte définitivement',
+        terminarSessoes: 'Se déconnecter partout',
+        terminarSessoesExplicacao:
+            'Met fin à toutes les sessions sur tous les appareils, celui-ci compris — tu seras aussi déconnecté ici. À utiliser si tu penses que quelqu’un est entré dans ton compte : changer de mot de passe ne met pas dehors celui qui est déjà dedans.',
+        terminarSessoesConfirmar: 'Fermer toutes les sessions',
+        terminarSessoesATerminar: 'Déconnexion…',
+        terminarSessoesFalhou:
+            'Les sessions n’ont pas pu être fermées. Réessaie dans un moment.',
         levarDados: 'Emporte tes données',
         levarDadosExplicacao:
             'Un fichier avec tout ce que ViceHub a sur toi : le compte, les communautés où tu es, les événements où tu étais, ce que tu as proposé et décidé dans une trésorerie, et ce que la plateforme t\u2019a donné. Le mot de passe et tes connexions n\u2019y sont pas — ce sont des clés du compte, pas des faits sur toi.',

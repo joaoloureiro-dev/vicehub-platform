@@ -377,6 +377,13 @@ export const en = (p: Tools) => ({
             `Your wallet holds ${saldo}. Deleting your account loses it — there is no way to send it anywhere first, and it does not come back.`,
         apagarContaPassword: 'Your password, if your account has one',
         apagarContaConfirmar: 'Delete my account for good',
+        terminarSessoes: 'Sign out everywhere',
+        terminarSessoesExplicacao:
+            'Ends every session on every device, this one included, so you will be signed out here too. Use it if you think someone else got into your account — changing your password does not remove whoever is already inside.',
+        terminarSessoesConfirmar: 'End every session',
+        terminarSessoesATerminar: 'Signing out…',
+        terminarSessoesFalhou:
+            'The sessions could not be ended. Try again shortly.',
         levarDados: 'Take your data with you',
         levarDadosExplicacao:
             'A file with everything ViceHub holds about you: your account, the communities you are in, the events you turned up to, what you proposed and decided in a treasury, and what the platform gave you. Your password and your sign-ins are not in it — those are keys to the account, not facts about you.',
