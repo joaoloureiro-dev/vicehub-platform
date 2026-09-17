@@ -355,6 +355,13 @@ export const es = (p: Tools): Messages => ({
             `Tu cartera tiene ${saldo}. Borrar la cuenta lo pierde: no hay forma de enviarlo a ninguna parte antes, y no vuelve.`,
         apagarContaPassword: 'Tu contraseña, si la cuenta tiene una',
         apagarContaConfirmar: 'Eliminar la cuenta definitivamente',
+        terminarSessoes: 'Cerrar sesión en todas partes',
+        terminarSessoesExplicacao:
+            'Cierra todas las sesiones en todos los dispositivos, este incluido: también saldrás de aquí. Sirve si sospechas que alguien entró en tu cuenta: cambiar la contraseña no echa a quien ya está dentro.',
+        terminarSessoesConfirmar: 'Cerrar todas las sesiones',
+        terminarSessoesATerminar: 'Cerrando…',
+        terminarSessoesFalhou:
+            'No se pudieron cerrar las sesiones. Inténtalo dentro de un rato.',
         levarDados: 'Llévate tus datos',
         levarDadosExplicacao:
             'Un archivo con todo lo que ViceHub tiene sobre ti: la cuenta, las comunidades en las que estás, los eventos a los que asististe, lo que propusiste y decidiste en una tesorería, y lo que la plataforma te dio. La contraseña y tus accesos no van ahí — eso son llaves de la cuenta, no datos sobre ti.',

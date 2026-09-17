@@ -47,6 +47,27 @@ export const logout = async (): Promise<void> => {
     }
 };
 
+/**
+ * Termina a sessão em todo o lado, incluindo aqui.
+ *
+ * A API revoga todas as sessões e invalida os access tokens já
+ * emitidos — este inclusive. Por isso a memória é limpa a seguir, tal
+ * como no `logout`: o pedido seguinte desta aba levaria 401 e o ecrã
+ * ficaria com ar de autenticado até lá.
+ *
+ * Existia na API desde sempre e não tinha por onde ser chamado. Quem
+ * desconfia que a conta lhe foi apanhada não tinha nada a fazer no
+ * produto senão trocar a password — o que não expulsa ninguém que já lá
+ * esteja dentro.
+ */
+export const logoutEverywhere = async (): Promise<void> => {
+    try {
+        await api<void>('/auth/logout-all', { method: 'POST' });
+    } finally {
+        sessionStore.clear();
+    }
+};
+
 export const requestPasswordReset = (email: string): Promise<void> =>
     api<void>('/auth/password-reset', {
         method: 'POST',
