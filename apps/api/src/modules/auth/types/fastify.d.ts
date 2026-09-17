@@ -12,6 +12,18 @@ declare module 'fastify' {
     interface FastifyInstance {
         prisma: DatabaseClient;
 
+        /**
+         * Verdadeiro entre o sinal de encerramento e a porta fechar.
+         *
+         * Só a sonda de prontidão o lê: é o que lhe permite dizer ao
+         * balanceador que esta instância está de saída antes de deixar
+         * de aceitar ligações.
+         */
+        aEncerrar: boolean;
+
+        /** Marca o início do encerramento. Não fecha nada. */
+        comecarAEncerrar(): void;
+
         authenticate(
             request: FastifyRequest,
             reply: FastifyReply,

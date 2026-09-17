@@ -106,6 +106,23 @@ const envSchema = z.object({
     WEB_DIST_PATH: z.string().min(1).optional(),
 
     /**
+     * Quanto tempo o encerramento espera antes de fechar a porta.
+     *
+     * Recebido o sinal, a sonda de prontidão passa a responder 503 e a
+     * instância fica este tempo a servir o que lhe chegar. É o intervalo
+     * que o balanceador precisa para reparar que ela saiu — sem ele, os
+     * pedidos que ele manda entre o sinal e a porta fechar batem numa
+     * ligação recusada, e um deploy que correu bem dá erro a quem
+     * estava do outro lado.
+     *
+     * Zero por omissão: em desenvolvimento, o Ctrl+C é para ser
+     * imediato, e não há balanceador nenhum à espera de ser avisado.
+     * Em produção vale a pena pô-lo acima do intervalo de sondagem de
+     * quem estiver à frente — dez segundos cobrem a maioria.
+     */
+    SHUTDOWN_DRAIN_MS: z.coerce.number().int().nonnegative().default(0),
+
+    /**
      * Validade dos tokens enviados por email, em segundos.
      *
      * A recuperação é curta de propósito: é uma chave para entrar na

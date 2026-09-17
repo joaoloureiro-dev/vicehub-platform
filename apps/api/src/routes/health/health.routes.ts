@@ -37,6 +37,24 @@ const healthRoutes: FastifyPluginAsync = async (app) => {
     }));
 
     app.get('/ready', async (_request, reply) => {
+        /**
+         * Quem está de saída responde que não, sem perguntar nada à
+         * base de dados: ela está bem, e a resposta seria sim.
+         *
+         * Isto vem antes de tudo o resto porque é o que dá ao
+         * balanceador tempo de reparar que esta instância saiu antes
+         * de a porta fechar. A sonda de vida continua a responder 200
+         * durante este intervalo — o processo está vivo, e reiniciá-lo
+         * a meio de um encerramento controlado desfaz exatamente o que
+         * ele está a tentar fazer.
+         */
+        if (app.aEncerrar) {
+            return reply.code(503).send({
+                status: 'shutting_down',
+                checks: { database: 'skipped' },
+            });
+        }
+
         const baseDeDados = await baseDeDadosResponde(app.prisma, app.log);
 
         /**
