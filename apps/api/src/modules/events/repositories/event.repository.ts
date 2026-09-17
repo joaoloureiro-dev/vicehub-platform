@@ -9,6 +9,7 @@ import {
 
 import type { EventXpResultado } from '../../../shared/xp-awards.js';
 import { awardEventXp } from '../../../shared/xp-awards.js';
+import { awardEventReputation } from '../../../shared/reputation-awards.js';
 import type { EventOwner } from '../types/event.types.js';
 
 interface CreateEventInput {
@@ -377,6 +378,47 @@ export class EventRepository {
             orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
             select: { userId: true, weight: true },
         });
+    }
+
+    /**
+     * Em que estado ficou cada participante, no momento de fechar.
+     *
+     * Uma leitura só, e não uma por conta: o xp sai de quem apareceu e a
+     * reputação de quem apareceu e de quem faltou. Lidos em consultas
+     * separadas, a mesma pessoa podia ser apanhada em estados diferentes
+     * entre uma e outra — e sair com o xp de quem esteve lá e a
+     * reputação de quem não esteve.
+     *
+     * Vêm **todos**, e o estado com eles. Filtrar aqui por quem conta
+     * seria escrever aqui uma regra que já está escrita noutro sítio: o
+     * xp é de quem está `confirmed`, e o que mexe na reputação é o que o
+     * `reputacaoDe` disser. Duas cópias da mesma regra cobrem-se uma à
+     * outra — cada uma pode partir-se sem que nada mude, porque a outra
+     * ainda lá está, e é assim que uma regra morre em silêncio.
+     */
+    listParticipantOutcomes(eventId: string) {
+        return this.database.eventParticipant.findMany({
+            where: {
+                eventId,
+                is_deleted: false,
+            },
+            orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+            select: { userId: true, status: true },
+        });
+    }
+
+    /**
+     * Regista a reputação de um evento concluído, uma vez só.
+     *
+     * A regra de quanto vale cada desfecho vive em @vicehub/database, e
+     * a escrita no shared, tal como no xp.
+     */
+    awardEventReputation(input: {
+        eventId: string;
+        participantes: { userId: string; status: EventParticipantStatus }[];
+        actorId: string;
+    }) {
+        return awardEventReputation(this.database, input);
     }
 
     /**

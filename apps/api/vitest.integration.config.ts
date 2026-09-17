@@ -56,6 +56,17 @@ export default defineConfig({
         testTimeout: 60_000,
 
         /**
+         * E o mesmo para a preparação de cada ficheiro, que é onde as
+         * contas são criadas.
+         *
+         * O valor por omissão dos hooks é de dez segundos e não segue o
+         * `testTimeout`: uma suite que preparasse três contas num `beforeAll`
+         * rebentava na preparação e marcava os testes todos como saltados —
+         * que se lê como "não correram", e não como "demorou de mais".
+         */
+        hookTimeout: 60_000,
+
+        /**
          * Um ficheiro de cada vez: os testes partilham a mesma base de
          * dados, e correr em paralelo faria uns verem os dados dos outros.
          */

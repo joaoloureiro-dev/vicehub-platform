@@ -19,8 +19,8 @@ from the database to a screen; `🚧` is partly there; `○` has no code yet.
 
 ### 👤 Players
 - ✔ XP & Level system
-- 🚧 Reputation & Prestige — stored, read and displayed, but nothing awards
-  them yet, so they read zero for everybody
+- ✔ Reputation — earned by showing up to an event someone confirmed you at,
+  lost by signing up and not showing
 - ✔ Badges & Achievements — earned from attendance, payouts, events and crew
   level
 - ✔ Friends & Social graph
@@ -32,6 +32,8 @@ from the database to a screen; `🚧` is partly there; `○` has no code yet.
 - ✔ Events & missions
 - ✔ Recruitment system
 - ✔ Ranking system — the crew directory sorts by XP
+- 🚧 Influence & Prestige — stored, read and displayed on the crew page, but
+  nothing awards them yet, so they read zero for every crew
 
 ### 🌐 Servers
 - ✔ Server profiles
@@ -446,6 +448,42 @@ Os estados são `scheduled`, `ongoing`, `completed` e `canceled`, e as
 transições permitidas estão declaradas como dados num só sítio. A mudança
 é aplicada condicionalmente na base de dados: dois pedidos simultâneos a
 concluir o mesmo evento não o concluem duas vezes.
+
+#### O que dá reputação
+
+Concluir o evento é o que mexe na reputação de quem participou:
+
+| Como ficou | Reputação |
+|---|---|
+| `confirmed` — quem organiza afirma que apareceu | **+1** |
+| `no_show` — disse que ia e não foi | **−1** |
+| `signed_up` — ninguém se pronunciou | não mexe |
+| `withdrawn` — avisou que já não ia | não mexe |
+
+Sai da presença confirmada porque é o único facto que a plataforma tem
+sobre comparecer. Uma falta tira exatamente o que uma presença dá: se
+custasse menos, a reputação subia a quem se inscreve em tudo e aparece em
+metade — e é precisamente essa pessoa que o número existe para distinguir
+de quem aparece sempre.
+
+**Desistir não custa nada.** Avisar que já não se vai é o comportamento
+que se quer, e não pode custar o mesmo que desaparecer sem dizer nada.
+Ficar por confirmar também não custa: quem organiza não se pronunciou, e
+castigar por isso seria castigar pelo silêncio de outra pessoa.
+
+**O número pode ficar negativo**, e é deliberado. Um chão em zero faria a
+soma das linhas deixar de ser o número, e apagaria a diferença entre quem
+nunca foi a nada e quem falta a tudo a que se inscreve.
+
+Cada ponto deixa uma linha em `ReputationAward`, com o evento de onde
+veio — sem ela o número no perfil só se podia acreditar, e voltava a ser
+contado à próxima. É um índice único por pessoa e evento que impede que o
+mesmo evento conte duas vezes.
+
+**Confirmar presenças depois de concluir não conta**, nem para a
+reputação nem para o xp. As duas contas são feitas no momento em que o
+evento fecha, com a lista que existir nesse momento. Quem organiza deve
+confirmar quem apareceu **antes** de marcar o evento como concluído.
 
 #### Dividir por participação
 
@@ -1167,7 +1205,7 @@ Falta para abrir ao público:
 🔑 Configurar o Stripe — os quatro preços e o portal do cliente — e o domínio,
 o SMTP e o deploy  
 ⚖️ Identificação legal do operador, para o aviso de rascunho sair dos termos  
-🎯 Decidir o que dá reputação, influência e prestígio  
+🎯 Decidir o que dá influência e prestígio às crews  
 🛒 O marketplace, que não tem código nenhum  
 
 ---

@@ -46,12 +46,18 @@ const createRepositoryMock = () => ({
     setParticipantStatus: vi.fn().mockResolvedValue(undefined),
     listParticipants: vi.fn().mockResolvedValue([]),
     listConfirmedParticipants: vi.fn().mockResolvedValue([]),
+    listParticipantOutcomes: vi.fn().mockResolvedValue([]),
     isActiveMember: vi.fn().mockResolvedValue(true),
     awardEventXp: vi.fn().mockResolvedValue({
         awarded: true,
         crewXp: 100,
         userXp: 25,
         users: 2,
+    }),
+    awardEventReputation: vi.fn().mockResolvedValue({
+        awarded: true,
+        presencas: 2,
+        faltas: 0,
     }),
 });
 
@@ -345,9 +351,9 @@ describe('EventService', () => {
          * confirmado no momento em que acabou.
          */
         it('paga o xp ao concluir, com quem apareceu', async () => {
-            repository.listConfirmedParticipants.mockResolvedValue([
-                { userId: 'user-1', weight: 1 },
-                { userId: 'user-2', weight: 1 },
+            repository.listParticipantOutcomes.mockResolvedValue([
+                { userId: 'user-1', status: EventParticipantStatus.confirmed },
+                { userId: 'user-2', status: EventParticipantStatus.confirmed },
             ]);
 
             await service.transition(CREW, 'event-1', 'completed', 'lider');
@@ -358,6 +364,81 @@ describe('EventService', () => {
                 confirmedUserIds: ['user-1', 'user-2'],
                 actorId: 'lider',
             });
+        });
+
+        /**
+         * O xp é de quem apareceu; quem faltou não entra na conta dele.
+         * Sem esta linha, uma falta pagava como uma presença.
+         */
+        it('não paga xp a quem faltou', async () => {
+            repository.listParticipantOutcomes.mockResolvedValue([
+                { userId: 'apareceu', status: EventParticipantStatus.confirmed },
+                { userId: 'faltou', status: EventParticipantStatus.no_show },
+            ]);
+
+            await service.transition(CREW, 'event-1', 'completed', 'lider');
+
+            expect(repository.awardEventXp).toHaveBeenCalledWith(
+                expect.objectContaining({ confirmedUserIds: ['apareceu'] }),
+            );
+        });
+
+        /**
+         * A reputação leva os dois desfechos, e não só as presenças: é
+         * a falta que a faz significar alguma coisa.
+         */
+        it('manda presenças e faltas para a reputação', async () => {
+            const desfechos = [
+                { userId: 'apareceu', status: EventParticipantStatus.confirmed },
+                { userId: 'faltou', status: EventParticipantStatus.no_show },
+            ];
+
+            repository.listParticipantOutcomes.mockResolvedValue(desfechos);
+
+            await service.transition(CREW, 'event-1', 'completed', 'lider');
+
+            expect(repository.awardEventReputation).toHaveBeenCalledWith({
+                eventId: 'event-1',
+                participantes: desfechos,
+                actorId: 'lider',
+            });
+        });
+
+        /**
+         * E lê a lista uma vez só. Duas leituras podiam apanhar a mesma
+         * pessoa em estados diferentes, e dar-lhe o xp de quem esteve lá
+         * com a reputação de quem não esteve.
+         */
+        it('lê os participantes uma única vez', async () => {
+            await service.transition(CREW, 'event-1', 'completed', 'lider');
+
+            expect(repository.listParticipantOutcomes).toHaveBeenCalledTimes(1);
+        });
+
+        /**
+         * Enquanto o evento decorre ainda se confirma e se desmarca
+         * gente. Mexer na reputação antes do fim seria mexer numa lista
+         * que ainda está a mudar.
+         */
+        it.each(['ongoing', 'canceled'] as const)(
+            'não mexe na reputação ao passar a %s',
+            async (destino) => {
+                await service.transition(CREW, 'event-1', destino, 'lider');
+
+                expect(repository.awardEventReputation).not.toHaveBeenCalled();
+            },
+        );
+
+        /** Uma transição recusada não mexe em nada: o evento não acabou. */
+        it('não mexe na reputação quando a transição não se aplica', async () => {
+            repository.transitionStatus.mockResolvedValue(false);
+
+            await expectEventError(
+                service.transition(CREW, 'event-1', 'completed', 'lider'),
+                'INVALID_STATUS_TRANSITION',
+            );
+
+            expect(repository.awardEventReputation).not.toHaveBeenCalled();
         });
 
         /**
@@ -394,9 +475,9 @@ describe('EventService', () => {
             repository.findById.mockResolvedValue(
                 eventRow({ crewId: null, serverId: 'server-1' }),
             );
-            repository.listConfirmedParticipants.mockResolvedValue([
-                { userId: 'user-1', weight: 1 },
-                { userId: 'user-2', weight: 1 },
+            repository.listParticipantOutcomes.mockResolvedValue([
+                { userId: 'user-1', status: EventParticipantStatus.confirmed },
+                { userId: 'user-2', status: EventParticipantStatus.confirmed },
             ]);
 
             await service.transition(SERVER, 'event-1', 'completed', 'dono');
