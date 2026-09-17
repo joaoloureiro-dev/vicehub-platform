@@ -12,53 +12,61 @@ To become the central platform where gaming communities interact, grow, compete 
 
 ---
 
-## ⚙️ Core Features (Planned)
+## ⚙️ Core Features
+
+What the product does today, and what it does not. `✔` works end to end,
+from the database to a screen; `🚧` is partly there; `○` has no code yet.
 
 ### 👤 Players
-- XP & Level system
-- Reputation & Prestige
-- Badges & Achievements
-- Friends & Social graph
-- Activity tracking
+- ✔ XP & Level system
+- 🚧 Reputation & Prestige — stored, read and displayed, but nothing awards
+  them yet, so they read zero for everybody
+- ✔ Badges & Achievements — earned from attendance, payouts, events and crew
+  level
+- ✔ Friends & Social graph
+- ✔ Activity tracking
 
 ### 🏴 Crews
-- Crew progression system
-- Economy & treasury
-- Events & missions
-- Recruitment system
-- Ranking system
+- ✔ Crew progression system
+- ✔ Economy & treasury — wallets, approvals, transfers and payouts
+- ✔ Events & missions
+- ✔ Recruitment system
+- ✔ Ranking system — the crew directory sorts by XP
 
 ### 🌐 Servers
-- Server profiles
-- Activity tracking
-- Leaderboards
-- Events integration
-- Community engagement metrics
+- ✔ Server profiles
+- ✔ Activity tracking — heartbeats and player counts from the game server
+- ○ Leaderboards
+- ✔ Events integration
+- 🚧 Community engagement metrics — the numbers are collected, no screen
+  reads them yet
 
 ### 🛒 Marketplace
-- Digital services trading
-- Escrow system
-- Stripe Connect integration
-- Reviews & reputation system
+- ○ Digital services trading
+- ○ Escrow system
+- ○ Stripe Connect integration
+- ○ Reviews & reputation system
 
 ### 🎮 Events System
-- Live events
-- Rewards & XP distribution
-- Competitive challenges
-- History tracking
+- ✔ Live events
+- ✔ Rewards & XP distribution
+- ✔ Competitive challenges
+- ✔ History tracking
 
 ---
 
 ## 🏗️ Architecture
 
-- Monorepo (npm workspaces)
-- Node.js + TypeScript
-- Fastify backend (planned)
+- Monorepo (npm workspaces): `apps/api`, `apps/web`, `packages/database`
+- Node.js 24 + TypeScript
+- Fastify backend, serving the built interface from its own origin
+- React + Vite frontend
 - PostgreSQL + Prisma 7
-- Redis for real-time systems
-- BullMQ for background jobs
 - Stripe for payments
-- Discord API integration
+- Discord and Google sign-in
+
+Not there yet: Redis and a job queue. Everything runs inside the request
+that asked for it, which is enough at this size and will not stay enough.
 
 ---
 
@@ -79,7 +87,7 @@ To become the central platform where gaming communities interact, grow, compete 
 - Dark mode first
 - Glassmorphism HUD interface
 - Mobile-first design
-- Real-time dashboard experience
+- Screens refresh when you ask them to — there is no live connection yet
 
 ---
 
@@ -1107,17 +1115,28 @@ conformidade.
 
 ## 📦 Current Status
 
-🚧 Early development stage  
-✔ Database core architecture implemented  
-✔ Authentication implemented: sessões validadas na base de dados, refresh
-token com rotação e deteção de reutilização, cookie HttpOnly e logout global  
+🚧 Em desenvolvimento, ainda sem ninguém a usar  
+✔ Base de dados, autenticação e autorização: sessões validadas na base de
+dados, refresh token com rotação e deteção de reutilização, cookie HttpOnly,
+terminar todas as sessões e permissões por papel  
 ✔ Recuperação de password e confirmação de email  
-✔ Frontend arrancado: `apps/web`, com a superfície de autenticação  
-✔ Ecrãs de crews, servidores, tesouraria e eventos  
+✔ Perfis, crews, servidores, eventos e tesouraria, com ecrã para cada um  
+✔ Entrar com Discord e com Google  
+✔ Levar os dados embora e apagar a conta, com o saldo a perder-se  
+✔ Cobrança pelo Stripe: checkout, webhooks, portal para cancelar o plano e
+entitlements que o servidor calcula sozinho  
 ✔ Interface em quatro idiomas, com o inglês por omissão  
 ✔ Caminho de produção verificado: a API serve a interface na sua própria
-origem e recusa arrancar com a configuração que só faz mal em produção  
-🚀 Stripe e deploy a seguir  
+origem, tem sonda de arranque separada da de prontidão, e recusa arrancar com
+a configuração que só faz mal em produção  
+
+Falta para abrir ao público:
+
+🔑 Configurar o Stripe — os quatro preços e o portal do cliente — e o domínio,
+o SMTP e o deploy  
+⚖️ Identificação legal do operador, para o aviso de rascunho sair dos termos  
+🎯 Decidir o que dá reputação, influência e prestígio  
+🛒 O marketplace, que não tem código nenhum  
 
 ---
 
