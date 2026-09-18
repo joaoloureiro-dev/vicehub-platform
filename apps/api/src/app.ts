@@ -39,6 +39,7 @@ import bigIntSerializationPlugin from './plugins/http/bigint-serialization.plugi
 import spaPlugin from './plugins/http/spa.plugin.js';
 
 import healthRoutes from './routes/health/health.routes.js';
+import newsRoutes from './routes/news/news.routes.js';
 
 type ViceHubFastifyInstance = FastifyInstance<
     Server,
@@ -169,6 +170,13 @@ export const buildApp = (): ViceHubFastifyInstance => {
     // Health Check
     void app.register(healthRoutes, {
         prefix: '/api/v1/health',
+    });
+
+    /**
+     * O que se passa no jogo. Pública, como a página que a mostra.
+     */
+    void app.register(newsRoutes, {
+        prefix: '/api/v1/news',
     });
 
     // Módulo de autenticação

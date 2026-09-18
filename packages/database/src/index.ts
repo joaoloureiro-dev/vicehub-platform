@@ -81,6 +81,15 @@ export {
 } from './reputation.js';
 
 export {
+    EXCERTO_MAXIMO,
+    NOTICIAS_GUARDADAS,
+    NOTICIAS_NA_ENTRADA,
+    enderecoSeguro,
+    excertoDe,
+    soTexto,
+} from './news.js';
+
+export {
     HEARTBEAT_JANELA_MS,
     estaOnline,
     filtroDeOnline,

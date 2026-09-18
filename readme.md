@@ -48,6 +48,11 @@ from the database to a screen; `🚧` is partly there; `○` has no code yet.
 - ○ Stripe Connect integration
 - ○ Reviews & reputation system
 
+### 📰 What's happening in the game
+- ✔ A news block on the landing page, fed from an RSS or Atom source
+- ○ Community finds and easter eggs — those are not published by anyone,
+  they are found, so they belong with the forum rather than with a feed
+
 ### 🎮 Events System
 - ✔ Live events
 - ✔ Rewards & XP distribution
@@ -765,6 +770,43 @@ isso: quem decide de que servidor é um sinal é a chave, do lado de cá.
 Se viesse no corpo, uma chave podia reportar pelo servidor de outra
 pessoa.
 
+### As notícias da página de entrada
+
+| Rota | Quem pode |
+|---|---|
+| `GET /api/v1/news` | qualquer pessoa |
+
+O bloco é um **agregador**, e não uma republicação. Mostra o título, um
+excerto curto, a fonte à vista e o link para lá — o artigo é de quem o
+escreveu, e quem o quiser ler lê-o no sítio dele. É por isso que o
+excerto tem um teto de 220 caracteres em `packages/database/src/news.ts`:
+**o corte é a funcionalidade**, e não uma poupança de espaço.
+
+A recolha corre num cron, e **não dentro da API**:
+
+```bash
+npm run news:fetch
+```
+
+Pela mesma razão que a limpeza: com mais do que uma instância, um
+temporizador em processo ia buscar o feed em todas ao mesmo tempo — N
+pedidos ao site de outra pessoa para mostrar a mesma coisa. De hora a
+hora chega.
+
+Sem `NEWS_FEED_URL` a recolha não faz nada e diz porquê, e o bloco não
+aparece. É deliberado: **a página de entrada não deve ficar de pé ou no
+chão conforme o dia que o site de outra pessoa esteja a ter.**
+
+Nada do que vem do feed é de confiança. Uma entrada sem endereço, sem
+título ou sem data é saltada em vez de fazer a recolha falhar; um
+endereço que não seja `http` ou `https` é recusado, porque é ele que vai
+parar a um `href`; e a marcação e as entidades são desfeitas antes de
+guardar, para o que fica ser texto e mais nada.
+
+O mesmo artigo não entra duas vezes: um índice único sobre a chave que o
+feed lhe dá — ou sobre o endereço, quando ele não dá nenhuma. Passar
+duas vezes pelo mesmo feed atualiza o que mudou e não acrescenta nada.
+
 ### Recuperar a password e confirmar o email
 
 | Rota | Quem pode |
@@ -1183,6 +1225,11 @@ As duas sondas, para quem configura o orquestrador:
   Põe-se num cron, uma vez por dia. **Não corre dentro da API de propósito:**
   com mais do que uma instância, um temporizador em processo correria em
   todas ao mesmo tempo, e o que se quer é uma passagem, não N.
+- **As notícias não se recolhem sozinhas.** O `npm run news:fetch` vai ao
+  feed e guarda o que for novo. Põe-se num cron, de hora a hora. Sem ele
+  o bloco da página de entrada fica com o que lá estava da última vez —
+  ou vazio, se nunca correu.
+
 - **O primeiro administrador nasce da base de dados**, e não da API: nenhuma
   rota concede `system:manage`, porque a primeira conta a poder nomear
   administradores seria a porta que o cargo existe para guardar.

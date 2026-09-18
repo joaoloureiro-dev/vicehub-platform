@@ -1229,6 +1229,52 @@ model XpAward {
   @@index([eventId])
 }
 
+/// Uma notícia de fora, guardada para o bloco da página de entrada.
+///
+/// O que aqui está é o que um **agregador** guarda: o título, um excerto
+/// curto, a fonte e o endereço de lá. O artigo é de quem o escreveu, e
+/// copiá-lo para cá seria pegar no trabalho de outra pessoa — o que se
+/// mostra serve para decidir se se quer ler, e quem quiser lê no sítio
+/// dele.
+///
+/// Nada disto é escrito por alguém desta plataforma: entra todo pela
+/// recolha do feed, que corre num cron. É por isso que não há autor nem
+/// `created_by` com significado.
+model NewsItem {
+  id String @id @default(uuid())
+
+  /// A identidade do artigo no feed de origem.
+  ///
+  /// É por ela que a mesma notícia não entra duas vezes a cada recolha.
+  /// Um feed que não dê identificador nenhum deixa o próprio endereço
+  /// fazer de chave, que é a segunda coisa mais estável que ele tem.
+  guid String
+
+  /// Como a fonte se chama a si própria, saída do título do feed.
+  ///
+  /// Guardada por notícia e não em configuração: o dia em que a fonte
+  /// mudar, as notícias antigas continuam a dizer de onde vieram.
+  source_name String
+
+  title    String
+  excerpt  String?
+  url      String
+  image_url String?
+
+  /// Quando saiu, segundo o feed. É por aqui que se ordena.
+  published_at DateTime
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(webhook)
+
+  @@index([published_at(sort: Desc)])
+}
+
 /// Uma mudança na reputação de alguém, e o facto que a causou.
 ///
 /// Existe pela mesma razão que o `XpAward`: sem ela o número no perfil
