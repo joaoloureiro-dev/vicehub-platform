@@ -84,10 +84,27 @@ that asked for it, which is enough at this size and will not stay enough.
 
 ## 🎨 UI/UX
 
-- Neon cyberpunk theme inspired by Vice City
-- Dark mode first
-- Glassmorphism HUD interface
-- Mobile-first design
+**A neon sign on white paper.** The product is a community's paperwork —
+who joined, who turned up, how much was split and to whom — and that
+reads as a record: black on white, with structure coming from hairlines
+and type, not from stacked grey boxes.
+
+- The logo's colours at full saturation, and **never as text**. On white
+  the magenta scores 3.30 contrast and the cyan 1.81; white text on top
+  of them fails too. Dark ink on top passes comfortably (5.95 and 10.87),
+  which is how a sign works — the colour lights up, the letters are the
+  dark cut-out. So a button here is neon with black type, and anything
+  that must be *read* in colour uses the deep variants, computed to clear
+  4.5 on white. `apps/web/tests/contraste.test.ts` keeps it that way.
+- The logo gradient appears in exactly two places: a three-pixel rule
+  above the page, and the wordmark. A whole header painted magenta to
+  cyan is the page everyone makes.
+- Display type is Archivo at expanded width in heavy caps — wide and
+  solid. It imitates no Rockstar typeface and could not: this is an
+  independent platform. Body is IBM Plex Sans; money and XP stay in
+  JetBrains Mono, because columns of digits have to line up.
+- Mobile-first: the base rules serve the small screen and the media
+  queries only add as space appears.
 - Screens refresh when you ask them to — there is no live connection yet
 
 ---
