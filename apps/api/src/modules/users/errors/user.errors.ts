@@ -31,6 +31,20 @@ export class UserError extends Error {
     constructor(
         public readonly code: UserErrorCode,
         message: string,
+        /**
+         * Os nomes que a recusa menciona, à parte da frase.
+         *
+         * A mensagem da API está em português e nunca chega ao ecrã: o
+         * ecrã traduz pelo **código**. Mas há recusas cujo detalhe a
+         * pessoa precisa de ter — dizer-lhe que ainda manda numa crew
+         * sem dizer qual deixa-a à procura, e quem manda em três fica
+         * sem saber por onde começar.
+         *
+         * Por isso os nomes viajam como dados e não dentro do texto. É
+         * o mesmo que o `missingPermissions` já faz na recusa por falta
+         * de permissões.
+         */
+        public readonly communities?: readonly string[],
     ) {
         super(message);
 

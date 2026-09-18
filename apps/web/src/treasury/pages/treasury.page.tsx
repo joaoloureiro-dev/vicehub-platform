@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import {
@@ -233,9 +234,11 @@ export const TreasuryPage = () => {
             setMensagem({
                 tipo: 'bad',
                 texto:
-                    falha instanceof ApiError
-                        ? falha.message
-                        : t.tesouraria.naoFoiPossivel,
+                    mensagemDoErro(
+                            falha,
+                            t,
+                            t.tesouraria.naoFoiPossivel,
+                        ),
             });
         } finally {
             setAAgir(false);

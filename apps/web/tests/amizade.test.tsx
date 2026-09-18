@@ -137,7 +137,18 @@ describe('o botão de amizade', () => {
     });
 
     /** A recusa da API é uma frase útil; não se troca por "não foi possível". */
-    it('mostra o que a API respondeu quando recusa', async () => {
+    /**
+     * A API responde em português. O ecrã não.
+     *
+     * Este teste dizia o contrário: afirmava que a frase da API aparecia
+     * tal e qual, e foi assim que uma pessoa a usar a plataforma em
+     * inglês acabou a ler português — o comportamento estava fixado como
+     * se fosse uma funcionalidade.
+     *
+     * A suite corre em inglês, por isso as duas frases são diferentes o
+     * suficiente para não haver dúvida sobre qual delas chegou ao ecrã.
+     */
+    it('diz no idioma de quem lê, e não no da API', async () => {
         vi.stubGlobal(
             'fetch',
             vi.fn(() =>
@@ -156,8 +167,9 @@ describe('o botão de amizade', () => {
             screen.getByRole('button', { name: t.amigos.adicionar }),
         );
 
-        expect((await screen.findByRole('alert')).textContent).toBe(
-            'Já são amigos.',
-        );
+        const aviso = await screen.findByRole('alert');
+
+        expect(aviso.textContent).toBe(t.erros.ALREADY_FRIENDS);
+        expect(aviso.textContent).not.toBe('Já são amigos.');
     });
 });

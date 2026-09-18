@@ -353,6 +353,204 @@ export const fr = (p: Tools): Messages => ({
             'ViceHub est une plateforme indépendante, sans lien ni aval de Rockstar Games, Take-Two Interactive ou d’un quelconque éditeur. Les noms et marques des jeux appartiennent à leurs détenteurs.',
     },
 
+    erros: {
+
+        INVALID_CREDENTIALS: 'Cet e-mail et ce mot de passe ne correspondent pas.',
+
+        ACCOUNT_LOCKED: 'Trop de tentatives échouées. Réessayez dans un moment.',
+
+        EMAIL_ALREADY_EXISTS: 'Un compte avec cet e-mail existe déjà.',
+
+        USERNAME_ALREADY_EXISTS: 'Ce nom est pris. Choisissez-en un autre.',
+
+        INVALID_ACCESS_TOKEN: 'Votre session n\'est plus valide. Reconnectez-vous.',
+
+        INVALID_REFRESH_TOKEN: 'Votre session a expiré. Reconnectez-vous.',
+
+        SESSION_EXPIRED: 'Votre session a expiré. Reconnectez-vous.',
+
+        REFRESH_TOKEN_REUSED: 'Cette session a été fermée par sécurité. Reconnectez-vous.',
+
+        SESSION_NOT_FOUND: 'Cette session n\'existe plus.',
+
+        USER_NOT_FOUND: 'Nous n\'avons pas trouvé ce joueur.',
+
+        INVALID_ACCOUNT_TOKEN: 'Ce lien ne fonctionne plus. Demandez-en un autre.',
+
+        EMAIL_ALREADY_VERIFIED: 'Cette adresse est déjà confirmée.',
+
+        ACCOUNT_DELETION_NOT_CONFIRMED: 'La confirmation ne correspond pas. Saisissez votre nom tel qu\'il apparaît.',
+
+        ACCOUNT_LEADS_COMMUNITIES: 'Vous dirigez encore une crew ou un serveur. Transmettez-le ou fermez-le d\'abord.',
+
+        ACCOUNT_HAS_ACTIVE_PLAN: 'Vous avez encore un abonnement actif. Annulez-le avant de supprimer le compte.',
+
+        FEDERATED_NOT_CONFIGURED: 'Cette façon de se connecter n\'est pas encore disponible.',
+
+        FEDERATED_UNAVAILABLE: 'Nous n\'avons pas pu joindre ce service. Réessayez dans un moment.',
+
+        FEDERATED_EXCHANGE_FAILED: 'La connexion par ce biais a échoué. Réessayez.',
+
+        FEDERATED_STATE_MISMATCH: 'Cette connexion a trop tardé ou a commencé ailleurs. Recommencez.',
+
+        FEDERATED_EMAIL_UNUSABLE: 'Ce compte n\'a pas d\'adresse e-mail utilisable.',
+
+        INSUFFICIENT_PERMISSIONS: 'Vous n\'avez pas l\'autorisation de faire cela.',
+
+        LAST_ROLE_HOLDER: 'C\'est la dernière personne avec ce rôle. Donnez-le à quelqu\'un d\'autre d\'abord.',
+
+        CREW_NOT_FOUND: 'Nous n\'avons pas trouvé cette crew.',
+
+        CREW_NAME_TAKEN: 'Une crew avec ce nom existe déjà.',
+
+        CREW_TAG_TAKEN: 'Ce tag est pris. Choisissez-en un autre.',
+
+        SERVER_NOT_FOUND: 'Nous n\'avons pas trouvé ce serveur.',
+
+        SERVER_NAME_TAKEN: 'Un serveur avec ce nom existe déjà.',
+
+        MEMBERSHIP_NOT_FOUND: 'Nous n\'avons pas trouvé cette candidature.',
+
+        ALREADY_MEMBER: 'Vous êtes déjà membre.',
+
+        NOT_A_MEMBER: 'Seuls les membres peuvent faire cela.',
+
+        MEMBERSHIP_NOT_PENDING: 'Cette candidature a déjà reçu une réponse.',
+
+        CANNOT_MANAGE_SELF: 'Vous ne pouvez pas faire cela à vous-même.',
+
+        CREW_HAS_FUNDS: 'La trésorerie de la crew contient encore de l\'argent. Videz-la d\'abord.',
+
+        SERVER_HAS_FUNDS: 'La trésorerie du serveur contient encore de l\'argent. Videz-la d\'abord.',
+
+        CREW_HAS_OPEN_DECISIONS: 'Des décisions sont encore en attente. Réglez-les d\'abord.',
+
+        SERVER_HAS_OPEN_DECISIONS: 'Des décisions sont encore en attente. Réglez-les d\'abord.',
+
+        CREW_HAS_ACTIVE_PLAN: 'La crew a encore un abonnement actif. Annulez-le d\'abord.',
+
+        SERVER_HAS_ACTIVE_PLAN: 'Le serveur a encore un abonnement actif. Annulez-le d\'abord.',
+
+        AFFILIATION_NOT_FOUND: 'Nous n\'avons pas trouvé cette affiliation.',
+
+        CREW_ALREADY_AFFILIATED: 'Cette crew joue déjà sur un serveur.',
+
+        AFFILIATION_ALREADY_REQUESTED: 'Cette crew a déjà demandé à jouer ici.',
+
+        AFFILIATION_NOT_PENDING: 'Cette demande a déjà reçu une réponse.',
+
+        SERVER_CREW_LIMIT_REACHED: 'Ce serveur a autant de crews que son abonnement le permet.',
+
+        EVENT_NOT_FOUND: 'Nous n\'avons pas trouvé cet événement.',
+
+        INVALID_EVENT_OWNER: 'Cet événement appartient à une autre communauté.',
+
+        EVENT_NOT_SCHEDULED: 'Vous ne pouvez vous inscrire qu\'à un événement qui n\'a pas commencé.',
+
+        EVENT_ALREADY_CLOSED: 'Cet événement est déjà clos.',
+
+        INVALID_STATUS_TRANSITION: 'Cet événement n\'est plus dans un état qui permet cela.',
+
+        EVENT_FULL: 'Cet événement est complet.',
+
+        ALREADY_SIGNED_UP: 'Vous êtes déjà inscrit.',
+
+        NOT_SIGNED_UP: 'Ce joueur ne s\'est pas inscrit à cet événement.',
+
+        ATTENDANCE_NOT_CONFIRMABLE: 'On ne confirme pas de présences à un événement annulé.',
+
+        STARTS_IN_THE_PAST: 'Un événement ne peut pas commencer dans le passé.',
+
+        ENDS_BEFORE_IT_STARTS: 'Un événement ne peut pas finir avant de commencer.',
+
+        WALLET_NOT_FOUND: 'Nous n\'avons pas trouvé ce portefeuille.',
+
+        INVALID_WALLET_OWNER: 'Ce portefeuille appartient à quelqu\'un d\'autre.',
+
+        MOVEMENT_NOT_FOUND: 'Nous n\'avons pas trouvé ce mouvement.',
+
+        MOVEMENT_NOT_PENDING: 'Ce mouvement a déjà été décidé.',
+
+        INSUFFICIENT_FUNDS: 'Il n\'y a pas assez de disponible pour cela.',
+
+        BALANCE_WOULD_OVERFLOW: 'Ce montant dépasse ce qu\'une trésorerie peut contenir.',
+
+        NOT_THE_PROPOSER: 'Seul l\'auteur de cette proposition peut la retirer.',
+
+        DISTRIBUTION_NOT_FOUND: 'Nous n\'avons pas trouvé ce partage.',
+
+        DISTRIBUTION_NOT_PENDING: 'Ce partage a déjà été décidé.',
+
+        NO_MEMBERS_TO_PAY: 'Il n\'y a personne à payer.',
+
+        EVENT_NOT_IN_THIS_TREASURY: 'Cet événement n\'appartient pas à cette communauté.',
+
+        NO_CONFIRMED_PARTICIPANTS: 'Personne n\'a eu sa présence confirmée à cet événement.',
+
+        SHARES_DO_NOT_MATCH_TOTAL: 'Les parts ne totalisent pas le montant.',
+
+        CREW_DOES_NOT_PLAY_HERE: 'Cette crew ne joue pas sur ce serveur.',
+
+        SUBSCRIPTION_REQUIRED: 'Cela nécessite un abonnement actif.',
+
+        INVALID_SUBSCRIPTION_OWNER: 'Cet abonnement appartient à quelqu\'un d\'autre.',
+
+        SUBSCRIPTION_OWNER_NOT_FOUND: 'Nous n\'avons pas trouvé à qui appartient cet abonnement.',
+
+        SUBSCRIPTION_NOT_FOUND: 'Nous n\'avons pas trouvé cet abonnement.',
+
+        SUBSCRIPTION_ALREADY_CANCELED: 'Cet abonnement est déjà marqué pour se terminer.',
+
+        SUBSCRIPTION_ALREADY_ENDED: 'Cet abonnement est déjà terminé.',
+
+        LIFETIME_HAS_NO_DURATION: 'Un abonnement à vie n\'a pas de date de fin.',
+
+        LIFETIME_CANNOT_BE_CANCELED: 'Un abonnement à vie ne s\'annule pas. Il se révoque.',
+
+        ALREADY_LIFETIME: 'Ce compte a déjà un abonnement à vie.',
+
+        BILLING_NOT_CONFIGURED: 'Les paiements ne sont pas encore configurés. Réessayez plus tard.',
+
+        BILLING_OWNER_NOT_FOUND: 'Nous n\'avons pas trouvé à qui correspond ce paiement.',
+
+        STRIPE_REQUEST_FAILED: 'Le service de paiement n\'a pas répondu. Réessayez dans un moment.',
+
+        SUBSCRIPTION_NOT_FROM_STRIPE: 'Cet abonnement n\'a pas été acheté ici, il ne se gère donc pas ici.',
+
+        PLAN_IS_FOR_COMMUNITIES: 'Cet abonnement est pour une crew ou un serveur, pas pour une personne.',
+
+        PLAN_NOT_PURCHASABLE: 'Cet abonnement n\'est pas en vente.',
+
+        PLAN_WRONG_OWNER: 'Cet abonnement ne convient pas à ce type de titulaire.',
+
+        API_KEY_NOT_FOUND: 'Nous n\'avons pas trouvé cette clé.',
+
+        INVALID_API_KEY: 'Cette clé a été refusée.',
+
+        TOO_MANY_API_KEYS: 'Ce serveur a déjà autant de clés que possible. Révoquez-en une d\'abord.',
+
+        CANNOT_FRIEND_SELF: 'Vous ne pouvez pas vous ajouter vous-même.',
+
+        ALREADY_FRIENDS: 'Vous êtes déjà amis.',
+
+        ALREADY_REQUESTED: 'Vous avez déjà demandé.',
+
+        FRIENDSHIP_NOT_FOUND: 'Nous n\'avons pas trouvé cette demande.',
+
+        FRIENDSHIP_NOT_PENDING: 'Cette demande a déjà reçu une réponse.',
+
+        CANNOT_ACCEPT_OWN_REQUEST: 'Vous ne pouvez pas accepter votre propre demande.',
+
+        TOPIC_NOT_FOUND: 'Cette question n\'existe pas ou a été retirée.',
+
+        REPLY_NOT_FOUND: 'Cette réponse n\'existe pas ou a été retirée.',
+
+        TOPIC_LOCKED: 'Cette question est fermée aux nouvelles réponses.',
+
+        NOT_YOURS: 'Seul l\'auteur peut retirer ceci.',
+
+    },
+
     forum: {
 
         titulo: 'Forum',
@@ -832,6 +1030,8 @@ export const fr = (p: Tools): Messages => ({
     },
 
     zonaPerigo: {
+
+        aindaMandasEm: (nomes: string) => `Vous êtes la seule personne aux commandes de : ${nomes}. Transmettez le rôle à quelqu'un d'autre, ou supprimez ces communautés, avant de supprimer votre compte.`,
         crewTitulo: 'Supprimer ce crew',
         servidorTitulo: 'Supprimer ce serveur',
         crewExplicacao:

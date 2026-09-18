@@ -366,6 +366,204 @@ export const en = (p: Tools) => ({
             'ViceHub is an independent platform, not affiliated with or endorsed by Rockstar Games, Take-Two Interactive, or any game publisher. Game names and trademarks belong to their owners.',
     },
 
+    erros: {
+
+        INVALID_CREDENTIALS: 'That email and password do not match.',
+
+        ACCOUNT_LOCKED: 'Too many failed attempts. Try again shortly.',
+
+        EMAIL_ALREADY_EXISTS: 'An account with this email already exists.',
+
+        USERNAME_ALREADY_EXISTS: 'That name is taken. Pick another.',
+
+        INVALID_ACCESS_TOKEN: 'Your session is no longer valid. Sign in again.',
+
+        INVALID_REFRESH_TOKEN: 'Your session expired. Sign in again.',
+
+        SESSION_EXPIRED: 'Your session expired. Sign in again.',
+
+        REFRESH_TOKEN_REUSED: 'This session was ended for safety. Sign in again.',
+
+        SESSION_NOT_FOUND: 'This session no longer exists.',
+
+        USER_NOT_FOUND: 'We could not find this player.',
+
+        INVALID_ACCOUNT_TOKEN: 'This link no longer works. Ask for another.',
+
+        EMAIL_ALREADY_VERIFIED: 'This address is already confirmed.',
+
+        ACCOUNT_DELETION_NOT_CONFIRMED: 'The confirmation does not match. Type your name exactly as it appears.',
+
+        ACCOUNT_LEADS_COMMUNITIES: 'You still lead a crew or a server. Hand it over or close it first.',
+
+        ACCOUNT_HAS_ACTIVE_PLAN: 'You still have an active plan. Cancel it before deleting the account.',
+
+        FEDERATED_NOT_CONFIGURED: 'This way of signing in is not available yet.',
+
+        FEDERATED_UNAVAILABLE: 'We could not reach that service. Try again shortly.',
+
+        FEDERATED_EXCHANGE_FAILED: 'Signing in that way did not work. Try again.',
+
+        FEDERATED_STATE_MISMATCH: 'This sign-in took too long or was started elsewhere. Start again.',
+
+        FEDERATED_EMAIL_UNUSABLE: 'That account has no usable email address.',
+
+        INSUFFICIENT_PERMISSIONS: 'You are not allowed to do that.',
+
+        LAST_ROLE_HOLDER: 'This is the last person with that role. Give it to someone else first.',
+
+        CREW_NOT_FOUND: 'We could not find this crew.',
+
+        CREW_NAME_TAKEN: 'A crew with this name already exists.',
+
+        CREW_TAG_TAKEN: 'That tag is taken. Pick another.',
+
+        SERVER_NOT_FOUND: 'We could not find this server.',
+
+        SERVER_NAME_TAKEN: 'A server with this name already exists.',
+
+        MEMBERSHIP_NOT_FOUND: 'We could not find that application.',
+
+        ALREADY_MEMBER: 'You are already a member.',
+
+        NOT_A_MEMBER: 'Only members can do that.',
+
+        MEMBERSHIP_NOT_PENDING: 'This application has already been answered.',
+
+        CANNOT_MANAGE_SELF: 'You cannot do that to yourself.',
+
+        CREW_HAS_FUNDS: 'The crew treasury still holds money. Empty it first.',
+
+        SERVER_HAS_FUNDS: 'The server treasury still holds money. Empty it first.',
+
+        CREW_HAS_OPEN_DECISIONS: 'There are still decisions waiting. Settle them first.',
+
+        SERVER_HAS_OPEN_DECISIONS: 'There are still decisions waiting. Settle them first.',
+
+        CREW_HAS_ACTIVE_PLAN: 'The crew still has an active plan. Cancel it first.',
+
+        SERVER_HAS_ACTIVE_PLAN: 'The server still has an active plan. Cancel it first.',
+
+        AFFILIATION_NOT_FOUND: 'We could not find that affiliation.',
+
+        CREW_ALREADY_AFFILIATED: 'This crew already plays on a server.',
+
+        AFFILIATION_ALREADY_REQUESTED: 'This crew has already asked to play here.',
+
+        AFFILIATION_NOT_PENDING: 'This request has already been answered.',
+
+        SERVER_CREW_LIMIT_REACHED: 'This server has as many crews as its plan allows.',
+
+        EVENT_NOT_FOUND: 'We could not find this event.',
+
+        INVALID_EVENT_OWNER: 'This event belongs to another community.',
+
+        EVENT_NOT_SCHEDULED: 'You can only sign up to an event that has not started.',
+
+        EVENT_ALREADY_CLOSED: 'This event is already closed.',
+
+        INVALID_STATUS_TRANSITION: 'This event is no longer in a state that allows that.',
+
+        EVENT_FULL: 'This event is full.',
+
+        ALREADY_SIGNED_UP: 'You are already signed up.',
+
+        NOT_SIGNED_UP: 'This player did not sign up to this event.',
+
+        ATTENDANCE_NOT_CONFIRMABLE: 'You cannot confirm attendance at a cancelled event.',
+
+        STARTS_IN_THE_PAST: 'An event cannot start in the past.',
+
+        ENDS_BEFORE_IT_STARTS: 'An event cannot end before it starts.',
+
+        WALLET_NOT_FOUND: 'We could not find that wallet.',
+
+        INVALID_WALLET_OWNER: 'That wallet belongs to somebody else.',
+
+        MOVEMENT_NOT_FOUND: 'We could not find that movement.',
+
+        MOVEMENT_NOT_PENDING: 'This movement has already been decided.',
+
+        INSUFFICIENT_FUNDS: 'There is not enough available to cover this.',
+
+        BALANCE_WOULD_OVERFLOW: 'That amount is larger than a treasury can hold.',
+
+        NOT_THE_PROPOSER: 'Only whoever proposed this can withdraw it.',
+
+        DISTRIBUTION_NOT_FOUND: 'We could not find that split.',
+
+        DISTRIBUTION_NOT_PENDING: 'This split has already been decided.',
+
+        NO_MEMBERS_TO_PAY: 'There is nobody to pay.',
+
+        EVENT_NOT_IN_THIS_TREASURY: 'That event does not belong to this community.',
+
+        NO_CONFIRMED_PARTICIPANTS: 'Nobody had their attendance confirmed at that event.',
+
+        SHARES_DO_NOT_MATCH_TOTAL: 'The shares do not add up to the total.',
+
+        CREW_DOES_NOT_PLAY_HERE: 'That crew does not play on this server.',
+
+        SUBSCRIPTION_REQUIRED: 'This needs an active plan.',
+
+        INVALID_SUBSCRIPTION_OWNER: 'That plan belongs to somebody else.',
+
+        SUBSCRIPTION_OWNER_NOT_FOUND: 'We could not find who that plan is for.',
+
+        SUBSCRIPTION_NOT_FOUND: 'We could not find that plan.',
+
+        SUBSCRIPTION_ALREADY_CANCELED: 'This plan is already set to end.',
+
+        SUBSCRIPTION_ALREADY_ENDED: 'This plan has already ended.',
+
+        LIFETIME_HAS_NO_DURATION: 'A lifetime plan has no end date.',
+
+        LIFETIME_CANNOT_BE_CANCELED: 'A lifetime plan does not get cancelled. It gets revoked.',
+
+        ALREADY_LIFETIME: 'This account already has a lifetime plan.',
+
+        BILLING_NOT_CONFIGURED: 'Payments are not set up yet. Try again later.',
+
+        BILLING_OWNER_NOT_FOUND: 'We could not find who this payment is for.',
+
+        STRIPE_REQUEST_FAILED: 'The payment service did not answer. Try again shortly.',
+
+        SUBSCRIPTION_NOT_FROM_STRIPE: 'This plan was not bought here, so it cannot be managed here.',
+
+        PLAN_IS_FOR_COMMUNITIES: 'That plan is for a crew or a server, not for a person.',
+
+        PLAN_NOT_PURCHASABLE: 'That plan is not for sale.',
+
+        PLAN_WRONG_OWNER: 'That plan does not go with this kind of owner.',
+
+        API_KEY_NOT_FOUND: 'We could not find that key.',
+
+        INVALID_API_KEY: 'That key was refused.',
+
+        TOO_MANY_API_KEYS: 'This server already has as many keys as it can hold. Revoke one first.',
+
+        CANNOT_FRIEND_SELF: 'You cannot add yourself.',
+
+        ALREADY_FRIENDS: 'You are already friends.',
+
+        ALREADY_REQUESTED: 'You have already asked.',
+
+        FRIENDSHIP_NOT_FOUND: 'We could not find that request.',
+
+        FRIENDSHIP_NOT_PENDING: 'This request has already been answered.',
+
+        CANNOT_ACCEPT_OWN_REQUEST: 'You cannot accept your own request.',
+
+        TOPIC_NOT_FOUND: 'This question does not exist or was removed.',
+
+        REPLY_NOT_FOUND: 'This reply does not exist or was removed.',
+
+        TOPIC_LOCKED: 'This question is closed to new replies.',
+
+        NOT_YOURS: 'Only whoever wrote this can remove it.',
+
+    },
+
     forum: {
 
         titulo: 'Forum',
@@ -842,6 +1040,8 @@ export const en = (p: Tools) => ({
     },
 
     zonaPerigo: {
+
+        aindaMandasEm: (nomes: string) => `You are the only person in charge of: ${nomes}. Hand the role to somebody else, or delete those communities, before deleting your account.`,
         crewTitulo: 'Delete this crew',
         servidorTitulo: 'Delete this server',
         crewExplicacao:

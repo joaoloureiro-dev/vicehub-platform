@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { Alert } from '../../auth/components/alert.js';
 import { Field } from '../../auth/components/field.js';
 import { createCrew } from '../crew.api.js';
@@ -49,9 +50,11 @@ export const CreateCrewPage = () => {
                 setErro(t.crews.tagOcupada);
             } else {
                 setErro(
-                    falha instanceof ApiError
-                        ? falha.message
-                        : t.crews.naoFoiPossivelCriar,
+                    mensagemDoErro(
+                            falha,
+                            t,
+                            t.crews.naoFoiPossivelCriar,
+                        ),
                 );
             }
 

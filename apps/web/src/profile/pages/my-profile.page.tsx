@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 
-import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
@@ -124,9 +124,11 @@ export const MyProfilePage = () => {
                 onde: 'perfil',
                 tipo: 'bad',
                 texto:
-                    falha instanceof ApiError
-                        ? falha.message
-                        : t.perfil.naoFoiPossivelPerfil,
+                    mensagemDoErro(
+                            falha,
+                            t,
+                            t.perfil.naoFoiPossivelPerfil,
+                        ),
             });
         } finally {
             setAGuardar(false);

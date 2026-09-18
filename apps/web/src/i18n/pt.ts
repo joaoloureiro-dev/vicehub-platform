@@ -352,6 +352,204 @@ export const pt = (p: Tools): Messages => ({
             'O ViceHub é uma plataforma independente, sem ligação nem aprovação da Rockstar Games, da Take-Two Interactive ou de qualquer editora. Os nomes e marcas dos jogos pertencem a quem os detém.',
     },
 
+    erros: {
+
+        INVALID_CREDENTIALS: 'Esse email e essa password não correspondem.',
+
+        ACCOUNT_LOCKED: 'Demasiadas tentativas falhadas. Tenta daqui a pouco.',
+
+        EMAIL_ALREADY_EXISTS: 'Já existe uma conta com este email.',
+
+        USERNAME_ALREADY_EXISTS: 'Esse nome está ocupado. Escolhe outro.',
+
+        INVALID_ACCESS_TOKEN: 'A tua sessão já não é válida. Entra outra vez.',
+
+        INVALID_REFRESH_TOKEN: 'A tua sessão expirou. Entra outra vez.',
+
+        SESSION_EXPIRED: 'A tua sessão expirou. Entra outra vez.',
+
+        REFRESH_TOKEN_REUSED: 'Esta sessão foi terminada por segurança. Entra outra vez.',
+
+        SESSION_NOT_FOUND: 'Esta sessão já não existe.',
+
+        USER_NOT_FOUND: 'Não encontrámos este jogador.',
+
+        INVALID_ACCOUNT_TOKEN: 'Este link já não funciona. Pede outro.',
+
+        EMAIL_ALREADY_VERIFIED: 'Este endereço já está confirmado.',
+
+        ACCOUNT_DELETION_NOT_CONFIRMED: 'A confirmação não corresponde. Escreve o teu nome exatamente como aparece.',
+
+        ACCOUNT_LEADS_COMMUNITIES: 'Ainda lideras uma crew ou um servidor. Passa a liderança ou fecha-o primeiro.',
+
+        ACCOUNT_HAS_ACTIVE_PLAN: 'Ainda tens um plano ativo. Cancela-o antes de apagar a conta.',
+
+        FEDERATED_NOT_CONFIGURED: 'Esta forma de entrar ainda não está disponível.',
+
+        FEDERATED_UNAVAILABLE: 'Não conseguimos falar com esse serviço. Tenta daqui a pouco.',
+
+        FEDERATED_EXCHANGE_FAILED: 'Entrar por aí não resultou. Tenta outra vez.',
+
+        FEDERATED_STATE_MISMATCH: 'Esta entrada demorou de mais ou começou noutro sítio. Começa de novo.',
+
+        FEDERATED_EMAIL_UNUSABLE: 'Essa conta não tem um endereço de email que sirva.',
+
+        INSUFFICIENT_PERMISSIONS: 'Não tens autorização para fazer isso.',
+
+        LAST_ROLE_HOLDER: 'Esta é a última pessoa com esse cargo. Dá-o a outra pessoa primeiro.',
+
+        CREW_NOT_FOUND: 'Não encontrámos esta crew.',
+
+        CREW_NAME_TAKEN: 'Já existe uma crew com este nome.',
+
+        CREW_TAG_TAKEN: 'Essa tag está ocupada. Escolhe outra.',
+
+        SERVER_NOT_FOUND: 'Não encontrámos este servidor.',
+
+        SERVER_NAME_TAKEN: 'Já existe um servidor com este nome.',
+
+        MEMBERSHIP_NOT_FOUND: 'Não encontrámos essa candidatura.',
+
+        ALREADY_MEMBER: 'Já és membro.',
+
+        NOT_A_MEMBER: 'Só membros podem fazer isso.',
+
+        MEMBERSHIP_NOT_PENDING: 'Esta candidatura já foi respondida.',
+
+        CANNOT_MANAGE_SELF: 'Não podes fazer isso a ti próprio.',
+
+        CREW_HAS_FUNDS: 'A tesouraria da crew ainda tem dinheiro. Esvazia-a primeiro.',
+
+        SERVER_HAS_FUNDS: 'A tesouraria do servidor ainda tem dinheiro. Esvazia-a primeiro.',
+
+        CREW_HAS_OPEN_DECISIONS: 'Ainda há decisões à espera. Resolve-as primeiro.',
+
+        SERVER_HAS_OPEN_DECISIONS: 'Ainda há decisões à espera. Resolve-as primeiro.',
+
+        CREW_HAS_ACTIVE_PLAN: 'A crew ainda tem um plano ativo. Cancela-o primeiro.',
+
+        SERVER_HAS_ACTIVE_PLAN: 'O servidor ainda tem um plano ativo. Cancela-o primeiro.',
+
+        AFFILIATION_NOT_FOUND: 'Não encontrámos essa filiação.',
+
+        CREW_ALREADY_AFFILIATED: 'Esta crew já joga num servidor.',
+
+        AFFILIATION_ALREADY_REQUESTED: 'Esta crew já pediu para jogar aqui.',
+
+        AFFILIATION_NOT_PENDING: 'Este pedido já foi respondido.',
+
+        SERVER_CREW_LIMIT_REACHED: 'Este servidor tem tantas crews quantas o plano dele permite.',
+
+        EVENT_NOT_FOUND: 'Não encontrámos este evento.',
+
+        INVALID_EVENT_OWNER: 'Este evento é de outra comunidade.',
+
+        EVENT_NOT_SCHEDULED: 'Só é possível inscrever-se num evento que ainda não começou.',
+
+        EVENT_ALREADY_CLOSED: 'Este evento já está fechado.',
+
+        INVALID_STATUS_TRANSITION: 'Este evento já não está num estado que permita isso.',
+
+        EVENT_FULL: 'Este evento está cheio.',
+
+        ALREADY_SIGNED_UP: 'Já estás inscrito.',
+
+        NOT_SIGNED_UP: 'Este jogador não se inscreveu neste evento.',
+
+        ATTENDANCE_NOT_CONFIRMABLE: 'Não se confirmam presenças num evento cancelado.',
+
+        STARTS_IN_THE_PAST: 'Um evento não pode começar no passado.',
+
+        ENDS_BEFORE_IT_STARTS: 'Um evento não pode acabar antes de começar.',
+
+        WALLET_NOT_FOUND: 'Não encontrámos essa carteira.',
+
+        INVALID_WALLET_OWNER: 'Essa carteira é de outra pessoa.',
+
+        MOVEMENT_NOT_FOUND: 'Não encontrámos esse movimento.',
+
+        MOVEMENT_NOT_PENDING: 'Este movimento já foi decidido.',
+
+        INSUFFICIENT_FUNDS: 'Não há disponível que chegue para isto.',
+
+        BALANCE_WOULD_OVERFLOW: 'Esse montante é maior do que uma tesouraria consegue guardar.',
+
+        NOT_THE_PROPOSER: 'Só quem propôs isto o pode retirar.',
+
+        DISTRIBUTION_NOT_FOUND: 'Não encontrámos essa divisão.',
+
+        DISTRIBUTION_NOT_PENDING: 'Esta divisão já foi decidida.',
+
+        NO_MEMBERS_TO_PAY: 'Não há ninguém a quem pagar.',
+
+        EVENT_NOT_IN_THIS_TREASURY: 'Esse evento não é desta comunidade.',
+
+        NO_CONFIRMED_PARTICIPANTS: 'Ninguém teve a presença confirmada nesse evento.',
+
+        SHARES_DO_NOT_MATCH_TOTAL: 'As partes não somam o total.',
+
+        CREW_DOES_NOT_PLAY_HERE: 'Essa crew não joga neste servidor.',
+
+        SUBSCRIPTION_REQUIRED: 'Isto precisa de um plano ativo.',
+
+        INVALID_SUBSCRIPTION_OWNER: 'Esse plano é de outra pessoa.',
+
+        SUBSCRIPTION_OWNER_NOT_FOUND: 'Não encontrámos de quem é esse plano.',
+
+        SUBSCRIPTION_NOT_FOUND: 'Não encontrámos esse plano.',
+
+        SUBSCRIPTION_ALREADY_CANCELED: 'Este plano já está marcado para terminar.',
+
+        SUBSCRIPTION_ALREADY_ENDED: 'Este plano já terminou.',
+
+        LIFETIME_HAS_NO_DURATION: 'Um plano vitalício não tem data de fim.',
+
+        LIFETIME_CANNOT_BE_CANCELED: 'Um plano vitalício não se cancela. Revoga-se.',
+
+        ALREADY_LIFETIME: 'Esta conta já tem um plano vitalício.',
+
+        BILLING_NOT_CONFIGURED: 'Os pagamentos ainda não estão configurados. Tenta mais tarde.',
+
+        BILLING_OWNER_NOT_FOUND: 'Não encontrámos de quem é este pagamento.',
+
+        STRIPE_REQUEST_FAILED: 'O serviço de pagamentos não respondeu. Tenta daqui a pouco.',
+
+        SUBSCRIPTION_NOT_FROM_STRIPE: 'Este plano não foi comprado aqui, por isso não se gere aqui.',
+
+        PLAN_IS_FOR_COMMUNITIES: 'Esse plano é para uma crew ou um servidor, não para uma pessoa.',
+
+        PLAN_NOT_PURCHASABLE: 'Esse plano não está à venda.',
+
+        PLAN_WRONG_OWNER: 'Esse plano não serve para este tipo de titular.',
+
+        API_KEY_NOT_FOUND: 'Não encontrámos essa chave.',
+
+        INVALID_API_KEY: 'Essa chave foi recusada.',
+
+        TOO_MANY_API_KEYS: 'Este servidor já tem tantas chaves quantas pode ter. Revoga uma primeiro.',
+
+        CANNOT_FRIEND_SELF: 'Não te podes adicionar a ti próprio.',
+
+        ALREADY_FRIENDS: 'Já são amigos.',
+
+        ALREADY_REQUESTED: 'Já pediste.',
+
+        FRIENDSHIP_NOT_FOUND: 'Não encontrámos esse pedido.',
+
+        FRIENDSHIP_NOT_PENDING: 'Este pedido já foi respondido.',
+
+        CANNOT_ACCEPT_OWN_REQUEST: 'Não podes aceitar o teu próprio pedido.',
+
+        TOPIC_NOT_FOUND: 'Esta pergunta não existe ou foi retirada.',
+
+        REPLY_NOT_FOUND: 'Esta resposta não existe ou foi retirada.',
+
+        TOPIC_LOCKED: 'Esta pergunta está fechada a respostas novas.',
+
+        NOT_YOURS: 'Só quem escreveu isto o pode retirar.',
+
+    },
+
     forum: {
 
         titulo: 'Fórum',
@@ -830,6 +1028,8 @@ export const pt = (p: Tools): Messages => ({
     },
 
     zonaPerigo: {
+
+        aindaMandasEm: (nomes: string) => `És a única pessoa que manda em: ${nomes}. Passa o cargo a outra pessoa, ou apaga essas comunidades, antes de apagares a conta.`,
         crewTitulo: 'Apagar esta crew',
         servidorTitulo: 'Apagar este servidor',
         crewExplicacao:

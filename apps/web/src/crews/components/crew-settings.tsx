@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 
 import { Alert } from '../../auth/components/alert.js';
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { useT } from '../../i18n/i18n.js';
 import { updateCrew } from '../crew.api.js';
 import type { CrewProfile } from '../crew.types.js';
@@ -74,9 +75,11 @@ export const CrewSettings = ({ crew, aoGuardar }: CrewSettingsProps) => {
                 texto:
                     falha instanceof ApiError && falha.code === 'CREW_NAME_TAKEN'
                         ? t.crews.nomeJaExiste
-                        : falha instanceof ApiError
-                          ? falha.message
-                          : t.comum.naoFoiPossivel,
+                        : mensagemDoErro(
+                              falha,
+                              t,
+                              t.comum.naoFoiPossivel,
+                          ),
             });
         } finally {
             setAGuardar(false);

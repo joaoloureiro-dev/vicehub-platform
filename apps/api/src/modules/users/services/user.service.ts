@@ -139,13 +139,14 @@ export class UserService {
         }
 
         if (impedimentos.orphanedCommunities.length > 0) {
-            const nomes = impedimentos.orphanedCommunities
-                .map((comunidade) => comunidade.name)
-                .join(', ');
+            const nomes = impedimentos.orphanedCommunities.map(
+                (comunidade) => comunidade.name,
+            );
 
             throw new UserError(
                 'ACCOUNT_LEADS_COMMUNITIES',
-                `És a única pessoa que manda em: ${nomes}. Passa o cargo a outra pessoa ou apaga essas comunidades antes de apagares a conta.`,
+                `És a única pessoa que manda em: ${nomes.join(', ')}. Passa o cargo a outra pessoa ou apaga essas comunidades antes de apagares a conta.`,
+                nomes,
             );
         }
 

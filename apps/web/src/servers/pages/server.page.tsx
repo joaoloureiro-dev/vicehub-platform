@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
-import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { carregarCandidaturas } from '../../lib/membership.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
@@ -94,9 +94,11 @@ export const ServerPage = () => {
             candidaturas.reload();
         } catch (falha) {
             setErroAcao(
-                falha instanceof ApiError
-                    ? falha.message
-                    : t.comum.naoFoiPossivel,
+                mensagemDoErro(
+                        falha,
+                        t,
+                        t.comum.naoFoiPossivel,
+                    ),
             );
         } finally {
             setAAgir(false);

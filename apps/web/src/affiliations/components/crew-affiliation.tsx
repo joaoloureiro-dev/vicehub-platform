@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 
 import { Alert } from '../../auth/components/alert.js';
-import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useT } from '../../i18n/i18n.js';
 import { listServers } from '../../servers/server.api.js';
@@ -57,7 +57,7 @@ export const CrewAffiliation = ({ crewId, podeGerir }: CrewAffiliationProps) => 
             filiacao.reload();
         } catch (falha) {
             setErro(
-                falha instanceof ApiError ? falha.message : t.comum.naoFoiPossivel,
+                mensagemDoErro(falha, t, t.comum.naoFoiPossivel),
             );
         } finally {
             setAAgir(false);

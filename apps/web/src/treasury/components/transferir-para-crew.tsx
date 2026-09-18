@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { Alert } from '../../auth/components/alert.js';
 import { listServerCrews } from '../../affiliations/affiliation.api.js';
 import { useAsync } from '../../lib/use-async.js';
@@ -93,9 +94,11 @@ export const TransferirParaCrew = ({
                 setMensagem({
                     tipo: 'bad',
                     texto:
-                        falha instanceof ApiError
-                            ? falha.message
-                            : t.tesouraria.naoFoiPossivel,
+                        mensagemDoErro(
+                                falha,
+                                t,
+                                t.tesouraria.naoFoiPossivel,
+                            ),
                 });
             })
             .finally(() => setAAgir(false));

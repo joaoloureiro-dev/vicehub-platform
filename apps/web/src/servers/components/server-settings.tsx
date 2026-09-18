@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 
 import { Alert } from '../../auth/components/alert.js';
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { useT } from '../../i18n/i18n.js';
 import { updateServer } from '../server.api.js';
 import type { ServerProfile } from '../server.types.js';
@@ -83,9 +84,11 @@ export const ServerSettings = ({ servidor, aoGuardar }: ServerSettingsProps) => 
                     falha instanceof ApiError &&
                     falha.code === 'SERVER_NAME_TAKEN'
                         ? t.servidores.nomeJaExiste
-                        : falha instanceof ApiError
-                          ? falha.message
-                          : t.comum.naoFoiPossivel,
+                        : mensagemDoErro(
+                              falha,
+                              t,
+                              t.comum.naoFoiPossivel,
+                          ),
             });
         } finally {
             setAGuardar(false);
