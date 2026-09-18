@@ -184,14 +184,6 @@ export const CrewPage = () => {
                     <dd>{perfil.xp}</dd>
                 </div>
                 <div>
-                    <dt>{t.crews.influencia}</dt>
-                    <dd>{perfil.influence}</dd>
-                </div>
-                <div>
-                    <dt>{t.crews.prestigio}</dt>
-                    <dd>{perfil.prestige}</dd>
-                </div>
-                <div>
                     <dt>{t.crews.contagemMembros}</dt>
                     <dd>{perfil.memberCount}</dd>
                 </div>

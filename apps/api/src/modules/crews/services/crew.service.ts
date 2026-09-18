@@ -782,8 +782,6 @@ export class CrewService {
             levelXp: progresso.xpDoNivelAtual,
             nextLevelXp: progresso.xpDoNivelSeguinte,
             rank,
-            influence: crew.influence,
-            prestige: crew.prestige,
             isPremium: entitlement.isPremium,
             premiumVia: entitlement.via,
             appearance: visibleAppearance(crew, entitlement.isPremium),

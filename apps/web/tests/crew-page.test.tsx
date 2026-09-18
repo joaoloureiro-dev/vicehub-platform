@@ -20,8 +20,6 @@ const perfil = {
     levelXp: '495000',
     nextLevelXp: null,
     rank: { position: 3, of: 12 },
-    influence: 12,
-    prestige: 3,
     isPremium: false,
     premiumVia: null,
     appearance: { bannerUrl: null, accentColor: null },

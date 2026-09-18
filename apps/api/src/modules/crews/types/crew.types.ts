@@ -13,8 +13,6 @@ export interface CrewRecord {
     accent_color: string | null;
     level: number;
     xp: bigint;
-    influence: number;
-    prestige: number;
     created_at: Date;
 }
 
@@ -55,8 +53,6 @@ export interface CrewProfile {
     rank: { position: number; of: number } | null;
     /** O xp que o nível seguinte exige, ou null no topo. */
     nextLevelXp: bigint | null;
-    influence: number;
-    prestige: number;
     isPremium: boolean;
     /**
      * De onde vem o plano, quando não é da própria crew.

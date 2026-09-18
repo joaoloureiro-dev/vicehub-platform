@@ -44,8 +44,6 @@ const crew = (isPremium: boolean) => ({
     levelXp: '100',
     nextLevelXp: '300',
     rank: null,
-    influence: 0,
-    prestige: 0,
     isPremium,
     premiumVia: null,
     appearance: { bannerUrl: null, accentColor: null },
