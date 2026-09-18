@@ -674,6 +674,10 @@ oferecida é a espécie de erro que ninguém repara e toda a gente acha mal.
 
 ### O servidor de jogo a falar connosco
 
+O que o jogo diz hoje, o que falta, e as decisões que ficam por tomar
+para quando houver ferramentas de servidor para GTA VI, estão em
+[`docs/arquitetura/dados-do-jogo.md`](docs/arquitetura/dados-do-jogo.md).
+
 | Rota | Quem pode |
 |---|---|
 | `POST /api/v1/servers/:serverId/api-keys` | quem manda no servidor |
