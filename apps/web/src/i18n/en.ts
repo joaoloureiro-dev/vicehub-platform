@@ -365,6 +365,12 @@ export const en = (p: Tools) => ({
             'ViceHub is an independent platform, not affiliated with or endorsed by Rockstar Games, Take-Two Interactive, or any game publisher. Game names and trademarks belong to their owners.',
     },
 
+    noticias: {
+
+        titulo: 'What\'s happening in the game',
+
+    },
+
     perfil: {
         apagarConta: 'Delete my account',
         apagarContaExplicacao:

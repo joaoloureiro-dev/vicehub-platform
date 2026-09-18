@@ -119,6 +119,19 @@ const envSchema = z.object({
     WEB_DIST_PATH: z.string().min(1).optional(),
 
     /**
+     * De onde vêm as notícias do bloco da página de entrada.
+     *
+     * Um feed RSS ou Atom. Sem ela, a recolha não faz nada e o bloco não
+     * aparece — a página de entrada não deve depender do site de outra
+     * pessoa estar de pé.
+     *
+     * Quem a lê é o guião da recolha, `scripts/news-fetch.ts`, que corre
+     * num cron. Fica declarada aqui na mesma: é uma variável da
+     * plataforma, e o `.env.example` é a lista de tudo o que ela precisa.
+     */
+    NEWS_FEED_URL: z.string().url().optional(),
+
+    /**
      * Quanto tempo o encerramento espera antes de fechar a porta.
      *
      * Recebido o sinal, a sonda de prontidão passa a responder 503 e a

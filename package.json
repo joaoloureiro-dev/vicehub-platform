@@ -1,71 +1,72 @@
 {
-  "name": "vicehub",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Ecossistema SaaS gaming para jogadores, crews, servidores, criadores e marketplace.",
-  "license": "UNLICENSED",
-  "engines": {
-    "node": ">=22.0.0",
-    "npm": ">=10.0.0"
-  },
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-  "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "start": "node apps/api/dist/server.js",
-    "dev": "node scripts/dev.mjs",
-    "dev:api": "npm run dev --workspace=@vicehub/api",
-    "dev:web": "npm run dev --workspace=@vicehub/web",
-    "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "test:integration": "npm run test:integration --workspaces --if-present",
-    "test:lua": "lua5.4 resources/vicehub/tests/server.test.lua",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "db:generate": "npm run db:generate --workspace=@vicehub/database",
-    "db:migrate:dev": "npm run db:migrate:dev --workspace=@vicehub/database",
-    "db:migrate:deploy": "npm run db:migrate:deploy --workspace=@vicehub/database",
-    "db:validate": "npm run db:validate --workspace=@vicehub/database",
-    "db:drift": "npm run db:drift --workspace=@vicehub/database",
-    "db:seed": "npm run db:seed --workspace=@vicehub/database",
-    "db:prune": "npm run db:prune --workspace=@vicehub/database --",
-    "db:studio": "npm run db:studio --workspace=@vicehub/database",
-    "admin:grant": "npm run admin:grant --workspace=@vicehub/database --",
-    "admin:revoke": "npm run admin:revoke --workspace=@vicehub/database --",
-    "admin:list": "npm run admin:list --workspace=@vicehub/database"
-  },
-  "devDependencies": {
-    "@types/jsonwebtoken": "9.0.10",
-    "prettier": "3.9.1"
-  },
-  "dependencies": {
-    "@fastify/cookie": "11.1.2",
-    "@fastify/jwt": "10.2.0",
-    "argon2": "0.44.0"
-  },
-  "optionalDependencies": {
-    "@esbuild/darwin-arm64": "0.28.1",
-    "@esbuild/darwin-x64": "0.28.1",
-    "@esbuild/linux-arm64": "0.28.1",
-    "@esbuild/linux-x64": "0.28.1",
-    "@esbuild/win32-x64": "0.28.1",
-    "@rolldown/binding-darwin-arm64": "1.1.4",
-    "@rolldown/binding-darwin-x64": "1.1.4",
-    "@rolldown/binding-linux-arm64-gnu": "1.1.4",
-    "@rolldown/binding-linux-x64-gnu": "1.1.4",
-    "@rolldown/binding-win32-x64-msvc": "1.1.4",
-    "lightningcss-darwin-arm64": "1.32.0",
-    "lightningcss-darwin-x64": "1.32.0",
-    "lightningcss-linux-arm64-gnu": "1.32.0",
-    "lightningcss-linux-x64-gnu": "1.32.0",
-    "lightningcss-win32-x64-msvc": "1.32.0"
-  },
-  "allowScripts": {
-    "argon2@0.44.0": true,
-    "@prisma/engines@7.8.0": true,
-    "esbuild@0.28.1": true
-  }
+    "name": "vicehub",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Ecossistema SaaS gaming para jogadores, crews, servidores, criadores e marketplace.",
+    "license": "UNLICENSED",
+    "engines": {
+        "node": ">=22.0.0",
+        "npm": ">=10.0.0"
+    },
+    "workspaces": [
+        "packages/*",
+        "apps/*"
+    ],
+    "scripts": {
+        "build": "npm run build --workspaces --if-present",
+        "start": "node apps/api/dist/server.js",
+        "dev": "node scripts/dev.mjs",
+        "dev:api": "npm run dev --workspace=@vicehub/api",
+        "dev:web": "npm run dev --workspace=@vicehub/web",
+        "lint": "npm run lint --workspaces --if-present",
+        "typecheck": "npm run typecheck --workspaces --if-present",
+        "test": "npm run test --workspaces --if-present",
+        "test:integration": "npm run test:integration --workspaces --if-present",
+        "test:lua": "lua5.4 resources/vicehub/tests/server.test.lua",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "db:generate": "npm run db:generate --workspace=@vicehub/database",
+        "db:migrate:dev": "npm run db:migrate:dev --workspace=@vicehub/database",
+        "db:migrate:deploy": "npm run db:migrate:deploy --workspace=@vicehub/database",
+        "db:validate": "npm run db:validate --workspace=@vicehub/database",
+        "db:drift": "npm run db:drift --workspace=@vicehub/database",
+        "db:seed": "npm run db:seed --workspace=@vicehub/database",
+        "db:prune": "npm run db:prune --workspace=@vicehub/database --",
+        "db:studio": "npm run db:studio --workspace=@vicehub/database",
+        "admin:grant": "npm run admin:grant --workspace=@vicehub/database --",
+        "admin:revoke": "npm run admin:revoke --workspace=@vicehub/database --",
+        "admin:list": "npm run admin:list --workspace=@vicehub/database",
+        "news:fetch": "npm run news:fetch --workspace=@vicehub/api"
+    },
+    "devDependencies": {
+        "@types/jsonwebtoken": "9.0.10",
+        "prettier": "3.9.1"
+    },
+    "dependencies": {
+        "@fastify/cookie": "11.1.2",
+        "@fastify/jwt": "10.2.0",
+        "argon2": "0.44.0"
+    },
+    "optionalDependencies": {
+        "@esbuild/darwin-arm64": "0.28.1",
+        "@esbuild/darwin-x64": "0.28.1",
+        "@esbuild/linux-arm64": "0.28.1",
+        "@esbuild/linux-x64": "0.28.1",
+        "@esbuild/win32-x64": "0.28.1",
+        "@rolldown/binding-darwin-arm64": "1.1.4",
+        "@rolldown/binding-darwin-x64": "1.1.4",
+        "@rolldown/binding-linux-arm64-gnu": "1.1.4",
+        "@rolldown/binding-linux-x64-gnu": "1.1.4",
+        "@rolldown/binding-win32-x64-msvc": "1.1.4",
+        "lightningcss-darwin-arm64": "1.32.0",
+        "lightningcss-darwin-x64": "1.32.0",
+        "lightningcss-linux-arm64-gnu": "1.32.0",
+        "lightningcss-linux-x64-gnu": "1.32.0",
+        "lightningcss-win32-x64-msvc": "1.32.0"
+    },
+    "allowScripts": {
+        "argon2@0.44.0": true,
+        "@prisma/engines@7.8.0": true,
+        "esbuild@0.28.1": true
+    }
 }

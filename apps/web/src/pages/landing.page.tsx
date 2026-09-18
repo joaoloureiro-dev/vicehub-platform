@@ -4,6 +4,8 @@ import { CrewCard } from '../crews/components/crew-card.js';
 import { listCrews } from '../crews/crew.api.js';
 import { listPublicEvents } from '../events/event.api.js';
 import { listServers } from '../servers/server.api.js';
+import { Noticias } from '../news/components/noticias.js';
+import { listNews } from '../news/news.api.js';
 import { useAsync } from '../lib/use-async.js';
 import { useIdioma, useT } from '../i18n/i18n.js';
 import { criarTools } from '../i18n/tools.js';
@@ -49,6 +51,14 @@ export const LandingPage = () => {
     );
 
     const servidores = useAsync(() => listServers({ page: 1 }), []);
+
+    /**
+     * O que se passa no jogo. Lido da nossa base de dados e não do feed:
+     * a recolha corre num cron, e uma página de entrada que fosse buscar
+     * o feed a cada visita ficava de pé ou no chão conforme o dia que o
+     * site de outra pessoa estivesse a ter.
+     */
+    const noticias = useAsync(() => listNews(), []);
 
     /**
      * Só os que estão mesmo online. Um servidor apagado da lista por
@@ -100,6 +110,16 @@ export const LandingPage = () => {
               inventado para encher: se ninguém abriu nada, a página
               passa direta ao que faz.
             */}
+            {/*
+              O que se passa no jogo, logo a seguir ao hero.
+              
+              Aqui e não mais abaixo porque é a notícia mais fresca que a
+              página tem, e quem chega a uma plataforma de uma comunidade
+              quer saber duas coisas: se isto tem gente, e o que se está a
+              passar lá fora.
+            */}
+            <Noticias noticias={noticias.data ?? []} />
+
             {eventos.length > 0 ? (
                 <section className="landing-vivo">
                     <div className="landing-vivo-head">

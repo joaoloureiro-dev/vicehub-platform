@@ -343,6 +343,12 @@ export const es = (p: Tools): Messages => ({
             'ViceHub es una plataforma independiente, sin vínculo ni respaldo de Rockstar Games, Take-Two Interactive ni ninguna editora. Los nombres y marcas de los juegos pertenecen a sus dueños.',
     },
 
+    noticias: {
+
+        titulo: 'Lo que pasa en el juego',
+
+    },
+
     perfil: {
         apagarConta: 'Eliminar mi cuenta',
         apagarContaExplicacao:

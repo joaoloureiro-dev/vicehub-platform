@@ -3331,3 +3331,72 @@ button.link:hover {
     font-size: 13px;
     line-height: 1.45;
 }
+
+
+/* ---------- o que se passa no jogo ---------- */
+
+/*
+ * O bloco de notícias é um agregador, e a forma di-lo.
+ *
+ * Cada linha leva a fonte por cima do título, em maiúsculas pequenas:
+ * quem leia só uma das quatro fica na mesma a saber de onde veio. E o
+ * título é a coisa maior da linha, porque é por ele que se decide se
+ * vale a pena seguir o link — o excerto está lá para confirmar, não
+ * para substituir a leitura.
+ */
+.lista-noticias {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--edge);
+}
+
+.lista-noticias li {
+    border-bottom: 1px solid var(--edge);
+}
+
+.lista-noticias a {
+    display: grid;
+    gap: 4px;
+    padding: 16px 0;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.lista-noticias a:hover .noticia-titulo {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.noticia-fonte {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cyan-ink);
+}
+
+.noticia-titulo {
+    font-family: var(--display);
+    font-stretch: 125%;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-wrap: balance;
+}
+
+.noticia-excerto {
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--muted);
+    text-wrap: pretty;
+}
+
+.noticia-quando {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+}
