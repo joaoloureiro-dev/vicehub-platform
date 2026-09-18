@@ -1,9 +1,20 @@
 /*
- * Vice City à noite: néon sobre asfalto molhado.
+ * Vice City de dia: letreiro de néon em papel branco.
  *
- * O tema é escuro por natureza e não segue a preferência do sistema —
- * um HUD de jogo em fundo branco não é o mesmo produto. O que segue a
- * preferência é o movimento, que é acessibilidade e não gosto.
+ * O produto é o arquivo de uma organização — quem entrou, quem apareceu,
+ * quanto se dividiu e para quem. Isso lê-se como **registo**, e um
+ * registo é preto sobre branco: a estrutura vem de filetes e de
+ * hierarquia de letra, não de caixas cinzentas empilhadas.
+ *
+ * **As cores do logótipo entram à saturação máxima, e nunca como
+ * texto.** Não é gosto, é aritmética: sobre branco, o magenta dá 3,30 de
+ * contraste e o ciano 1,81 — os dois reprovam. Texto branco por cima
+ * deles reprova na mesma. Mas **tinta escura por cima passa com folga**
+ * (5,95 e 10,87), que é exatamente como um letreiro funciona: a cor
+ * acende, as letras são o recorte escuro. Por isso um botão desta
+ * plataforma é néon com tinta preta, e o que precisa de ser lido em cor
+ * usa as versões fundas — `--magenta-ink`, `--cyan-ink` —, calculadas
+ * para passarem 4,5 sobre branco.
  *
  * **Escrito do telemóvel para fora.** As regras base servem o ecrã
  * pequeno; as media queries só acrescentam à medida que há espaço. O
@@ -12,44 +23,128 @@
  */
 :root {
     /*
-     * A paleta sai do logótipo, e de mais lado nenhum.
+     * O papel.
      *
-     * O VH é um degradê que atravessa o pôr do sol de Vice City: o V
-     * magenta, o H ciano, e entre eles o violeta onde as duas metades
-     * se encontram. O fundo é o preto do disco, puxado ao violeta em
-     * vez de neutro — um cinzento puro ao lado destes néons parece
-     * lavado.
+     * Branco a sério para a página e para os cartões: o que os separa é
+     * o filete, e não um cinzento por baixo. O `--wash` fica para o que
+     * tem mesmo de afundar — campos de formulário, sobretudo, onde a
+     * pessoa precisa de ver onde escrever antes de lá chegar.
      */
-    --ground: #08060F;
-    --surface: #120E20;
-    --surface-high: #1A1430;
-    --edge: #2A2145;
-    --edge-lit: #453770;
+    --ground: #FFFFFF;
+    --surface: #FFFFFF;
+    --wash: #F5F3F8;
 
-    --ink: #EDEAF7;
-    --muted: #A79FC4;
-    --faint: #7A729A;
+    /*
+     * A tinta puxa ao violeta em vez de ser cinzento puro: um neutro
+     * exato ao lado destes néons parece lavado, e ao pé deles o olho
+     * lê-o como sujo. O desvio é pequeno e é escolhido.
+     */
+    --ink: #14121A;
+    --muted: #4A4557;
+
+    /*
+     * O mais claro dos três, e mesmo assim legível: 4,70 sobre branco.
+     *
+     * O primeiro valor que aqui esteve dava 3,53, que é o cinzento a que
+     * o olho chama "discreto" e as WCAG chamam ilegível. E não é
+     * decoração — é a cor das etiquetas do perfil, JOGADOR, NÍVEL, XP,
+     * que são texto pequeno em maiúsculas: o caso mais difícil de ler
+     * que a interface tem.
+     */
+    --faint: #767185;
+
+    --edge: #E6E3EC;
+    --edge-lit: #C9C4D6;
 
     /* As três cores do logótipo, na ordem em que lá aparecem. */
     --magenta: #E93CEF;
     --violet: #8B5CF6;
     --cyan: #22D3EE;
 
+    /*
+     * As mesmas, fundas o suficiente para serem lidas sobre branco.
+     * Calculadas, não escolhidas a olho: baixou-se a luminosidade de
+     * cada uma até passar 4,5 de contraste, mantendo o tom.
+     */
+    --magenta-ink: #CE11D4;
+    --violet-ink: #6D28D9;
+    --cyan-ink: #0B8193;
+
     /* O céu por trás das palmeiras, guardado para o que for raro. */
     --sunset: #FF6B35;
+    --sunset-ink: #D83E06;
 
     --danger: #FF5C7A;
+    --danger-ink: #EC0630;
     --ok: #34D399;
+    --ok-ink: #1D8660;
 
     /*
-     * O degradê do logótipo, usado como uma só superfície: é o que
-     * torna um botão reconhecível como sendo desta plataforma.
+     * A tinta que assenta por cima de qualquer um dos néons. Uma só
+     * para todos: um botão que mudasse de cor de letra conforme o fundo
+     * daria dois botões em vez de um.
+     */
+    --on-brand: #0B0B0F;
+
+    /*
+     * Fundos pálidos para estados. Por cima de branco, a mesma cor em
+     * alfa baixo — assim um estado nunca tem uma cor que a paleta não
+     * tenha.
+     */
+    --ok-wash: rgba(52, 211, 153, 0.14);
+    --ok-edge: rgba(29, 134, 96, 0.34);
+    --danger-wash: rgba(255, 92, 122, 0.12);
+    --danger-edge: rgba(236, 6, 48, 0.3);
+    --magenta-wash: rgba(233, 60, 239, 0.1);
+    --magenta-edge: rgba(206, 17, 212, 0.32);
+    --cyan-wash: rgba(34, 211, 238, 0.14);
+    --cyan-edge: rgba(11, 129, 147, 0.32);
+    --neutral-wash: #F2F0F6;
+
+    /* O halo do foco. Espesso o bastante para se ver em papel. */
+    --focus-ring: 0 0 0 3px rgba(11, 129, 147, 0.28);
+
+    /*
+     * A sombra é rasa e fria. Sombras pretas e fundas, que em fundo
+     * escuro davam profundidade, sobre branco parecem sujidade.
+     */
+    --lift: 0 1px 2px rgba(20, 18, 26, 0.06), 0 8px 24px -16px rgba(20, 18, 26, 0.24);
+
+    /*
+     * O degradê do logótipo. Aparece **pouco** e de propósito: um filete
+     * fino no topo e o botão principal. Uma página que o espalhasse por
+     * um cabeçalho inteiro seria a mesma página que toda a gente faz.
      */
     --brand: linear-gradient(103deg, #E93CEF 0%, #8B5CF6 46%, #22D3EE 100%);
 
-    --radius: 12px;
-    --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --display: 'Chakra Petch', 'Inter', system-ui, sans-serif;
+    /*
+     * O mesmo degradê, fundo o bastante para ser **texto** sobre branco.
+     *
+     * O de cima é para acender: recortado em letras, o extremo ciano
+     * caía para 1,81 de contraste e a palavra acabava por desaparecer
+     * no fim. Este atravessa as mesmas três cores nas versões que
+     * passam, e a marca continua a ler-se como a mesma coisa.
+     */
+    --brand-ink: linear-gradient(103deg, #CE11D4 0%, #6D28D9 46%, #0B8193 100%);
+
+    --radius: 10px;
+
+    /*
+     * A letra.
+     *
+     * O display é o Archivo na largura expandida, em maiúsculas pesadas:
+     * é largo e sólido, que é a energia do letreiro de um GTA moderno —
+     * e não o condensado do logótipo clássico. Não imita nenhuma letra da
+     * Rockstar, e não podia: isto é uma plataforma independente.
+     *
+     * O texto corrido é o IBM Plex Sans, que tem carácter suficiente para
+     * não ser a fonte por omissão de toda a gente e é feito para ecrã.
+     *
+     * Os números continuam no JetBrains Mono. Dinheiro e xp alinham em
+     * coluna, e alinhar é a única coisa que aqui não se negoceia.
+     */
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --display: 'Archivo', 'IBM Plex Sans', system-ui, sans-serif;
     --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
     /* O que o polegar tem de acertar sem pensar. */
@@ -82,12 +177,7 @@ body,
 
 body {
     margin: 0;
-    background:
-        radial-gradient(95vw 44vh at 6% -10%, rgba(233, 60, 239, 0.16), transparent 64%),
-        radial-gradient(85vw 40vh at 98% 0%, rgba(34, 211, 238, 0.13), transparent 66%),
-        radial-gradient(70vw 30vh at 50% 108%, rgba(139, 92, 246, 0.12), transparent 70%),
-        var(--ground);
-    background-attachment: fixed;
+    background: var(--ground);
     color: var(--ink);
     font-family: var(--sans);
     font-size: 16px;
@@ -97,7 +187,7 @@ body {
 }
 
 a {
-    color: var(--cyan);
+    color: var(--cyan-ink);
     text-decoration: none;
 }
 
@@ -129,6 +219,25 @@ a:hover {
     flex-direction: column;
 }
 
+/*
+ * O único sítio onde o degradê do logótipo atravessa a página inteira:
+ * um filete de três pixéis por cima de tudo.
+ *
+ * É de propósito que é aqui e só aqui. Um cabeçalho inteiro pintado de
+ * magenta a ciano é a página que toda a gente faz — o degradê deixa de
+ * ser a marca e passa a ser decoração. Reduzido a um traço, volta a ser
+ * o que era no logótipo: uma linha de néon acesa por cima do resto.
+ */
+.topbar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--brand);
+}
+
 .topbar {
     position: sticky;
     top: 0;
@@ -142,7 +251,7 @@ a:hover {
     padding-left: max(var(--pad), env(safe-area-inset-left));
     padding-right: max(var(--pad), env(safe-area-inset-right));
     border-bottom: 1px solid var(--edge);
-    background: rgba(8, 6, 15, 0.86);
+    background: rgba(255, 255, 255, 0.86);
     backdrop-filter: blur(12px);
 }
 
@@ -151,9 +260,11 @@ a:hover {
     align-items: center;
     gap: 10px;
     font-family: var(--display);
-    font-weight: 700;
+    font-stretch: 125%;
+    font-weight: 800;
     font-size: 19px;
-    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
     color: var(--ink);
     white-space: nowrap;
     text-decoration: none;
@@ -175,8 +286,8 @@ a:hover {
  * fazê-lo, a cor por baixo é a do texto normal e nada se perde.
  */
 .brand strong {
-    font-weight: 700;
-    background: var(--brand);
+    font-weight: 800;
+    background: var(--brand-ink);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -260,7 +371,7 @@ main {
         border: 1px solid var(--edge);
         border-radius: var(--radius);
         padding: 34px;
-        box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.9);
+        box-shadow: var(--lift);
     }
 }
 
@@ -273,8 +384,10 @@ main {
 .card h1 {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: clamp(25px, 6.5vw, 29px);
-    font-weight: 700;
+    font-weight: 800;
+    text-transform: uppercase;
     letter-spacing: -0.02em;
     line-height: 1.2;
     text-wrap: balance;
@@ -325,8 +438,8 @@ form {
 }
 
 .field textarea:focus {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
+    border-color: var(--cyan-ink);
+    box-shadow: var(--focus-ring);
     outline: none;
 }
 
@@ -340,17 +453,19 @@ form {
     min-height: var(--tap);
     width: 100%;
     color: var(--ink);
-    background: var(--surface);
+    /*
+     * Afundado, e não branco.
+     *
+     * Um campo branco com um filete sobre uma página branca obriga a
+     * pessoa a procurar a fronteira para saber onde escreve. O tom
+     * chega para o campo se anunciar sozinho, e é o único sítio do tema
+     * onde há cinzento por baixo de alguma coisa.
+     */
+    background: var(--wash);
     border: 1px solid var(--edge);
     border-radius: var(--radius);
     padding: 12px 14px;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-@media (min-width: 640px) {
-    .field input {
-        background: var(--ground);
-    }
 }
 
 .field input:hover {
@@ -358,13 +473,13 @@ form {
 }
 
 .field input:focus {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+    border-color: var(--cyan-ink);
+    box-shadow: var(--focus-ring);
     outline: none;
 }
 
 .field input[aria-invalid='true'] {
-    border-color: var(--danger);
+    border-color: var(--danger-ink);
 }
 
 .hint {
@@ -392,14 +507,19 @@ form {
     letter-spacing: 0.01em;
     min-height: var(--tap);
     width: 100%;
-    color: #FFFFFF;
+    /*
+     * Tinta escura, e não branca. O degradê acaba em ciano, e branco
+     * sobre ciano dá 1,81 de contraste — o fim do botão ficava por ler.
+     * Escura, passa em toda a extensão dele.
+     */
+    color: var(--on-brand);
     background: var(--brand);
     border: 0;
     border-radius: var(--radius);
     padding: 12px 16px;
     cursor: pointer;
     touch-action: manipulation;
-    box-shadow: 0 6px 22px -10px rgba(233, 60, 239, 0.65);
+    box-shadow: 0 6px 18px -10px rgba(206, 17, 212, 0.45);
     transition: filter 0.15s ease, transform 0.1s ease;
 }
 
@@ -425,7 +545,7 @@ button.link {
     font-size: 14.5px;
     white-space: nowrap;
     min-height: 44px;
-    color: var(--cyan);
+    color: var(--cyan-ink);
     background: none;
     border: none;
     padding: 0 2px;
@@ -449,15 +569,15 @@ button.link:hover {
 }
 
 .alert.bad {
-    color: #FFC9C9;
-    background: rgba(255, 107, 107, 0.09);
-    border-color: rgba(255, 107, 107, 0.35);
+    color: var(--danger-ink);
+    background: var(--danger-wash);
+    border-color: var(--danger-edge);
 }
 
 .alert.good {
-    color: #BBF7D0;
-    background: rgba(74, 222, 128, 0.08);
-    border-color: rgba(74, 222, 128, 0.32);
+    color: var(--ok-ink);
+    background: var(--ok-wash);
+    border-color: var(--ok-edge);
 }
 
 /*
@@ -519,6 +639,7 @@ button.link:hover {
 .panel h1 {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: clamp(27px, 7.5vw, 34px);
     font-weight: 700;
     letter-spacing: -0.025em;
@@ -682,8 +803,8 @@ button.link:hover {
 }
 
 .btn-secondary:hover:not(:disabled) {
-    border-color: var(--cyan);
-    color: var(--cyan);
+    border-color: var(--cyan-ink);
+    color: var(--cyan-ink);
     text-decoration: none;
 }
 
@@ -693,8 +814,8 @@ button.link:hover {
 }
 
 .btn-secondary.perigo:hover:not(:disabled) {
-    border-color: var(--danger);
-    color: var(--danger);
+    border-color: var(--danger-ink);
+    color: var(--danger-ink);
 }
 
 /* ---------- pesquisa ---------- */
@@ -718,8 +839,8 @@ button.link:hover {
 }
 
 .searchbar input:focus {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+    border-color: var(--cyan-ink);
+    box-shadow: var(--focus-ring);
     outline: none;
 }
 
@@ -746,6 +867,7 @@ button.link:hover {
 .grupo h2 {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 17px;
     font-weight: 700;
     letter-spacing: 0.01em;
@@ -780,12 +902,12 @@ button.link:hover {
 }
 
 .crewcard:hover {
-    background: var(--surface-high);
+    background: var(--wash);
     text-decoration: none;
 }
 
 .crewcard.destaque {
-    border-left-color: var(--magenta);
+    border-left-color: var(--magenta-ink);
 }
 
 .crewcard-top {
@@ -797,6 +919,7 @@ button.link:hover {
 
 .crewcard-top b {
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 17px;
     font-weight: 700;
     letter-spacing: -0.005em;
@@ -829,7 +952,7 @@ button.link:hover {
     font-family: var(--mono);
     font-size: 12.5px;
     font-weight: 500;
-    color: var(--cyan);
+    color: var(--cyan-ink);
 }
 
 .crewtag.grande {
@@ -843,15 +966,15 @@ button.link:hover {
     text-transform: uppercase;
     padding: 4px 9px;
     border-radius: 999px;
-    color: var(--magenta);
-    background: rgba(233, 60, 239, 0.12);
-    border: 1px solid rgba(233, 60, 239, 0.32);
+    color: var(--magenta-ink);
+    background: var(--magenta-wash);
+    border: 1px solid var(--magenta-edge);
     white-space: nowrap;
 }
 
 .pill.aguarda {
     color: var(--muted);
-    background: rgba(167, 159, 196, 0.1);
+    background: var(--neutral-wash);
     border-color: var(--edge-lit);
 }
 
@@ -905,6 +1028,7 @@ button.link:hover {
 .crewhead-body h1 {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: clamp(25px, 6.5vw, 32px);
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -920,9 +1044,17 @@ button.link:hover {
 
 /* ---------- estatísticas ---------- */
 
+/*
+ * Colunas largas o suficiente para um nome de jogador.
+ *
+ * Com 84px cabiam três no telemóvel, e um nome com oito caracteres
+ * partia-se ao meio — a primeira coisa que a pessoa lê sobre si própria
+ * aparecia cortada em duas linhas. Com 118px ficam duas colunas e um
+ * nome inteiro.
+ */
 .stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
     gap: 14px 16px;
     margin: 0;
     padding: 18px 20px;
@@ -949,6 +1081,7 @@ button.link:hover {
 .stats dd {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 19px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -1064,7 +1197,7 @@ button.link:hover {
     border: 1px solid var(--edge-lit);
     border-radius: var(--radius);
     padding: 18px;
-    background: rgba(233, 60, 239, 0.05);
+    background: var(--magenta-wash);
 }
 
 .primeiro-passo h2 {
@@ -1094,7 +1227,7 @@ button.link:hover {
 .chave-nova {
     border: 1px solid var(--cyan);
     border-radius: var(--radius);
-    background: rgba(43, 213, 233, 0.06);
+    background: var(--cyan-wash);
     padding: 14px 16px;
     margin: 12px 0;
 }
@@ -1140,7 +1273,7 @@ button.link:hover {
 
 .estado.online {
     background: var(--ok);
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.16);
+    box-shadow: var(--focus-ring);
 }
 
 .estadotexto {
@@ -1155,7 +1288,7 @@ button.link:hover {
 }
 
 .estadotexto.online {
-    color: var(--ok);
+    color: var(--ok-ink);
 }
 
 .filtro {
@@ -1172,7 +1305,7 @@ button.link:hover {
 .filtro input {
     width: 20px;
     height: 20px;
-    accent-color: var(--cyan);
+    accent-color: var(--cyan-ink);
     cursor: pointer;
 }
 
@@ -1224,20 +1357,20 @@ button.link:hover {
 .discord {
     color: #FFFFFF;
     background: #5865F2;
-    box-shadow: 0 6px 22px -10px rgba(88, 101, 242, 0.75);
+    box-shadow: 0 6px 18px -10px rgba(88, 101, 242, 0.45);
 }
 
 /*
  * A Google não tem uma cor de marca para isto: a regra dela é fundo
- * branco com texto escuro, ou o inverso. O branco é o que se destaca
- * aqui, onde o resto do ecrã é escuro — e o contorno é o que impede
+ * branco com texto escuro, ou o inverso. Fica o branco, que é o que a
+ * marca dela prefere — e o contorno é o que impede
  * que um botão branco sobre fundo claro desapareça.
  */
 .google {
     color: #1F1F1F;
     background: #FFFFFF;
-    border: 1px solid rgba(0, 0, 0, 0.18);
-    box-shadow: 0 6px 22px -12px rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--edge-lit);
+    box-shadow: var(--lift);
 }
 
 /*
@@ -1275,7 +1408,7 @@ button.link:hover {
     z-index: 10;
     display: flex;
     border-top: 1px solid var(--edge);
-    background: rgba(8, 6, 15, 0.94);
+    background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(12px);
     padding-bottom: env(safe-area-inset-bottom);
 }
@@ -1302,8 +1435,8 @@ button.link:hover {
 }
 
 .barra-baixo a.active {
-    color: var(--cyan);
-    border-top-color: var(--cyan);
+    color: var(--cyan-ink);
+    border-top-color: var(--cyan-ink);
 }
 
 @media (min-width: 640px) {
@@ -1325,9 +1458,9 @@ button.link:hover {
 /* ---------- perfil ---------- */
 
 .pill.confirmado {
-    color: var(--ok);
-    background: rgba(52, 211, 153, 0.1);
-    border-color: rgba(52, 211, 153, 0.32);
+    color: var(--ok-ink);
+    background: var(--ok-wash);
+    border-color: var(--ok-edge);
 }
 
 /*
@@ -1343,7 +1476,7 @@ button.link:hover {
 }
 
 .grupo.premium.ativo {
-    border-color: rgba(233, 60, 239, 0.4);
+    border-color: var(--magenta-edge);
 }
 
 .premium-head {
@@ -1378,7 +1511,7 @@ button.link:hover {
     background:
         linear-gradient(45deg, var(--edge) 25%, transparent 25%) 0 0 / 12px 12px,
         linear-gradient(-45deg, var(--edge) 25%, transparent 25%) 0 6px / 12px 12px,
-        var(--surface-high);
+        var(--wash);
 }
 
 /* ---------- tesouraria ---------- */
@@ -1436,6 +1569,7 @@ button.link:hover {
 .saldos dd {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 20px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -1465,20 +1599,25 @@ button.link:hover {
     font-size: clamp(17px, 5vw, 27px);
 }
 
+/*
+ * O saldo é tinta sólida, e não o degradê.
+ *
+ * Era a peça mais vistosa do ecrã e passou a ser a mais difícil de ler:
+ * um número atravessado por três cores obriga o olho a trabalhar
+ * exatamente onde ele não pode hesitar. A marca tem o seu sítio no
+ * cabeçalho; aqui o que interessa é o algarismo.
+ */
 .saldos .principal dd {
     letter-spacing: -0.02em;
-    background: var(--brand);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--ink);
 }
 
 .saldos dd.credit {
-    color: var(--ok);
+    color: var(--ok-ink);
 }
 
 .saldos dd.debit {
-    color: var(--sunset);
+    color: var(--sunset-ink);
 }
 
 .field select {
@@ -1495,8 +1634,8 @@ button.link:hover {
 }
 
 .field select:focus {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
+    border-color: var(--cyan-ink);
+    box-shadow: var(--focus-ring);
     outline: none;
 }
 
@@ -1534,6 +1673,7 @@ button.link:hover {
 
 .mov-valor {
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 19px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -1541,11 +1681,11 @@ button.link:hover {
 }
 
 .mov-valor.credit {
-    color: var(--ok);
+    color: var(--ok-ink);
 }
 
 .mov-valor.debit {
-    color: var(--sunset);
+    color: var(--sunset-ink);
 }
 
 .mov-desc {
@@ -1569,21 +1709,21 @@ button.link:hover {
  */
 .pill.estado-pending {
     color: var(--muted);
-    background: rgba(167, 159, 196, 0.1);
+    background: var(--neutral-wash);
     border-color: var(--edge-lit);
 }
 
 .pill.estado-approved {
-    color: var(--ok);
-    background: rgba(52, 211, 153, 0.1);
-    border-color: rgba(52, 211, 153, 0.32);
+    color: var(--ok-ink);
+    background: var(--ok-wash);
+    border-color: var(--ok-edge);
 }
 
 .pill.estado-rejected,
 .pill.estado-canceled {
-    color: var(--danger);
-    background: rgba(255, 92, 122, 0.09);
-    border-color: rgba(255, 92, 122, 0.3);
+    color: var(--danger-ink);
+    background: var(--danger-wash);
+    border-color: var(--danger-edge);
 }
 
 /* ---------- eventos ---------- */
@@ -1601,6 +1741,7 @@ button.link:hover {
 
 .mov-desc.forte {
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 17px;
     font-weight: 700;
     color: var(--ink);
@@ -1608,7 +1749,7 @@ button.link:hover {
 }
 
 .mov-desc.forte:hover {
-    color: var(--cyan);
+    color: var(--cyan-ink);
     text-decoration: none;
 }
 
@@ -1620,31 +1761,31 @@ button.link:hover {
 }
 
 .confirmados {
-    color: var(--ok);
+    color: var(--ok-ink);
 }
 
 .pill.evento-scheduled {
-    color: var(--cyan);
-    background: rgba(34, 211, 238, 0.1);
-    border-color: rgba(34, 211, 238, 0.32);
+    color: var(--cyan-ink);
+    background: var(--cyan-wash);
+    border-color: var(--cyan-edge);
 }
 
 .pill.evento-ongoing {
-    color: var(--magenta);
-    background: rgba(233, 60, 239, 0.12);
-    border-color: rgba(233, 60, 239, 0.34);
+    color: var(--magenta-ink);
+    background: var(--magenta-wash);
+    border-color: var(--magenta-edge);
 }
 
 .pill.evento-completed {
-    color: var(--ok);
-    background: rgba(52, 211, 153, 0.1);
-    border-color: rgba(52, 211, 153, 0.32);
+    color: var(--ok-ink);
+    background: var(--ok-wash);
+    border-color: var(--ok-edge);
 }
 
 .pill.evento-canceled {
-    color: var(--danger);
-    background: rgba(255, 92, 122, 0.09);
-    border-color: rgba(255, 92, 122, 0.3);
+    color: var(--danger-ink);
+    background: var(--danger-wash);
+    border-color: var(--danger-edge);
 }
 
 /* O peso escreve-se ao lado do botão que o usa. */
@@ -1662,7 +1803,7 @@ button.link:hover {
 }
 
 .peso input:focus {
-    border-color: var(--cyan);
+    border-color: var(--cyan-ink);
     outline: none;
 }
 
@@ -1687,7 +1828,7 @@ button.link:hover {
 }
 
 .idioma select:focus {
-    border-color: var(--cyan);
+    border-color: var(--cyan-ink);
     outline: none;
 }
 
@@ -1731,6 +1872,7 @@ button.link:hover {
 .landing h1 {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     /*
      * Cresce com o ecrã, mas para de crescer: a partir de certa altura
      * um título maior deixa de impressionar e passa a estorvar.
@@ -1801,7 +1943,7 @@ button.link:hover {
 }
 
 .landing-entrar:hover {
-    color: var(--cyan);
+    color: var(--cyan-ink);
 }
 
 .landing-pontos {
@@ -1844,6 +1986,7 @@ button.link:hover {
 .landing-pontos h2 {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 17px;
     font-weight: 700;
     letter-spacing: -0.005em;
@@ -1870,8 +2013,9 @@ button.link:hover {
 
 .landing-honesto b {
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 15px;
-    color: var(--magenta);
+    color: var(--magenta-ink);
 }
 
 .landing-honesto p {
@@ -1899,12 +2043,13 @@ button.link:hover {
 .premium-hero h1 {
     margin: 0;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: clamp(27px, 7.5vw, 34px);
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.15;
     text-wrap: balance;
-    background: var(--brand);
+    background: var(--brand-ink);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -1928,6 +2073,7 @@ button.link:hover {
 
 .preco strong {
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: clamp(38px, 12vw, 52px);
     font-weight: 700;
     letter-spacing: -0.03em;
@@ -1950,12 +2096,12 @@ button.link:hover {
 .grupo.pendentes {
     padding: 20px;
     background: var(--surface);
-    border: 1px solid rgba(233, 60, 239, 0.35);
+    border: 1px solid var(--magenta-edge);
     border-radius: var(--radius);
 }
 
 .grupo.pendentes h2 {
-    color: var(--magenta);
+    color: var(--magenta-ink);
 }
 
 .lista-pendentes {
@@ -1986,7 +2132,7 @@ button.link:hover {
 }
 
 .lista-pendentes a:hover {
-    border-color: var(--magenta);
+    border-color: var(--magenta-ink);
     text-decoration: none;
 }
 
@@ -2023,7 +2169,7 @@ button.link:hover {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1;
-    color: #FFFFFF;
+    color: var(--on-brand);
     background: var(--magenta);
     border-radius: 9px;
 }
@@ -2126,6 +2272,7 @@ button.link:hover {
     grid-column: 3;
     grid-row: 1 / span 2;
     font-family: var(--display);
+    font-stretch: 125%;
     font-size: 22px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -2136,16 +2283,16 @@ button.link:hover {
     grid-row: 1 / span 2;
     width: 20px;
     height: 20px;
-    accent-color: var(--cyan);
+    accent-color: var(--cyan-ink);
     cursor: pointer;
 }
 
 .escalao:hover {
-    border-color: var(--cyan);
+    border-color: var(--cyan-ink);
 }
 
 .escalao.escolhido {
-    border-color: var(--cyan);
+    border-color: var(--cyan-ink);
     background: color-mix(in srgb, var(--cyan) 8%, var(--surface));
 }
 
@@ -2200,7 +2347,7 @@ button.link:hover {
 }
 
 .premium-estado.ativo {
-    border-color: rgba(52, 211, 153, 0.4);
+    border-color: var(--ok-edge);
 }
 
 .premium-estado p {
@@ -2238,7 +2385,7 @@ button.link:hover {
 .link-premium {
     align-self: flex-start;
     font-size: 14.5px;
-    color: var(--magenta);
+    color: var(--magenta-ink);
 }
 
 .landing-premium {
@@ -2281,13 +2428,13 @@ button.link:hover {
  */
 .grupo.perigo {
     padding: 20px;
-    border: 1px solid rgba(255, 92, 122, 0.35);
+    border: 1px solid var(--danger-edge);
     border-radius: var(--radius);
     background: var(--surface);
 }
 
 .grupo.perigo h2 {
-    color: var(--danger);
+    color: var(--danger-ink);
 }
 
 /*
@@ -2320,6 +2467,7 @@ button.link:hover {
 
 .progresso-topo span:first-child {
     font-family: var(--display);
+    font-stretch: 125%;
     font-weight: 700;
     font-size: 15px;
     color: var(--ink);
@@ -2342,12 +2490,12 @@ button.link:hover {
     height: 8px;
     border: 0;
     border-radius: 999px;
-    background: var(--surface-high);
+    background: var(--wash);
     overflow: hidden;
 }
 
 .barra::-webkit-progress-bar {
-    background: var(--surface-high);
+    background: var(--wash);
     border-radius: 999px;
 }
 
@@ -2394,7 +2542,7 @@ button.link:hover {
     min-width: 52px;
     font-family: var(--mono);
     font-variant-numeric: tabular-nums;
-    color: var(--ok);
+    color: var(--ok-ink);
 }
 
 /*
@@ -2404,7 +2552,7 @@ button.link:hover {
  * substitui, porque quem não distingue as duas continua a ler o menos.
  */
 .ganho-quanto.perdeu {
-    color: var(--danger);
+    color: var(--danger-ink);
 }
 
 .ganho-porque {
@@ -2439,7 +2587,7 @@ button.link:hover {
 }
 
 .lugar a:hover {
-    color: var(--cyan);
+    color: var(--cyan-ink);
     border-bottom-color: currentColor;
 }
 
@@ -2572,7 +2720,7 @@ button.link:hover {
 }
 
 .feed-texto a:hover {
-    color: var(--cyan);
+    color: var(--cyan-ink);
     border-bottom-color: currentColor;
 }
 
@@ -2681,7 +2829,7 @@ button.link:hover {
 
 .navegacao a.active {
     color: var(--ink);
-    border-bottom-color: var(--magenta);
+    border-bottom-color: var(--magenta-ink);
 }
 
 .navegacao a:focus-visible {
@@ -2934,7 +3082,7 @@ button.link:hover {
     margin: 8px 0 0;
     padding: 10px 14px;
     border-left: 2px solid var(--edge-lit);
-    background: var(--surface-high);
+    background: var(--wash);
     border-radius: 0 8px 8px 0;
     color: var(--ink);
     font-size: 14px;
@@ -3081,13 +3229,13 @@ button.link:hover {
     border: 1px solid var(--danger);
     border-left-width: 3px;
     border-radius: 0 10px 10px 0;
-    background: rgba(255, 92, 122, 0.08);
+    background: var(--danger-wash);
 }
 
 .legal-rascunho b {
     display: block;
     margin-bottom: 4px;
-    color: var(--danger);
+    color: var(--danger-ink);
 }
 
 .legal-rascunho p {
@@ -3145,9 +3293,9 @@ button.link:hover {
   Desaparece sozinha na visita seguinte — chegar aqui é ter visto.
 */
 .pill.nova {
-    border-color: var(--cyan);
-    color: var(--cyan);
-    background: rgba(34, 211, 238, 0.1);
+    border-color: var(--cyan-ink);
+    color: var(--cyan-ink);
+    background: var(--cyan-wash);
 }
 
 /*
