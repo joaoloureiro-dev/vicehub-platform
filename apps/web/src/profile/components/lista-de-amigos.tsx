@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 
 import { Alert } from '../../auth/components/alert.js';
-import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 import {
@@ -40,7 +40,7 @@ export const ListaDeAmigos = () => {
             pedidos.reload();
         } catch (falha) {
             setErro(
-                falha instanceof ApiError ? falha.message : t.comum.naoFoiPossivel,
+                mensagemDoErro(falha, t, t.comum.naoFoiPossivel),
             );
         } finally {
             setAAgir(false);

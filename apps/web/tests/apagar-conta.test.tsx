@@ -152,7 +152,18 @@ describe('apagar a conta', () => {
      * "Não foi possível" era deitar fora a única parte útil: qual é a
      * crew que fica sem dono, e portanto o que há a fazer primeiro.
      */
-    it('mostra o que a API diz que falta fazer primeiro', async () => {
+    /**
+     * O que falta fazer primeiro fica dito, com nomes, no idioma certo.
+     *
+     * Este teste afirmava que a frase da API aparecia tal e qual — e é
+     * assim que uma pessoa a ler inglês apanhava português. Mas a razão
+     * original era boa: sem o nome da crew, a pessoa fica à procura.
+     *
+     * Por isso os nomes passaram a vir **à parte** do texto, e a frase é
+     * composta aqui. A suite corre em inglês: o nome tem de aparecer, e
+     * o português da API não.
+     */
+    it('diz que comunidades ficam sem dono, no idioma de quem lê', async () => {
         vi.stubGlobal(
             'fetch',
             servidor(
@@ -160,6 +171,7 @@ describe('apagar a conta', () => {
                     code: 'ACCOUNT_LEADS_COMMUNITIES',
                     message:
                         'És a única pessoa que manda em: Vice Kings. Passa o cargo a outra pessoa.',
+                    communities: ['Vice Kings', 'Little Havana'],
                 }),
             ),
         );
@@ -172,7 +184,16 @@ describe('apagar a conta', () => {
         );
         await userEvent.click(screen.getByText(t.perfil.apagarContaConfirmar));
 
-        expect(await screen.findByText(/Vice Kings/)).toBeTruthy();
+        const aviso = await screen.findByText(/Vice Kings/);
+
+        /* Os dois nomes, e não só o primeiro. */
+        expect(aviso.textContent).toContain('Little Havana');
+
+        /* E a frase é a nossa, no idioma de quem lê. */
+        expect(aviso.textContent).toBe(
+            t.zonaPerigo.aindaMandasEm('Vice Kings, Little Havana'),
+        );
+        expect(aviso.textContent).not.toContain('És a única pessoa');
 
         /** E a sessão não é limpa: não se apagou nada. */
         expect(screen.getByText(t.perfil.apagarContaConfirmar)).toBeTruthy();

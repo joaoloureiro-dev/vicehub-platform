@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { Alert } from '../../auth/components/alert.js';
 import { Field } from '../../auth/components/field.js';
 import { createServer } from '../server.api.js';
@@ -36,9 +37,11 @@ export const CreateServerPage = () => {
             setErro(
                 falha instanceof ApiError && falha.code === 'SERVER_NAME_TAKEN'
                     ? t.servidores.nomeOcupado
-                    : falha instanceof ApiError
-                      ? falha.message
-                      : t.servidores.naoFoiPossivelRegistar,
+                    : mensagemDoErro(
+                        falha,
+                        t,
+                        t.servidores.naoFoiPossivelRegistar,
+                    ),
             );
             setAEnviar(false);
         }

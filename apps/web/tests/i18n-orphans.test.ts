@@ -26,6 +26,13 @@ const raiz = join(import.meta.dirname, '..');
  * isso ficam de fora.
  */
 const POR_INDICE = new Set([
+    /*
+     * `t.erros[codigo]` resolve a chave a partir do que a API recusou.
+     * São noventa e tal códigos e nenhum deles é escrito no código —
+     * procurá-los um a um não encontrava nada, e apagá-los deixava a
+     * pessoa outra vez a ler a frase que a API escreveu em português.
+     */
+    'erros',
     'cargos',
     'planos',
     'categorias',

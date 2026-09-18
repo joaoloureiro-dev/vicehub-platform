@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { createEvent, listEvents } from '../event.api.js';
@@ -102,9 +103,11 @@ export const EventsPage = () => {
                 texto:
                     falha instanceof ApiError && falha.status === 403
                         ? t.eventos.soQuemGere
-                        : falha instanceof ApiError
-                          ? falha.message
-                          : t.eventos.naoFoiPossivelMarcar,
+                        : mensagemDoErro(
+                              falha,
+                              t,
+                              t.eventos.naoFoiPossivelMarcar,
+                          ),
             });
         } finally {
             setACriar(false);

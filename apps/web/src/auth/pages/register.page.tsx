@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { Alert } from '../components/alert.js';
 import { FederatedButtons } from '../components/federated-buttons.js';
 import { Field } from '../components/field.js';
@@ -47,9 +48,11 @@ export const RegisterPage = () => {
                 setErro(t.auth.nomeOcupado);
             } else {
                 setErro(
-                    falha instanceof ApiError
-                        ? falha.message
-                        : t.auth.naoFoiPossivelCriar,
+                    mensagemDoErro(
+                            falha,
+                            t,
+                            t.auth.naoFoiPossivelCriar,
+                        ),
                 );
             }
 

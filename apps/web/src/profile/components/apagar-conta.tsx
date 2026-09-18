@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 
 import { Alert } from '../../auth/components/alert.js';
 import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { getMyMovements } from '../../treasury/treasury.api.js';
 import {
     formatarMontante,
@@ -92,15 +93,22 @@ export const ApagarConta = ({ username }: { username: string }) => {
             void navigate('/');
         } catch (falha: unknown) {
             /**
-             * A API diz exatamente o que falta fazer primeiro — que crew
-             * fica sem dono, que saldo ainda lá está. Substituir isso por
-             * uma mensagem nossa era deitar fora a única parte acionável
-             * da resposta.
+             * O que falta fazer primeiro tem de ficar dito, e com nomes.
+             *
+             * Era por isso que este ecrã mostrava a frase que a API
+             * escreve: ela diz *que* crew fica sem dono, e uma mensagem
+             * nossa sem esse nome deixava a pessoa à procura — quem
+             * manda em três nem sabia por onde começar.
+             *
+             * A frase da API está em português, e mostrá-la punha-a no
+             * ecrã de quem lê inglês. Agora os nomes vêm **à parte**, e
+             * a frase é composta aqui no idioma de quem está a ler. A
+             * parte acionável fica; o português vai-se.
              */
             setErro(
-                falha instanceof ApiError
-                    ? falha.message
-                    : t.comum.naoFoiPossivel,
+                falha instanceof ApiError && falha.communities?.length
+                    ? t.zonaPerigo.aindaMandasEm(falha.communities.join(', '))
+                    : mensagemDoErro(falha, t, t.comum.naoFoiPossivel),
             );
 
             setAApagar(false);

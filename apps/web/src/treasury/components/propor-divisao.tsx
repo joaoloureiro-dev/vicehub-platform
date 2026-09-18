@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 
-import { ApiError } from '../../lib/api.js';
+import { mensagemDoErro } from '../../lib/erro.js';
 import { Alert } from '../../auth/components/alert.js';
 import { listEvents } from '../../events/event.api.js';
 import { useT } from '../../i18n/i18n.js';
@@ -124,9 +124,11 @@ export const ProporDivisao = ({
                 setMensagem({
                     tipo: 'bad',
                     texto:
-                        falha instanceof ApiError
-                            ? falha.message
-                            : t.tesouraria.naoFoiPossivel,
+                        mensagemDoErro(
+                                falha,
+                                t,
+                                t.tesouraria.naoFoiPossivel,
+                            ),
                 });
             })
             .finally(() => setAAgir(false));

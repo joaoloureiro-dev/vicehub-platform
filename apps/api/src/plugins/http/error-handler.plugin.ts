@@ -601,6 +601,13 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
                 code: error.code,
                 error: httpErrorNames[statusCode] ?? 'Bad Request',
                 message: error.message,
+                /*
+                 * Os nomes das comunidades, quando a recusa os tem. O
+                 * ecrã traduz pelo código e compõe a frase com eles —
+                 * dizer a alguém que ainda manda numa crew sem dizer
+                 * qual deixa-a à procura.
+                 */
+                communities: error.communities,
             });
             return;
         }

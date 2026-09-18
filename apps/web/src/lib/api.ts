@@ -3,6 +3,8 @@ import { sessionStore, type SessionUser } from './session.js';
 export interface ApiErrorBody {
     code?: string;
     message?: string;
+    /** Os nomes das comunidades, na recusa que os menciona. */
+    communities?: readonly string[];
 }
 
 /**
@@ -17,6 +19,15 @@ export class ApiError extends Error {
         readonly status: number,
         readonly code: string,
         message: string,
+        /**
+         * Os nomes que a recusa menciona, quando os manda à parte.
+         *
+         * A `message` está em português e não vai para o ecrã: quem
+         * escolhe as palavras é o dicionário, pelo código. Mas há
+         * recusas cujo detalhe a pessoa precisa de ter, e é por aqui que
+         * ele viaja.
+         */
+        readonly communities?: readonly string[],
     ) {
         super(message);
         this.name = 'ApiError';
@@ -92,6 +103,7 @@ const parseError = async (response: Response): Promise<ApiError> => {
         response.status,
         body.code ?? 'UNKNOWN_ERROR',
         body.message ?? 'Não foi possível completar o pedido.',
+        body.communities,
     );
 };
 
