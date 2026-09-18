@@ -333,6 +333,30 @@ export const eraseAccount = async (
         }),
 
         /**
+         * O que a pessoa escreveu no fórum sai com ela.
+         *
+         * A conta é avisada de que **o seu texto é apagado**, e o que
+         * ela escreveu ali é texto seu — muitas vezes com mais dela lá
+         * dentro do que a biografia alguma vez teve. Guardá-lo seria a
+         * promessa a valer para uns campos e não para outros.
+         *
+         * O que **fica** é a linha, sem corpo. Um tópico que
+         * desaparecesse levava consigo as respostas de outras pessoas, e
+         * uma resposta que desaparecesse deixava a seguinte a falar com
+         * o vazio. Vazio quer dizer "retirado com a conta", e é assim
+         * que é mostrado.
+         */
+        database.forumTopic.updateMany({
+            where: { authorId: userId, is_deleted: false },
+            data: { body: null, updated_by: userId, version: { increment: 1 } },
+        }),
+
+        database.forumReply.updateMany({
+            where: { authorId: userId, is_deleted: false },
+            data: { body: null, updated_by: userId, version: { increment: 1 } },
+        }),
+
+        /**
          * As amizades têm duas pontas e a outra é de outra pessoa. Ficar
          * com um amigo chamado "apagado-…" na lista é pior do que deixar
          * de o ter lá.

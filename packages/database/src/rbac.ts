@@ -48,6 +48,19 @@ export const PERMISSIONS = {
         name: 'Atribuir cargos',
         description: 'Atribuir e remover cargos a utilizadores.',
     },
+    'forum:post': {
+        scope: PermissionScope.forum,
+        slug: 'post',
+        name: 'Escrever no fórum',
+        description: 'Abrir tópicos e responder no fórum.',
+    },
+    'forum:moderate': {
+        scope: PermissionScope.forum,
+        slug: 'moderate',
+        name: 'Moderar o fórum',
+        description:
+            'Retirar tópicos e respostas de qualquer pessoa, e fechar tópicos.',
+    },
     'crew:read': {
         scope: PermissionScope.crew,
         slug: 'read',
@@ -169,14 +182,21 @@ export const ROLES = {
         slug: 'moderator',
         name: 'Moderador',
         description: 'Modera utilizadores e conteúdos da comunidade.',
-        permissions: ['user:read', 'user:update', 'crew:read', 'server:read'],
+        permissions: [
+            'user:read',
+            'user:update',
+            'crew:read',
+            'server:read',
+            'forum:post',
+            'forum:moderate',
+        ],
     },
     player: {
         scope: RoleScope.global,
         slug: 'player',
         name: 'Jogador',
         description: 'Cargo atribuído a qualquer utilizador registado.',
-        permissions: ['user:read', 'crew:read', 'server:read'],
+        permissions: ['user:read', 'crew:read', 'server:read', 'forum:post'],
     },
     crew_leader: {
         scope: RoleScope.crew,

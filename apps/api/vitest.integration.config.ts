@@ -42,6 +42,14 @@ export default defineConfig({
             RATE_LIMIT_MAX: '100000',
 
             /**
+             * E o do fórum. São dez por hora, e a suite abre dezenas de
+             * tópicos seguidos a partir do mesmo endereço. Que o limite
+             * existe e é mais apertado do que o global fica fixado no
+             * teste de ligação das rotas.
+             */
+            FORUM_RATE_LIMIT_MAX: '100000',
+
+            /**
              * Entrar por outro sítio precisa de estar configurado para a
              * ida responder em vez de recusar. As chamadas ao Discord e
              * à Google são substituídas dentro do teste: o que se quer

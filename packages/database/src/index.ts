@@ -75,6 +75,17 @@ export type { PlanDefinition, PlanKey } from './plans.js';
 export { SALDO_MAXIMO } from './treasury-limits.js';
 
 export {
+    CORPO_MAXIMO,
+    CORPO_MINIMO,
+    RESPOSTAS_POR_PAGINA,
+    TITULO_MAXIMO,
+    TITULO_MINIMO,
+    TOPICOS_POR_PAGINA,
+    normalizarTexto,
+    temConteudo,
+} from './forum.js';
+
+export {
     REPUTACAO_POR_FALTA,
     REPUTACAO_POR_PRESENCA,
     reputacaoDe,

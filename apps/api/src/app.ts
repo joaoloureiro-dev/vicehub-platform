@@ -20,6 +20,7 @@ import serverModule from './modules/servers/server.module.js';
 import subscriptionModule from './modules/subscriptions/subscription.module.js';
 import billingModule from './modules/billing/billing.module.js';
 import eventModule from './modules/events/event.module.js';
+import forumModule from './modules/forum/forum.module.js';
 import treasuryModule from './modules/treasury/treasury.module.js';
 
 import authenticatePlugin from './plugins/auth/authenticate.plugin.js';
@@ -215,6 +216,11 @@ export const buildApp = (): ViceHubFastifyInstance => {
 
     // Módulo de cobrança
     void app.register(billingModule);
+
+    /**
+     * O fórum. Ler é público; escrever pede sessão e `forum:post`.
+     */
+    void app.register(forumModule);
 
     /**
      * A interface, quando é a API a servi-la.

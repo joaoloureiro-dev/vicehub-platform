@@ -24,6 +24,7 @@ export const en = (p: Tools) => ({
         perfil: 'Profile',
         principal: 'Main navigation',
         recrutamento: 'Recruiting',
+        forum: 'Forum',
         premium: 'Pricing',
         entrar: 'Sign in',
         sair: 'Sign out',
@@ -363,6 +364,52 @@ export const en = (p: Tools) => ({
         rodape: 'Legal',
         marcas:
             'ViceHub is an independent platform, not affiliated with or endorsed by Rockstar Games, Take-Two Interactive, or any game publisher. Game names and trademarks belong to their owners.',
+    },
+
+    forum: {
+
+        titulo: 'Forum',
+
+        subtitulo: 'Ask, answer, and help each other out.',
+
+        perguntar: 'Ask a question',
+
+        aindaSemPerguntas: 'No questions yet. Be the first to ask one.',
+
+        naoCarregou: 'The forum could not be loaded.',
+
+        naoEncontrada: 'We could not find this question.',
+
+        tituloDaPergunta: 'Your question, in one line',
+
+        corpoDaPergunta: 'Say what you tried and what happened',
+
+        publicar: 'Post the question',
+
+        naoFoiPossivelPublicar: 'The question could not be posted.',
+
+        responder: 'Write a reply',
+
+        enviarResposta: 'Post the reply',
+
+        naoFoiPossivelResponder: 'The reply could not be posted.',
+
+        semRespostas: 'No replies yet.',
+
+        retirar: 'Remove',
+
+        naoFoiPossivelRetirar: 'That could not be removed.',
+
+        retiradoComAConta: 'This text was removed along with the account.',
+
+        contaApagada: 'a deleted account',
+
+        fechada: 'Closed to new replies',
+
+        voltar: 'Back to the forum',
+
+        entrarParaPerguntar: 'Sign in to ask a question',
+
     },
 
     noticias: {

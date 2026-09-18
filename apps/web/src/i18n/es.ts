@@ -17,6 +17,7 @@ export const es = (p: Tools): Messages => ({
         perfil: 'Perfil',
         principal: 'Navegación principal',
         recrutamento: 'Reclutamiento',
+        forum: 'Foro',
         premium: 'Precios',
         entrar: 'Entrar',
         sair: 'Salir',
@@ -341,6 +342,52 @@ export const es = (p: Tools): Messages => ({
         rodape: 'Legal',
         marcas:
             'ViceHub es una plataforma independiente, sin vínculo ni respaldo de Rockstar Games, Take-Two Interactive ni ninguna editora. Los nombres y marcas de los juegos pertenecen a sus dueños.',
+    },
+
+    forum: {
+
+        titulo: 'Foro',
+
+        subtitulo: 'Pregunta, responde y ayudaos entre vosotros.',
+
+        perguntar: 'Hacer una pregunta',
+
+        aindaSemPerguntas: 'Todavía no hay preguntas. Haz la primera.',
+
+        naoCarregou: 'No se pudo cargar el foro.',
+
+        naoEncontrada: 'No encontramos esta pregunta.',
+
+        tituloDaPergunta: 'Tu pregunta, en una línea',
+
+        corpoDaPergunta: 'Di qué intentaste y qué pasó',
+
+        publicar: 'Publicar la pregunta',
+
+        naoFoiPossivelPublicar: 'No se pudo publicar la pregunta.',
+
+        responder: 'Escribir una respuesta',
+
+        enviarResposta: 'Publicar la respuesta',
+
+        naoFoiPossivelResponder: 'No se pudo publicar la respuesta.',
+
+        semRespostas: 'Todavía sin respuestas.',
+
+        retirar: 'Retirar',
+
+        naoFoiPossivelRetirar: 'No se pudo retirar eso.',
+
+        retiradoComAConta: 'Este texto se retiró junto con la cuenta de quien lo escribió.',
+
+        contaApagada: 'una cuenta eliminada',
+
+        fechada: 'Cerrada a nuevas respuestas',
+
+        voltar: 'Volver al foro',
+
+        entrarParaPerguntar: 'Entra para hacer una pregunta',
+
     },
 
     noticias: {

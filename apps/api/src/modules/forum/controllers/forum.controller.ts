@@ -1,0 +1,171 @@
+import type { FastifyReply, FastifyRequest } from 'fastify';
+
+import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
+import type { AuthorizationService } from '../../authorization/services/authorization.service.js';
+import { ForumError } from '../errors/forum.errors.js';
+import type {
+    CreateReplyDto,
+    CreateTopicDto,
+    ListTopicsQueryDto,
+    ReplyIdParamDto,
+    TopicIdParamDto,
+} from '../schemas/forum.schemas.js';
+import type { ForumService } from '../services/forum.service.js';
+
+/** Que resposta HTTP corresponde a cada recusa. */
+const ESTADO: Record<string, number> = {
+    TOPIC_NOT_FOUND: 404,
+    REPLY_NOT_FOUND: 404,
+    TOPIC_LOCKED: 409,
+    NOT_YOURS: 403,
+};
+
+export class ForumController {
+    constructor(
+        private readonly forumService: ForumService,
+        private readonly authorizationService: AuthorizationService,
+    ) { }
+
+    /**
+     * Se quem faz o pedido pode moderar.
+     *
+     * Passa pelo serviço de autorização e não por uma leitura direta do
+     * conjunto: é lá que está a regra de o `system:manage` cobrir tudo, e
+     * lê-lo à mão aqui escrevia essa regra uma segunda vez — que é como
+     * um administrador acaba a não poder fazer uma coisa que devia.
+     *
+     * As permissões já foram reunidas pelo preHandler deste pedido, por
+     * isso isto não custa uma consulta.
+     */
+    private podeModerar(request: FastifyRequest): boolean {
+        const reunidas = request.effectivePermissions;
+
+        if (reunidas === null) {
+            return false;
+        }
+
+        return this.authorizationService.hasPermissions(reunidas, [
+            'forum:moderate',
+        ]);
+    }
+
+    async list(
+        request: FastifyRequest<{ Querystring: ListTopicsQueryDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const pagina = await this.forumService.listTopics(request.query.page);
+
+        reply.send({
+            topics: pagina.topicos.map((topico) => ({
+                ...topico,
+                createdAt: topico.createdAt.toISOString(),
+                lastActivityAt: topico.lastActivityAt.toISOString(),
+            })),
+            page: pagina.pagina,
+            pages: pagina.paginas,
+            total: pagina.total,
+        });
+    }
+
+    async get(
+        request: FastifyRequest<{ Params: TopicIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        try {
+            const topico = await this.forumService.getTopic(
+                request.params.topicId,
+            );
+
+            reply.send({
+                ...topico,
+                createdAt: topico.createdAt.toISOString(),
+                replies: topico.replies.map((resposta) => ({
+                    ...resposta,
+                    createdAt: resposta.createdAt.toISOString(),
+                })),
+            });
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
+    async create(
+        request: FastifyRequest<{ Body: CreateTopicDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        const criado = await this.forumService.createTopic(request.body, user.id);
+
+        reply.code(201).send(criado);
+    }
+
+    async reply(
+        request: FastifyRequest<{ Params: TopicIdParamDto; Body: CreateReplyDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            const criada = await this.forumService.reply(
+                request.params.topicId,
+                request.body.body,
+                user.id,
+            );
+
+            reply.code(201).send(criada);
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
+    async removeTopic(
+        request: FastifyRequest<{ Params: TopicIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            await this.forumService.removeTopic(
+                request.params.topicId,
+                user.id,
+                this.podeModerar(request),
+            );
+
+            reply.code(204).send();
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
+    async removeReply(
+        request: FastifyRequest<{ Params: ReplyIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            await this.forumService.removeReply(
+                request.params.replyId,
+                user.id,
+                this.podeModerar(request),
+            );
+
+            reply.code(204).send();
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
+    private responder(erro: unknown, reply: FastifyReply): void {
+        if (!(erro instanceof ForumError)) {
+            throw erro;
+        }
+
+        reply.code(ESTADO[erro.code] ?? 400).send({
+            statusCode: ESTADO[erro.code] ?? 400,
+            code: erro.code,
+            message: erro.message,
+        });
+    }
+}
