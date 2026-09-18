@@ -68,8 +68,6 @@ export interface CrewProfile {
     nextLevelXp: string | null;
     /** O lugar entre as crews que já ganharam xp. Null: ainda sem lugar. */
     rank: { position: number; of: number } | null;
-    influence: number;
-    prestige: number;
     isPremium: boolean;
     /**
      * De onde vem o plano, quando não é da própria crew: o servidor onde

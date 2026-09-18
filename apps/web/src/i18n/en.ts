@@ -174,8 +174,6 @@ export const en = (p: Tools) => ({
 
         naoEncontrada: 'We could not find this crew.',
         xp: 'XP',
-        influencia: 'Influence',
-        prestigio: 'Prestige',
         contagemMembros: 'Members',
         recruta: 'Recruiting',
         recrutaTitulo: 'This crew is recruiting',

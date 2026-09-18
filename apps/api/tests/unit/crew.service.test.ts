@@ -16,8 +16,6 @@ const crewRow = () => ({
     accent_color: null,
     level: 1,
     xp: 0n,
-    influence: 0,
-    prestige: 0,
     created_at: new Date('2026-01-01T00:00:00.000Z'),
 });
 

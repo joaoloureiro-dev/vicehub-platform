@@ -99,8 +99,6 @@ const CREW = {
     levelXp: '0',
     nextLevelXp: '100',
     rank: null,
-    influence: 0,
-    prestige: 0,
     isPremium: false,
     premiumVia: null,
     appearance: { bannerUrl: null, accentColor: null },

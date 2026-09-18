@@ -167,8 +167,6 @@ export const es = (p: Tools): Messages => ({
 
         naoEncontrada: 'No hemos encontrado esta crew.',
         xp: 'XP',
-        influencia: 'Influencia',
-        prestigio: 'Prestigio',
         contagemMembros: 'Miembros',
         recruta: 'Reclutando',
         recrutaTitulo: 'Esta crew está reclutando',

@@ -32,8 +32,6 @@ from the database to a screen; `🚧` is partly there; `○` has no code yet.
 - ✔ Events & missions
 - ✔ Recruitment system
 - ✔ Ranking system — the crew directory sorts by XP
-- 🚧 Influence & Prestige — stored, read and displayed on the crew page, but
-  nothing awards them yet, so they read zero for every crew
 
 ### 🌐 Servers
 - ✔ Server profiles

@@ -341,10 +341,8 @@ model Crew {
   banner_url   String?
   accent_color String?
 
-  level     Int    @default(1)
-  xp        BigInt @default(0)
-  influence Int    @default(0)
-  prestige  Int    @default(0)
+  level Int    @default(1)
+  xp    BigInt @default(0)
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
