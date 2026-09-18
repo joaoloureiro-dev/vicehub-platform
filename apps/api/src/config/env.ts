@@ -119,6 +119,21 @@ const envSchema = z.object({
     WEB_DIST_PATH: z.string().min(1).optional(),
 
     /**
+     * Limite de quem escreve no fórum.
+     *
+     * Muito mais apertado do que o global, e pela mesma espécie de razão
+     * que o da recuperação: é a única superfície da plataforma onde
+     * qualquer pessoa registada escreve texto que fica à vista de toda a
+     * gente. Sem um limite próprio, uma conta com um guião enche o fórum
+     * mais depressa do que alguém o consegue limpar.
+     *
+     * Dez por hora chega a quem está a fazer perguntas a sério e não
+     * chega a quem não está.
+     */
+    FORUM_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+    FORUM_RATE_LIMIT_WINDOW: z.string().min(1).default('1 hour'),
+
+    /**
      * De onde vêm as notícias do bloco da página de entrada.
      *
      * Um feed RSS ou Atom. Sem ela, a recolha não faz nada e o bloco não

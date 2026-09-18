@@ -35,6 +35,8 @@ import { MyWalletPage } from './treasury/pages/my-wallet.page.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
+import { ForumPage } from './forum/pages/forum.page.js';
+import { TopicPage } from './forum/pages/topic.page.js';
 
 /** Um "a carregar" que já sabe falar o idioma escolhido. */
 const Carregando = () => {
@@ -250,6 +252,15 @@ export const App = () => (
               antes de a criar.
             */}
             <Route path="/premium" element={<PremiumPage />} />
+
+            {/*
+              O fórum é público de ler. Uma pergunta respondida vale
+              sobretudo para quem chega de uma pesquisa sem conta
+              nenhuma, e fechá-la atrás de um registo faria a plataforma
+              responder à mesma pergunta vezes sem conta.
+            */}
+            <Route path="/forum" element={<ForumPage />} />
+            <Route path="/forum/:topicId" element={<TopicPage />} />
 
             {/*
               Públicas e sem sessão, como têm de ser: quem as precisa de

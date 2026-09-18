@@ -25,6 +25,7 @@ export const pt = (p: Tools): Messages => ({
         perfil: 'Perfil',
         principal: 'Navegação principal',
         recrutamento: 'Recrutamento',
+        forum: 'Fórum',
         premium: 'Preços',
         entrar: 'Entrar',
         sair: 'Sair',
@@ -349,6 +350,52 @@ export const pt = (p: Tools): Messages => ({
         rodape: 'Legal',
         marcas:
             'O ViceHub é uma plataforma independente, sem ligação nem aprovação da Rockstar Games, da Take-Two Interactive ou de qualquer editora. Os nomes e marcas dos jogos pertencem a quem os detém.',
+    },
+
+    forum: {
+
+        titulo: 'Fórum',
+
+        subtitulo: 'Pergunta, responde, e ajudem-se uns aos outros.',
+
+        perguntar: 'Fazer uma pergunta',
+
+        aindaSemPerguntas: 'Ainda não há perguntas. Faz a primeira.',
+
+        naoCarregou: 'Não foi possível carregar o fórum.',
+
+        naoEncontrada: 'Não encontrámos esta pergunta.',
+
+        tituloDaPergunta: 'A tua pergunta, numa linha',
+
+        corpoDaPergunta: 'Diz o que tentaste e o que aconteceu',
+
+        publicar: 'Publicar a pergunta',
+
+        naoFoiPossivelPublicar: 'Não foi possível publicar a pergunta.',
+
+        responder: 'Escrever uma resposta',
+
+        enviarResposta: 'Publicar a resposta',
+
+        naoFoiPossivelResponder: 'Não foi possível publicar a resposta.',
+
+        semRespostas: 'Ainda sem respostas.',
+
+        retirar: 'Retirar',
+
+        naoFoiPossivelRetirar: 'Não foi possível retirar isso.',
+
+        retiradoComAConta: 'Este texto foi retirado com a conta de quem o escreveu.',
+
+        contaApagada: 'uma conta apagada',
+
+        fechada: 'Fechada a respostas novas',
+
+        voltar: 'Voltar ao fórum',
+
+        entrarParaPerguntar: 'Entra para fazer uma pergunta',
+
     },
 
     noticias: {

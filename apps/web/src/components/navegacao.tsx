@@ -5,15 +5,20 @@ import { useT } from '../i18n/i18n.js';
 /**
  * Os sítios onde se pode ir, e que existem mesmo.
  *
- * `News` e `Fórum` não estão aqui de propósito. Um item de menu que leva
- * a "em breve" não faz a plataforma parecer mais completa — faz-lhe uma
- * promessa por cumprir em cima do ecrã, e quem clica fica a saber que
- * não há nada. Entram quando houver o que mostrar.
+ * A regra é essa e não mudou: um item de menu que leva a "em breve" não
+ * faz a plataforma parecer mais completa — faz-lhe uma promessa por
+ * cumprir em cima do ecrã, e quem clica fica a saber que não há nada.
+ *
+ * O fórum esteve fora por isso, e entra agora porque passou a haver o
+ * que mostrar. As notícias continuam fora: vivem no topo da página de
+ * entrada, que é onde interessam a quem chega, e um item de menu só
+ * para elas seria um destino para um bloco.
  */
 const DESTINOS = [
     { to: '/crews', chave: 'crews' },
     { to: '/recrutamento', chave: 'recrutamento' },
     { to: '/servidores', chave: 'servidores' },
+    { to: '/forum', chave: 'forum' },
     { to: '/premium', chave: 'premium' },
 ] as const;
 

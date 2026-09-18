@@ -48,6 +48,12 @@ from the database to a screen; `🚧` is partly there; `○` has no code yet.
 - ○ Stripe Connect integration
 - ○ Reviews & reputation system
 
+### 💬 Forum
+- ✔ Ask a question, answer someone else's — reading needs no account
+- ✔ Remove what you wrote; moderators can remove anything
+- ✔ Your text leaves with your account, and the conversation stays standing
+- ○ Reporting, categories, search, accepted answers
+
 ### 📰 What's happening in the game
 - ✔ A news block on the landing page, fed from an RSS or Atom source
 - ○ Community finds and easter eggs — those are not published by anyone,
@@ -770,6 +776,64 @@ isso: quem decide de que servidor é um sinal é a chave, do lado de cá.
 Se viesse no corpo, uma chave podia reportar pelo servidor de outra
 pessoa.
 
+### O fórum
+
+| Rota (prefixo `/api/v1/forum`) | Quem pode |
+|---|---|
+| `GET /topics` | qualquer pessoa |
+| `GET /topics/:topicId` | qualquer pessoa |
+| `POST /topics` | `forum:post` |
+| `POST /topics/:topicId/replies` | `forum:post` |
+| `DELETE /topics/:topicId` | `forum:post` |
+| `DELETE /replies/:replyId` | `forum:post` |
+
+**Ler não pede sessão**, e é a decisão que faz o fórum valer a pena: uma
+pergunta respondida serve sobretudo quem chega de uma pesquisa sem conta
+nenhuma, e fechá-la atrás de um registo faria a plataforma responder à
+mesma pergunta vezes sem conta.
+
+Escrever pede sessão **e** `forum:post`, que o cargo de jogador traz. São
+duas coisas e não uma: o dia em que for preciso calar alguém sem lhe
+apagar a conta, tira-se-lhe a permissão.
+
+**Retirar exige `forum:post` e não `forum:moderate`.** Quem pode retirar
+um tópico decide-se no serviço: quem o escreveu, sempre, e quem tem
+`forum:moderate`. Exigir a moderação à entrada fechava a porta a quem
+quer apagar o que ele próprio escreveu — que é o caso mais comum de
+todos, e o que uma pessoa espera poder fazer sem pedir a ninguém.
+
+Retirar marca como apagado e não apaga: as respostas de outras pessoas
+ficam, e o registo de que houve ali uma pergunta é o que permite a um
+moderador explicar-se mais tarde.
+
+**Escrever leva um limite próprio**, muito mais apertado do que o global
+— é a única superfície onde qualquer pessoa registada deixa texto à
+vista de toda a gente. Ler não leva limite nenhum: quem navega depressa
+não está a abusar de nada.
+
+#### O texto é texto
+
+O que a pessoa escreve fica guardado **letra por letra**, sinais de maior
+e de menor incluídos: quem explica um erro de configuração precisa de os
+poder escrever. A segurança está em ser **mostrado como texto** e nunca
+como HTML. Limpar a marcação ao guardar daria a ideia de que mostrar de
+outra maneira passaria a ser seguro, e não passava.
+
+O tamanho é medido **depois** de o texto ser arrumado, e não antes. Sem
+isso, quinze quebras de linha e uma palavra passavam o mínimo — contava-se
+o que não se ia guardar.
+
+#### Quando alguém apaga a conta
+
+A plataforma promete a quem sai que **o seu texto é apagado**, e o que
+escreveu aqui é texto seu — muitas vezes com mais da pessoa lá dentro do
+que a biografia alguma vez teve. Por isso o corpo sai com a conta.
+
+O que **fica** é a linha, sem corpo. Um tópico que desaparecesse levava
+consigo as respostas de outras pessoas, e uma resposta que desaparecesse
+deixava a seguinte a falar com o vazio. Vazio quer dizer "retirado com a
+conta", e é assim que aparece no ecrã.
+
 ### As notícias da página de entrada
 
 | Rota | Quem pode |
@@ -1288,6 +1352,7 @@ o SMTP e o deploy
 ⚖️ Identificação legal do operador, para o aviso de rascunho sair dos termos  
 🎯 Decidir o que dá influência e prestígio às crews  
 🛒 O marketplace, que não tem código nenhum  
+🛡️ Moderação do fórum: denúncias, e alguém a quem elas cheguem  
 
 ---
 

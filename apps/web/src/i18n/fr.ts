@@ -26,6 +26,7 @@ export const fr = (p: Tools): Messages => ({
         perfil: 'Profil',
         principal: 'Navigation principale',
         recrutamento: 'Recrutement',
+        forum: 'Forum',
         premium: 'Tarifs',
         entrar: 'Connexion',
         sair: 'Déconnexion',
@@ -350,6 +351,52 @@ export const fr = (p: Tools): Messages => ({
         rodape: 'Mentions légales',
         marcas:
             'ViceHub est une plateforme indépendante, sans lien ni aval de Rockstar Games, Take-Two Interactive ou d’un quelconque éditeur. Les noms et marques des jeux appartiennent à leurs détenteurs.',
+    },
+
+    forum: {
+
+        titulo: 'Forum',
+
+        subtitulo: 'Posez vos questions, répondez, et aidez-vous les uns les autres.',
+
+        perguntar: 'Poser une question',
+
+        aindaSemPerguntas: 'Pas encore de questions. Posez la première.',
+
+        naoCarregou: 'Le forum n’a pas pu être chargé.',
+
+        naoEncontrada: 'Nous n\'avons pas trouvé cette question.',
+
+        tituloDaPergunta: 'Votre question, en une ligne',
+
+        corpoDaPergunta: 'Dites ce que vous avez essayé et ce qui s\'est passé',
+
+        publicar: 'Publier la question',
+
+        naoFoiPossivelPublicar: 'La question n\'a pas pu être publiée.',
+
+        responder: 'Écrire une réponse',
+
+        enviarResposta: 'Publier la réponse',
+
+        naoFoiPossivelResponder: 'La réponse n\'a pas pu être publiée.',
+
+        semRespostas: 'Pas encore de réponses.',
+
+        retirar: 'Retirer',
+
+        naoFoiPossivelRetirar: 'Cela n\'a pas pu être retiré.',
+
+        retiradoComAConta: 'Ce texte a été retiré avec le compte de son auteur.',
+
+        contaApagada: 'un compte supprimé',
+
+        fechada: 'Fermée aux nouvelles réponses',
+
+        voltar: 'Retour au forum',
+
+        entrarParaPerguntar: 'Connectez-vous pour poser une question',
+
     },
 
     noticias: {
