@@ -342,6 +342,172 @@ describe('o fórum', () => {
     });
 
     /**
+     * Fechar uma conversa, que é a ferramenta mais branda que um
+     * moderador tem.
+     *
+     * A coluna e a recusa existiam desde o princípio, e não havia rota
+     * nenhuma para as ligar: o ecrã sabia desenhar "fechada a respostas
+     * novas" e nunca podia mostrá-lo. Isto é o interruptor que faltava.
+     */
+    describe('fechar e reabrir uma pergunta', () => {
+        const fechar = (quem: { token: string }, topicId: string) =>
+            app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/topics/${topicId}/lock`,
+                headers: auth(quem.token),
+            });
+
+        const reabrir = (quem: { token: string }, topicId: string) =>
+            app.inject({
+                method: 'DELETE',
+                url: `/api/v1/forum/topics/${topicId}/lock`,
+                headers: auth(quem.token),
+            });
+
+        it('um moderador fecha, e a pergunta deixa de receber respostas', async () => {
+            const topicId = await abrir(ana, `Uma conversa que aquece ${marca}`);
+
+            expect((await fechar(moderador, topicId)).statusCode).toBe(204);
+
+            const tentativa = await app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/topics/${topicId}/replies`,
+                headers: auth(bruno.token),
+                payload: { body: 'Uma resposta que já não devia entrar.' },
+            });
+
+            expect(tentativa.statusCode, tentativa.body).toBe(409);
+            expect(tentativa.json().code).toBe('TOPIC_LOCKED');
+        });
+
+        /**
+         * E o que lá está continua a servir quem chegar depois. É a
+         * diferença entre fechar e retirar, e a razão de fechar existir.
+         */
+        it('deixa a pergunta de pé e à vista de quem não tem sessão', async () => {
+            const topicId = await abrir(ana, `Fechada mas legível ${marca}`);
+
+            await responder(bruno, topicId, 'A resposta que resolveu a dúvida.');
+            await fechar(moderador, topicId);
+
+            const topico = await ler(topicId);
+
+            expect(topico.replies).toHaveLength(1);
+            expect(topico.replies[0]?.body).toBe('A resposta que resolveu a dúvida.');
+        });
+
+        it('a leitura passa a dizer que está fechada', async () => {
+            const topicId = await abrir(ana, `Diz que está fechada ${marca}`);
+
+            const antes = await app.inject({
+                method: 'GET',
+                url: `/api/v1/forum/topics/${topicId}`,
+            });
+
+            expect(antes.json().isLocked).toBe(false);
+
+            await fechar(moderador, topicId);
+
+            const depois = await app.inject({
+                method: 'GET',
+                url: `/api/v1/forum/topics/${topicId}`,
+            });
+
+            expect(depois.json().isLocked).toBe(true);
+        });
+
+        it('reabrir devolve a pergunta às respostas', async () => {
+            const topicId = await abrir(ana, `Fechada e reaberta ${marca}`);
+
+            await fechar(moderador, topicId);
+
+            expect((await reabrir(moderador, topicId)).statusCode).toBe(204);
+
+            await responder(bruno, topicId, 'Já pode entrar outra vez.');
+        });
+
+        /**
+         * Nem sequer a quem escreveu a pergunta.
+         *
+         * Quem pergunta não é dono da conversa que a resposta dele
+         * abriu, e deixar fechar o que é seu dava a qualquer pessoa a
+         * maneira de calar quem lhe respondeu.
+         */
+        it('recusa a quem não modera, incluindo a quem perguntou', async () => {
+            const topicId = await abrir(ana, `Não é tua para fechar ${marca}`);
+
+            expect((await fechar(ana, topicId)).statusCode).toBe(403);
+            expect((await fechar(bruno, topicId)).statusCode).toBe(403);
+
+            await responder(bruno, topicId, 'E continua a receber respostas.');
+        });
+
+        it('responde 404 a uma pergunta que não existe', async () => {
+            const resposta = await fechar(
+                moderador,
+                '00000000-0000-4000-8000-000000000000',
+            );
+
+            expect(resposta.statusCode).toBe(404);
+            expect(resposta.json().code).toBe('TOPIC_NOT_FOUND');
+        });
+
+        /**
+         * Dois moderadores a fechar a mesma discussão ao mesmo tempo é o
+         * caso normal de uma conversa a aquecer, e não um erro.
+         */
+        it('fechar duas vezes não é erro', async () => {
+            const topicId = await abrir(ana, `Fechada duas vezes ${marca}`);
+
+            expect((await fechar(moderador, topicId)).statusCode).toBe(204);
+            expect((await fechar(moderador, topicId)).statusCode).toBe(204);
+        });
+    });
+
+    /**
+     * O ecrã tem de saber que ferramentas mostrar.
+     *
+     * Sem isto, a moderação existia na API e não tinha interface: não
+     * havia botão nenhum, e a única forma de moderar era falar com a API
+     * à mão.
+     */
+    describe('saber quem modera', () => {
+        const perguntar = (quem: { token: string }) =>
+            app.inject({
+                method: 'GET',
+                url: '/api/v1/forum/moderation',
+                headers: auth(quem.token),
+            });
+
+        it('diz que sim a quem modera', async () => {
+            const resposta = await perguntar(moderador);
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+            expect(resposta.json().canModerate).toBe(true);
+        });
+
+        /**
+         * E a quem não modera responde `false`, e não uma recusa: o ecrã
+         * tem de poder ler a resposta em vez de tratar um erro.
+         */
+        it('diz que não a quem não modera, sem recusar o pedido', async () => {
+            const resposta = await perguntar(ana);
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+            expect(resposta.json().canModerate).toBe(false);
+        });
+
+        it('exige sessão', async () => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/forum/moderation',
+            });
+
+            expect(resposta.statusCode).toBe(401);
+        });
+    });
+
+    /**
      * A promessa que a plataforma já faz a quem apaga a conta: **o teu
      * texto é apagado**. O que se escreve no fórum é texto seu, e muitas
      * vezes com mais da pessoa lá dentro do que a biografia teve.

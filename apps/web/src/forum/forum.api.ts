@@ -63,6 +63,22 @@ export const replyToTopic = (
         body: { body },
     });
 
+/**
+ * Se quem está com sessão aberta modera o fórum.
+ *
+ * Perguntado à parte da leitura do tópico, porque ler não pede sessão:
+ * um campo na resposta pública obrigava a autenticar quem chega de uma
+ * pesquisa só para lhe dizer que não modera.
+ */
+export const podeModerar = (): Promise<{ canModerate: boolean }> =>
+    api<{ canModerate: boolean }>('/forum/moderation');
+
+export const lockTopic = (topicId: string): Promise<void> =>
+    api<void>(`/forum/topics/${topicId}/lock`, { method: 'POST' });
+
+export const unlockTopic = (topicId: string): Promise<void> =>
+    api<void>(`/forum/topics/${topicId}/lock`, { method: 'DELETE' });
+
 export const removeTopic = (topicId: string): Promise<void> =>
     api<void>(`/forum/topics/${topicId}`, { method: 'DELETE' });
 
