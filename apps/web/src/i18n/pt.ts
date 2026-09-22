@@ -96,6 +96,8 @@ export const pt = (p: Tools): Messages => ({
         nomeJogador: 'Nome de jogador',
         aCriar: 'A criar…',
         passwordMinima: (n: number) => `Pelo menos ${n} caracteres.`,
+        captchaNaoCarregou:
+            'A confirmação de que não és um robô não carregou. Recarrega a página para tentar outra vez — sem ela não dá para continuar.',
         emailOcupado: 'Já existe uma conta com este email.',
         nomeOcupado: 'Este nome já está ocupado. Escolhe outro.',
         naoFoiPossivelCriar: 'Não foi possível criar a conta.',
@@ -353,6 +355,8 @@ export const pt = (p: Tools): Messages => ({
     },
 
     erros: {
+
+        CAPTCHA_FAILED: 'A confirmação de que não és um robô não passou. Tenta outra vez.',
 
         INVALID_CREDENTIALS: 'Esse email e essa password não correspondem.',
 

@@ -119,6 +119,29 @@ const envSchema = z.object({
     WEB_DIST_PATH: z.string().min(1).optional(),
 
     /**
+     * O CAPTCHA à entrada, do Cloudflare Turnstile.
+     *
+     * As duas chaves andam juntas e são as duas opcionais: **sem elas
+     * não há CAPTCHA nenhum e nenhum script de terceiros chega ao
+     * browser**. Isso não é comodidade de desenvolvimento — é o que
+     * mantém verdadeira a promessa da página de privacidade em qualquer
+     * instalação que não o ligue.
+     *
+     * A `SITE_KEY` é pública por natureza: vive no HTML de quem visita.
+     * A `SECRET_KEY` não sai daqui — é com ela que o servidor pergunta
+     * ao Cloudflare se o cartão que o browser trouxe é verdadeiro, e é
+     * essa pergunta, e não o widget, que faz o CAPTCHA valer alguma
+     * coisa.
+     *
+     * Escolheu-se o Turnstile e não o reCAPTCHA por uma razão concreta:
+     * não põe cookies de rastreio nem alimenta perfis de publicidade, e
+     * esta plataforma promete na privacidade que ninguém faz isso com
+     * quem a usa.
+     */
+    TURNSTILE_SITE_KEY: z.string().min(1).optional(),
+    TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+
+    /**
      * Limite de quem escreve no fórum.
      *
      * Muito mais apertado do que o global, e pela mesma espécie de razão
@@ -265,6 +288,34 @@ const envSchema = z.object({
 });
 
 /**
+ * As duas chaves do CAPTCHA, uma sem a outra.
+ *
+ * Meia configuração é pior do que nenhuma, e falha em silêncio nos dois
+ * sentidos: só com a pública, o widget aparece e ninguém confirma nada
+ * do lado do servidor — teatro; só com a secreta, o servidor exige um
+ * cartão que o browser nunca teve como mostrar, e recusa toda a gente à
+ * porta.
+ *
+ * Por isso recusa arrancar em qualquer ambiente, e não só em produção:
+ * as duas maneiras de errar isto são erradas em todo o lado.
+ */
+const captchaCompleto = envSchema.superRefine((valores, contexto) => {
+    const publica = valores.TURNSTILE_SITE_KEY !== undefined;
+    const secreta = valores.TURNSTILE_SECRET_KEY !== undefined;
+
+    if (publica === secreta) {
+        return;
+    }
+
+    contexto.addIssue({
+        code: 'custom',
+        path: [publica ? 'TURNSTILE_SECRET_KEY' : 'TURNSTILE_SITE_KEY'],
+        message:
+            'As duas chaves do Turnstile andam juntas: com uma só, ou ninguém confirma o CAPTCHA, ou ninguém o consegue passar.',
+    });
+});
+
+/**
  * Os nomes de todas as variáveis que a API lê.
  *
  * Existe para o `.env.example` poder ser confrontado com a verdade em
@@ -276,7 +327,7 @@ export const NOMES_DAS_VARIAVEIS: readonly string[] = Object.freeze(
     Object.keys(envSchema.shape),
 );
 
-const parsedEnvironment = envSchema.safeParse(process.env);
+const parsedEnvironment = captchaCompleto.safeParse(process.env);
 
 if (!parsedEnvironment.success) {
     console.error(

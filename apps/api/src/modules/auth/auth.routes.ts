@@ -12,6 +12,9 @@ import {
     resetPasswordSchema,
     verifyEmailSchema,
 } from './schemas/auth.schemas.js';
+import type { LoginDto, RegisterDto } from './dto/auth.dto.js';
+import { chavePublicaDoCaptcha } from '../../shared/captcha.js';
+import { requireCaptcha } from './http/captcha.guard.js';
 
 interface AuthRoutesOptions {
     providersController: AuthProvidersController;
@@ -43,17 +46,37 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
      *
      * O corpo é validado pelos schemas Zod antes de chegar ao controller.
      */
-    fastify.post(
+    fastify.post<{ Body: RegisterDto }>(
         '/register',
-        { schema: { body: registerSchema } },
+        {
+            preHandler: [requireCaptcha],
+            schema: { body: registerSchema },
+        },
         controller.register.bind(controller),
     );
 
-    fastify.post(
+    fastify.post<{ Body: LoginDto }>(
         '/login',
-        { schema: { body: loginSchema } },
+        {
+            preHandler: [requireCaptcha],
+            schema: { body: loginSchema },
+        },
         controller.login.bind(controller),
     );
+
+    /**
+     * A chave pública do CAPTCHA, para o ecrã saber se há um.
+     *
+     * Pública por natureza — vive no HTML de quem visita — e devolvida
+     * pela API em vez de assada na compilação: o mesmo artefacto serve
+     * qualquer instalação, e mudar a chave não pede um build novo.
+     *
+     * `null` quer dizer que não há CAPTCHA, e é assim que o ecrã fica a
+     * saber que **não deve ir buscar script nenhum ao Cloudflare**.
+     */
+    fastify.get('/captcha', async () => ({
+        siteKey: chavePublicaDoCaptcha(),
+    }));
 
     /**
      * Entrar por outro sítio.

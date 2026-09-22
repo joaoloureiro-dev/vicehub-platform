@@ -19,6 +19,8 @@ import validationPlugin from '../../src/plugins/http/validation.plugin.js';
 describe('ligação das rotas de autenticação ao middleware', () => {
     const registered = new Map<string, RouteOptions>();
 
+    let oAuthenticate: unknown;
+
     beforeAll(async () => {
         const app = Fastify();
 
@@ -29,6 +31,14 @@ describe('ligação das rotas de autenticação ao middleware', () => {
         await app.register(validationPlugin);
 
         const authenticate = vi.fn();
+
+        /*
+         * Guardado para se poder perguntar se **este** handler está numa
+         * rota, e não só quantos handlers ela tem. Contar era o que
+         * havia antes, e contar diz "pública" de uma rota que ganhou um
+         * guard que nada tem a ver com sessão.
+         */
+        oAuthenticate = authenticate;
 
         app.decorate('authenticate', authenticate as never);
 
@@ -89,12 +99,45 @@ describe('ligação das rotas de autenticação ao middleware', () => {
         expect(preHandlersOf(key)).toHaveLength(1);
     });
 
+    /**
+     * Pública quer dizer **não exige sessão**, e não "não tem
+     * preHandlers".
+     *
+     * Eram a mesma coisa até o registo e o login ganharem o guard do
+     * CAPTCHA, que não tem nada a ver com sessão. Contar handlers dizia
+     * que tinham deixado de ser públicas — e a leitura certa é procurar
+     * o `authenticate` e não o encontrar.
+     */
     it.each([
         'POST /register',
         'POST /login',
         'POST /refresh',
     ])('%s permanece pública', (key) => {
-        expect(preHandlersOf(key)).toHaveLength(0);
+        expect(preHandlersOf(key)).not.toContain(oAuthenticate);
+    });
+
+    /**
+     * E as duas portas por onde uma conta entra levam o CAPTCHA.
+     *
+     * Antes do handler, de propósito: conferido depois, um guião já
+     * gastou a contagem de tentativas falhadas de outra pessoa, e
+     * bloquear a conta de alguém sem lhe saber a password é uma das
+     * coisas que isto existe para impedir.
+     */
+    it.each(['POST /register', 'POST /login'])(
+        '%s passa pelo CAPTCHA antes do handler',
+        (key) => {
+            expect(preHandlersOf(key)).toHaveLength(1);
+        },
+    );
+
+    /**
+     * O `refresh` não leva CAPTCHA. Não é uma porta: é uma sessão que já
+     * existe a renovar-se, e pôr um desafio no caminho dela daria um
+     * widget a quem está a navegar.
+     */
+    it('POST /refresh não leva CAPTCHA', () => {
+        expect(preHandlersOf('POST /refresh')).toHaveLength(0);
     });
 
     /**

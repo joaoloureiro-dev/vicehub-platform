@@ -97,6 +97,8 @@ export const fr = (p: Tools): Messages => ({
         nomeJogador: 'Nom de joueur',
         aCriar: 'Création…',
         passwordMinima: (n: number) => `Au moins ${n} caractères.`,
+        captchaNaoCarregou:
+            'La vérification indiquant que vous n’êtes pas un robot n’a pas pu se charger. Rechargez la page pour réessayer : sans elle, impossible de continuer.',
         emailOcupado: 'Un compte existe déjà avec cet e-mail.',
         nomeOcupado: 'Ce nom est déjà pris. Choisis-en un autre.',
         naoFoiPossivelCriar: 'Le compte n’a pas pu être créé.',
@@ -354,6 +356,8 @@ export const fr = (p: Tools): Messages => ({
     },
 
     erros: {
+
+        CAPTCHA_FAILED: 'La vérification indiquant que vous n\'êtes pas un robot a échoué. Réessayez.',
 
         INVALID_CREDENTIALS: 'Cet e-mail et ce mot de passe ne correspondent pas.',
 
