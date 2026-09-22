@@ -83,10 +83,13 @@ export const logoutEverywhere = async (): Promise<void> => {
     }
 };
 
-export const requestPasswordReset = (email: string): Promise<void> =>
+export const requestPasswordReset = (
+    email: string,
+    captchaToken?: string,
+): Promise<void> =>
     api<void>('/auth/password-reset', {
         method: 'POST',
-        body: { email },
+        body: { email, ...(captchaToken ? { captchaToken } : {}) },
         withoutRefresh: true,
     });
 

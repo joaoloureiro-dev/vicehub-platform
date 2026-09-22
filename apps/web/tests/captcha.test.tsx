@@ -112,6 +112,35 @@ describe('o CAPTCHA no ecrã', () => {
     });
 
     /**
+     * E uma resposta sem o campo conta como "não há".
+     *
+     * `undefined` não é `null`, e passaria pela porteira que decide se
+     * se desenha o widget: o ecrã mandava buscar um script de terceiros
+     * sem ter chave nenhuma para lhe dar. Uma instalação antiga, um
+     * proxy que corta campos, ou a rota a mudar de forma bastam.
+     */
+    it('sem o campo na resposta, trata como se não houvesse chave', async () => {
+        const chamadas = vi.fn(() =>
+            Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({}),
+            } as Response),
+        );
+
+        vi.stubGlobal('fetch', chamadas);
+
+        const { container } = montarEcra(<Captcha aoResponder={vi.fn()} />);
+
+        await waitFor(() => {
+            expect(chamadas).toHaveBeenCalled();
+        });
+
+        expect(container.querySelector('.captcha')).toBeNull();
+        expect(doTurnstile()).toHaveLength(0);
+    });
+
+    /**
      * E quando a própria API não responde, também não.
      *
      * Um widget partido a olhar para quem está a entrar é pior do que

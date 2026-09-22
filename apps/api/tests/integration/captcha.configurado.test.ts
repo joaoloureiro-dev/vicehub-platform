@@ -214,6 +214,65 @@ describe('o CAPTCHA à entrada, configurado', () => {
         expect(resposta.json().code).toBe('CAPTCHA_FAILED');
     });
 
+    /**
+     * E a recuperação da password, que é a terceira porta.
+     *
+     * Um pedido sem cartão não chega a fazer a plataforma escrever a
+     * ninguém: é recusado antes do handler, e nenhum email sai.
+     */
+    it('recusa um pedido de recuperação sem cartão', async () => {
+        const chamadas = cloudflareDiz({ success: true });
+
+        const resposta = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/password-reset',
+            payload: { email: `cfg${marca}@vicehub.test` },
+        });
+
+        expect(resposta.statusCode).toBe(400);
+        expect(resposta.json().code).toBe('CAPTCHA_FAILED');
+        expect(chamadas).not.toHaveBeenCalled();
+    });
+
+    it('deixa pedir a recuperação com cartão bom', async () => {
+        cloudflareDiz({ success: true });
+
+        const resposta = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/password-reset',
+            payload: {
+                email: `cfg${marca}@vicehub.test`,
+                captchaToken: 'cartao-da-recuperacao',
+            },
+        });
+
+        /** 202: aceite. A resposta é a mesma exista a conta ou não. */
+        expect(resposta.statusCode, resposta.body).toBe(202);
+    });
+
+    /**
+     * Confirmar a recuperação não leva CAPTCHA.
+     *
+     * Quem lá chega traz um token que só podia ter vindo do email. O
+     * token aqui é inventado, e por isso a resposta é uma recusa — mas
+     * é a recusa do token, e não a do CAPTCHA, que é o que se quer
+     * provar.
+     */
+    it('não exige cartão para confirmar a password nova', async () => {
+        cloudflareDiz({ success: true });
+
+        const resposta = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/password-reset/confirm',
+            payload: {
+                token: 'um-token-que-nao-existe',
+                password: 'Outr4S3cret!Pass',
+            },
+        });
+
+        expect(resposta.json().code).not.toBe('CAPTCHA_FAILED');
+    });
+
     /** E deixa entrar quem o traga. */
     it('deixa entrar com cartão bom', async () => {
         cloudflareDiz({ success: true });

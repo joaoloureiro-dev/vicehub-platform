@@ -78,6 +78,22 @@ describe('o CAPTCHA à entrada, sem estar configurado', () => {
         expect(chamadas).not.toHaveBeenCalled();
     });
 
+    /** E a recuperação da password é pedida sem cartão nenhum. */
+    it('deixa pedir a recuperação sem cartão', async () => {
+        const chamadas = vi.fn();
+
+        vi.stubGlobal('fetch', chamadas);
+
+        const resposta = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/password-reset',
+            payload: { email: `cap${marca}@vicehub.test` },
+        });
+
+        expect(resposta.statusCode, resposta.body).toBe(202);
+        expect(chamadas).not.toHaveBeenCalled();
+    });
+
     /**
      * Um cartão que chegue a uma instalação sem CAPTCHA não é motivo
      * para recusar ninguém.

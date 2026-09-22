@@ -110,7 +110,14 @@ export const Captcha = ({ aoResponder }: CaptchaProps) => {
         void api<{ siteKey: string | null }>('/auth/captcha')
             .then((resposta) => {
                 if (vivo) {
-                    setChave(resposta.siteKey);
+                    /*
+                      `?? null` e não `resposta.siteKey`: uma resposta
+                      sem o campo é uma instalação que não tem CAPTCHA a
+                      dizê-lo mal, e `undefined` não é `null` — passava
+                      pela porteira que decide se se desenha o widget e
+                      mandava buscar um script sem chave nenhuma.
+                    */
+                    setChave(resposta.siteKey ?? null);
                 }
             })
             .catch(() => {

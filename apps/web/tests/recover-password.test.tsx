@@ -21,8 +21,39 @@ const irPara = (url: string) => {
 describe('recuperar a password', () => {
     let fetchMock: ReturnType<typeof vi.fn>;
 
+    /**
+     * O que a recuperação responde neste teste.
+     *
+     * Separado da porteira das rotas: o ecrã pergunta agora duas coisas
+     * — se a instalação tem CAPTCHA e, depois, a recuperação em si — e
+     * um duplo que respondesse o mesmo às duas dizia que o ecrã fazia
+     * coisas que não faz.
+     */
+    let daRecuperacao: Response;
+
     beforeEach(() => {
-        fetchMock = vi.fn().mockResolvedValue(responde(202));
+        daRecuperacao = responde(202);
+
+        fetchMock = vi.fn((url: string) => {
+            const endereco = String(url);
+
+            /** Sem CAPTCHA configurado, que é a instalação por omissão. */
+            if (endereco.includes('/auth/captcha')) {
+                return Promise.resolve(responde(200, { siteKey: null }));
+            }
+
+            if (endereco.includes('/auth/password-reset')) {
+                return Promise.resolve(daRecuperacao);
+            }
+
+            /*
+             * Uma rota que não está aqui é uma rota que ninguém decidiu
+             * — e um duplo que responde a tudo faz o teste passar sobre
+             * um ecrã que passou a falar com outro sítio qualquer.
+             */
+            throw new Error(`rota não prevista no duplo: ${endereco}`);
+        });
+
         vi.stubGlobal('fetch', fetchMock);
         irPara('/recuperar-password');
     });
@@ -40,7 +71,7 @@ describe('recuperar a password', () => {
         it('mostra a mesma confirmação quando o pedido falha', async () => {
             const utilizadora = userEvent.setup();
 
-            fetchMock.mockResolvedValue(responde(404, { code: 'USER_NOT_FOUND' }));
+            daRecuperacao = responde(404, { code: 'USER_NOT_FOUND' });
 
             montar();
 
@@ -71,10 +102,43 @@ describe('recuperar a password', () => {
             });
         });
 
+        /**
+         * A única falha que se mostra aqui.
+         *
+         * O silêncio protege a conta, e por isso todas as outras são
+         * engolidas. Esta não diz nada sobre a conta — é sobre o pedido,
+         * e é a mesma exista ela ou não. Engoli-la seria pior do que o
+         * silêncio: a pessoa lia "verifica o teu email" e ficava à
+         * espera de um email que nunca foi enviado.
+         */
+        it('diz quando é o CAPTCHA que recusa, e não finge que enviou', async () => {
+            const utilizadora = userEvent.setup();
+
+            daRecuperacao = responde(400, { code: 'CAPTCHA_FAILED' });
+
+            montar();
+
+            await utilizadora.type(
+                screen.getByLabelText(t.auth.email),
+                'player@vicehub.test',
+            );
+            await utilizadora.click(
+                screen.getByRole('button', { name: t.auth.enviarLink }),
+            );
+
+            await waitFor(() => {
+                expect(screen.getByRole('alert').textContent).toBe(
+                    t.erros.CAPTCHA_FAILED,
+                );
+            });
+
+            expect(screen.queryByText(t.auth.seExistir)).toBeNull();
+        });
+
         it('nunca deixa escapar que a conta não existe', async () => {
             const utilizadora = userEvent.setup();
 
-            fetchMock.mockResolvedValue(responde(404, { code: 'USER_NOT_FOUND' }));
+            daRecuperacao = responde(404, { code: 'USER_NOT_FOUND' });
 
             montar();
 
@@ -106,7 +170,7 @@ describe('recuperar a password', () => {
             const utilizadora = userEvent.setup();
 
             irPara('/recuperar-password?token=segredo-do-email');
-            fetchMock.mockResolvedValue(responde(204));
+            daRecuperacao = responde(204);
 
             montar();
 
@@ -120,8 +184,12 @@ describe('recuperar a password', () => {
                 expect(fetchMock).toHaveBeenCalled();
             });
 
+            const pedido = fetchMock.mock.calls.find(([url]) =>
+                String(url).includes('/auth/password-reset'),
+            ) as [string, RequestInit] | undefined;
+
             const corpo = JSON.parse(
-                (fetchMock.mock.calls[0]?.[1] as RequestInit).body as string,
+                (pedido?.[1] as RequestInit).body as string,
             ) as { token: string; password: string };
 
             expect(corpo.token).toBe('segredo-do-email');
@@ -152,9 +220,7 @@ describe('recuperar a password', () => {
             const utilizadora = userEvent.setup();
 
             irPara('/recuperar-password?token=gasto');
-            fetchMock.mockResolvedValue(
-                responde(400, { code: 'INVALID_ACCOUNT_TOKEN' }),
-            );
+            daRecuperacao = responde(400, { code: 'INVALID_ACCOUNT_TOKEN' });
 
             montar();
 

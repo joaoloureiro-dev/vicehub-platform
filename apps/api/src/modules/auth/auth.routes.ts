@@ -12,7 +12,11 @@ import {
     resetPasswordSchema,
     verifyEmailSchema,
 } from './schemas/auth.schemas.js';
-import type { LoginDto, RegisterDto } from './dto/auth.dto.js';
+import type {
+    LoginDto,
+    RegisterDto,
+    RequestPasswordResetDto,
+} from './dto/auth.dto.js';
 import { chavePublicaDoCaptcha } from '../../shared/captcha.js';
 import { requireCaptcha } from './http/captcha.guard.js';
 
@@ -140,9 +144,27 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
         },
     };
 
-    fastify.post(
+    /**
+     * E esta leva também o CAPTCHA.
+     *
+     * O limite por IP trava um guião a correr de um sítio só; não trava
+     * quem tenha endereços a rodar. É a única rota que faz a plataforma
+     * escrever a alguém sem que quem pede prove seja o que for, e o que
+     * ela gasta não é nosso: é a caixa de correio de quem levar com os
+     * emails, e a quota do fornecedor que os entrega.
+     *
+     * A confirmação não leva. Quem lá chega traz um token que só podia
+     * ter vindo do email, e pôr um desafio entre a pessoa e a password
+     * nova é atrito no pior momento — logo a seguir a ela ter clicado
+     * no link para o fazer.
+     */
+    fastify.post<{ Body: RequestPasswordResetDto }>(
         '/password-reset',
-        { config: strictLimit, schema: { body: requestPasswordResetSchema } },
+        {
+            config: strictLimit,
+            preHandler: [requireCaptcha],
+            schema: { body: requestPasswordResetSchema },
+        },
         controller.requestPasswordReset.bind(controller),
     );
 
