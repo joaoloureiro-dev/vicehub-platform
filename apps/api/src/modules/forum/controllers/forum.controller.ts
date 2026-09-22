@@ -119,6 +119,60 @@ export class ForumController {
         }
     }
 
+    /**
+     * Se quem pergunta modera.
+     *
+     * Existe para o ecrã poder mostrar as ferramentas a quem as tem, em
+     * vez de as mostrar a toda a gente e deixar a API recusar — que é o
+     * que acontecia até aqui, e fazia com que **ninguém** as visse: não
+     * havia botão nenhum de moderação em lado nenhum, e a única forma
+     * de moderar era falar com a API à mão.
+     *
+     * Rota à parte e não um campo na leitura do tópico, porque ler não
+     * pede sessão. Pôr isto lá obrigava a autenticar quem chega de uma
+     * pesquisa só para lhe dizer que não modera.
+     */
+    async moderation(
+        request: FastifyRequest,
+        reply: FastifyReply,
+    ): Promise<void> {
+        reply.send({ canModerate: this.podeModerar(request) });
+    }
+
+    async lock(
+        request: FastifyRequest<{ Params: TopicIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.mudarFecho(request, reply, true);
+    }
+
+    async unlock(
+        request: FastifyRequest<{ Params: TopicIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.mudarFecho(request, reply, false);
+    }
+
+    private async mudarFecho(
+        request: FastifyRequest<{ Params: TopicIdParamDto }>,
+        reply: FastifyReply,
+        fechar: boolean,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            await this.forumService.setLock(
+                request.params.topicId,
+                user.id,
+                fechar,
+            );
+
+            reply.code(204).send();
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
     async removeTopic(
         request: FastifyRequest<{ Params: TopicIdParamDto }>,
         reply: FastifyReply,

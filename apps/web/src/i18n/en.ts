@@ -608,6 +608,12 @@ export const en = (p: Tools) => ({
 
         fechada: 'Closed to new replies',
 
+        fechar: 'Close to replies',
+
+        reabrir: 'Reopen to replies',
+
+        naoFoiPossivelFechar: 'That could not be changed.',
+
         voltar: 'Back to the forum',
 
         entrarParaPerguntar: 'Sign in to ask a question',

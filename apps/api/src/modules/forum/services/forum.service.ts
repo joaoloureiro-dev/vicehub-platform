@@ -149,6 +149,36 @@ export class ForumService {
         await this.forumRepository.removeTopic(topicId, actorId);
     }
 
+    /**
+     * Fecha ou reabre uma pergunta a respostas novas.
+     *
+     * É a ferramenta mais branda que um moderador tem: o que lá está
+     * continua a servir quem chegar depois de uma pesquisa, e só a
+     * conversa é que pára. Retirar apaga a resposta de outra pessoa
+     * junto com o desvario, e isso raramente é o que se queria.
+     *
+     * Quem pode fazê-lo é decidido à porta, pela permissão, e não aqui:
+     * ao contrário de retirar, isto **não** é uma coisa que o autor
+     * possa fazer ao que é seu. Quem pergunta não é dono da conversa
+     * que a resposta dele abriu.
+     */
+    async setLock(
+        topicId: string,
+        actorId: string,
+        fechar: boolean,
+    ): Promise<void> {
+        const topico = await this.forumRepository.findTopic(topicId);
+
+        if (topico === null) {
+            throw new ForumError(
+                'TOPIC_NOT_FOUND',
+                'Esta pergunta não existe ou foi retirada.',
+            );
+        }
+
+        await this.forumRepository.setTopicLock(topicId, actorId, fechar);
+    }
+
     async removeReply(
         replyId: string,
         actorId: string,

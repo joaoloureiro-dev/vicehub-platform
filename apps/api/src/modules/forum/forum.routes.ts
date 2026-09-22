@@ -101,6 +101,56 @@ const forumRoutes: FastifyPluginAsync<ForumRoutesOptions> = async (
         controller.removeTopic.bind(controller),
     );
 
+    /**
+     * Fechar e reabrir uma pergunta.
+     *
+     * Exigem `forum:moderate` à porta, ao contrário de retirar: fechar
+     * não é uma coisa que o autor faça ao que é seu. Quem pergunta não
+     * é dono da conversa que a resposta dele abriu.
+     *
+     * Dois verbos e um caminho em vez de um interruptor com um corpo:
+     * fechar e reabrir são coisas diferentes, e repeti-las não muda
+     * nada — o que importa é em que estado fica, e não quantas vezes lá
+     * bateram.
+     */
+    fastify.post<{ Params: TopicIdParamDto }>(
+        '/topics/:topicId/lock',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('forum:moderate'),
+            ],
+            schema: { params: topicIdParamSchema },
+        },
+        controller.lock.bind(controller),
+    );
+
+    fastify.delete<{ Params: TopicIdParamDto }>(
+        '/topics/:topicId/lock',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('forum:moderate'),
+            ],
+            schema: { params: topicIdParamSchema },
+        },
+        controller.unlock.bind(controller),
+    );
+
+    /**
+     * Se quem pergunta modera, para o ecrã saber que ferramentas
+     * mostrar.
+     *
+     * Exige sessão e mais nada: a resposta a quem não modera é `false`,
+     * e não uma recusa. Uma rota que respondesse 403 a toda a gente sem
+     * cargo obrigava o ecrã a tratar um erro como se fosse uma resposta.
+     */
+    fastify.get(
+        '/moderation',
+        { preHandler: [fastify.authenticate, fastify.authorize('forum:post')] },
+        controller.moderation.bind(controller),
+    );
+
     fastify.delete<{ Params: ReplyIdParamDto }>(
         '/replies/:replyId',
         {

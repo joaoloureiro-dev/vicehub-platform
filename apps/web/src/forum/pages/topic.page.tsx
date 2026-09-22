@@ -7,9 +7,12 @@ import { useAsync } from '../../lib/use-async.js';
 import { useT } from '../../i18n/i18n.js';
 import {
     getTopic,
+    lockTopic,
+    podeModerar,
     removeReply,
     removeTopic,
     replyToTopic,
+    unlockTopic,
     type ForumAuthor,
 } from '../forum.api.js';
 
@@ -51,10 +54,14 @@ const Quem = ({ autor }: { autor: ForumAuthor | null }) => {
 /**
  * Uma pergunta e as respostas dela.
  *
- * O botão de retirar aparece a quem escreveu, e a API decide a sério:
- * quem escreveu pode sempre, e quem modera também. O ecrã não sabe quem
- * modera, e é de propósito — ele oferece, e a API recusa se for caso
- * disso.
+ * O botão de retirar aparece a quem escreveu e a quem modera. A API
+ * decide a sério nos dois casos; o que o ecrã faz é não oferecer o que
+ * de certeza vai ser recusado.
+ *
+ * Quem modera é perguntado, e só a quem tem sessão. Antes não era
+ * perguntado a ninguém, e o resultado era que **a moderação não tinha
+ * interface nenhuma**: existia na API e a única forma de lá chegar era
+ * à mão.
  */
 export const TopicPage = () => {
     const t = useT();
@@ -66,6 +73,19 @@ export const TopicPage = () => {
     const [erro, setErro] = useState<string | null>(null);
 
     const topico = useAsync(() => getTopic(topicId as string), [topicId]);
+
+    /**
+     * Sem sessão não se pergunta: a rota exige uma, e a resposta para
+     * quem não a tem já se sabe.
+     */
+    const moderacao = useAsync(
+        () => (user === null
+            ? Promise.resolve({ canModerate: false })
+            : podeModerar()),
+        [user],
+    );
+
+    const modero = moderacao.data?.canModerate === true;
 
     const agir = async (o: () => Promise<unknown>, qualErro: string) => {
         setErro(null);
@@ -116,20 +136,41 @@ export const TopicPage = () => {
                     <time dateTime={dados.createdAt}>
                         {new Date(dados.createdAt).toLocaleDateString()}
                     </time>
-                    {meu ? (
-                        <button
-                            className="btn-secondary perigo"
-                            type="button"
-                            disabled={aAgir}
-                            onClick={() =>
-                                void agir(
-                                    () => removeTopic(dados.id),
-                                    t.forum.naoFoiPossivelRetirar,
-                                )
-                            }
-                        >
-                            {t.forum.retirar}
-                        </button>
+                    {meu || modero ? (
+                        <span className="acoes">
+                            <button
+                                className="btn-secondary perigo"
+                                type="button"
+                                disabled={aAgir}
+                                onClick={() =>
+                                    void agir(
+                                        () => removeTopic(dados.id),
+                                        t.forum.naoFoiPossivelRetirar,
+                                    )
+                                }
+                            >
+                                {t.forum.retirar}
+                            </button>
+                            {modero ? (
+                                <button
+                                    className="btn-secondary"
+                                    type="button"
+                                    disabled={aAgir}
+                                    onClick={() =>
+                                        void agir(
+                                            () => (dados.isLocked
+                                                ? unlockTopic(dados.id)
+                                                : lockTopic(dados.id)),
+                                            t.forum.naoFoiPossivelFechar,
+                                        )
+                                    }
+                                >
+                                    {dados.isLocked
+                                        ? t.forum.reabrir
+                                        : t.forum.fechar}
+                                </button>
+                            ) : null}
+                        </span>
                     ) : null}
                 </p>
             </article>
@@ -150,21 +191,24 @@ export const TopicPage = () => {
                                         umaResposta.createdAt,
                                     ).toLocaleDateString()}
                                 </time>
-                                {user !== null
-                                    && umaResposta.author?.id === user.id ? (
-                                        <button
-                                            className="btn-secondary perigo"
-                                            type="button"
-                                            disabled={aAgir}
-                                            onClick={() =>
-                                                void agir(
-                                                    () => removeReply(umaResposta.id),
-                                                    t.forum.naoFoiPossivelRetirar,
-                                                )
-                                            }
-                                        >
-                                            {t.forum.retirar}
-                                        </button>
+                                {modero
+                                    || (user !== null
+                                        && umaResposta.author?.id === user.id) ? (
+                                        <span className="acoes">
+                                            <button
+                                                className="btn-secondary perigo"
+                                                type="button"
+                                                disabled={aAgir}
+                                                onClick={() =>
+                                                    void agir(
+                                                        () => removeReply(umaResposta.id),
+                                                        t.forum.naoFoiPossivelRetirar,
+                                                    )
+                                                }
+                                            >
+                                                {t.forum.retirar}
+                                            </button>
+                                        </span>
                                     ) : null}
                             </p>
                         </li>

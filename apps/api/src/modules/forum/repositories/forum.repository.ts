@@ -134,6 +134,30 @@ export class ForumRepository {
         });
     }
 
+    /**
+     * Fecha ou reabre um tópico a respostas novas.
+     *
+     * Uma data e não uma marca: saber **quando** foi fechado é o que
+     * permite a um moderador explicar-se mais tarde, e é a diferença
+     * entre um registo e um interruptor.
+     *
+     * Escrever o mesmo estado duas vezes não é erro. Dois moderadores a
+     * fechar a mesma conversa ao mesmo tempo é o caso normal de uma
+     * discussão a aquecer, e a segunda gravação apenas confirma a
+     * primeira.
+     */
+    setTopicLock(topicId: string, actorId: string, fechar: boolean) {
+        return this.database.forumTopic.update({
+            where: { id: topicId },
+            data: {
+                locked_at: fechar ? new Date() : null,
+                updated_by: actorId,
+                version: { increment: 1 },
+            },
+            select: { id: true },
+        });
+    }
+
     removeReply(replyId: string, actorId: string) {
         return this.database.forumReply.update({
             where: { id: replyId },

@@ -3475,6 +3475,21 @@ button.link:hover {
     font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Os botões de quem escreveu e de quem modera, juntos e ao fundo da
+ * linha.
+ *
+ * Soltos no rodapé, cada um quebrava para onde calhasse — quem modera
+ * via dois botões em duas linhas com o nome e a data pelo meio, e
+ * parecia avaria e não arrumação. Juntos quebram como um bloco só.
+ */
+.topico-rodape .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
 .topico-rodape .quem {
     color: var(--cyan-ink);
     text-decoration: none;

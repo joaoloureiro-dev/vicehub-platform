@@ -586,6 +586,12 @@ export const es = (p: Tools): Messages => ({
 
         fechada: 'Cerrada a nuevas respuestas',
 
+        fechar: 'Cerrar a respuestas',
+
+        reabrir: 'Reabrir a respuestas',
+
+        naoFoiPossivelFechar: 'No se pudo cambiar eso.',
+
         voltar: 'Volver al foro',
 
         entrarParaPerguntar: 'Entra para hacer una pregunta',

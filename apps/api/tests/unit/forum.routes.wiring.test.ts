@@ -65,6 +65,9 @@ describe('ligação das rotas do fórum', () => {
             get: vi.fn(),
             create: vi.fn(),
             reply: vi.fn(),
+            moderation: vi.fn(),
+            lock: vi.fn(),
+            unlock: vi.fn(),
             removeTopic: vi.fn(),
             removeReply: vi.fn(),
         } as unknown as ForumController;
@@ -135,6 +138,51 @@ describe('ligação das rotas do fórum', () => {
     );
 
     /**
+     * Fechar e reabrir exigem `forum:moderate`, ao contrário de retirar.
+     *
+     * Retirar é uma coisa que o autor faz ao que é seu, e por isso a
+     * porta é `forum:post`. Fechar não: quem pergunta não é dono da
+     * conversa que a resposta dele abriu, e a decisão de a parar é de
+     * quem modera. Tratar as duas da mesma maneira dava a qualquer
+     * pessoa a chave para fechar a sua própria pergunta a respostas — e
+     * as respostas dos outros são metade do que o fórum vale.
+     */
+    it.each(['POST /topics/:topicId/lock', 'DELETE /topics/:topicId/lock'])(
+        '%s exige a permissão de moderar',
+        (chave) => {
+            expect(preHandlersDe(chave)).toHaveLength(2);
+            expect(permissoesPorRota.get(chave)).toEqual(['forum:moderate']);
+        },
+    );
+
+    /**
+     * Perguntar se se modera pede sessão, e a permissão de escrever.
+     *
+     * Não a de moderar: a resposta a quem não modera é `false`, e não
+     * uma recusa. Exigir `forum:moderate` aqui fazia a rota responder
+     * 403 a toda a gente sem cargo, e o ecrã tinha de tratar um erro
+     * como se fosse uma resposta.
+     */
+    it('GET /moderation pede sessão sem exigir a moderação', () => {
+        expect(preHandlersDe('GET /moderation')).toHaveLength(2);
+        expect(permissoesPorRota.get('GET /moderation')).toEqual(['forum:post']);
+    });
+
+    /**
+     * E fechar não leva o limite da escrita.
+     *
+     * Um moderador a arrumar uma discussão que rebentou mexe em muitos
+     * tópicos seguidos, e um limite feito para travar quem enche o
+     * fórum travava precisamente quem o está a limpar.
+     */
+    it.each(['POST /topics/:topicId/lock', 'DELETE /topics/:topicId/lock'])(
+        '%s não leva o limite da escrita',
+        (chave) => {
+            expect(limiteDe(chave)).toBeUndefined();
+        },
+    );
+
+    /**
      * E escrever leva um limite próprio, mais apertado do que o global.
      */
     it.each(['POST /topics', 'POST /topics/:topicId/replies'])(
@@ -167,6 +215,8 @@ describe('ligação das rotas do fórum', () => {
         ['POST /topics/:topicId/replies', 'body'],
         ['GET /topics/:topicId', 'params'],
         ['DELETE /replies/:replyId', 'params'],
+        ['POST /topics/:topicId/lock', 'params'],
+        ['DELETE /topics/:topicId/lock', 'params'],
     ])('%s valida o %s do pedido', (chave, parte) => {
         const schema = rotas.get(chave)?.schema as
             | Record<string, unknown>
