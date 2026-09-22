@@ -222,3 +222,74 @@ export const lerFeed = (xml: string): FeedLido | null => {
 
     return { sourceName, noticias };
 };
+
+/**
+ * Os feeds que uma página diz ter.
+ *
+ * É assim que se **procura** um feed em vez de o adivinhar: quem publica
+ * um declara-o no `<head>` com o tipo do feed, e é isso que qualquer
+ * leitor de RSS procura quando lhe dão o endereço de um site em vez do
+ * endereço de um feed.
+ *
+ * A leitura é por expressão regular e não por um analisador de HTML, de
+ * propósito: o que interessa daqui são umas quantas etiquetas `<link>`
+ * no cabeçalho, e trazer um analisador inteiro para isso era trazer
+ * mais superfície do que a que se ganha. HTML mal formado não é
+ * problema — uma etiqueta que não case simplesmente não aparece na
+ * lista, que é o mesmo que a página não a ter.
+ *
+ * Os endereços vêm resolvidos contra a página, porque quase todos são
+ * relativos, e sem repetições — `/feed` e `/feed` declarados duas vezes
+ * são um feed.
+ */
+export const feedsDeclaradosEm = (html: string, pagina: string): string[] => {
+    const encontrados: string[] = [];
+
+    for (const etiqueta of html.match(/<link\b[^>]*>/gi) ?? []) {
+        /**
+         * O `type` é a regra, e é a regra toda.
+         *
+         * O `rel` chegou a ser conferido aqui também — `alternate`, que
+         * é o que a norma diz. Só que há sítios a declarar `rel="feed"`
+         * e outros `rel="alternate feed"`, e a conferência a mais não
+         * acrescentava nada: o que faz de uma etiqueta uma declaração de
+         * feed é ela apontar para um, e é o `type` que diz isso. Duas
+         * maneiras de escrever a mesma regra é uma delas a ficar para
+         * trás sem ninguém dar por isso.
+         */
+        if (!/\btype\s*=\s*["']?application\/(rss|atom)\+xml/i.test(etiqueta)) {
+            continue;
+        }
+
+        const href = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s">]+))/i.exec(
+            etiqueta,
+        );
+
+        const bruto = href?.[1] ?? href?.[2] ?? href?.[3];
+
+        if (bruto === undefined || bruto === '') {
+            continue;
+        }
+
+        let absoluto: string;
+
+        try {
+            absoluto = new URL(bruto, pagina).href;
+        } catch {
+            continue;
+        }
+
+        /**
+         * `enderecoSeguro` corta aqui o mesmo que corta nas notícias:
+         * uma página pode declarar um `javascript:` ou um `data:` como
+         * feed, e isto vai parar a uma configuração que alguém copia.
+         */
+        if (!enderecoSeguro(absoluto) || encontrados.includes(absoluto)) {
+            continue;
+        }
+
+        encontrados.push(absoluto);
+    }
+
+    return encontrados;
+};
