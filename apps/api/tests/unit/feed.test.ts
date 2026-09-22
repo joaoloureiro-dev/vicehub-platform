@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { EXCERTO_MAXIMO } from '@vicehub/database';
-import { lerFeed } from '../../src/shared/feed.js';
+import { feedsDeclaradosEm, lerFeed } from '../../src/shared/feed.js';
 
 /**
  * Ler um ficheiro que outra pessoa gera.
@@ -266,5 +266,146 @@ describe('ler um feed', () => {
 
         expect(lido).not.toBeNull();
         expect(lido?.noticias).toHaveLength(0);
+    });
+});
+
+/**
+ * Procurar o feed em vez de o adivinhar.
+ *
+ * Quem publica um feed declara-o no `<head>`. Adivinhar endereços é o
+ * que se faz quando não se lê o que a página diz — e dá a um site que
+ * responde 200 a tudo a oportunidade de parecer que tem feed.
+ */
+describe('procurar o feed que uma página declara', () => {
+    const pagina = 'https://exemplo.test/noticias';
+
+    const comCabeca = (dentro: string): string =>
+        `<!doctype html><html><head>${dentro}</head><body>nada</body></html>`;
+
+    it('encontra um feed RSS declarado', () => {
+        const html = comCabeca(
+            '<link rel="alternate" type="application/rss+xml" href="/feed.rss">',
+        );
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([
+            'https://exemplo.test/feed.rss',
+        ]);
+    });
+
+    it('encontra um feed Atom', () => {
+        const html = comCabeca(
+            '<link rel="alternate" type="application/atom+xml" href="https://exemplo.test/atom.xml">',
+        );
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([
+            'https://exemplo.test/atom.xml',
+        ]);
+    });
+
+    /** Quase todos são relativos, e um relativo por resolver não serve. */
+    it('resolve o endereço contra a página onde estava', () => {
+        const html = comCabeca(
+            '<link rel="alternate" type="application/rss+xml" href="rss">',
+        );
+
+        expect(feedsDeclaradosEm(html, 'https://exemplo.test/a/b')).toEqual([
+            'https://exemplo.test/a/rss',
+        ]);
+    });
+
+    it('lê o href com aspas simples, sem aspas, e a etiqueta fechada', () => {
+        const html = comCabeca(`
+            <link rel='alternate' type='application/rss+xml' href='/um.rss'/>
+            <link rel=alternate type=application/rss+xml href=/dois.rss>
+        `);
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([
+            'https://exemplo.test/um.rss',
+            'https://exemplo.test/dois.rss',
+        ]);
+    });
+
+    it('não repete o mesmo feed declarado duas vezes', () => {
+        const html = comCabeca(`
+            <link rel="alternate" type="application/rss+xml" href="/feed.rss">
+            <link rel="alternate" type="application/rss+xml" href="/feed.rss">
+        `);
+
+        expect(feedsDeclaradosEm(html, pagina)).toHaveLength(1);
+    });
+
+    /**
+     * O que faz de uma etiqueta um feed é o `type`, e mais nada.
+     *
+     * Há sítios a declarar `rel="feed"` e outros `rel="alternate feed"`.
+     * Exigir a palavra `alternate` deixava esses de fora sem ganhar
+     * coisa nenhuma — e era uma segunda maneira de escrever a mesma
+     * regra.
+     */
+    it.each([
+        'feed',
+        'alternate feed',
+        'alternate',
+    ])('encontra o feed declarado com rel="%s"', (rel) => {
+        const html = comCabeca(
+            `<link rel="${rel}" type="application/rss+xml" href="/feed.rss">`,
+        );
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([
+            'https://exemplo.test/feed.rss',
+        ]);
+    });
+
+    /**
+     * `rel="alternate"` sozinho é outra coisa: é a mesma página noutro
+     * idioma, e é o que toda a gente tem. O que a torna um feed é o
+     * `type`.
+     */
+    it('ignora um alternate que não é feed', () => {
+        const html = comCabeca(
+            '<link rel="alternate" hreflang="pt" href="https://exemplo.test/pt">',
+        );
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([]);
+    });
+
+    it('ignora uma folha de estilo e um ícone', () => {
+        const html = comCabeca(`
+            <link rel="stylesheet" href="/estilo.css">
+            <link rel="icon" href="/favicon.ico">
+        `);
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([]);
+    });
+
+    /**
+     * Isto vai parar a uma variável de configuração que alguém copia do
+     * ecrã para o `.env`. Um `javascript:` declarado como feed não tem
+     * de chegar lá.
+     */
+    it('recusa um endereço que não seja http nem https', () => {
+        const html = comCabeca(
+            '<link rel="alternate" type="application/rss+xml" href="javascript:alert(1)">',
+        );
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([]);
+    });
+
+    it('não se engasga com uma página sem cabeça nenhuma', () => {
+        expect(feedsDeclaradosEm('', pagina)).toEqual([]);
+        expect(feedsDeclaradosEm('<html><body>oi', pagina)).toEqual([]);
+    });
+
+    /**
+     * O caso que motivou tudo isto: uma página que é uma aplicação e
+     * não declara feed nenhum. A resposta certa é "não tem", e não um
+     * endereço inventado.
+     */
+    it('diz que não há quando a página não declara nenhum', () => {
+        const html = comCabeca(
+            '<title>Newswire</title><script src="/app.js"></script>',
+        );
+
+        expect(feedsDeclaradosEm(html, pagina)).toEqual([]);
     });
 });

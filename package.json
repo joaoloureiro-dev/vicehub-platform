@@ -36,7 +36,8 @@
         "admin:grant": "npm run admin:grant --workspace=@vicehub/database --",
         "admin:revoke": "npm run admin:revoke --workspace=@vicehub/database --",
         "admin:list": "npm run admin:list --workspace=@vicehub/database",
-        "news:fetch": "npm run news:fetch --workspace=@vicehub/api"
+        "news:fetch": "npm run news:fetch --workspace=@vicehub/api",
+        "news:probe": "npm run news:probe --workspace=@vicehub/api --"
     },
     "devDependencies": {
         "@types/jsonwebtoken": "9.0.10",
