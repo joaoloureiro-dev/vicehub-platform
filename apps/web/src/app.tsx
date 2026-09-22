@@ -37,6 +37,7 @@ import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
 import { ForumPage } from './forum/pages/forum.page.js';
 import { TopicPage } from './forum/pages/topic.page.js';
+import { DenunciasPage } from './forum/pages/denuncias.page.js';
 
 /** Um "a carregar" que já sabe falar o idioma escolhido. */
 const Carregando = () => {
@@ -260,6 +261,7 @@ export const App = () => (
               responder à mesma pergunta vezes sem conta.
             */}
             <Route path="/forum" element={<ForumPage />} />
+            <Route path="/forum/denuncias" element={<DenunciasPage />} />
             <Route path="/forum/:topicId" element={<TopicPage />} />
 
             {/*

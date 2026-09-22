@@ -5,7 +5,7 @@ import { Alert } from '../../auth/components/alert.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useT } from '../../i18n/i18n.js';
 import { useAuth } from '../../auth/auth.context.js';
-import { createTopic, listTopics } from '../forum.api.js';
+import { createTopic, listTopics, podeModerar } from '../forum.api.js';
 
 /**
  * O fórum: as perguntas, e a caixa para fazer uma.
@@ -28,6 +28,21 @@ export const ForumPage = () => {
     const [erro, setErro] = useState<string | null>(null);
 
     const pagina = useAsync(() => listTopics(1), []);
+
+    /**
+     * A porta da fila de denúncias, para quem a pode abrir.
+     *
+     * Só aqui e só a quem modera: uma fila que ninguém encontra é um
+     * sítio onde as denúncias vão morrer, e um link que a maioria das
+     * pessoas abre para levar com uma recusa é ruído no menu de toda a
+     * gente. Sem sessão não se pergunta, que é como a rota responde.
+     */
+    const moderacao = useAsync(
+        () => (user === null
+            ? Promise.resolve({ canModerate: false })
+            : podeModerar()),
+        [user],
+    );
 
     const publicar = async (evento: FormEvent) => {
         evento.preventDefault();
@@ -62,6 +77,11 @@ export const ForumPage = () => {
             <header className="card header">
                 <h1>{t.forum.titulo}</h1>
                 <p>{t.forum.subtitulo}</p>
+                {moderacao.data?.canModerate === true ? (
+                    <p className="hint">
+                        <Link to="/forum/denuncias">{t.forum.irParaFila}</Link>
+                    </p>
+                ) : null}
             </header>
 
             {user ? (

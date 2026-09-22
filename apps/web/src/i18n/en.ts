@@ -618,6 +618,61 @@ export const en = (p: Tools) => ({
 
         entrarParaPerguntar: 'Sign in to ask a question',
 
+        denunciar: 'Report',
+
+        porqueDenuncias: 'What is wrong with it?',
+
+        razoes: {
+            spam: 'Spam or advertising',
+            abuse: 'Insults, harassment or hate',
+            off_topic: 'Nothing to do with the question',
+            other: 'Something else',
+        },
+
+        notaDaDenuncia: 'Anything a moderator should know (optional)',
+
+        enviarDenuncia: 'Send the report',
+
+        cancelarDenuncia: 'Cancel',
+
+        denunciaRecebida: 'Reported. A moderator will look at it.',
+
+        naoFoiPossivelDenunciar: 'The report could not be sent.',
+
+        irParaFila: 'Reports waiting',
+
+        filaTitulo: 'Reports',
+
+        filaSub: 'Oldest first, because the oldest has waited longest.',
+
+        filaEstados: {
+            open: 'Waiting',
+            acted: 'Acted on',
+            dismissed: 'Nothing wrong',
+        },
+
+        filaVazia: 'Nothing here.',
+
+        filaNegada: 'This is for moderators.',
+
+        alvoPergunta: 'A question',
+
+        alvoResposta: 'A reply',
+
+        jaRetirado: 'Already removed.',
+
+        verNoForum: 'Read it in the forum',
+
+        marcarTratada: 'I dealt with it',
+
+        marcarSemRazao: 'Dismiss it',
+
+        jaTratada: 'Acted on.',
+
+        jaDispensada: 'Looked at, nothing wrong.',
+
+        naoFoiPossivelDecidir: 'That could not be saved.',
+
     },
 
     noticias: {

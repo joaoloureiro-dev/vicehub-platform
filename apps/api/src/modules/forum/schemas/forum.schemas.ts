@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
     CORPO_MAXIMO,
     CORPO_MINIMO,
+    NOTA_MAXIMA,
     TITULO_MAXIMO,
     TITULO_MINIMO,
     normalizarTexto,
@@ -51,8 +52,58 @@ export const listTopicsQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
 });
 
+/**
+ * Uma denúncia.
+ *
+ * A razão é de uma lista fechada, porque é dela que o moderador decide
+ * o que abrir primeiro. A nota é livre, curta e opcional: é o que ele
+ * precisa de ler para saber onde olhar, e não um processo.
+ */
+export const createReportSchema = z.object({
+    reason: z.enum(['spam', 'abuse', 'off_topic', 'other']),
+    note: z
+        .string()
+        .transform(normalizarTexto)
+        .refine((valor) => valor.length <= NOTA_MAXIMA, {
+            message: `A nota não pode passar dos ${NOTA_MAXIMA} caracteres.`,
+        })
+        .optional(),
+});
+
+export const reportIdParamSchema = z.object({
+    reportId: z.string().uuid(),
+});
+
+/**
+ * A fila de quem modera.
+ *
+ * Por omissão as abertas, que são as que têm trabalho por fazer. As
+ * fechadas continuam a poder ser vistas — um moderador a explicar-se
+ * precisa de mostrar o que decidiu, e não só o que está por decidir.
+ */
+export const listReportsQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    status: z.enum(['open', 'acted', 'dismissed']).default('open'),
+});
+
+/**
+ * O que um moderador concluiu.
+ *
+ * Uma rota e um resultado, e não duas rotas: fechar uma denúncia é uma
+ * decisão só, e o que muda é a conclusão que ela leva. As duas
+ * conclusões são precisas — "foi visto e está bem" poupa ao moderador
+ * seguinte olhar outra vez para a mesma coisa.
+ */
+export const handleReportSchema = z.object({
+    outcome: z.enum(['acted', 'dismissed']),
+});
+
 export type CreateTopicDto = z.infer<typeof createTopicSchema>;
 export type CreateReplyDto = z.infer<typeof createReplySchema>;
 export type TopicIdParamDto = z.infer<typeof topicIdParamSchema>;
 export type ReplyIdParamDto = z.infer<typeof replyIdParamSchema>;
 export type ListTopicsQueryDto = z.infer<typeof listTopicsQuerySchema>;
+export type CreateReportDto = z.infer<typeof createReportSchema>;
+export type ReportIdParamDto = z.infer<typeof reportIdParamSchema>;
+export type ListReportsQueryDto = z.infer<typeof listReportsQuerySchema>;
+export type HandleReportDto = z.infer<typeof handleReportSchema>;

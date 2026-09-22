@@ -3579,3 +3579,168 @@ button.link:hover {
     min-height: 65px;
     overflow-x: auto;
 }
+
+/* ---------- denunciar, e a fila de quem modera ---------- */
+
+/*
+ * O formulário de denúncia abre onde estava o botão.
+ *
+ * Recolhido para dentro de uma caixa própria, porque abre no meio do
+ * rodapé de uma publicação: sem a caixa, os campos herdavam o tamanho
+ * de 12px do rodapé e liam-se como letra miúda.
+ */
+.denuncia {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+    margin: 8px 0 0;
+    padding: 14px;
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    background: var(--wash);
+    font-family: var(--sans);
+    font-size: 15px;
+    color: var(--ink);
+}
+
+.denuncia fieldset {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.denuncia legend {
+    padding: 0 0 6px;
+    font-weight: 600;
+}
+
+/*
+ * Cada razão é um alvo de polegar, e não um rádio de 13px com uma
+ * palavra ao lado. A etiqueta inteira é clicável.
+ */
+.escolha {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.escolha input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--violet-ink);
+}
+
+.grupo-botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.denuncia-feita {
+    margin: 8px 0 0;
+    font-style: italic;
+}
+
+/*
+ * A fila.
+ *
+ * Cada denúncia é um cartão porque é uma unidade de trabalho: o que se
+ * lê, o que se decide e os dois botões de decidir andam juntos, e uma
+ * lista corrida obrigava a adivinhar onde acaba uma e começa a
+ * seguinte.
+ */
+.lista-denuncias {
+    list-style: none;
+    display: grid;
+    gap: 16px;
+    margin: 16px 0 0;
+    padding: 0;
+}
+
+.lista-denuncias .card {
+    display: grid;
+    gap: 12px;
+}
+
+.denuncia-cabeca {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+}
+
+.denuncia-cabeca .razao {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--wash);
+    color: var(--ink);
+    font-weight: 600;
+}
+
+/* A nota de quem denunciou: é dela, e por isso lê-se como uma citação. */
+.denuncia .nota,
+.lista-denuncias .nota {
+    margin: 0;
+    padding-left: 12px;
+    border-left: 3px solid var(--edge);
+    color: var(--muted);
+}
+
+/*
+ * O texto denunciado, recuado.
+ *
+ * Um moderador está a ler duas coisas ao mesmo tempo — o aviso e aquilo
+ * de que ele fala — e é preciso ver de relance qual é qual.
+ */
+.denunciado {
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+}
+
+/*
+ * As três vistas da fila.
+ *
+ * Botões e não links: mudam o que está no ecrã e não o endereço, e um
+ * link que não navega é uma promessa que o ecrã não cumpre.
+ */
+.abas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0 0;
+}
+
+.aba {
+    padding: 8px 14px;
+    border: 1px solid var(--edge);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.aba:hover {
+    color: var(--ink);
+}
+
+.aba.activa {
+    border-color: transparent;
+    background: var(--ink);
+    color: var(--surface);
+    font-weight: 600;
+}

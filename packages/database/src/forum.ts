@@ -62,3 +62,16 @@ export const normalizarTexto = (bruto: string): string =>
  */
 export const temConteudo = (texto: string): boolean =>
     normalizarTexto(texto).replace(/\s/gu, '').length > 0;
+
+/**
+ * A nota que quem denuncia pode deixar.
+ *
+ * Curta de propósito. Não é um processo: é o que o moderador precisa de
+ * ler para saber onde olhar. "O terceiro parágrafo é uma ameaça" chega,
+ * e cabe. Quem precisar de escrever mais do que isto tem um email na
+ * página de privacidade.
+ */
+export const NOTA_MAXIMA = 500;
+
+/** Quantas denúncias por página na fila de quem modera. */
+export const DENUNCIAS_POR_PAGINA = 20;

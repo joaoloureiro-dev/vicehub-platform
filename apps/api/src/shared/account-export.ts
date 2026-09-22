@@ -137,6 +137,39 @@ export interface AccountExport {
      * mesmo que qualquer pessoa vê ao abrir o perfil.
      */
     friends: { username: string; status: string; since: string }[];
+
+    /**
+     * O que a pessoa escreveu no fórum, e o que denunciou lá.
+     *
+     * É texto dela, e o que a plataforma promete apagar quando ela sai.
+     * O que se promete apagar também se tem de poder levar — a saída
+     * com as mãos vazias e o apagar são a mesma decisão vista de dois
+     * lados.
+     *
+     * Das denúncias vai o que é dela: a razão que escolheu, a nota que
+     * escreveu e quando. **Não vai quem escreveu o texto denunciado**,
+     * que é outra pessoa, nem o que o moderador concluiu, que é uma
+     * decisão da plataforma e não um dado sobre quem denunciou.
+     */
+    forum: {
+        topics: {
+            id: string;
+            title: string;
+            body: string | null;
+            createdAt: string;
+        }[];
+        replies: {
+            id: string;
+            topicId: string;
+            body: string | null;
+            createdAt: string;
+        }[];
+        reports: {
+            reason: string;
+            note: string | null;
+            createdAt: string;
+        }[];
+    };
 }
 
 /**
@@ -193,6 +226,9 @@ export const buildAccountExport = async (
         planos,
         conquistas,
         amizades,
+        topicosDoForum,
+        respostasDoForum,
+        denuncias,
     ] = await Promise.all([
         database.userAuthProvider.findMany({
             where: { userId, is_deleted: false },
@@ -307,6 +343,26 @@ export const buildAccountExport = async (
                 userA: { select: { username: true } },
                 userB: { select: { username: true } },
             },
+        }),
+        database.forumTopic.findMany({
+            where: { authorId: userId, is_deleted: false },
+            select: { id: true, title: true, body: true, created_at: true },
+            orderBy: { created_at: 'desc' },
+        }),
+        database.forumReply.findMany({
+            where: { authorId: userId, is_deleted: false },
+            select: {
+                id: true,
+                topicId: true,
+                body: true,
+                created_at: true,
+            },
+            orderBy: { created_at: 'desc' },
+        }),
+        database.forumReport.findMany({
+            where: { reporterId: userId },
+            select: { reason: true, note: true, created_at: true },
+            orderBy: { created_at: 'desc' },
         }),
     ]);
 
@@ -428,6 +484,26 @@ export const buildAccountExport = async (
             status: amizade.status,
             since: amizade.created_at.toISOString(),
         })),
+
+        forum: {
+            topics: topicosDoForum.map((topico) => ({
+                id: topico.id,
+                title: topico.title,
+                body: topico.body,
+                createdAt: topico.created_at.toISOString(),
+            })),
+            replies: respostasDoForum.map((resposta) => ({
+                id: resposta.id,
+                topicId: resposta.topicId,
+                body: resposta.body,
+                createdAt: resposta.created_at.toISOString(),
+            })),
+            reports: denuncias.map((denuncia) => ({
+                reason: denuncia.reason,
+                note: denuncia.note,
+                createdAt: denuncia.created_at.toISOString(),
+            })),
+        },
     };
 };
 

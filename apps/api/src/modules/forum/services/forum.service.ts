@@ -1,14 +1,29 @@
-import { EXCERTO_MAXIMO, TOPICOS_POR_PAGINA, excertoDe } from '@vicehub/database';
+import {
+    DENUNCIAS_POR_PAGINA,
+    EXCERTO_MAXIMO,
+    TOPICOS_POR_PAGINA,
+    excertoDe,
+    type ForumReportReason,
+    type ForumReportStatus,
+} from '@vicehub/database';
 
 import { ForumError } from '../errors/forum.errors.js';
 import type { ForumRepository } from '../repositories/forum.repository.js';
 import type {
+    ForumReportView,
     ForumTopicSummary,
     ForumTopicView,
 } from '../types/forum.types.js';
 
 export interface PaginaDeTopicos {
     topicos: ForumTopicSummary[];
+    pagina: number;
+    paginas: number;
+    total: number;
+}
+
+export interface PaginaDeDenuncias {
+    denuncias: ForumReportView[];
     pagina: number;
     paginas: number;
     total: number;
@@ -177,6 +192,158 @@ export class ForumService {
         }
 
         await this.forumRepository.setTopicLock(topicId, actorId, fechar);
+    }
+
+    /**
+     * Denuncia uma publicação.
+     *
+     * Existe porque sem ela a moderação dependia de sorte: alguém tinha
+     * de calhar de ler a publicação para ela ser vista. Quem lê é quem
+     * encontra.
+     *
+     * Duas recusas, e ambas por razões práticas. **Não se denuncia o que
+     * já foi retirado**, porque não há lá nada para um moderador ver. E
+     * **não se denuncia o que é nosso** — quem quer o seu texto fora
+     * tem o botão de retirar, e uma denúncia a si próprio só põe
+     * trabalho na fila de outra pessoa.
+     *
+     * Denunciar duas vezes a mesma coisa é recusado pela base de dados,
+     * e não aqui: entre a leitura e a escrita cabe um segundo clique, e
+     * o índice é o único sítio onde isso não cabe.
+     */
+    async report(
+        alvo: { topicId: string } | { replyId: string },
+        reporterId: string,
+        reason: ForumReportReason,
+        note?: string,
+    ): Promise<{ id: string }> {
+        const publicacao = await this.forumRepository.findReportTarget(alvo);
+
+        if (publicacao === null) {
+            throw new ForumError(
+                'topicId' in alvo ? 'TOPIC_NOT_FOUND' : 'REPLY_NOT_FOUND',
+                'Esta publicação não existe ou foi retirada.',
+            );
+        }
+
+        if (publicacao.authorId === reporterId) {
+            throw new ForumError(
+                'IS_YOURS',
+                'Isto é teu. Para o tirares daqui, usa o botão de retirar.',
+            );
+        }
+
+        try {
+            return await this.forumRepository.createReport({
+                alvo,
+                reporterId,
+                reason,
+                ...(note === undefined ? {} : { note }),
+            });
+        } catch (erro: unknown) {
+            /**
+             * O índice único a recusar a segunda denúncia da mesma
+             * pessoa à mesma publicação. Não é um erro do ponto de vista
+             * de quem carregou no botão: já tinha avisado.
+             */
+            if (
+                erro !== null
+                && typeof erro === 'object'
+                && (erro as { code?: string }).code === 'P2002'
+            ) {
+                throw new ForumError(
+                    'ALREADY_REPORTED',
+                    'Já denunciaste isto. Um moderador vai ver.',
+                );
+            }
+
+            throw erro;
+        }
+    }
+
+    /**
+     * A fila de quem modera.
+     *
+     * As mais velhas primeiro, ao contrário do resto da plataforma: uma
+     * denúncia por abrir é trabalho, e trabalho velho é o que mais urge.
+     */
+    async listReports(
+        status: ForumReportStatus,
+        pagina: number,
+    ): Promise<PaginaDeDenuncias> {
+        const [linhas, total] = await Promise.all([
+            this.forumRepository.listReports(status, pagina),
+            this.forumRepository.countReports(status),
+        ]);
+
+        return {
+            denuncias: linhas.map((linha) => ({
+                id: linha.id,
+                reason: linha.reason,
+                note: linha.note,
+                status: linha.status,
+                createdAt: linha.created_at,
+                handledAt: linha.handled_at,
+                reporter: linha.reporter,
+                target: linha.topic
+                    ? {
+                        kind: 'topic' as const,
+                        topicId: linha.topic.id,
+                        title: linha.topic.title,
+                        body: linha.topic.body,
+                        author: linha.topic.author,
+                        isRemoved: linha.topic.is_deleted,
+                    }
+                    : {
+                        kind: 'reply' as const,
+                        /**
+                         * O tópico da resposta, e não a resposta: é para
+                         * onde o moderador vai ler o caso completo, que
+                         * é o que lhe permite decidir.
+                         */
+                        topicId: (linha.reply as { topicId: string }).topicId,
+                        title: null,
+                        body: (linha.reply as { body: string | null }).body,
+                        author: (linha.reply as { author: null }).author,
+                        isRemoved: (linha.reply as { is_deleted: boolean })
+                            .is_deleted,
+                    },
+            })),
+            pagina,
+            paginas: Math.max(1, Math.ceil(total / DENUNCIAS_POR_PAGINA)),
+            total,
+        };
+    }
+
+    /**
+     * Fecha uma denúncia com a conclusão de quem a viu.
+     *
+     * Fechar uma já fechada é recusado: o segundo moderador estaria a
+     * decidir sobre uma coisa que outra pessoa já decidiu, e a sua
+     * conclusão apagava a primeira sem que ele soubesse que havia uma.
+     */
+    async handleReport(
+        reportId: string,
+        actorId: string,
+        outcome: 'acted' | 'dismissed',
+    ): Promise<void> {
+        const denuncia = await this.forumRepository.findReport(reportId);
+
+        if (denuncia === null) {
+            throw new ForumError(
+                'REPORT_NOT_FOUND',
+                'Esta denúncia não existe.',
+            );
+        }
+
+        if (denuncia.status !== 'open') {
+            throw new ForumError(
+                'REPORT_ALREADY_HANDLED',
+                'Esta denúncia já foi vista por alguém.',
+            );
+        }
+
+        await this.forumRepository.handleReport(reportId, outcome, actorId);
     }
 
     async removeReply(

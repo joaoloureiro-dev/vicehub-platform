@@ -29,7 +29,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
         /**
          * A actualizar sempre que o texto mudar. Ver `LegalDocument`.
          */
-        updatedAt: '2026-09-16',
+        updatedAt: '2026-09-22',
 
         intro: [
             `ViceHub is operated by ${orPlaceholder(operator.legalName, 'legal name')}, ${orPlaceholder(operator.address, 'registered address')} (${orPlaceholder(operator.registration, 'company or tax number')}). For anything in this policy, write to ${email}.`,
@@ -51,6 +51,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                     'In-game money: your wallet balance, what went in and out of it, and the treasury movements you proposed or decided. This is game currency, not real money — the Terms say so in full.',
                     'Subscriptions: which plan, its status, what it costs, and when it began and ends. Card details never reach ViceHub. Stripe handles them and sends back only the outcome.',
                     'Friendships: who you are connected to, and the state of each request.',
+                    'What you write in the forum: your questions, your replies, and — if you report a post — which of the four reasons you picked, anything you added in your own words, and that it was you who reported it. A moderator sees the report; nobody else does.',
                     'A linked Discord or Google account, if you choose to link one: the identifier that provider gives us and the email address on it. No token from either provider is kept once the sign-in is done, and ViceHub has no access to anything else on those accounts.',
                     'Sessions: when you signed in, and the IP address and browser the request came from, so that a session can be recognised and revoked. Failed sign-in attempts are counted so that an account locks after repeated failures.',
                     'An audit trail of actions that change a community — money decided, roles granted, members removed — with who did it, when, and from which address. A community that cannot show who approved a payout has no way to settle an argument about it.',

@@ -357,6 +357,36 @@ export const eraseAccount = async (
         }),
 
         /**
+         * E a nota que a pessoa escreveu numa denúncia, pela mesma
+         * razão: é texto dela.
+         *
+         * A denúncia fica, sem a nota e sem o nome. O que ela aponta
+         * continua lá, e um moderador ainda tem de decidir — uma
+         * denúncia que desaparecesse porque quem a fez saiu deixava a
+         * publicação denunciada sem ninguém a olhar para ela, que é
+         * exactamente o que isto existe para impedir. A razão fica,
+         * porque é uma de quatro e não diz nada sobre quem a escolheu.
+         */
+        database.forumReport.updateMany({
+            where: { reporterId: userId },
+            data: {
+                note: null,
+                /**
+                 * E o nome de quem denunciou.
+                 *
+                 * A conta apagada fica como lápide, e a chave
+                 * estrangeira continuaria a apontar-lhe: quem denunciou
+                 * quem é a parte sensível disto, e não é apagada por a
+                 * lápide não dizer nada — é apagada por se soltar a
+                 * ligação.
+                 */
+                reporterId: null,
+                updated_by: userId,
+                version: { increment: 1 },
+            },
+        }),
+
+        /**
          * As amizades têm duas pontas e a outra é de outra pessoa. Ficar
          * com um amigo chamado "apagado-…" na lista é pior do que deixar
          * de o ter lá.
