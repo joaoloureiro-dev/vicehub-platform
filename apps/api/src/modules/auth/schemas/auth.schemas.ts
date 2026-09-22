@@ -16,6 +16,20 @@ const passwordSchema = z
 /**
  * Pedido de registo.
  */
+/**
+ * O cartão que o CAPTCHA dá ao browser.
+ *
+ * Opcional aqui, e obrigatório no sítio certo: uma instalação sem
+ * CAPTCHA configurado não tem como o produzir, e exigi-lo no schema
+ * fechava a porta a toda a gente nessas instalações. Quem decide se ele
+ * é preciso é a verificação, que sabe se o CAPTCHA está ligado.
+ *
+ * O teto existe porque isto vem de fora e vai parar a um corpo de
+ * pedido: os cartões do Turnstile andam pelas centenas de caracteres, e
+ * um megabyte de lixo neste campo não é um cartão.
+ */
+export const captchaTokenSchema = z.string().min(1).max(2_048).optional();
+
 export const registerSchema = z.object({
     email: z.string().trim().email(),
     username: z
@@ -25,6 +39,7 @@ export const registerSchema = z.object({
         .max(32)
         .regex(/^[a-zA-Z0-9_.-]+$/),
     password: passwordSchema,
+    captchaToken: captchaTokenSchema,
 });
 
 /**
@@ -37,6 +52,7 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
     email: z.string().trim().email(),
     password: z.string().min(1).max(128),
+    captchaToken: captchaTokenSchema,
 });
 
 /**

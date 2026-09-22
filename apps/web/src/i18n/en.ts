@@ -95,6 +95,8 @@ export const en = (p: Tools) => ({
         nomeJogador: 'Player name',
         aCriar: 'Creating…',
         passwordMinima: (n: number) => `At least ${n} characters.`,
+        captchaNaoCarregou:
+            'The anti-robot check could not load. Reload the page to try again — it has to pass before you can continue.',
         emailOcupado: 'An account with this email already exists.',
         nomeOcupado: 'That name is taken. Pick another.',
         naoFoiPossivelCriar: 'The account could not be created.',
@@ -367,6 +369,8 @@ export const en = (p: Tools) => ({
     },
 
     erros: {
+
+        CAPTCHA_FAILED: 'The check that you are not a robot did not pass. Try again.',
 
         INVALID_CREDENTIALS: 'That email and password do not match.',
 

@@ -4,10 +4,19 @@ import { sessionStore } from '../lib/session.js';
 export const login = async (
     email: string,
     password: string,
+    /**
+     * O cartão do CAPTCHA, quando a instalação tem um.
+     *
+     * Vai por omissão e não é exigido aqui: uma instalação sem CAPTCHA
+     * não tem como o produzir, e quem decide se ele é preciso é o
+     * servidor — que é o único sítio onde essa decisão significa
+     * alguma coisa.
+     */
+    captchaToken?: string,
 ): Promise<AuthPayload> => {
     const payload = await api<AuthPayload>('/auth/login', {
         method: 'POST',
-        body: { email, password },
+        body: { email, password, ...(captchaToken ? { captchaToken } : {}) },
         withoutRefresh: true,
     });
 
@@ -20,10 +29,16 @@ export const register = async (
     email: string,
     username: string,
     password: string,
+    captchaToken?: string,
 ): Promise<AuthPayload> => {
     const payload = await api<AuthPayload>('/auth/register', {
         method: 'POST',
-        body: { email, username, password },
+        body: {
+            email,
+            username,
+            password,
+            ...(captchaToken ? { captchaToken } : {}),
+        },
         withoutRefresh: true,
     });
 

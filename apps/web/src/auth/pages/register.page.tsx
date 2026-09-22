@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { ApiError } from '../../lib/api.js';
 import { mensagemDoErro } from '../../lib/erro.js';
 import { Alert } from '../components/alert.js';
+import { Captcha } from '../components/captcha.js';
 import { FederatedButtons } from '../components/federated-buttons.js';
 import { Field } from '../components/field.js';
 import { register } from '../auth.api.js';
@@ -27,6 +28,15 @@ export const RegisterPage = () => {
     const [erro, setErro] = useState<string | null>(null);
     const [aEnviar, setAEnviar] = useState(false);
 
+    /**
+     * O cartão do CAPTCHA, quando a instalação tem um.
+     *
+     * Fica `null` quando não há CAPTCHA e quando o cartão expira — e o
+     * pedido sai sem ele nos dois casos, porque quem decide se ele é
+     * preciso é o servidor.
+     */
+    const [cartao, setCartao] = useState<string | null>(null);
+
     const curta = password.length > 0 && password.length < MINIMO_PASSWORD;
 
     const submeter = async (event: FormEvent) => {
@@ -35,7 +45,7 @@ export const RegisterPage = () => {
         setAEnviar(true);
 
         try {
-            await register(email, username, password);
+            await register(email, username, password, cartao ?? undefined);
 
             void navigate('/', { replace: true });
         } catch (falha) {
@@ -96,6 +106,8 @@ export const RegisterPage = () => {
                     invalid={curta}
                     hint={t.auth.passwordMinima(MINIMO_PASSWORD)}
                 />
+                <Captcha aoResponder={setCartao} />
+
                 <button
                     className="primary"
                     type="submit"
