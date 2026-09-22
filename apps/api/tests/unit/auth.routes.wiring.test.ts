@@ -117,17 +117,24 @@ describe('ligação das rotas de autenticação ao middleware', () => {
     });
 
     /**
-     * E as duas portas por onde uma conta entra levam o CAPTCHA.
+     * E as três portas que qualquer pessoa pode empurrar levam o
+     * CAPTCHA.
      *
      * Antes do handler, de propósito: conferido depois, um guião já
      * gastou a contagem de tentativas falhadas de outra pessoa, e
      * bloquear a conta de alguém sem lhe saber a password é uma das
      * coisas que isto existe para impedir.
+     *
+     * A recuperação está cá pela outra razão: é a única rota que faz a
+     * plataforma **escrever a alguém** sem que quem pede prove seja o
+     * que for, e o que ela gasta é a caixa de correio de quem levar com
+     * os emails e a quota de quem os entrega.
      */
-    it.each(['POST /register', 'POST /login'])(
+    it.each(['POST /register', 'POST /login', 'POST /password-reset'])(
         '%s passa pelo CAPTCHA antes do handler',
         (key) => {
             expect(preHandlersOf(key)).toHaveLength(1);
+            expect(preHandlersOf(key)).not.toContain(oAuthenticate);
         },
     );
 
@@ -212,7 +219,15 @@ describe('ligação das rotas de autenticação ao middleware', () => {
             expect(config?.rateLimit?.max).toBeLessThan(100);
         });
 
-        it('confirmar a recuperação não exige sessão', () => {
+        /**
+         * E a confirmação não leva CAPTCHA nem sessão.
+         *
+         * Quem lá chega traz um token que só podia ter vindo do email,
+         * e pôr um desafio entre a pessoa e a password nova é atrito no
+         * pior momento — logo a seguir a ela ter clicado no link para o
+         * fazer.
+         */
+        it('confirmar a recuperação não exige sessão nem CAPTCHA', () => {
             expect(preHandlersOf('POST /password-reset/confirm')).toHaveLength(0);
         });
 

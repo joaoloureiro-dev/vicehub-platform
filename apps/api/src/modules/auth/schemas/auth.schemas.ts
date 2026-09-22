@@ -78,10 +78,17 @@ export const authResponseSchema = z.object({
 /**
  * Pedido de recuperação de password.
  *
- * Só o email. A resposta é sempre a mesma, exista a conta ou não.
+ * O email e, onde a instalação tenha CAPTCHA, o cartão. A resposta é
+ * sempre a mesma, exista a conta ou não.
+ *
+ * Esta é a terceira porta, e a única que faz a plataforma **escrever a
+ * alguém** sem que quem pede prove nada: um guião a correr esta rota
+ * enche a caixa de correio de outra pessoa e arde a quota do fornecedor
+ * de email a caminho disso.
  */
 export const requestPasswordResetSchema = z.object({
     email: z.string().trim().email(),
+    captchaToken: captchaTokenSchema,
 });
 
 /**
