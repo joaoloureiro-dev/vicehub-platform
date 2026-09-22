@@ -325,6 +325,56 @@ describe('apagar a própria conta', () => {
         });
 
         /**
+         * A nota de uma denúncia é texto da pessoa, e vai com o resto.
+         *
+         * A **denúncia fica**, sem a nota e sem o nome: o que ela aponta
+         * continua lá e um moderador ainda tem de decidir. Uma denúncia
+         * que desaparecesse porque quem a fez saiu deixava a publicação
+         * denunciada sem ninguém a olhar para ela — que é precisamente
+         * o que denunciar existe para impedir.
+         */
+        it('apaga a nota de uma denúncia e deixa a denúncia de pé', async () => {
+            const eu = await register(`den${marca}`);
+            const outra = await register(`alv${marca}`);
+
+            const topico = await app.inject({
+                method: 'POST',
+                url: '/api/v1/forum/topics',
+                headers: auth(outra.token),
+                payload: {
+                    title: `Uma pergunta para denunciar ${marca}`,
+                    body: 'Um corpo com tamanho suficiente para passar.',
+                },
+            });
+
+            expect(topico.statusCode, topico.body).toBe(201);
+
+            const denuncia = await app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/topics/${topico.json().id as string}/reports`,
+                headers: auth(eu.token),
+                payload: { reason: 'spam', note: 'Uma nota que é minha.' },
+            });
+
+            expect(denuncia.statusCode, denuncia.body).toBe(201);
+
+            await apagar(eu.token, {
+                confirmation: eu.username,
+                password: PASSWORD,
+            });
+
+            const ficou = await prisma.forumReport.findUniqueOrThrow({
+                where: { id: denuncia.json().id as string },
+                select: { note: true, reporterId: true, status: true },
+            });
+
+            expect(ficou.note).toBeNull();
+            expect(ficou.reporterId).toBeNull();
+            /** E continua por decidir, que é o ponto. */
+            expect(ficou.status).toBe('open');
+        });
+
+        /**
          * **A password e as identidades de fora são apagadas mesmo.**
          *
          * Um hash de password é derivado de uma password que a pessoa

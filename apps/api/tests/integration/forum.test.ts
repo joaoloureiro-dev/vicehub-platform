@@ -508,6 +508,313 @@ describe('o fórum', () => {
     });
 
     /**
+     * Denunciar, que é o que tira a moderação da sorte.
+     *
+     * Sem isto, uma publicação só era vista se alguém calhasse de a
+     * ler. Quem lê é quem encontra.
+     */
+    describe('denunciar uma publicação', () => {
+        const denunciarTopico = (
+            quem: { token: string },
+            topicId: string,
+            corpo: Record<string, unknown> = { reason: 'spam' },
+        ) =>
+            app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/topics/${topicId}/reports`,
+                headers: auth(quem.token),
+                payload: corpo,
+            });
+
+        const denunciarResposta = (
+            quem: { token: string },
+            replyId: string,
+            corpo: Record<string, unknown> = { reason: 'abuse' },
+        ) =>
+            app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/replies/${replyId}/reports`,
+                headers: auth(quem.token),
+                payload: corpo,
+            });
+
+        interface Fila {
+            reports: {
+                id: string;
+                reason: string;
+                note: string | null;
+                reporter: { username: string } | null;
+                target: {
+                    kind: string;
+                    topicId: string;
+                    title: string | null;
+                    body: string | null;
+                    isRemoved: boolean;
+                };
+            }[];
+            page: number;
+            pages: number;
+            total: number;
+        }
+
+        const paginaDaFila = async (
+            quem: { token: string },
+            status: string,
+            pagina: number,
+        ): Promise<Fila> => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: `/api/v1/forum/reports?status=${status}&page=${pagina}`,
+                headers: auth(quem.token),
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+
+            return resposta.json() as Fila;
+        };
+
+        /**
+         * A última página da fila, que é onde uma denúncia acabada de
+         * fazer está.
+         *
+         * A fila é ordenada da mais velha para a mais nova de propósito,
+         * e a base de dados destes testes guarda o que as execuções
+         * anteriores lá deixaram. Ler a primeira página e procurar lá a
+         * nossa passava enquanto a fila fosse pequena e falhava no dia
+         * em que deixasse de ser — que é uma passagem por sorte, e não
+         * uma verificação.
+         */
+        const fila = async (
+            quem: { token: string },
+            status = 'open',
+        ): Promise<Fila> => {
+            const primeira = await paginaDaFila(quem, status, 1);
+
+            if (primeira.pages <= 1) {
+                return primeira;
+            }
+
+            return paginaDaFila(quem, status, primeira.pages);
+        };
+
+        /** Quantas estão neste estado, sem depender de página nenhuma. */
+        const quantas = async (
+            quem: { token: string },
+            status = 'open',
+        ): Promise<number> => (await paginaDaFila(quem, status, 1)).total;
+
+        it('põe a pergunta denunciada na fila de quem modera', async () => {
+            const topicId = await abrir(ana, `Para denunciar ${marca}`);
+
+            const feita = await denunciarTopico(bruno, topicId, {
+                reason: 'spam',
+                note: 'Isto é publicidade a um servidor.',
+            });
+
+            expect(feita.statusCode, feita.body).toBe(201);
+
+            const aberta = await fila(moderador);
+            const nossa = aberta.reports.find(
+                (denuncia) => denuncia.target.topicId === topicId,
+            );
+
+            expect(nossa).toBeDefined();
+            expect(nossa?.reason).toBe('spam');
+            expect(nossa?.note).toBe('Isto é publicidade a um servidor.');
+            expect(nossa?.reporter?.username).toBe(bruno.nome);
+            expect(nossa?.target.kind).toBe('topic');
+        });
+
+        /**
+         * E a resposta denunciada leva o tópico dela, que é para onde o
+         * moderador vai ler o caso completo.
+         */
+        it('põe a resposta denunciada na fila, com o caminho para o caso', async () => {
+            const topicId = await abrir(ana, `Resposta a denunciar ${marca}`);
+            const replyId = await responder(bruno, topicId, 'Uma resposta má.');
+
+            expect((await denunciarResposta(ana, replyId)).statusCode).toBe(201);
+
+            const aberta = await fila(moderador);
+            const nossa = aberta.reports.find(
+                (denuncia) =>
+                    denuncia.target.kind === 'reply'
+                    && denuncia.target.topicId === topicId,
+            );
+
+            expect(nossa).toBeDefined();
+            expect(nossa?.target.body).toBe('Uma resposta má.');
+        });
+
+        /**
+         * A fila é de quem modera, e de mais ninguém: mostra texto que
+         * alguém achou mau, com o nome de quem avisou.
+         */
+        it('recusa a fila a quem não modera', async () => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/forum/reports',
+                headers: auth(ana.token),
+            });
+
+            expect(resposta.statusCode).toBe(403);
+        });
+
+        /**
+         * Denunciar o que é nosso não é denúncia: é trabalho posto na
+         * fila de outra pessoa. Quem quer o seu texto fora tem o botão
+         * de retirar.
+         */
+        it('recusa denunciar o que é da própria pessoa', async () => {
+            const topicId = await abrir(ana, `A minha própria ${marca}`);
+
+            const resposta = await denunciarTopico(ana, topicId);
+
+            expect(resposta.statusCode).toBe(409);
+            expect(resposta.json().code).toBe('IS_YOURS');
+        });
+
+        /**
+         * Uma por pessoa e por publicação, e é a base de dados que o
+         * garante — entre a leitura e a escrita cabe um segundo clique.
+         */
+        it('recusa a segunda denúncia da mesma pessoa à mesma publicação', async () => {
+            const topicId = await abrir(ana, `Denunciada duas vezes ${marca}`);
+
+            expect((await denunciarTopico(bruno, topicId)).statusCode).toBe(201);
+
+            const segunda = await denunciarTopico(bruno, topicId);
+
+            expect(segunda.statusCode).toBe(409);
+            expect(segunda.json().code).toBe('ALREADY_REPORTED');
+        });
+
+        /** Mas outra pessoa pode denunciar a mesma coisa. */
+        it('deixa outra pessoa denunciar a mesma publicação', async () => {
+            const topicId = await abrir(ana, `Duas pessoas denunciam ${marca}`);
+            const outra = await registar(`fo${marca}`);
+
+            expect((await denunciarTopico(bruno, topicId)).statusCode).toBe(201);
+            expect((await denunciarTopico(outra, topicId)).statusCode).toBe(201);
+        });
+
+        it('recusa denunciar uma publicação que não existe', async () => {
+            const resposta = await denunciarTopico(
+                bruno,
+                '00000000-0000-4000-8000-000000000000',
+            );
+
+            expect(resposta.statusCode).toBe(404);
+        });
+
+        it('recusa uma razão que não é uma das quatro', async () => {
+            const topicId = await abrir(ana, `Razão inventada ${marca}`);
+
+            const resposta = await denunciarTopico(bruno, topicId, {
+                reason: 'porque-sim',
+            });
+
+            expect(resposta.statusCode).toBe(400);
+        });
+
+        /**
+         * Fechar uma denúncia é dizer o que se concluiu. As duas
+         * conclusões são precisas: "foi visto e está bem" poupa ao
+         * moderador seguinte olhar outra vez para a mesma coisa.
+         */
+        it('tira a denúncia da fila quando o moderador decide', async () => {
+            const topicId = await abrir(ana, `Decidida ${marca}`);
+
+            await denunciarTopico(bruno, topicId);
+
+            const abertasAntes = await quantas(moderador);
+            const nossa = (await fila(moderador)).reports.find(
+                (denuncia) => denuncia.target.topicId === topicId,
+            );
+
+            expect(nossa).toBeDefined();
+
+            const decisao = await app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/reports/${nossa?.id as string}`,
+                headers: auth(moderador.token),
+                payload: { outcome: 'dismissed' },
+            });
+
+            expect(decisao.statusCode, decisao.body).toBe(204);
+
+            /** Uma a menos à espera, e a nossa entre as dispensadas. */
+            expect(await quantas(moderador)).toBe(abertasAntes - 1);
+
+            const dispensadas = await fila(moderador, 'dismissed');
+
+            expect(
+                dispensadas.reports.some((denuncia) => denuncia.id === nossa?.id),
+            ).toBe(true);
+        });
+
+        /**
+         * A segunda decisão sobre a mesma denúncia é recusada: o
+         * segundo moderador estaria a apagar a conclusão do primeiro sem
+         * saber que havia uma.
+         */
+        it('recusa decidir duas vezes a mesma denúncia', async () => {
+            const topicId = await abrir(ana, `Decidida duas vezes ${marca}`);
+
+            await denunciarTopico(bruno, topicId);
+
+            const aberta = await fila(moderador);
+            const nossa = aberta.reports.find(
+                (denuncia) => denuncia.target.topicId === topicId,
+            );
+
+            const decidir = () =>
+                app.inject({
+                    method: 'POST',
+                    url: `/api/v1/forum/reports/${nossa?.id as string}`,
+                    headers: auth(moderador.token),
+                    payload: { outcome: 'acted' },
+                });
+
+            expect((await decidir()).statusCode).toBe(204);
+
+            const segunda = await decidir();
+
+            expect(segunda.statusCode).toBe(409);
+            expect(segunda.json().code).toBe('REPORT_ALREADY_HANDLED');
+        });
+
+        /**
+         * Retirar a publicação fecha as denúncias que havia sobre ela.
+         *
+         * Quem retirou já agiu. Deixá-las abertas mandava o moderador
+         * seguinte olhar para texto que já não existe.
+         */
+        it('fecha as denúncias sozinhas quando a publicação é retirada', async () => {
+            const topicId = await abrir(ana, `Retirada depois ${marca}`);
+
+            await denunciarTopico(bruno, topicId);
+
+            const abertasAntes = await quantas(moderador);
+            const nossa = (await fila(moderador)).reports.find(
+                (denuncia) => denuncia.target.topicId === topicId,
+            );
+
+            expect(nossa).toBeDefined();
+
+            const retirada = await app.inject({
+                method: 'DELETE',
+                url: `/api/v1/forum/topics/${topicId}`,
+                headers: auth(moderador.token),
+            });
+
+            expect(retirada.statusCode, retirada.body).toBe(204);
+
+            expect(await quantas(moderador)).toBe(abertasAntes - 1);
+        });
+    });
+
+    /**
      * A promessa que a plataforma já faz a quem apaga a conta: **o teu
      * texto é apagado**. O que se escreve no fórum é texto seu, e muitas
      * vezes com mais da pessoa lá dentro do que a biografia teve.

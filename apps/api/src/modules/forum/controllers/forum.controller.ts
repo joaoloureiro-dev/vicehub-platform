@@ -5,9 +5,13 @@ import type { AuthorizationService } from '../../authorization/services/authoriz
 import { ForumError } from '../errors/forum.errors.js';
 import type {
     CreateReplyDto,
+    CreateReportDto,
     CreateTopicDto,
+    HandleReportDto,
+    ListReportsQueryDto,
     ListTopicsQueryDto,
     ReplyIdParamDto,
+    ReportIdParamDto,
     TopicIdParamDto,
 } from '../schemas/forum.schemas.js';
 import type { ForumService } from '../services/forum.service.js';
@@ -16,8 +20,12 @@ import type { ForumService } from '../services/forum.service.js';
 const ESTADO: Record<string, number> = {
     TOPIC_NOT_FOUND: 404,
     REPLY_NOT_FOUND: 404,
+    REPORT_NOT_FOUND: 404,
     TOPIC_LOCKED: 409,
+    ALREADY_REPORTED: 409,
+    REPORT_ALREADY_HANDLED: 409,
     NOT_YOURS: 403,
+    IS_YOURS: 409,
 };
 
 export class ForumController {
@@ -165,6 +173,98 @@ export class ForumController {
                 request.params.topicId,
                 user.id,
                 fechar,
+            );
+
+            reply.code(204).send();
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
+    async reportTopic(
+        request: FastifyRequest<{
+            Params: TopicIdParamDto;
+            Body: CreateReportDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.denunciar(
+            request,
+            reply,
+            { topicId: request.params.topicId },
+        );
+    }
+
+    async reportReply(
+        request: FastifyRequest<{
+            Params: ReplyIdParamDto;
+            Body: CreateReportDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.denunciar(
+            request,
+            reply,
+            { replyId: request.params.replyId },
+        );
+    }
+
+    private async denunciar(
+        request: FastifyRequest<{ Body: CreateReportDto }>,
+        reply: FastifyReply,
+        alvo: { topicId: string } | { replyId: string },
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            const criada = await this.forumService.report(
+                alvo,
+                user.id,
+                request.body.reason,
+                request.body.note,
+            );
+
+            reply.code(201).send(criada);
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
+    async listReports(
+        request: FastifyRequest<{ Querystring: ListReportsQueryDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const pagina = await this.forumService.listReports(
+            request.query.status,
+            request.query.page,
+        );
+
+        reply.send({
+            reports: pagina.denuncias.map((denuncia) => ({
+                ...denuncia,
+                createdAt: denuncia.createdAt.toISOString(),
+                handledAt: denuncia.handledAt?.toISOString() ?? null,
+            })),
+            page: pagina.pagina,
+            pages: pagina.paginas,
+            total: pagina.total,
+        });
+    }
+
+    async handleReport(
+        request: FastifyRequest<{
+            Params: ReportIdParamDto;
+            Body: HandleReportDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            await this.forumService.handleReport(
+                request.params.reportId,
+                user.id,
+                request.body.outcome,
             );
 
             reply.code(204).send();

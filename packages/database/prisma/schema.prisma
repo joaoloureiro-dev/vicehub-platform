@@ -292,6 +292,7 @@ model User {
   reputationAwards  ReputationAward[]
   forumTopics       ForumTopic[]
   forumReplies      ForumReply[]
+  forumReports      ForumReport[]
   achievements      Achievement[]
 
   /// As duas pontas da mesma tabela de amizades.
@@ -1245,6 +1246,92 @@ model XpAward {
 /// uma limitação: quem apaga a conta é avisado de que **o seu texto é
 /// apagado**, e o que escreveu aqui é texto seu. Vazio quer dizer
 /// "retirado com a conta", e é assim que é mostrado.
+/// Porque é que alguém denunciou uma publicação do fórum.
+///
+/// Enum e não texto livre: a razão é o que faz um moderador decidir o
+/// que abrir primeiro, e uma lista fechada é ordenável e contável. O
+/// texto que a pessoa queira acrescentar vai no `note`, que é dela.
+enum ForumReportReason {
+  /// Publicidade, links a granel, a mesma mensagem em todo o lado.
+  spam
+
+  /// Insulto, perseguição, ódio. É o que tira gente da plataforma.
+  abuse
+
+  /// Não é sobre a pergunta. O remédio costuma ser fechar, não apagar.
+  off_topic
+
+  /// O resto, com o `note` a dizer o quê.
+  other
+}
+
+/// O que um moderador concluiu sobre uma denúncia.
+///
+/// `dismissed` existe por uma razão prática: sem ele, uma denúncia sem
+/// razão voltava à fila para o moderador seguinte a analisar outra vez.
+/// Dizer "foi visto e está bem" é trabalho que não se repete.
+enum ForumReportStatus {
+  open
+  acted
+  dismissed
+}
+
+/// Uma denúncia de uma publicação do fórum.
+///
+/// Existe porque sem ela a moderação dependia de sorte: alguém tinha de
+/// calhar de ler a publicação para ela ser vista. Quem lê é quem
+/// encontra, e isto é o que lhe dá por onde avisar.
+///
+/// **Aponta para uma coisa só** — ou a pergunta, ou a resposta —, e é a
+/// base de dados que o garante. Uma denúncia sem alvo, ou com dois, não
+/// é uma denúncia: é uma linha que o moderador não sabe abrir.
+///
+/// **Uma por pessoa e por publicação**, também pela base de dados. Sem
+/// isso, a própria fila de denúncias passava a ser a maneira mais barata
+/// de encher o ecrã de um moderador.
+model ForumReport {
+  id String @id @default(uuid())
+
+  /// Exatamente um destes está preenchido.
+  topicId String?
+  replyId String?
+
+  /// Sai quando a conta sai; a denúncia fica, porque o que ela aponta
+  /// continua lá e o moderador ainda tem de decidir.
+  reporterId String?
+
+  reason ForumReportReason
+
+  /// O que quem denunciou escreveu, se escreveu.
+  ///
+  /// Opcional, e apagável: é texto dessa pessoa, e a plataforma promete
+  /// a quem sai que o seu texto é apagado.
+  note String?
+
+  status     ForumReportStatus @default(open)
+  handled_at DateTime?
+  handled_by String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  version    Int      @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  topic    ForumTopic? @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  reply    ForumReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  reporter User?       @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+
+  @@unique([reporterId, topicId])
+  @@unique([reporterId, replyId])
+  /// A fila do moderador: as abertas, mais velhas primeiro.
+  @@index([status, created_at])
+  @@index([topicId])
+  @@index([replyId])
+}
+
 model ForumTopic {
   id String @id @default(uuid())
 
@@ -1266,8 +1353,9 @@ model ForumTopic {
   created_by String?
   updated_by String?
 
-  author  User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  author  User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
   replies ForumReply[]
+  reports ForumReport[]
 
   @@index([created_at(sort: Desc)])
   @@index([authorId])
@@ -1295,8 +1383,9 @@ model ForumReply {
   created_by String?
   updated_by String?
 
-  topic  ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  author User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  topic   ForumTopic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author  User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  reports ForumReport[]
 
   @@index([topicId, created_at])
   @@index([authorId])

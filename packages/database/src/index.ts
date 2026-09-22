@@ -27,6 +27,8 @@ export {
     DistributionStatus,
     EventParticipantStatus,
     EventStatus,
+    ForumReportReason,
+    ForumReportStatus,
     MembershipStatus,
     MembershipType,
     Prisma,
@@ -77,6 +79,8 @@ export { SALDO_MAXIMO } from './treasury-limits.js';
 export {
     CORPO_MAXIMO,
     CORPO_MINIMO,
+    DENUNCIAS_POR_PAGINA,
+    NOTA_MAXIMA,
     RESPOSTAS_POR_PAGINA,
     TITULO_MAXIMO,
     TITULO_MINIMO,

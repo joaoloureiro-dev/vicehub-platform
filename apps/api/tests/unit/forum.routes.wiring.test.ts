@@ -68,6 +68,10 @@ describe('ligação das rotas do fórum', () => {
             moderation: vi.fn(),
             lock: vi.fn(),
             unlock: vi.fn(),
+            reportTopic: vi.fn(),
+            reportReply: vi.fn(),
+            listReports: vi.fn(),
+            handleReport: vi.fn(),
             removeTopic: vi.fn(),
             removeReply: vi.fn(),
         } as unknown as ForumController;
@@ -169,6 +173,60 @@ describe('ligação das rotas do fórum', () => {
     });
 
     /**
+     * Denunciar pede sessão e `forum:post`, como escrever.
+     *
+     * Denunciar é uma coisa que se faz com uma conta, e tirar a
+     * permissão a quem abusa do fórum tira-lhe as duas — o que é o que
+     * se quer, porque quem enche o fórum de lixo também enche a fila
+     * de denúncias.
+     */
+    it.each(['POST /topics/:topicId/reports', 'POST /replies/:replyId/reports'])(
+        '%s pede sessão e a permissão de escrever',
+        (chave) => {
+            expect(preHandlersDe(chave)).toHaveLength(2);
+            expect(permissoesPorRota.get(chave)).toEqual(['forum:post']);
+        },
+    );
+
+    /**
+     * E leva o limite da escrita, pela mesma razão: é um pedido que
+     * qualquer conta pode fazer em massa, e a fila de um moderador é
+     * precisamente o sítio onde isso magoa.
+     */
+    it.each(['POST /topics/:topicId/reports', 'POST /replies/:replyId/reports'])(
+        '%s leva o limite da escrita',
+        (chave) => {
+            const limite = limiteDe(chave);
+
+            expect(limite?.max).toBeGreaterThan(0);
+            expect(limite?.max).toBeLessThan(100);
+        },
+    );
+
+    /**
+     * A fila e o fechar de cada denúncia são de quem modera.
+     *
+     * A fila mostra texto que alguém achou mau o suficiente para
+     * avisar, com o nome de quem avisou: é o contrário de uma coisa
+     * para se ver de fora.
+     */
+    it.each(['GET /reports', 'POST /reports/:reportId'])(
+        '%s exige a permissão de moderar',
+        (chave) => {
+            expect(preHandlersDe(chave)).toHaveLength(2);
+            expect(permissoesPorRota.get(chave)).toEqual(['forum:moderate']);
+        },
+    );
+
+    /**
+     * Ler a fila não leva limite, como nenhuma leitura leva: um
+     * moderador a percorrer denúncias depressa está a trabalhar.
+     */
+    it('GET /reports não leva limite próprio', () => {
+        expect(limiteDe('GET /reports')).toBeUndefined();
+    });
+
+    /**
      * E fechar não leva o limite da escrita.
      *
      * Um moderador a arrumar uma discussão que rebentou mexe em muitos
@@ -217,6 +275,12 @@ describe('ligação das rotas do fórum', () => {
         ['DELETE /replies/:replyId', 'params'],
         ['POST /topics/:topicId/lock', 'params'],
         ['DELETE /topics/:topicId/lock', 'params'],
+        ['POST /topics/:topicId/reports', 'params'],
+        ['POST /topics/:topicId/reports', 'body'],
+        ['POST /replies/:replyId/reports', 'body'],
+        ['GET /reports', 'querystring'],
+        ['POST /reports/:reportId', 'params'],
+        ['POST /reports/:reportId', 'body'],
     ])('%s valida o %s do pedido', (chave, parte) => {
         const schema = rotas.get(chave)?.schema as
             | Record<string, unknown>

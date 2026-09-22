@@ -12,9 +12,12 @@ import {
     removeReply,
     removeTopic,
     replyToTopic,
+    reportReply,
+    reportTopic,
     unlockTopic,
     type ForumAuthor,
 } from '../forum.api.js';
+import { Denunciar } from '../components/denunciar.js';
 
 /**
  * O texto de alguém, como o fórum o mostra.
@@ -172,6 +175,15 @@ export const TopicPage = () => {
                             ) : null}
                         </span>
                     ) : null}
+                    {user !== null && !meu ? (
+                        <span className="acoes">
+                            <Denunciar
+                                aoDenunciar={(razao, nota) =>
+                                    reportTopic(dados.id, razao, nota)
+                                }
+                            />
+                        </span>
+                    ) : null}
                 </p>
             </article>
 
@@ -208,6 +220,20 @@ export const TopicPage = () => {
                                             >
                                                 {t.forum.retirar}
                                             </button>
+                                        </span>
+                                    ) : null}
+                                {user !== null
+                                    && umaResposta.author?.id !== user.id ? (
+                                        <span className="acoes">
+                                            <Denunciar
+                                                aoDenunciar={(razao, nota) =>
+                                                    reportReply(
+                                                        umaResposta.id,
+                                                        razao,
+                                                        nota,
+                                                    )
+                                                }
+                                            />
                                         </span>
                                     ) : null}
                             </p>

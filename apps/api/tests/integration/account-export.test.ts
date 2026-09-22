@@ -170,6 +170,68 @@ describe('levar os dados consigo', () => {
             expect(dados.profile.xp).toBe(enorme.toString());
         });
 
+        /**
+         * O que se escreveu no fórum é texto da pessoa, e a plataforma
+         * promete apagá-lo quando ela sai. O que se promete apagar
+         * também se tem de poder levar: a saída de mãos vazias e o
+         * apagar são a mesma decisão vista de dois lados.
+         */
+        it('traz o que escreveu no fórum e o que denunciou lá', async () => {
+            const outra = await register(`ex${marca}o`);
+
+            const aberto = await app.inject({
+                method: 'POST',
+                url: '/api/v1/forum/topics',
+                headers: auth(eu.token),
+                payload: {
+                    title: `Uma pergunta que é minha ${marca}`,
+                    body: 'E um corpo que também é meu, com o que escrevi.',
+                },
+            });
+
+            expect(aberto.statusCode, aberto.body).toBe(201);
+
+            const doOutro = await app.inject({
+                method: 'POST',
+                url: '/api/v1/forum/topics',
+                headers: auth(outra.token),
+                payload: {
+                    title: `Uma pergunta que não é minha ${marca}`,
+                    body: 'Um corpo escrito por outra pessoa qualquer.',
+                },
+            });
+
+            const denunciada = await app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/topics/${doOutro.json().id as string}/reports`,
+                headers: auth(eu.token),
+                payload: { reason: 'spam', note: 'A nota que eu escrevi.' },
+            });
+
+            expect(denunciada.statusCode, denunciada.body).toBe(201);
+
+            const dados = (await exportar(eu.token)).json();
+
+            expect(dados.forum.topics).toContainEqual(
+                expect.objectContaining({
+                    id: aberto.json().id,
+                    title: `Uma pergunta que é minha ${marca}`,
+                }),
+            );
+
+            expect(dados.forum.reports).toContainEqual(
+                expect.objectContaining({
+                    reason: 'spam',
+                    note: 'A nota que eu escrevi.',
+                }),
+            );
+
+            /** E a pergunta de outra pessoa não vem, mesmo tendo sido eu a denunciá-la. */
+            expect(JSON.stringify(dados.forum)).not.toContain(
+                'Um corpo escrito por outra pessoa qualquer.',
+            );
+        });
+
         it('vai como ficheiro, com a data no nome', async () => {
             const resposta = await exportar(eu.token);
 

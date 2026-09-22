@@ -605,6 +605,61 @@ export const fr = (p: Tools): Messages => ({
 
         entrarParaPerguntar: 'Connectez-vous pour poser une question',
 
+        denunciar: 'Signaler',
+
+        porqueDenuncias: 'Quel est le problème ?',
+
+        razoes: {
+            spam: 'Spam ou publicité',
+            abuse: 'Insultes, harcèlement ou haine',
+            off_topic: 'Sans rapport avec la question',
+            other: 'Autre chose',
+        },
+
+        notaDaDenuncia: 'Ce qu\u2019un modérateur devrait savoir (facultatif)',
+
+        enviarDenuncia: 'Envoyer le signalement',
+
+        cancelarDenuncia: 'Annuler',
+
+        denunciaRecebida: 'Signalé. Un modérateur va le regarder.',
+
+        naoFoiPossivelDenunciar: 'Le signalement n\u2019a pas pu être envoyé.',
+
+        irParaFila: 'Signalements en attente',
+
+        filaTitulo: 'Signalements',
+
+        filaSub: 'Les plus anciens d\u2019abord, parce qu\u2019ils attendent depuis le plus longtemps.',
+
+        filaEstados: {
+            open: 'En attente',
+            acted: 'Traités',
+            dismissed: 'Rien à signaler',
+        },
+
+        filaVazia: 'Rien ici.',
+
+        filaNegada: 'Ceci est réservé aux modérateurs.',
+
+        alvoPergunta: 'Une question',
+
+        alvoResposta: 'Une réponse',
+
+        jaRetirado: 'Déjà retiré.',
+
+        verNoForum: 'Le lire dans le forum',
+
+        marcarTratada: 'Je m\u2019en suis occupé',
+
+        marcarSemRazao: 'Écarter',
+
+        jaTratada: 'Traité.',
+
+        jaDispensada: 'Regardé, rien à signaler.',
+
+        naoFoiPossivelDecidir: 'Impossible d\u2019enregistrer cela.',
+
     },
 
     noticias: {
