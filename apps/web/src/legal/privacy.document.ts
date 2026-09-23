@@ -64,7 +64,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                     'This section is short, and that is the point of it.',
                 ],
                 list: [
-                    'No analytics. No advertising tag, no session recorder, no heat map. The only third-party script that ever runs is the anti-robot check on the sign-in and sign-up forms, and only if this installation has one configured — nothing else on ViceHub loads anything from anywhere else.',
+                    'No analytics. No advertising tag, no session recorder, no heat map. The only third-party script that ever runs is the anti-robot check on the sign-in, sign-up and password-recovery forms, and only if this installation has one configured — nothing else on ViceHub loads anything from anywhere else.',
                     'No advertising, and no profile built to serve any.',
                     'No tracking of you on other sites. ViceHub has nothing on any site but its own.',
                     'Your data is never sold, rented, or passed to a data broker. There is no arrangement under which that could happen.',
@@ -91,7 +91,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                 ],
                 list: [
                     'Stripe — payments. It receives what a payment needs. ViceHub never sees your card.',
-                    'Cloudflare — the anti-robot check on the sign-in and sign-up forms, where one is configured. It runs on those two pages and nowhere else, and sees what any site sees of a visit: your address and what your browser reports. Turnstile was chosen because it sets no tracking cookie and feeds no advertising profile.',
+                    'Cloudflare — the anti-robot check on the sign-in, sign-up and password-recovery forms, where one is configured. It runs on those three pages and nowhere else, and sees what any site sees of a visit: your address and what your browser reports. Turnstile was chosen because it sets no tracking cookie and feeds no advertising profile.',
                     'Discord — only if you link it, and only to exchange the account identifier and email at sign-in.',
                     'Google — the same, if you link it.',
                     'Our email provider — to deliver confirmation and password-recovery messages. It receives your address and the message.',

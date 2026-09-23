@@ -60,9 +60,18 @@ describe('a tira de atividade', () => {
 
         montarEcra(<TiraDeActividade serverId="s1" />);
 
-        expect(await screen.findByText('14')).toBeDefined();
-        expect(screen.getByText('30')).toBeDefined();
-        expect(screen.getByText(t.servidores.mediaDeSete)).toBeDefined();
+        /**
+         * Os números procuram-se **dentro do parágrafo deles**, e não
+         * no ecrã todo. As etiquetas do eixo também são números, e à
+         * hora certa do dia uma delas é `14` — a versão anterior disto
+         * passava de manhã e falhava à tarde, sem nada ter mudado.
+         */
+        const numeros = (
+            await screen.findByText(t.servidores.mediaDeSete)
+        ).closest('p');
+
+        expect(numeros?.textContent).toContain('14');
+        expect(numeros?.textContent).toContain('30');
     });
 
     /**
