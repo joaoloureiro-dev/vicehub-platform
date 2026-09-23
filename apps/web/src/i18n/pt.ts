@@ -255,6 +255,17 @@ export const pt = (p: Tools): Messages => ({
         soOnline: 'Mostrar apenas os que estão online',
         online: 'Online',
         offline: 'Offline',
+
+        actividadeTitulo: 'Quem esteve aqui, hora a hora',
+
+        mediaDeSete: 'em média, nos últimos 7 dias',
+
+        picoDeSete: 'na hora mais cheia',
+
+        semDados: 'nada reportado',
+
+        tiraDescricao: (horas: number, media: number, pico: number) =>
+            `Quantas pessoas estiveram aqui nas últimas ${horas} horas. ${media} em média nos últimos 7 dias, ${pico} na hora mais cheia.`,
         todos: 'Todos os servidores',
         semResultados: 'Nenhum servidor com estes filtros.',
         aindaNaoHa: 'Ainda não há servidores. Regista o primeiro.',

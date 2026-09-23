@@ -77,6 +77,16 @@ export type { PlanDefinition, PlanKey } from './plans.js';
 export { SALDO_MAXIMO } from './treasury-limits.js';
 
 export {
+    HORAS_GUARDADAS,
+    horasDaJanela,
+    inicioDaHora,
+    limiteDeHorasGuardadas,
+    mediaDe,
+} from './server-activity.js';
+
+export type { BaldeDeHora } from './server-activity.js';
+
+export {
     CORPO_MAXIMO,
     CORPO_MINIMO,
     DENUNCIAS_POR_PAGINA,

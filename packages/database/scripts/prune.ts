@@ -16,7 +16,7 @@ dotenv.config({
 });
 
 /**
- * Apaga tokens e sessões expirados.
+ * Apaga tokens e sessões expirados, e o histórico que envelheceu.
  *
  * As regras vivem em `src/prune.ts`, que é o que os testes exercitam.
  * Aqui só se abre a ligação e se diz o que aconteceu.
@@ -50,7 +50,8 @@ const main = async (): Promise<void> => {
 
     console.log(
         `[ViceHub Prune] ${verbo} ${resultado.tokensDeConta} tokens de conta, ` +
-            `${resultado.refreshTokens} refresh tokens e ${resultado.sessoes} sessões.`,
+            `${resultado.refreshTokens} refresh tokens, ${resultado.sessoes} sessões ` +
+            `e ${resultado.horasDeServidor} horas de histórico de servidores.`,
     );
 };
 

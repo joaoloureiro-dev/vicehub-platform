@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+    activityQuerySchema,
     createServerSchema,
     listServersQuerySchema,
     serverIdParamSchema,
@@ -12,6 +13,7 @@ import {
 export type CreateServerDto = z.infer<typeof createServerSchema>;
 export type UpdateServerDto = z.infer<typeof updateServerSchema>;
 export type ServerIdParamDto = z.infer<typeof serverIdParamSchema>;
+export type ActivityQueryDto = z.infer<typeof activityQuerySchema>;
 export type ServerMemberParamDto = z.infer<typeof serverMemberParamSchema>;
 export type SetServerMemberRoleDto = z.infer<typeof setServerMemberRoleSchema>;
 export type ListServersQueryDto = z.infer<typeof listServersQuerySchema>;

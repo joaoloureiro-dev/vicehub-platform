@@ -173,3 +173,27 @@ export const revokeServerApiKey = (
     api<void>(`/servers/${serverId}/api-keys/${apiKeyId}`, {
         method: 'DELETE',
     });
+
+/** Uma hora do passado de um servidor. */
+export interface PontoDeActividade {
+    /** O início da hora, em UTC. */
+    hour: string;
+    /** Quantas batidas entraram nesta hora. */
+    samples: number;
+    average: number;
+    peak: number;
+    last: number;
+}
+
+export interface ActividadeDoServidor {
+    hours: PontoDeActividade[];
+    /** A média e o pico da janela inteira. */
+    average: number;
+    peak: number;
+}
+
+export const getServerActivity = (
+    serverId: string,
+    days = 7,
+): Promise<ActividadeDoServidor> =>
+    api<ActividadeDoServidor>(`/servers/${serverId}/activity?days=${days}`);

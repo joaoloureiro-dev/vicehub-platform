@@ -11,6 +11,7 @@ import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     CreateServerDto,
     ListServersQueryDto,
+    ActivityQueryDto,
     ServerIdParamDto,
     ServerMemberParamDto,
     SetServerMemberRoleDto,
@@ -96,6 +97,33 @@ export class ServerController {
                 respondedAt: adesao.respondedAt?.toISOString() ?? null,
             })),
         );
+    }
+
+    /**
+     * O passado de um servidor, para o perfil o desenhar.
+     *
+     * Público como o perfil: quem procura onde jogar quer saber se há
+     * gente lá às horas a que joga, e isso não é informação de dentro.
+     */
+    async getActivity(
+        request: FastifyRequest<{
+            Params: ServerIdParamDto;
+            Querystring: ActivityQueryDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const actividade = await this.serverService.getActivity(
+            request.params.serverId,
+            request.query.days,
+        );
+
+        reply.send({
+            ...actividade,
+            hours: actividade.hours.map((hora) => ({
+                ...hora,
+                hour: hora.hour.toISOString(),
+            })),
+        });
     }
 
     async getProfile(

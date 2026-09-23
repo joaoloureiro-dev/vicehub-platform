@@ -1,7 +1,9 @@
 import type { PrismaClient } from '@prisma/client';
 
+import { limiteDeHorasGuardadas } from './server-activity.js';
+
 /**
- * Apagar o que já não serve: tokens e sessões expirados.
+ * Apagar o que já não serve: tokens, sessões e histórico velho.
  *
  * Nada quebra por não correr — um token expirado é recusado na mesma —,
  * mas estas são as três tabelas que mais crescem: cada login abre uma
@@ -28,6 +30,7 @@ export interface PruneResultado {
     tokensDeConta: number;
     refreshTokens: number;
     sessoes: number;
+    horasDeServidor: number;
 }
 
 /**
@@ -76,6 +79,17 @@ export const condicoesDePrune = (agora: Date = new Date()) => {
          * também, com a deteção junto.
          */
         sessoes: { expires_at: { lt: limite } },
+
+        /**
+         * O histórico dos servidores tem retenção própria, e não a
+         * margem de um dia: não é uma coisa que expire, é uma coisa que
+         * se guarda enquanto vale a pena ler.
+         *
+         * A condição sai de `server-activity.ts`, onde está a regra, e
+         * não daqui: quem mudar a retenção muda-a num sítio, e a
+         * limpeza acompanha sem ninguém se lembrar dela.
+         */
+        horasDeServidor: { hour: { lt: limiteDeHorasGuardadas(agora) } },
     };
 };
 
@@ -86,13 +100,15 @@ export const contarParaPrune = async (
 ): Promise<PruneResultado> => {
     const onde = condicoesDePrune(agora);
 
-    const [tokensDeConta, refreshTokens, sessoes] = await Promise.all([
-        prisma.accountToken.count({ where: onde.tokensDeConta }),
-        prisma.refreshToken.count({ where: onde.refreshTokens }),
-        prisma.authSession.count({ where: onde.sessoes }),
-    ]);
+    const [tokensDeConta, refreshTokens, sessoes, horasDeServidor]
+        = await Promise.all([
+            prisma.accountToken.count({ where: onde.tokensDeConta }),
+            prisma.refreshToken.count({ where: onde.refreshTokens }),
+            prisma.authSession.count({ where: onde.sessoes }),
+            prisma.serverActivityHour.count({ where: onde.horasDeServidor }),
+        ]);
 
-    return { tokensDeConta, refreshTokens, sessoes };
+    return { tokensDeConta, refreshTokens, sessoes, horasDeServidor };
 };
 
 export const prune = async (
@@ -116,9 +132,14 @@ export const prune = async (
      */
     const sessoes = await prisma.authSession.deleteMany({ where: onde.sessoes });
 
+    const horasDeServidor = await prisma.serverActivityHour.deleteMany({
+        where: onde.horasDeServidor,
+    });
+
     return {
         tokensDeConta: tokensDeConta.count,
         refreshTokens: refreshTokens.count,
         sessoes: sessoes.count,
+        horasDeServidor: horasDeServidor.count,
     };
 };

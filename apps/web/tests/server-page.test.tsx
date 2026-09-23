@@ -60,6 +60,8 @@ const servidor = (opcoes: {
     perfil?: unknown;
     /** As adesões de quem está a ver, quando o caso precisa de uma. */
     adesoes?: unknown[];
+    /** O passado do servidor, quando o caso quiser um. */
+    actividade?: unknown;
     /** A folga de crews do plano do servidor. */
     folga?: { used: number; limit: number | null; canAcceptMore: boolean };
     /** As crews que pediram para jogar no servidor. */
@@ -162,6 +164,18 @@ const servidor = (opcoes: {
 
         if (endereco.endsWith('/me/memberships')) {
             return Promise.resolve(json(200, opcoes.adesoes ?? []));
+        }
+
+        /**
+         * O passado do servidor, vazio por omissão: estes testes são
+         * sobre as definições, os requisitos e os cargos, e um servidor
+         * que nunca reportou é o caso normal deles. A tira tem testes
+         * próprios.
+         */
+        if (endereco.includes('/activity')) {
+            return Promise.resolve(
+                json(200, opcoes.actividade ?? { hours: [], average: 0, peak: 0 }),
+            );
         }
 
         return Promise.resolve(

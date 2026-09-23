@@ -65,3 +65,14 @@ export const listServersQuerySchema = z.object({
         .transform((value) => value === 'true')
         .optional(),
 });
+
+/**
+ * Quantos dias de passado se pedem.
+ *
+ * Sete por omissão: é a janela que distingue um servidor cheio todos os
+ * dias de um que encheu ontem, que é a pergunta para que isto existe. O
+ * tecto é o da retenção — pedir mais do que se guarda devolve o que há.
+ */
+export const activityQuerySchema = z.object({
+    days: z.coerce.number().int().min(1).max(90).default(7),
+});

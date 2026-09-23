@@ -1,4 +1,8 @@
-import { SourceType, type DatabaseClient } from '@vicehub/database';
+import {
+    SourceType,
+    inicioDaHora,
+    type DatabaseClient,
+} from '@vicehub/database';
 
 /**
  * Repositório da ingestão: chaves e o que os servidores reportam.
@@ -110,23 +114,73 @@ export class IngestRepository {
     }
 
     /**
-     * Grava o que o servidor acabou de reportar.
+     * Grava o que o servidor acabou de reportar — o agora e o passado.
+     *
+     * Na mesma transação de propósito. O presente sobrescreve-se e o
+     * passado acumula-se, e são a mesma batida: gravar um sem o outro
+     * deixava o gráfico a divergir do número que o perfil mostra, e a
+     * divergência seria pior do que qualquer dos dois estar errado.
      */
     recordHeartbeat(serverId: string, playersOnline: number) {
-        return this.database.server.update({
-            where: { id: serverId },
-            data: {
-                last_heartbeat_at: new Date(),
-                players_online: playersOnline,
-                /**
-                 * A marca manual passa a acompanhar o que o servidor
-                 * reporta. Deixá-la desligada enquanto o servidor bate à
-                 * porta faria o perfil dizer uma coisa e o diretório
-                 * outra, conforme quem lê.
-                 */
-                isOnline: true,
-            },
-            select: { id: true },
+        const agora = new Date();
+
+        return this.database.$transaction(async (tx) => {
+            const servidor = await tx.server.update({
+                where: { id: serverId },
+                data: {
+                    last_heartbeat_at: agora,
+                    players_online: playersOnline,
+                    /**
+                     * A marca manual passa a acompanhar o que o servidor
+                     * reporta. Deixá-la desligada enquanto o servidor bate à
+                     * porta faria o perfil dizer uma coisa e o diretório
+                     * outra, conforme quem lê.
+                     */
+                    isOnline: true,
+                },
+                select: { id: true },
+            });
+
+            const hora = inicioDaHora(agora);
+
+            /**
+             * Uma instrução só, e em SQL — a única da plataforma.
+             *
+             * O balde soma o que lá estava com o que acabou de chegar, e
+             * isso não se escreve com uma leitura seguida de uma
+             * escrita: entre as duas cabe outra batida, e o `upsert` do
+             * Prisma obrigaria a ler o pico antes para o poder comparar.
+             * Lido antes, duas batidas simultâneas deixam o pico na
+             * menor das duas.
+             *
+             * `GREATEST` decide-o dentro da própria escrita, com o
+             * índice único a arbitrar quem chegou primeiro. É exacto,
+             * cabe numa instrução, e é a razão de aqui se sair do Prisma.
+             */
+            await tx.$executeRaw`
+                INSERT INTO "ServerActivityHour" (
+                    "id", "serverId", "hour",
+                    "samples", "players_sum", "players_max", "players_last",
+                    "created_at", "updated_at"
+                )
+                VALUES (
+                    gen_random_uuid(), ${serverId}, ${hora},
+                    1, ${playersOnline}, ${playersOnline}, ${playersOnline},
+                    ${agora}, ${agora}
+                )
+                ON CONFLICT ("serverId", "hour") DO UPDATE SET
+                    "samples" = "ServerActivityHour"."samples" + 1,
+                    "players_sum" = "ServerActivityHour"."players_sum"
+                        + EXCLUDED."players_sum",
+                    "players_max" = GREATEST(
+                        "ServerActivityHour"."players_max",
+                        EXCLUDED."players_max"
+                    ),
+                    "players_last" = EXCLUDED."players_last",
+                    "updated_at" = EXCLUDED."updated_at"
+            `;
+
+            return servidor;
         });
     }
 

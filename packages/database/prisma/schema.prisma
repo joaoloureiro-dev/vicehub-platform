@@ -373,6 +373,55 @@ model Crew {
   achievements Achievement[]
 }
 
+/// Uma hora de vida de um servidor.
+///
+/// O heartbeat diz quantas pessoas estão lá **agora**, e sobrescrevia o
+/// anterior: o servidor sabia o presente e não tinha passado nenhum. Sem
+/// passado não há como ordenar um leaderboard nem desenhar uma
+/// evolução — "500 pessoas agora" não distingue um servidor cheio todos
+/// os dias de um que encheu hoje à tarde.
+///
+/// **Uma linha por servidor e por hora**, e não uma por batida. Um
+/// servidor bate à porta de minuto a minuto: guardar cada batida dava
+/// mil e quatrocentas linhas por dia e por servidor para responder a
+/// perguntas que a hora responde igual de bem. Assim são vinte e quatro.
+///
+/// Guarda-se a soma e o número de amostras em vez da média já feita:
+/// médias não se somam, e com estes dois números a média de um dia, de
+/// uma semana ou de um mês calcula-se toda a partir das mesmas linhas.
+model ServerActivityHour {
+  id String @id @default(uuid())
+
+  serverId String
+
+  /// O início da hora, em UTC. É a chave do balde.
+  hour DateTime
+
+  /// Quantas batidas entraram nesta hora.
+  samples Int @default(0)
+
+  /// A soma das contagens, para a média sair daqui sem a guardar feita.
+  players_sum Int @default(0)
+
+  /// O pico da hora, que é o número que interessa a quem procura onde há
+  /// gente — a média esconde a hora cheia dentro de um dia morto.
+  players_max Int @default(0)
+
+  /// A última contagem da hora, para o fim do gráfico não mentir.
+  players_last Int @default(0)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, hour])
+  /// A leitura de um servidor: as horas dele, da mais recente para trás.
+  @@index([serverId, hour(sort: Desc)])
+  /// E a limpeza, que apaga por idade e não por servidor.
+  @@index([hour])
+}
+
 model Server {
   id String @id @default(uuid())
 
@@ -432,7 +481,8 @@ model Server {
   /// As crews que jogam neste servidor, e as que o pediram.
   affiliations Affiliation[]
 
-  apiKeys ServerApiKey[]
+  apiKeys  ServerApiKey[]
+  activity ServerActivityHour[]
 
   /// O índice por onde o diretório filtra os servidores online.
   ///
