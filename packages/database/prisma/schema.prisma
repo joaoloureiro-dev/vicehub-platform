@@ -461,6 +461,25 @@ model Server {
   last_heartbeat_at DateTime?
   players_online    Int?
 
+  /// Quantas pessoas este servidor teve em média nos últimos sete dias.
+  ///
+  /// Sai do histórico hora a hora, e vive aqui para o diretório poder
+  /// **ordenar** por ele: uma média de uma janela de tempo não se
+  /// escreve num `orderBy` de Prisma, e a alternativa era escrever os
+  /// filtros do diretório uma segunda vez em SQL — que é como uma regra
+  /// acaba a divergir de si própria.
+  ///
+  /// Nulo enquanto o servidor não tiver passado nenhum. Isso é diferente
+  /// de zero, e o diretório põe os nulos no fim em vez de os tratar como
+  /// servidores vazios.
+  ///
+  /// **É um número datado**, e por isso é reescrito em dois momentos: a
+  /// cada batida, e na passagem da limpeza, que recalcula o de toda a
+  /// gente. Sem o segundo, um servidor que deixasse de reportar ficava
+  /// para sempre com a média do dia em que morreu, e subia no diretório
+  /// à frente de servidores vivos.
+  players_average_7d Int?
+
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
@@ -493,6 +512,9 @@ model Server {
   /// ele que serve a única consulta que a listagem faz com filtro por
   /// tempo.
   @@index([last_heartbeat_at])
+
+  /// O que o diretório usa para ordenar por quem tem gente.
+  @@index([players_average_7d])
 }
 
 /// Uma chave que deixa um servidor de jogo falar com a plataforma.

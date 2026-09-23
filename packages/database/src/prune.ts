@@ -1,6 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 
-import { limiteDeHorasGuardadas } from './server-activity.js';
+import {
+    RECALCULAR_MEDIA_SQL,
+    inicioDaMedia,
+    limiteDeHorasGuardadas,
+} from './server-activity.js';
 
 /**
  * Apagar o que já não serve: tokens, sessões e histórico velho.
@@ -31,6 +35,16 @@ export interface PruneResultado {
     refreshTokens: number;
     sessoes: number;
     horasDeServidor: number;
+    /**
+     * Quantos servidores mudaram de média.
+     *
+     * Não é uma eliminação, e está aqui na mesma: é trabalho que tem de
+     * correr periodicamente pela mesma razão que o resto — um servidor
+     * que deixou de reportar não volta a passar por lado nenhum, e sem
+     * isto ficava para sempre com a média do dia em que morreu, à
+     * frente de servidores vivos no diretório.
+     */
+    mediasRecalculadas: number;
 }
 
 /**
@@ -108,7 +122,22 @@ export const contarParaPrune = async (
             prisma.serverActivityHour.count({ where: onde.horasDeServidor }),
         ]);
 
-    return { tokensDeConta, refreshTokens, sessoes, horasDeServidor };
+    /**
+     * A contagem seca não recalcula nada: recalcular é escrever, e o
+     * `--seco` existe para não escrever. O que ela diz é quantas
+     * médias **mudariam**, que sai da mesma condição.
+     */
+    const mediasRecalculadas = await prisma.server.count({
+        where: { is_deleted: false },
+    });
+
+    return {
+        tokensDeConta,
+        refreshTokens,
+        sessoes,
+        horasDeServidor,
+        mediasRecalculadas,
+    };
 };
 
 export const prune = async (
@@ -136,10 +165,22 @@ export const prune = async (
         where: onde.horasDeServidor,
     });
 
+    /**
+     * A seguir a apagar, e não antes: as horas que saíram da retenção
+     * também saíram da janela da média, e recalcular primeiro seria
+     * contar o que estava prestes a deixar de existir.
+     */
+    const mediasRecalculadas = await prisma.$executeRawUnsafe(
+        RECALCULAR_MEDIA_SQL,
+        inicioDaMedia(agora),
+        null,
+    );
+
     return {
         tokensDeConta: tokensDeConta.count,
         refreshTokens: refreshTokens.count,
         sessoes: sessoes.count,
         horasDeServidor: horasDeServidor.count,
+        mediasRecalculadas,
     };
 };

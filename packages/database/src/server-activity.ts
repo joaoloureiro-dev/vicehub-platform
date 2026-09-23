@@ -87,3 +87,59 @@ export const mediaDe = (baldes: readonly BaldeDeHora[]): number => {
  */
 export const limiteDeHorasGuardadas = (agora: Date = new Date()): Date =>
     new Date(inicioDaHora(agora).getTime() - HORAS_GUARDADAS * 60 * 60 * 1000);
+
+/**
+ * A janela por que o diretório ordena.
+ *
+ * Sete dias: é o que distingue um servidor cheio todas as noites de um
+ * que encheu ontem, e é curto o suficiente para um servidor que melhorou
+ * subir sem ter de esperar um mês.
+ */
+export const DIAS_DA_MEDIA = 7;
+
+/**
+ * Recalcula a média de sete dias de um servidor, ou de todos.
+ *
+ * Uma instrução, e em SQL, pela mesma razão do balde: é uma agregação
+ * que alimenta uma coluna, e trazê-la para memória seria ler o histórico
+ * inteiro de toda a gente para escrever um número por servidor.
+ *
+ * **A média é sobre as horas que existem**, e não sobre as sete vezes
+ * vinte e quatro: um servidor que só reportou ontem tem a média de
+ * ontem, e não a média de ontem diluída por seis dias de silêncio que
+ * ninguém mediu. O que faz um servidor morto descer é a janela a
+ * andar para a frente — as horas dele saem dela sozinhas.
+ *
+ * Sem horas nenhuma na janela a coluna fica nula, e não zero: um
+ * servidor sem passado não é um servidor vazio, e o diretório precisa de
+ * os distinguir para os pôr em sítios diferentes.
+ *
+ * Devolve quantas linhas escreveu.
+ */
+export const RECALCULAR_MEDIA_SQL = `
+    UPDATE "Server" AS s
+    SET "players_average_7d" = m.media
+    FROM (
+        SELECT
+            srv."id" AS "serverId",
+            CASE
+                WHEN COALESCE(SUM(h."samples"), 0) = 0 THEN NULL
+                ELSE ROUND(
+                    SUM(h."players_sum")::numeric / SUM(h."samples")
+                )::int
+            END AS media
+        FROM "Server" AS srv
+        LEFT JOIN "ServerActivityHour" AS h
+            ON h."serverId" = srv."id" AND h."hour" >= $1
+        WHERE srv."is_deleted" = false AND ($2::text IS NULL OR srv."id" = $2)
+        GROUP BY srv."id"
+    ) AS m
+    WHERE s."id" = m."serverId"
+      AND s."players_average_7d" IS DISTINCT FROM m.media
+`;
+
+/** O início da janela da média, a contar de agora. */
+export const inicioDaMedia = (agora: Date = new Date()): Date =>
+    new Date(
+        inicioDaHora(agora).getTime() - DIAS_DA_MEDIA * 24 * 60 * 60 * 1000,
+    );

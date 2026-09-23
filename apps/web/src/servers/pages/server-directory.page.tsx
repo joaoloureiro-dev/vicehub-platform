@@ -52,6 +52,17 @@ const ServerCard = ({
             {servidor.isOnline && servidor.playersOnline !== null ? (
                 <span>{t.chaves.jogadoresOnline(servidor.playersOnline)}</span>
             ) : null}
+            {/*
+              O número por que a lista ordena, à vista.
+
+              Uma lista ordenada por um número que não se vê é uma lista
+              que ninguém consegue conferir, e a primeira pergunta de
+              quem estranha a ordem é porque é que este está à frente
+              daquele.
+            */}
+            {servidor.playersAverage !== null ? (
+                <span>{t.servidores.mediaDe(servidor.playersAverage)}</span>
+            ) : null}
             {servidor.region ? <span>{servidor.region}</span> : null}
             <span>{t.crews.membros(servidor.memberCount)}</span>
             {destaque ? <span className="pill">{t.crews.destaque}</span> : null}
@@ -65,6 +76,15 @@ export const ServerDirectoryPage = () => {
     const [termo, setTermo] = useState('');
     const [pesquisa, setPesquisa] = useState('');
     const [soOnline, setSoOnline] = useState(false);
+    /**
+     * Por omissão, os mais recentes.
+     *
+     * Um diretório ordenado por atividade é um diretório em que os
+     * grandes estão sempre em cima e um servidor novo nunca é visto — o
+     * que garante que continua a não ter ninguém. Quem procura onde há
+     * gente escolhe-o; quem chega, vê quem chegou.
+     */
+    const [ordem, setOrdem] = useState<'newest' | 'active'>('newest');
     const [pagina, setPagina] = useState(1);
 
     const { data, loading, error } = useAsync(
@@ -72,9 +92,10 @@ export const ServerDirectoryPage = () => {
             listServers({
                 ...(pesquisa ? { search: pesquisa } : {}),
                 ...(soOnline ? { onlineOnly: true } : {}),
+                sort: ordem,
                 page: pagina,
             }),
-        [pesquisa, soOnline, pagina],
+        [pesquisa, soOnline, ordem, pagina],
     );
 
     const submeter = (event: FormEvent) => {
@@ -118,6 +139,22 @@ export const ServerDirectoryPage = () => {
                 />
                 {t.servidores.soOnline}
             </label>
+
+            <nav className="abas">
+                {(['newest', 'active'] as const).map((uma) => (
+                    <button
+                        key={uma}
+                        className={uma === ordem ? 'aba activa' : 'aba'}
+                        type="button"
+                        onClick={() => {
+                            setOrdem(uma);
+                            setPagina(1);
+                        }}
+                    >
+                        {t.servidores.ordens[uma]}
+                    </button>
+                ))}
+            </nav>
 
             {error ? (
                 <Alert kind="bad">{t.servidores.naoCarregou}</Alert>

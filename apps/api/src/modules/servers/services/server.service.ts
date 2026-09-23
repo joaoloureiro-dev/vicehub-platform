@@ -35,7 +35,7 @@ interface ListServersInput {
     onlineOnly?: boolean | undefined;
     page: number;
     pageSize: number;
-    sort: 'newest' | 'name';
+    sort: 'newest' | 'name' | 'active';
 }
 
 interface UpdateServerInput {
@@ -388,6 +388,7 @@ export class ServerService {
             last_heartbeat_at: Date | null;
             players_online: number | null;
             created_at: Date;
+            players_average_7d: number | null;
         },
         isPremium: boolean,
         memberCount: number,
@@ -407,6 +408,7 @@ export class ServerService {
             joinRequirements: server.join_requirements,
             isOnline: estaOnline(server),
             playersOnline: server.players_online,
+            playersAverage: server.players_average_7d,
             memberCount,
             isPremium,
             appearance: visibleAppearance(server, isPremium),

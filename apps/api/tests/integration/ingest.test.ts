@@ -359,6 +359,48 @@ describe('ingestão de servidores', () => {
         });
 
         /**
+         * E a média de sete dias, que é por onde o diretório ordena.
+         *
+         * Escrita na mesma batida: um servidor que acabou de reportar
+         * tem de aparecer ordenado já, e não daqui a uma hora.
+         */
+        it('escreve a média de sete dias a cada batida', async () => {
+            const chave = await criarChave(dono, serverId);
+
+            const bater = (quantos: number) =>
+                app.inject({
+                    method: 'POST',
+                    url: '/api/v1/ingest/heartbeat',
+                    headers: comChave(chave.key),
+                    payload: { playersOnline: quantos },
+                });
+
+            await bater(10);
+            await bater(20);
+
+            const servidor = await prisma.server.findFirstOrThrow({
+                where: { id: serverId },
+                select: { players_average_7d: true },
+            });
+
+            expect(servidor.players_average_7d).toBe(15);
+        });
+
+        /**
+         * Um servidor sem passado nenhum tem a média nula, e não zero:
+         * um servidor sem dados não é um servidor vazio, e o diretório
+         * põe os dois em sítios diferentes.
+         */
+        it('deixa a média nula em quem nunca reportou', async () => {
+            const servidor = await prisma.server.findFirstOrThrow({
+                where: { id: outroServerId },
+                select: { players_average_7d: true },
+            });
+
+            expect(servidor.players_average_7d).toBeNull();
+        });
+
+        /**
          * A leitura pública, que é o que o perfil desenha.
          */
         it('mostra o passado a quem abrir o perfil, sem sessão nenhuma', async () => {
@@ -417,6 +459,108 @@ describe('ingestão de servidores', () => {
             });
 
             expect(resposta.statusCode).toBe(404);
+        });
+
+        /**
+         * E o diretório sabe ordenar por isso.
+         *
+         * É a razão de a média viver numa coluna: uma média de uma
+         * janela de tempo não se escreve num `orderBy` de Prisma, e a
+         * alternativa era reescrever os filtros do diretório em SQL.
+         */
+        it('ordena o diretório por quem tem mesmo gente', async () => {
+            const cheio = await criarServidor(dono, `Cheio ${marca}`);
+            const vazio = await criarServidor(dono, `Vazio ${marca}`);
+
+            const bater = async (servidor: string, quantos: number) => {
+                const chave = await criarChave(dono, servidor);
+
+                await app.inject({
+                    method: 'POST',
+                    url: '/api/v1/ingest/heartbeat',
+                    headers: comChave(chave.key),
+                    payload: { playersOnline: quantos },
+                });
+            };
+
+            /** O vazio reporta primeiro, para não ser a ordem de criação a decidir. */
+            await bater(vazio, 2);
+            await bater(cheio, 80);
+
+            const resposta = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers?search=${marca}&sort=active&pageSize=50`,
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+
+            const nomes = (resposta.json().items as { id: string }[]).map(
+                (item) => item.id,
+            );
+
+            expect(nomes.indexOf(cheio)).toBeLessThan(nomes.indexOf(vazio));
+        });
+
+        /**
+         * E quem nunca reportou fica no fim, e não no princípio.
+         *
+         * Em Postgres, `DESC` põe os nulos primeiro por omissão — um
+         * servidor sem passado nenhum apareceria no topo de uma lista
+         * ordenada por quem tem gente, ao contrário do que ela promete.
+         */
+        it('põe no fim quem não tem passado nenhum', async () => {
+            const marcaPropria = `ord${Date.now().toString().slice(-6)}`;
+
+            const comGente = await criarServidor(dono, `Com ${marcaPropria}`);
+            const semNada = await criarServidor(dono, `Sem ${marcaPropria}`);
+
+            const chave = await criarChave(dono, comGente);
+
+            await app.inject({
+                method: 'POST',
+                url: '/api/v1/ingest/heartbeat',
+                headers: comChave(chave.key),
+                payload: { playersOnline: 1 },
+            });
+
+            const resposta = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers?search=${marcaPropria}&sort=active&pageSize=50`,
+            });
+
+            const ids = (resposta.json().items as { id: string }[]).map(
+                (item) => item.id,
+            );
+
+            expect(ids.indexOf(comGente)).toBeLessThan(ids.indexOf(semNada));
+        });
+
+        /**
+         * E a média vai no que o diretório devolve, e não só no
+         * `ORDER BY`: uma lista ordenada por um número que não se vê é
+         * uma lista que ninguém consegue conferir.
+         */
+        it('mostra a média no que o diretório devolve', async () => {
+            const chave = await criarChave(dono, serverId);
+
+            await app.inject({
+                method: 'POST',
+                url: '/api/v1/ingest/heartbeat',
+                headers: comChave(chave.key),
+                payload: { playersOnline: 7 },
+            });
+
+            const resposta = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers?search=Server ${marca}&pageSize=50`,
+            });
+
+            const nosso = (resposta.json().items as {
+                id: string;
+                playersAverage: number | null;
+            }[]).find((item) => item.id === serverId);
+
+            expect(nosso?.playersAverage).toBe(7);
         });
 
         /**

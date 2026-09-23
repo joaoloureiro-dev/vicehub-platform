@@ -46,6 +46,14 @@ const DIRECTORY_ENTRY_SELECT = {
     isOnline: true,
     last_heartbeat_at: true,
     players_online: true,
+    /**
+     * Vai para o ecrã, e não só para o `ORDER BY`.
+     *
+     * Uma lista ordenada por um número que não se vê é uma lista que
+     * ninguém consegue conferir — e a primeira pergunta de quem estranha
+     * a ordem é "porque é que este está à frente daquele?".
+     */
+    players_average_7d: true,
     created_at: true,
 } as const;
 
@@ -290,7 +298,7 @@ export class ServerRepository {
         onlineOnly?: boolean | undefined;
         skip: number;
         take: number;
-        sort: 'newest' | 'name';
+        sort: 'newest' | 'name' | 'active';
     }) {
         /**
          * As duas condições vão dentro de um `AND`, e não lado a lado no
@@ -330,10 +338,27 @@ export class ServerRepository {
             ],
         };
 
+        /**
+         * Os nulos no fim, e não no princípio.
+         *
+         * Em Postgres, `DESC` põe os nulos primeiro por omissão — e um
+         * servidor que nunca reportou apareceria no topo de uma lista
+         * ordenada por quem tem gente, que é exactamente ao contrário
+         * do que ela promete.
+         */
         const orderBy =
             input.sort === 'name'
                 ? [{ name: 'asc' as const }]
-                : [{ created_at: 'desc' as const }];
+                : input.sort === 'active'
+                    ? [
+                        {
+                            players_average_7d: {
+                                sort: 'desc' as const,
+                                nulls: 'last' as const,
+                            },
+                        },
+                    ]
+                    : [{ created_at: 'desc' as const }];
 
         return this.database.$transaction([
             this.database.server.findMany({

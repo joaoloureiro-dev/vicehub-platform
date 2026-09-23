@@ -246,6 +246,93 @@ describe('apagar o que expirou', () => {
         });
 
         /**
+         * O que faz um servidor morto descer no diretório.
+         *
+         * A média é escrita a cada batida, e um servidor que deixa de
+         * reportar deixa de passar por lá: sem esta passagem ficaria
+         * para sempre com a média do dia em que morreu, à frente de
+         * servidores vivos.
+         */
+        it('faz descer a média de um servidor que deixou de reportar', async () => {
+            const serverId = await criarServidor();
+
+            /** Uma hora cheia, mas já fora da janela dos sete dias. */
+            await gravarHora(serverId, 8 * 24);
+
+            await prisma.server.update({
+                where: { id: serverId },
+                data: { players_average_7d: 500 },
+            });
+
+            await prune(prisma);
+
+            const depois = await prisma.server.findFirstOrThrow({
+                where: { id: serverId },
+                select: { players_average_7d: true },
+            });
+
+            /** Sem horas na janela, a média volta a ser "não há dados". */
+            expect(depois.players_average_7d).toBeNull();
+        });
+
+        /**
+         * Sete dias, e não um.
+         *
+         * A janela é a decisão de produto que faz isto valer a pena:
+         * distingue um servidor cheio todas as noites de um que encheu
+         * ontem. Uma janela de um dia respondia a outra pergunta, e
+         * nenhum outro teste dava por isso — uma hora de anteontem
+         * entra na conta, e é o que aqui se fixa.
+         */
+        it('conta as horas de há três dias, que ainda estão na janela', async () => {
+            const serverId = await criarServidor();
+
+            await prisma.serverActivityHour.create({
+                data: {
+                    serverId,
+                    hour: horaAtras(3 * 24),
+                    samples: 4,
+                    players_sum: 48,
+                    players_max: 20,
+                    players_last: 9,
+                },
+            });
+
+            await prune(prisma);
+
+            const depois = await prisma.server.findFirstOrThrow({
+                where: { id: serverId },
+                select: { players_average_7d: true },
+            });
+
+            expect(depois.players_average_7d).toBe(12);
+        });
+
+        it('recalcula a média a partir das horas que ainda estão na janela', async () => {
+            const serverId = await criarServidor();
+
+            await prisma.serverActivityHour.create({
+                data: {
+                    serverId,
+                    hour: horaAtras(2),
+                    samples: 2,
+                    players_sum: 20,
+                    players_max: 12,
+                    players_last: 8,
+                },
+            });
+
+            await prune(prisma);
+
+            const depois = await prisma.server.findFirstOrThrow({
+                where: { id: serverId },
+                select: { players_average_7d: true },
+            });
+
+            expect(depois.players_average_7d).toBe(10);
+        });
+
+        /**
          * E a contagem seca diz exactamente o que a eliminação apagaria.
          * Duas escritas da mesma condição divergem, e a que divergisse
          * estaria aqui a dar verde ao código errado.
