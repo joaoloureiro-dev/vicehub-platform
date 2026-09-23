@@ -169,6 +169,20 @@ export const ServerPage = () => {
             <TiraDeActividade serverId={perfil.id} />
 
             {/*
+              A porta do mercado, logo a seguir à actividade.
+
+              É pública como o resto da página: quem está a decidir onde
+              jogar quer ver o que lá se vende tanto como quantas
+              pessoas lá estão — as duas coisas dizem o mesmo, que
+              aquilo tem gente a fazer alguma coisa.
+            */}
+            <p className="hint">
+                <Link to={`/servidores/${perfil.id}/mercado`}>
+                    {t.mercado.verMercado}
+                </Link>
+            </p>
+
+            {/*
               Os requisitos ficam imediatamente acima do formulário de
               candidatura, e não no cabeçalho junto à descrição: quem
               está a decidir se pede entrada tem de os ler no momento em

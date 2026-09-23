@@ -293,7 +293,10 @@ model User {
   forumTopics       ForumTopic[]
   forumReplies      ForumReply[]
   forumReports      ForumReport[]
-  achievements      Achievement[]
+
+  /// O que esta pessoa pôs à venda no mercado de um servidor.
+  listings     MarketListing[]
+  achievements Achievement[]
 
   /// As duas pontas da mesma tabela de amizades.
   ///
@@ -503,6 +506,9 @@ model Server {
   apiKeys  ServerApiKey[]
   activity ServerActivityHour[]
 
+  /// O mercado deste servidor.
+  listings MarketListing[]
+
   /// O índice por onde o diretório filtra os servidores online.
   ///
   /// Existe na base de dados desde a migração que criou a coluna, e não
@@ -512,7 +518,6 @@ model Server {
   /// ele que serve a única consulta que a listagem faz com filtro por
   /// tempo.
   @@index([last_heartbeat_at])
-
   /// O que o diretório usa para ordenar por quem tem gente.
   @@index([players_average_7d])
 }
@@ -1201,9 +1206,9 @@ model Event {
   crew   Crew?   @relation(fields: [crewId], references: [id], onDelete: Cascade)
   server Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  participants  EventParticipant[]
-  distributions Distribution[]
-  xpAwards      XpAward[]
+  participants     EventParticipant[]
+  distributions    Distribution[]
+  xpAwards         XpAward[]
   reputationAwards ReputationAward[]
 
   @@index([crewId, status])
@@ -1490,9 +1495,9 @@ model NewsItem {
   /// mudar, as notícias antigas continuam a dizer de onde vieram.
   source_name String
 
-  title    String
-  excerpt  String?
-  url      String
+  title     String
+  excerpt   String?
+  url       String
   image_url String?
 
   /// Quando saiu, segundo o feed. É por aqui que se ordena.
@@ -1504,7 +1509,7 @@ model NewsItem {
   is_deleted Boolean   @default(false)
   version    Int       @default(1)
 
-  source     SourceType @default(webhook)
+  source SourceType @default(webhook)
 
   @@index([published_at(sort: Desc)])
 }
@@ -1725,4 +1730,90 @@ model Achievement {
   /// Os nomes vêm das migrações que os criaram, como no AccountToken.
   @@index([userId, earned_at(sort: Desc)], map: "Achievement_user_earned_idx")
   @@index([crewId, earned_at(sort: Desc)], map: "Achievement_crew_earned_idx")
+}
+
+/// Em que gaveta é que o anúncio cai.
+///
+/// Lista fechada porque é por aqui que se filtra um mercado grande. O
+/// `other` existe para o que não coube: sem ele, o que não coubesse ia
+/// parar à gaveta errada e estragava as outras.
+enum MarketCategory {
+  vehicle
+  property
+  business
+  service
+  item
+  other
+}
+
+/// Em que pé está o anúncio.
+///
+/// Vendido e retirado são estados diferentes de propósito: um diz por
+/// quanto é que a coisa saiu, o outro diz que não saiu. Juntá-los
+/// poupava uma coluna e perdia a única série de preços que a plataforma
+/// vai ter sobre a economia de um servidor.
+enum MarketListingStatus {
+  open
+  sold
+  withdrawn
+}
+
+/// Um anúncio no mercado de um servidor.
+///
+/// O preço é **moeda de jogo**, e não há aqui pagamento nenhum: o
+/// anúncio diz por quanto, e a troca acontece dentro do jogo entre as
+/// duas pessoas. Nada nesta tabela toca em dinheiro real, e os termos
+/// proíbem que alguém o tente.
+///
+/// Pertence a um servidor porque as economias são separadas: um carro
+/// vendido num servidor não vale nada noutro, e um mercado comum a
+/// todos seria uma lista de coisas que ninguém pode comprar.
+model MarketListing {
+  id String @id @default(uuid())
+
+  serverId String
+
+  /// Quem anuncia. Fica nulo quando a conta é apagada, tal como no
+  /// fórum: o anúncio e o preço por que saiu continuam a interessar ao
+  /// mercado depois de quem o escreveu se ir embora.
+  sellerId String?
+
+  category MarketCategory
+  title    String
+  body     String
+
+  /// O que se pede, em moeda de jogo. `BigInt` como o resto do dinheiro
+  /// do produto — uma economia de jogo passa dos milhões sem esforço.
+  price BigInt
+
+  /// Uma imagem do que se vende, se quem anuncia tiver uma.
+  ///
+  /// O ViceHub não aloja imagens: guarda o endereço, como faz com os
+  /// avatares. Uma fotografia do carro é metade do anúncio, e não a ter
+  /// deixava o mercado a ser uma lista de títulos.
+  imageUrl String?
+
+  status    MarketListingStatus @default(open)
+  /// Quando deixou de estar à venda, seja por ter saído ou por ter sido
+  /// retirado. Nulo enquanto estiver aberto.
+  closed_at DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  seller User?  @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+
+  /// O índice da única listagem que existe: os anúncios de um servidor,
+  /// num estado, do mais recente para o mais antigo.
+  @@index([serverId, status, updated_at(sort: Desc)])
+  @@index([serverId, category])
+  @@index([sellerId])
 }
