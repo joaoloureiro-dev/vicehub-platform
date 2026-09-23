@@ -2,7 +2,7 @@
 
 ViceHub is a **modular SaaS ecosystem for online gaming communities**, initially focused on GTA VI, designed to scale into a multi-game platform.
 
-It acts as a **second screen for players**, combining social networking, progression systems, crew management, server ecosystems, real-time economy and a full digital marketplace.
+It acts as a **second screen for players**, combining social networking, progression systems, crew management, server ecosystems and an in-game economy. A digital marketplace is planned and has no code yet — the feature list below marks what is built and what is not.
 
 ---
 
@@ -52,7 +52,10 @@ from the database to a screen; `🚧` is partly there; `○` has no code yet.
 - ✔ Ask a question, answer someone else's — reading needs no account
 - ✔ Remove what you wrote; moderators can remove anything
 - ✔ Your text leaves with your account, and the conversation stays standing
-- ○ Reporting, categories, search, accepted answers
+- ✔ Close a question to new replies — the mild tool, so what is written keeps
+  serving whoever arrives from a search
+- ✔ Report a post, and a queue moderators work through oldest first
+- ○ Categories, search, accepted answers
 
 ### 📰 What's happening in the game
 - ✔ A news block on the landing page, fed from an RSS or Atom source
@@ -1340,7 +1343,12 @@ terminar todas as sessões e permissões por papel
 ✔ Levar os dados embora e apagar a conta, com o saldo a perder-se  
 ✔ Cobrança pelo Stripe: checkout, webhooks, portal para cancelar o plano e
 entitlements que o servidor calcula sozinho  
-✔ Interface em quatro idiomas, com o inglês por omissão  
+✔ Interface em quatro idiomas, com o inglês por omissão, sem misturar dois
+no mesmo ecrã  
+✔ Fórum com moderação inteira: retirar, fechar a conversa, denunciar, e uma
+fila por onde as denúncias chegam a alguém  
+✔ Confirmação anti-robô à entrada — no login, no registo e no pedido de
+recuperação — e desligada por omissão, sem script de terceiros nenhum  
 ✔ Caminho de produção verificado: a API serve a interface na sua própria
 origem, tem sonda de arranque separada da de prontidão, e recusa arrancar com
 a configuração que só faz mal em produção  
@@ -1350,9 +1358,9 @@ Falta para abrir ao público:
 🔑 Configurar o Stripe — os quatro preços e o portal do cliente — e o domínio,
 o SMTP e o deploy  
 ⚖️ Identificação legal do operador, para o aviso de rascunho sair dos termos  
-🎯 Decidir o que dá influência e prestígio às crews  
 🛒 O marketplace, que não tem código nenhum  
-🛡️ Moderação do fórum: denúncias, e alguém a quem elas cheguem  
+📊 Histórico dos servidores: o heartbeat sobrescreve o anterior, por isso não
+há por onde ordenar um leaderboard nem desenhar uma evolução  
 
 ---
 
