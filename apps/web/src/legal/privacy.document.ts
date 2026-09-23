@@ -29,7 +29,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
         /**
          * A actualizar sempre que o texto mudar. Ver `LegalDocument`.
          */
-        updatedAt: '2026-09-22',
+        updatedAt: '2026-09-23',
 
         intro: [
             `ViceHub is operated by ${orPlaceholder(operator.legalName, 'legal name')}, ${orPlaceholder(operator.address, 'registered address')} (${orPlaceholder(operator.registration, 'company or tax number')}). For anything in this policy, write to ${email}.`,
@@ -100,6 +100,46 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
             },
 
             {
+                heading: 'Where it goes',
+                body: [
+                    `The database — everything above — sits in ${orPlaceholder(operator.hostingRegion, 'hosting region')}, and stays there.`,
+                    'Two of the companies above are global, and a request handled by them can be handled outside the European Economic Area. Stripe and Cloudflare both move personal data under the European Commission’s standard contractual clauses, which is the mechanism European law provides for exactly this. What reaches them is what this policy already lists — a payment for one, an address and a browser string for the other.',
+                    'Nothing else leaves. There is no analytics vendor, no advertising network, and no data broker to send anything to.',
+                ],
+            },
+
+            {
+                heading: 'How we protect it',
+                body: [
+                    'Security is not a promise anyone can make absolutely, so here is what is actually done rather than an adjective.',
+                ],
+                list: [
+                    'Your password is stored as an Argon2 hash. Argon2 is deliberately slow and memory-hungry, which is what makes guessing passwords expensive rather than free.',
+                    'The cookie that keeps you signed in is HttpOnly, so no script can read it, and SameSite=strict, so it does not travel to other sites.',
+                    'Refresh tokens rotate on every use, and a token used twice brings the whole session down. That is how a stolen token gets caught rather than quietly used.',
+                    'An account locks itself for a while after repeated failed sign-ins, so that guessing a password gets slower the more it is tried.',
+                    'A server’s API key is stored as a hash, not as the key. We cannot read anyone’s key, which is also why a lost key is replaced rather than recovered.',
+                    'Expired sessions and used recovery links are deleted by a routine that runs regularly. What no longer serves a purpose does not sit there waiting to be stolen.',
+                ],
+            },
+
+            {
+                heading: 'If something goes wrong',
+                body: [
+                    'If personal data is breached, we notify the supervisory authority within 72 hours of becoming aware of it, as the law requires. Where the breach is likely to put you at real risk, we tell you directly, and we tell you what happened rather than that "an incident occurred".',
+                ],
+            },
+
+            {
+                heading: 'Decisions made by machine',
+                body: [
+                    'Nothing about you is decided by a program in a way that has legal or similarly significant effects. There is no profiling, no scoring, and no ranking of people.',
+                    'Two things do happen automatically, and both are said here so the sentence above is not a sleight of hand. An account locks itself temporarily after repeated failed sign-ins, which is a security measure and lifts by itself. And whether a paid plan is active is computed from what Stripe reports, which is arithmetic on dates rather than a judgement about you.',
+                    'Moderation of the forum is done by people. A report is read by a moderator, and nothing is removed by a program.',
+                ],
+            },
+
+            {
                 heading: 'Why we are allowed to',
                 body: [
                     'If you are in the EU or the UK, these are the legal bases we rely on.',
@@ -122,6 +162,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                     'Your email address and username are released, so that you or anyone else can use them again. They are replaced on the deleted account rather than left occupied by an account that no longer exists.',
                     "A crew's treasury history stays with the crew. It is the crew's record, the people still in it depend on it, and one member leaving cannot be allowed to erase what a community agreed. Your name is detached from it.",
                     'Records we are required to keep for accounting and tax — that a payment happened, for how much, and when — are kept for as long as the law requires, and then deleted.',
+                    'Independently of any of that: expired sessions, spent recovery links, and old refresh tokens are deleted by a routine that runs regularly, whether or not you ever delete your account.',
                 ],
             },
 
@@ -134,7 +175,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                     'Take it with you. Your profile exports everything ViceHub holds about you as a single file. It leaves out other people’s data, and it leaves out anything that is a key rather than a fact — no password hash, no session tokens — because putting those in a file that lands in your Downloads would turn the right to take your data into a way to lose it.',
                     'Delete it. Your profile deletes the account. It refuses while something would be stranded by your leaving: money still in your wallet, a community where you are the only person who can run it, or a paid plan still billing a card. Each of those is something you could no longer reach once the account is gone.',
                     `Correct it. Profile fields are editable where you see them. For anything else, write to ${email}.`,
-                    `Object, restrict, or complain. Write to ${email}. If you are in the EU you may also complain to your national data protection authority; in Portugal that is the CNPD.`,
+                    `Object, restrict, or complain. Write to ${email}, and we answer. If you are not satisfied, you may complain to the data protection authority of the country you live or work in — in Portugal that is the CNPD — and you may do so without going through us first.`,
                 ],
             },
 
