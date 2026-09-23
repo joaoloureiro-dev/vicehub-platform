@@ -18,6 +18,12 @@ import { orPlaceholder, type LegalOperator } from './operator.js';
  * idiomas, e nomear um jogo sem dizer que não se tem nada a ver com
  * quem o faz é o que transforma uma plataforma de fãs num problema.
  *
+ * A terceira é a da moderação. Uma plataforma onde o público escreve
+ * tem de dizer, nos termos que vinculam quem escreve, como é que o que
+ * lá está é vigiado: o que se pode denunciar, quem decide, o que pode
+ * acontecer ao texto, e o que fazer quem discordar. Está escrito a
+ * partir do que o fórum faz, e não do que seria bonito dizer.
+ *
  * Em inglês e só em inglês, pela razão que está na política de
  * privacidade.
  */
@@ -31,7 +37,7 @@ export const termsDocument = (operator: LegalOperator): LegalDocument => {
         /**
          * A actualizar sempre que o texto mudar. Ver `LegalDocument`.
          */
-        updatedAt: '2026-09-16',
+        updatedAt: '2026-09-23',
 
         intro: [
             `ViceHub is operated by ${orPlaceholder(operator.legalName, 'legal name')}, ${orPlaceholder(operator.address, 'registered address')} (${orPlaceholder(operator.registration, 'company or tax number')}). These terms are the agreement between you and us when you use it.`,
@@ -111,9 +117,11 @@ export const termsDocument = (operator: LegalOperator): LegalDocument => {
             {
                 heading: 'Refunds and your right to cancel',
                 body: [
-                    'If you are a consumer in the EU you have 14 days to withdraw from a purchase of digital services, without giving a reason.',
-                    'A plan takes effect immediately, which means that by the time you change your mind some of it has already been delivered. Where that is the case you pay for the part you used and we refund the rest. We do not treat starting a plan as giving up the right.',
-                    `Outside that, refunds are not automatic, but ask: write to ${email} and we will look at it. If a paid feature did not work, we do not keep the money for it.`,
+                    'If you are a consumer in the EU you have 14 days to withdraw from a purchase of digital services, without giving a reason and without a penalty.',
+                    'A plan takes effect immediately, which means that by the time you change your mind some of it has already been delivered. Where that is the case you pay for the part you used, in proportion to the period, and we refund the rest.',
+                    '**We do not ask you to give up that right.** The law lets us make the right disappear by having you consent to immediate performance and acknowledge losing it at checkout. We do not ask for that acknowledgement, so the right stays.',
+                    `To withdraw, write to ${email} within 14 days of the purchase and say so. No form and no reason are needed. We refund to the same card, through Stripe, within 14 days of being told.`,
+                    'Outside that window, refunds are not automatic, but ask. If a paid feature did not work, we do not keep the money for it.',
                 ],
             },
 
@@ -129,6 +137,22 @@ export const termsDocument = (operator: LegalOperator): LegalDocument => {
                 body: [
                     'What you write and upload stays yours. You give us only the permission we need to run the service: to store it, show it to the people you meant to show it to, and make the copies that hosting a website requires.',
                     'You are responsible for what you post, including having the right to post it. We can remove content that breaks these terms or the law.',
+                ],
+            },
+
+            {
+                heading: 'Reporting, and how we moderate',
+                body: [
+                    'The forum is the one place where anyone with an account writes text that everyone can read, so this section says exactly how that is policed.',
+                    'Every question and every reply carries a Report button for anyone signed in who did not write it. You pick one of four reasons — spam or advertising, insults or harassment or hate, nothing to do with the question, or something else — and you can add a short note. Reports go into a queue that moderators work through oldest first.',
+                    'A person decides, not a program. Nothing is removed automatically, and no ranking or filter hides a post before a moderator has read it.',
+                ],
+                list: [
+                    'A moderator can remove a question or a reply, and can close a question to new replies. Closing is the milder tool: what is already written stays readable, and only the conversation stops.',
+                    'Removing hides the text from the forum. It does not erase the record that something was there, because a moderator has to be able to explain a decision afterwards.',
+                    'The account that wrote it keeps its account. Suspension is a separate, heavier step, and it is covered in the section on ending an account.',
+                    `If your post was removed or your question closed and you think it was wrong, write to ${email}. Say what was removed and why you disagree; a different person will look at it, and if we got it wrong we put it back.`,
+                    'We do not tell you who reported you. Telling would turn reporting into a reason for retaliation, and the person who reported is not the person who decided.',
                 ],
             },
 
@@ -158,10 +182,11 @@ export const termsDocument = (operator: LegalOperator): LegalDocument => {
             },
 
             {
-                heading: 'Law and contact',
+                heading: 'Complaints, and the law',
                 body: [
-                    `These terms are governed by the law of ${jurisdiction}, and its courts have jurisdiction. If you are a consumer, this does not deprive you of the protection of the mandatory law of the country you live in, nor of the right to bring a claim where you live.`,
-                    `Anything about these terms goes to ${email}.`,
+                    `Start with us: write to ${email}. Most things are a misunderstanding that one reply settles, and we answer.`,
+                    `If that does not settle it and you are a consumer, you can take the dispute to an alternative dispute resolution body without going to court: ${orPlaceholder(operator.consumerDisputes, 'consumer dispute resolution body')}.`,
+                    `These terms are governed by the law of ${jurisdiction}, and its courts have jurisdiction. If you are a consumer, this does not deprive you of the protection of the mandatory law of the country you live in, nor of your right to bring a claim in the courts where you live.`,
                 ],
             },
         ],

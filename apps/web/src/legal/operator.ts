@@ -24,6 +24,20 @@ export interface LegalOperator {
     jurisdiction: string;
     /** Onde ficam os servidores, ao nível do país ou da região. */
     hostingRegion: string;
+    /**
+     * Onde um consumidor reclama fora dos tribunais.
+     *
+     * Na União Europeia, quem vende a consumidores online tem de dizer
+     * qual é a entidade de resolução alternativa de litígios competente.
+     * Em Portugal acresce o livro de reclamações eletrónico, que é
+     * obrigatório para serviços prestados à distância.
+     *
+     * Texto livre porque a resposta depende de onde a entidade estiver
+     * estabelecida: em Portugal é o centro de arbitragem de conflitos de
+     * consumo da área da sede, mais o endereço do livro; noutro país é
+     * outra coisa. O que não pode é ficar por dizer.
+     */
+    consumerDisputes: string;
 }
 
 /**
@@ -41,6 +55,7 @@ export const OPERATOR: LegalOperator = {
     email: '',
     jurisdiction: '',
     hostingRegion: '',
+    consumerDisputes: '',
 };
 
 /**

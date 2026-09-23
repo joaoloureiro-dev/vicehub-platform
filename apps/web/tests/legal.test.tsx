@@ -20,6 +20,8 @@ const PREENCHIDO: LegalOperator = {
     email: 'legal@exemplo.pt',
     jurisdiction: 'Portugal',
     hostingRegion: 'the European Union',
+    consumerDisputes:
+        'CNIACC — Centro Nacional de Informação e Arbitragem de Conflitos de Consumo',
 };
 
 /** Todo o texto do documento, para procurar nele sem saber onde está. */
@@ -144,6 +146,54 @@ describe('as páginas legais', () => {
                 'at least 16 years old',
             );
         });
+
+        /**
+         * O direito só desaparece se quem compra consentir na execução
+         * imediata **e** reconhecer que o perde. A plataforma não pede
+         * esse reconhecimento em lado nenhum do checkout, e por isso o
+         * direito fica de pé.
+         *
+         * Se um dia o checkout passar a pedi-lo, é esta frase que tem
+         * de mudar primeiro — e este teste é o que obriga a reparar
+         * nisso.
+         */
+        it('que não se pede a ninguém para abdicar desse direito', () => {
+            expect(corridoDe(termsDocument(PREENCHIDO))).toMatch(
+                /do not ask you to give up that right/,
+            );
+        });
+
+        /**
+         * Uma plataforma onde o público escreve tem de dizer, nos
+         * termos, como é que o que lá está é vigiado: quem decide, o
+         * que pode acontecer, e o que fazer quem discordar.
+         *
+         * O fórum tem denúncias e moderação desde que isto foi escrito.
+         * Uns termos que não os mencionassem descreviam um produto que
+         * já não é este.
+         */
+        it('como é que o que lá está escrito é moderado', () => {
+            const texto = corridoDe(termsDocument(PREENCHIDO));
+
+            expect(texto).toContain('Report button');
+            /** Que decide uma pessoa, e não um programa. */
+            expect(texto).toMatch(/person decides, not a program/);
+            /** E o caminho de quem discordar. */
+            expect(texto).toMatch(/think it was wrong/);
+        });
+
+        /**
+         * Quem vende a consumidores online na UE tem de dizer onde se
+         * reclama fora dos tribunais. Sem a entidade nomeada, a frase
+         * fica com a marca por preencher — e o aviso de rascunho no
+         * topo da página continua lá por causa dela.
+         */
+        it('para onde vai um consumidor que não fique satisfeito', () => {
+            const texto = corridoDe(termsDocument(PREENCHIDO));
+
+            expect(texto).toMatch(/alternative dispute resolution/);
+            expect(texto).toContain(PREENCHIDO.consumerDisputes);
+        });
     });
 
     describe('o que a privacidade não pode deixar de dizer', () => {
@@ -172,6 +222,59 @@ describe('as páginas legais', () => {
          * política que as prometesse sem elas existirem era pior do que
          * uma que se calasse.
          */
+        /**
+         * O `hostingRegion` diz onde está a base de dados, e a política
+         * dizia-o. O que faltava era o resto: Stripe e Cloudflare são
+         * globais, e um pedido tratado por eles pode sair do Espaço
+         * Económico Europeu. Dizer onde a base de dados está e calar
+         * isso é dizer meia verdade sobre a mesma pergunta.
+         */
+        it('diz o que sai do Espaço Económico Europeu, e com que garantia', () => {
+            const texto = corridoDe(privacyDocument(PREENCHIDO));
+
+            expect(texto).toContain('standard contractual clauses');
+            expect(texto).toContain(PREENCHIDO.hostingRegion);
+        });
+
+        /**
+         * Segurança não é um adjectivo: é o que está escrito no
+         * código. Cada linha desta secção tem uma função que a
+         * sustenta, e é por isso que se pode pôr num documento que
+         * vincula.
+         */
+        it('diz como é que a plataforma protege o que guarda', () => {
+            const texto = corridoDe(privacyDocument(PREENCHIDO));
+
+            expect(texto).toContain('Argon2');
+            expect(texto).toContain('HttpOnly');
+            /** A rotação com deteção de reutilização, que é a parte rara. */
+            expect(texto).toMatch(/rotate on every use/);
+        });
+
+        /**
+         * O prazo das 72 horas é o do RGPD, e é o género de coisa que
+         * uma política omite até ao dia em que faz falta.
+         */
+        it('diz o que acontece se houver uma falha de segurança', () => {
+            expect(corridoDe(privacyDocument(PREENCHIDO))).toContain(
+                '72 hours',
+            );
+        });
+
+        /**
+         * "Não há decisões automatizadas" é fácil de escrever e quase
+         * sempre falso. As duas que existem estão nomeadas — o
+         * bloqueio temporário e o cálculo do plano —, que é o que
+         * torna a frase verdadeira em vez de conveniente.
+         */
+        it('nomeia as decisões que a máquina toma sozinha', () => {
+            const texto = corridoDe(privacyDocument(PREENCHIDO));
+
+            expect(texto).toMatch(/no profiling/i);
+            expect(texto).toMatch(/locks itself temporarily/);
+            expect(texto).toMatch(/Moderation of the forum is done by people/);
+        });
+
         it('aponta para a exportação e a eliminação', () => {
             const texto = corridoDe(privacyDocument(PREENCHIDO));
 
