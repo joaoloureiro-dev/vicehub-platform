@@ -256,6 +256,13 @@ export const es = (p: Tools): Messages => ({
 
         semDados: 'nada reportado',
 
+        mediaDe: (n: number) => `${n} de media`,
+
+        ordens: {
+            newest: 'Más recientes',
+            active: 'Donde está la gente',
+        },
+
         tiraDescricao: (horas: number, media: number, pico: number) =>
             `Cuántas personas estuvieron aquí en las últimas ${horas} horas. ${media} de media en los últimos 7 días, ${pico} en la hora más llena.`,
         todos: 'Todos los servidores',

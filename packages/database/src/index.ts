@@ -77,8 +77,11 @@ export type { PlanDefinition, PlanKey } from './plans.js';
 export { SALDO_MAXIMO } from './treasury-limits.js';
 
 export {
+    DIAS_DA_MEDIA,
     HORAS_GUARDADAS,
+    RECALCULAR_MEDIA_SQL,
     horasDaJanela,
+    inicioDaMedia,
     inicioDaHora,
     limiteDeHorasGuardadas,
     mediaDe,

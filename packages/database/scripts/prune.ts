@@ -51,7 +51,9 @@ const main = async (): Promise<void> => {
     console.log(
         `[ViceHub Prune] ${verbo} ${resultado.tokensDeConta} tokens de conta, ` +
             `${resultado.refreshTokens} refresh tokens, ${resultado.sessoes} sessões ` +
-            `e ${resultado.horasDeServidor} horas de histórico de servidores.`,
+            `e ${resultado.horasDeServidor} horas de histórico de servidores. ` +
+            `${seco ? 'Recalcularia' : 'Recalculou'} a média de ` +
+            `${resultado.mediasRecalculadas} servidores.`,
     );
 };
 

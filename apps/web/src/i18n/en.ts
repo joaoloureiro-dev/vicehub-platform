@@ -263,6 +263,13 @@ export const en = (p: Tools) => ({
 
         semDados: 'nothing reported',
 
+        mediaDe: (n: number) => `${n} on average`,
+
+        ordens: {
+            newest: 'Newest',
+            active: 'Where people are',
+        },
+
         tiraDescricao: (horas: number, media: number, pico: number) =>
             `Player counts for the last ${horas} hours. ${media} on average over the last 7 days, ${pico} at the busiest hour.`,
         todos: 'All servers',

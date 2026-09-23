@@ -59,7 +59,17 @@ export const listServersQuerySchema = z.object({
     search: z.string().trim().min(1).max(48).optional(),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(50).default(20),
-    sort: z.enum(['newest', 'name']).default('newest'),
+    /**
+     * `active` ordena por quem tem mesmo gente: a média de sete dias,
+     * do maior para o menor, com os servidores sem passado no fim.
+     *
+     * Não é a ordem por omissão, e é deliberado. Um diretório ordenado
+     * por atividade é um diretório em que os grandes estão sempre em
+     * cima e um servidor novo nunca é visto — o que garante que
+     * continua a não ter ninguém. Por omissão mostram-se os mais
+     * recentes; quem procura onde há gente escolhe-o.
+     */
+    sort: z.enum(['newest', 'name', 'active']).default('newest'),
     onlineOnly: z
         .union([z.literal('true'), z.literal('false')])
         .transform((value) => value === 'true')

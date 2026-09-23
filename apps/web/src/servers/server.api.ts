@@ -16,7 +16,7 @@ import type {
 export interface ServerDirectoryQuery {
     search?: string;
     page?: number;
-    sort?: 'newest' | 'name';
+    sort?: 'newest' | 'name' | 'active';
     /**
      * A API só entende `true` ou `false` em texto, e o filtro só faz
      * sentido quando está ligado — por isso `false` não é enviado.

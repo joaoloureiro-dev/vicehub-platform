@@ -81,6 +81,14 @@ export interface ServerDirectoryEntry {
      * ninguém tiver instalado o recurso que reporta.
      */
     playersOnline: number | null;
+    /**
+     * Quantas pessoas em média nos últimos sete dias.
+     *
+     * Nulo enquanto o servidor não tiver passado nenhum — que é
+     * diferente de zero, e o ecrã diz as duas coisas de maneiras
+     * diferentes.
+     */
+    playersAverage: number | null;
     memberCount: number;
     isPremium: boolean;
     appearance: Appearance;

@@ -1,6 +1,8 @@
 import {
+    RECALCULAR_MEDIA_SQL,
     SourceType,
     inicioDaHora,
+    inicioDaMedia,
     type DatabaseClient,
 } from '@vicehub/database';
 
@@ -179,6 +181,27 @@ export class IngestRepository {
                     "players_last" = EXCLUDED."players_last",
                     "updated_at" = EXCLUDED."updated_at"
             `;
+
+            /**
+             * E a média de sete dias, que é por onde o diretório
+             * ordena.
+             *
+             * Aqui e não só na limpeza: um servidor novo que acabou de
+             * reportar tem de aparecer ordenado já, e não daqui a uma
+             * hora. É uma agregação sobre as horas deste servidor
+             * dentro da janela — no máximo cento e sessenta e oito
+             * linhas, por um índice.
+             *
+             * Ainda assim **não chega sozinha**: um servidor que deixe
+             * de reportar deixa de passar por aqui, e ficaria para
+             * sempre com a média do dia em que morreu. É a limpeza que
+             * o faz descer.
+             */
+            await tx.$executeRawUnsafe(
+                RECALCULAR_MEDIA_SQL,
+                inicioDaMedia(agora),
+                serverId,
+            );
 
             return servidor;
         });
