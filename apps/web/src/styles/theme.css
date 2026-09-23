@@ -3744,3 +3744,105 @@ button.link:hover {
     color: var(--surface);
     font-weight: 600;
 }
+
+/* ---------- a tira de atividade de um servidor ---------- */
+
+.actividade {
+    display: grid;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.actividade-numeros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.actividade-numeros strong {
+    font-family: var(--display);
+    font-stretch: 125%;
+    font-size: 20px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+
+/*
+ * A tira: uma casa por hora, encostadas ao chão.
+ *
+ * `flex: 1` em cada casa e não uma largura fixa — quarenta e oito casas
+ * num telemóvel e as mesmas quarenta e oito num portátil são a mesma
+ * tira com barras mais largas, e não uma tira que transborda.
+ */
+.tira {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 72px;
+    padding: 0;
+    border-bottom: 1px solid var(--edge);
+}
+
+.tira .casa {
+    display: flex;
+    align-items: flex-end;
+    flex: 1;
+    height: 100%;
+    min-width: 0;
+}
+
+/*
+ * A barra é o pico da hora. Topo arredondado e base rente ao eixo: o
+ * canto de baixo arredondado descolaria a barra do chão, e é ao chão
+ * que ela está ancorada.
+ */
+.tira .barra {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    background: var(--violet-ink);
+}
+
+/*
+ * Uma hora sem dados não é uma barra de zero — é o servidor desligado,
+ * ou um recurso que ninguém instalou. Fica uma marca ténue no chão, que
+ * se distingue à vista de uma barra curta.
+ */
+.tira .casa.vazia {
+    align-self: flex-end;
+    height: 2px;
+    background: var(--edge);
+    border-radius: 1px;
+}
+
+/*
+ * As etiquetas do eixo, centradas na barra a que pertencem.
+ *
+ * Posicionadas por fração e não por uma casa da grelha: uma etiqueta de
+ * duas letras não cabe numa casa de cinco pixels, e metida lá dentro
+ * parte-se numa letra por linha — que foi o que aconteceu à primeira
+ * versão disto, e só se viu a olhar para o ecrã.
+ */
+.tira-horas {
+    position: relative;
+    height: 14px;
+    margin: 4px 0 0;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+}
+
+.tira-horas span {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* A primeira encosta à esquerda, para não sair da tira. */
+.tira-horas span:first-child {
+    left: 0 !important;
+    transform: none;
+}

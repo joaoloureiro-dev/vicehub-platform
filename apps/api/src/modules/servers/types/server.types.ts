@@ -104,3 +104,21 @@ export interface ServerMembershipSummary {
     /** O que quem decidiu escreveu, se escreveu alguma coisa. */
     decisionNote: string | null;
 }
+
+/** Uma hora do passado de um servidor, como o perfil a mostra. */
+export interface ServerActivityHourView {
+    hour: Date;
+    /** Quantas batidas entraram nesta hora. Zero não existe: a linha não. */
+    samples: number;
+    average: number;
+    peak: number;
+    /** A última contagem da hora, para o fim do gráfico não mentir. */
+    last: number;
+}
+
+export interface ServerActivity {
+    hours: ServerActivityHourView[];
+    /** A média e o pico da janela inteira, das mesmas linhas. */
+    average: number;
+    peak: number;
+}

@@ -254,6 +254,17 @@ export const en = (p: Tools) => ({
         soOnline: 'Show only the ones that are online',
         online: 'Online',
         offline: 'Offline',
+
+        actividadeTitulo: 'Who was here, hour by hour',
+
+        mediaDeSete: 'on average, last 7 days',
+
+        picoDeSete: 'at the busiest hour',
+
+        semDados: 'nothing reported',
+
+        tiraDescricao: (horas: number, media: number, pico: number) =>
+            `Player counts for the last ${horas} hours. ${media} on average over the last 7 days, ${pico} at the busiest hour.`,
         todos: 'All servers',
         semResultados: 'No server matches these filters.',
         aindaNaoHa: 'No servers yet. Register the first one.',

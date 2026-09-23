@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 import { mensagemDoErro } from '../../lib/erro.js';
 import { carregarCandidaturas } from '../../lib/membership.js';
 import { useAsync } from '../../lib/use-async.js';
+import { TiraDeActividade } from '../components/tira-de-actividade.js';
 import { useAuth } from '../../auth/auth.context.js';
 import { Alert } from '../../auth/components/alert.js';
 import { AppearanceForm } from '../../appearance/appearance-form.js';
@@ -157,6 +158,15 @@ export const ServerPage = () => {
                     {perfil.description ? <p>{perfil.description}</p> : null}
                 </div>
             </header>
+
+            {/*
+              O passado do servidor, logo a seguir ao cabeçalho.
+              "Quarenta e duas agora" não responde à pergunta de quem
+              procura onde jogar — a pergunta é se há gente lá às horas
+              a que essa pessoa joga, e para isso é preciso ver dois
+              dias de uma vez.
+            */}
+            <TiraDeActividade serverId={perfil.id} />
 
             {/*
               Os requisitos ficam imediatamente acima do formulário de

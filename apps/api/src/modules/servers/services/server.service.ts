@@ -1,4 +1,9 @@
-import { MembershipStatus, estaOnline, type RoleKey } from '@vicehub/database';
+import {
+    MembershipStatus,
+    estaOnline,
+    mediaDe,
+    type RoleKey,
+} from '@vicehub/database';
 
 import type { UpdateAppearanceDto } from '../../../shared/appearance.js';
 import { visibleAppearance } from '../../../shared/appearance.js';
@@ -9,6 +14,7 @@ import { ServerError } from '../errors/server.errors.js';
 import type { ServerRepository } from '../repositories/server.repository.js';
 import type { DirectoryPage } from '../../crews/types/crew.types.js';
 import type {
+    ServerActivity,
     ServerDirectoryEntry,
     ServerJoinRequest,
     ServerMember,
@@ -84,6 +90,47 @@ export class ServerService {
 
     async getProfile(serverId: string): Promise<ServerProfile> {
         return this.buildProfile(await this.requireServer(serverId));
+    }
+
+    /**
+     * O passado de um servidor: quantas pessoas lá estiveram, hora a
+     * hora.
+     *
+     * Devolve as horas que existem e **não** preenche as que faltam. Uma
+     * hora sem batidas é uma hora sem dados, que é diferente de uma hora
+     * com zero pessoas: a primeira pode ser o servidor desligado, a
+     * segunda é o servidor vazio. Quem desenha o gráfico decide o que
+     * fazer ao buraco; quem serve os dados não tem como inventar o que
+     * lá estava.
+     */
+    async getActivity(
+        serverId: string,
+        dias: number,
+    ): Promise<ServerActivity> {
+        await this.requireServer(serverId);
+
+        const horas = await this.serverRepository.listActivity(serverId, dias);
+
+        return {
+            hours: horas.map((balde) => ({
+                hour: balde.hour,
+                samples: balde.samples,
+                average: mediaDe([balde]),
+                peak: balde.players_max,
+                last: balde.players_last,
+            })),
+            /**
+             * A média e o pico da janela inteira, calculados das mesmas
+             * linhas. É o que um leaderboard ordenaria, e mostrá-lo aqui
+             * é o que permite comparar dois servidores sem os somar à
+             * mão.
+             */
+            average: mediaDe(horas),
+            peak: horas.reduce(
+                (maior, balde) => Math.max(maior, balde.players_max),
+                0,
+            ),
+        };
     }
 
     async updateServer(

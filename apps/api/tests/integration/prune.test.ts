@@ -1,6 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { PRUNE_MARGEM_MS, prisma, prune } from '@vicehub/database';
+import {
+    HORAS_GUARDADAS,
+    PRUNE_MARGEM_MS,
+    contarParaPrune,
+    inicioDaHora,
+    prisma,
+    prune,
+} from '@vicehub/database';
 
 /**
  * A limpeza do que expirou, contra PostgreSQL a sério.
@@ -159,6 +166,108 @@ describe('apagar o que expirou', () => {
         expect(
             await prisma.accountToken.findUnique({ where: { id: token.id } }),
         ).toBeNull();
+    });
+
+    /**
+     * O histórico dos servidores tem retenção própria, e não a margem de
+     * um dia: não é uma coisa que expire, é uma coisa que se guarda
+     * enquanto vale a pena ler.
+     */
+    describe('o histórico dos servidores', () => {
+        const horaAtras = (horas: number): Date =>
+            inicioDaHora(new Date(Date.now() - horas * 60 * 60 * 1000));
+
+        const gravarHora = async (
+            serverId: string,
+            horas: number,
+        ): Promise<Date> => {
+            const hora = horaAtras(horas);
+
+            await prisma.serverActivityHour.create({
+                data: {
+                    serverId,
+                    hour: hora,
+                    samples: 1,
+                    players_sum: 5,
+                    players_max: 5,
+                    players_last: 5,
+                },
+            });
+
+            return hora;
+        };
+
+        const criarServidor = async (): Promise<string> => {
+            const servidor = await prisma.server.create({
+                data: { name: `${marca}-${Math.random()}` },
+                select: { id: true },
+            });
+
+            return servidor.id;
+        };
+
+        it('apaga uma hora mais velha do que a retenção', async () => {
+            const serverId = await criarServidor();
+            const hora = await gravarHora(serverId, HORAS_GUARDADAS + 2);
+
+            await prune(prisma);
+
+            expect(
+                await prisma.serverActivityHour.count({
+                    where: { serverId, hour: hora },
+                }),
+            ).toBe(0);
+        });
+
+        it('não apaga uma hora que ainda está dentro da retenção', async () => {
+            const serverId = await criarServidor();
+            const hora = await gravarHora(serverId, HORAS_GUARDADAS - 2);
+
+            await prune(prisma);
+
+            expect(
+                await prisma.serverActivityHour.count({
+                    where: { serverId, hour: hora },
+                }),
+            ).toBe(1);
+        });
+
+        it('não toca na hora de agora', async () => {
+            const serverId = await criarServidor();
+            const hora = await gravarHora(serverId, 0);
+
+            await prune(prisma);
+
+            expect(
+                await prisma.serverActivityHour.count({
+                    where: { serverId, hour: hora },
+                }),
+            ).toBe(1);
+        });
+
+        /**
+         * E a contagem seca diz exactamente o que a eliminação apagaria.
+         * Duas escritas da mesma condição divergem, e a que divergisse
+         * estaria aqui a dar verde ao código errado.
+         */
+        it('a contagem seca conta o mesmo que a eliminação apaga', async () => {
+            const serverId = await criarServidor();
+
+            await gravarHora(serverId, HORAS_GUARDADAS + 3);
+            await gravarHora(serverId, HORAS_GUARDADAS + 4);
+            await gravarHora(serverId, 1);
+
+            const antes = await contarParaPrune(prisma);
+            const apagadas = await prune(prisma);
+
+            expect(apagadas.horasDeServidor).toBe(antes.horasDeServidor);
+            expect(apagadas.horasDeServidor).toBeGreaterThanOrEqual(2);
+
+            /** A de agora ficou. */
+            expect(
+                await prisma.serverActivityHour.count({ where: { serverId } }),
+            ).toBe(1);
+        });
     });
 
     it('não apaga um token de conta por usar e dentro do prazo', async () => {

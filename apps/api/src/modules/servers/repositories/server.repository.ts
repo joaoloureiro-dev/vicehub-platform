@@ -5,6 +5,8 @@ import {
     SubscriptionPlan,
     SubscriptionStatus,
     filtroDeOnline,
+    horasDaJanela,
+    inicioDaHora,
     MembershipStatus,
     MembershipType,
     SourceType,
@@ -52,6 +54,37 @@ const DIRECTORY_ENTRY_SELECT = {
  */
 export class ServerRepository {
     constructor(private readonly database: DatabaseClient) { }
+
+    /**
+     * As horas de um servidor, da mais antiga para a mais recente.
+     *
+     * Por ordem crescente porque isto vai para um gráfico, e um gráfico
+     * lê-se da esquerda para a direita. A janela é cortada pela
+     * retenção, que é o que impede um pedido de trezentos dias de varrer
+     * a tabela inteira.
+     *
+     * Lê-se aqui e escreve-se na ingestão, de propósito: quem escreve é
+     * o servidor de jogo com a sua chave, e quem lê é qualquer pessoa
+     * que abra o perfil.
+     */
+    listActivity(serverId: string, dias: number) {
+        const horas = horasDaJanela(dias);
+        const desde = new Date(
+            inicioDaHora(new Date()).getTime() - (horas - 1) * 60 * 60 * 1000,
+        );
+
+        return this.database.serverActivityHour.findMany({
+            where: { serverId, hour: { gte: desde } },
+            orderBy: { hour: 'asc' },
+            select: {
+                hour: true,
+                samples: true,
+                players_sum: true,
+                players_max: true,
+                players_last: true,
+            },
+        });
+    }
 
     findById(serverId: string) {
         return this.database.server.findFirst({

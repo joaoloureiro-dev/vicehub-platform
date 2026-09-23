@@ -14,6 +14,7 @@ import type { UpdateAppearanceDto } from '../../shared/appearance.js';
 import { updateAppearanceSchema } from '../../shared/appearance.js';
 import type { ServerController } from './controllers/server.controller.js';
 import type {
+    ActivityQueryDto,
     CreateServerDto,
     ListServersQueryDto,
     ServerIdParamDto,
@@ -22,6 +23,7 @@ import type {
     UpdateServerDto,
 } from './dto/server.dto.js';
 import {
+    activityQuerySchema,
     createServerSchema,
     listServersQuerySchema,
     serverIdParamSchema,
@@ -88,6 +90,21 @@ const serverRoutes: FastifyPluginAsync<ServerRoutesOptions> = async (
         '/:serverId',
         { schema: { params: serverIdParamSchema } },
         controller.getProfile.bind(controller),
+    );
+
+    /**
+     * E o passado dele, público pela mesma razão que o perfil: quem
+     * procura onde jogar quer saber se há gente lá às horas a que joga.
+     */
+    fastify.get<{ Params: ServerIdParamDto; Querystring: ActivityQueryDto }>(
+        '/:serverId/activity',
+        {
+            schema: {
+                params: serverIdParamSchema,
+                querystring: activityQuerySchema,
+            },
+        },
+        controller.getActivity.bind(controller),
     );
 
     fastify.get<{ Params: ServerIdParamDto }>(

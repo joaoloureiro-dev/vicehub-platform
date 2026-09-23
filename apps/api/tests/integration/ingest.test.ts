@@ -85,6 +85,16 @@ describe('ingestão de servidores', () => {
 
     beforeEach(async () => {
         await prisma.serverApiKey.deleteMany({ where: { serverId } });
+        /**
+         * O passado também, e não só o presente.
+         *
+         * Reportar passou a escrever em dois sítios: o que o servidor é
+         * agora, e a hora a que isso pertence. Repor um sem o outro
+         * deixava cada teste a começar de um servidor que dizia nunca
+         * ter reportado e tinha as batidas do teste anterior no
+         * histórico.
+         */
+        await prisma.serverActivityHour.deleteMany({ where: { serverId } });
         await prisma.server.update({
             where: { id: serverId },
             data: {
@@ -303,6 +313,110 @@ describe('ingestão de servidores', () => {
 
             expect(perfil.json().isOnline).toBe(true);
             expect(perfil.json().playersOnline).toBe(42);
+        });
+
+        /**
+         * O presente sobrescreve-se; o passado acumula-se.
+         *
+         * Antes disto o servidor tinha o agora e mais nada: cada batida
+         * apagava a anterior. "Quarenta e duas pessoas agora" não
+         * distingue um servidor cheio todos os dias de um que encheu
+         * esta tarde, e é essa diferença que um leaderboard ordena.
+         */
+        it('guarda a hora, e soma as batidas que nela couberem', async () => {
+            const chave = await criarChave(dono, serverId);
+
+            const bater = (quantos: number) =>
+                app.inject({
+                    method: 'POST',
+                    url: '/api/v1/ingest/heartbeat',
+                    headers: comChave(chave.key),
+                    payload: { playersOnline: quantos },
+                });
+
+            expect((await bater(10)).statusCode).toBe(200);
+            expect((await bater(30)).statusCode).toBe(200);
+            expect((await bater(20)).statusCode).toBe(200);
+
+            const horas = await prisma.serverActivityHour.findMany({
+                where: { serverId },
+                select: {
+                    samples: true,
+                    players_sum: true,
+                    players_max: true,
+                    players_last: true,
+                },
+            });
+
+            /** Uma linha, e não três: as três batidas são da mesma hora. */
+            expect(horas).toHaveLength(1);
+            expect(horas[0]?.samples).toBe(3);
+            expect(horas[0]?.players_sum).toBe(60);
+            /** O pico é o maior, mesmo tendo vindo uma contagem menor depois. */
+            expect(horas[0]?.players_max).toBe(30);
+            /** E o fim da hora é a última contagem, não a maior. */
+            expect(horas[0]?.players_last).toBe(20);
+        });
+
+        /**
+         * A leitura pública, que é o que o perfil desenha.
+         */
+        it('mostra o passado a quem abrir o perfil, sem sessão nenhuma', async () => {
+            const chave = await criarChave(dono, serverId);
+
+            await app.inject({
+                method: 'POST',
+                url: '/api/v1/ingest/heartbeat',
+                headers: comChave(chave.key),
+                payload: { playersOnline: 8 },
+            });
+
+            const resposta = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${serverId}/activity`,
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+
+            const corpo = resposta.json() as {
+                hours: { hour: string; samples: number; average: number; peak: number }[];
+                average: number;
+                peak: number;
+            };
+
+            expect(corpo.hours.length).toBeGreaterThan(0);
+            expect(corpo.peak).toBeGreaterThanOrEqual(8);
+            expect(corpo.average).toBeGreaterThan(0);
+
+            /** A hora vem cortada à hora, que é o que o balde guarda. */
+            const ultima = corpo.hours[corpo.hours.length - 1] as { hour: string };
+
+            expect(ultima.hour.endsWith(':00:00.000Z')).toBe(true);
+        });
+
+        /**
+         * Um servidor que nunca reportou tem um passado vazio, e não um
+         * erro: a diferença entre "não há dados" e "não existe" é a que
+         * um gráfico precisa de saber desenhar.
+         */
+        it('devolve um passado vazio para quem nunca reportou', async () => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: `/api/v1/servers/${outroServerId}/activity`,
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+            expect(resposta.json().hours).toEqual([]);
+            expect(resposta.json().average).toBe(0);
+        });
+
+        it('responde 404 para um servidor que não existe', async () => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/servers/00000000-0000-4000-8000-000000000000/activity',
+            });
+
+            expect(resposta.statusCode).toBe(404);
         });
 
         /**

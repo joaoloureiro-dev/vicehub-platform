@@ -77,6 +77,7 @@ describe('ligação das rotas de servidor', () => {
             listDirectory: vi.fn(),
             listMyMemberships: vi.fn(),
             getProfile: vi.fn(),
+            getActivity: vi.fn(),
             update: vi.fn(),
             listMembers: vi.fn(),
             listJoinRequests: vi.fn(),
@@ -112,12 +113,33 @@ describe('ligação das rotas de servidor', () => {
     };
 
     describe('rotas públicas', () => {
-        it.each(['GET /', 'GET /:serverId', 'GET /:serverId/members'])(
-            '%s é acessível sem conta',
-            (key) => {
-                expect(preHandlerCount(key)).toBe(0);
-            },
-        );
+        /**
+         * O passado do servidor está nesta lista pela mesma razão que o
+         * perfil: quem procura onde jogar quer saber se há gente lá às
+         * horas a que joga, e isso não é informação de dentro.
+         */
+        it.each([
+            'GET /',
+            'GET /:serverId',
+            'GET /:serverId/members',
+            'GET /:serverId/activity',
+        ])('%s é acessível sem conta', (key) => {
+            expect(preHandlerCount(key)).toBe(0);
+        });
+
+        /**
+         * E a janela é validada antes de chegar ao handler: `days` vem
+         * do endereço, e um número inventado lá dentro seria uma
+         * consulta com um limite que ninguém escolheu.
+         */
+        it('GET /:serverId/activity valida a janela que lhe pedem', () => {
+            const schema = registered.get('GET /:serverId/activity')?.schema as
+                | Record<string, unknown>
+                | undefined;
+
+            expect(schema?.['querystring']).toBeDefined();
+            expect(schema?.['params']).toBeDefined();
+        });
     });
 
     describe('rotas que exigem apenas conta', () => {
