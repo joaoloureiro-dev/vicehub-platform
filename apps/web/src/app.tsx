@@ -36,6 +36,8 @@ import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
 import { PublicProfilePage } from './profile/pages/public-profile.page.js';
 import { ForumPage } from './forum/pages/forum.page.js';
+import { MercadoPage } from './market/pages/mercado.page.js';
+import { AnuncioPage } from './market/pages/anuncio.page.js';
 import { TopicPage } from './forum/pages/topic.page.js';
 import { DenunciasPage } from './forum/pages/denuncias.page.js';
 
@@ -260,6 +262,18 @@ export const App = () => (
               nenhuma, e fechá-la atrás de um registo faria a plataforma
               responder à mesma pergunta vezes sem conta.
             */}
+            {/*
+              O mercado de um servidor é público como o fórum: quem
+              está a escolher onde jogar ainda não tem conta, e um
+              mercado com gente a vender é a prova mais directa de que
+              a economia daquele servidor está viva.
+            */}
+            <Route
+                path="/servidores/:serverId/mercado"
+                element={<MercadoPage />}
+            />
+            <Route path="/mercado/:listingId" element={<AnuncioPage />} />
+
             <Route path="/forum" element={<ForumPage />} />
             <Route path="/forum/denuncias" element={<DenunciasPage />} />
             <Route path="/forum/:topicId" element={<TopicPage />} />

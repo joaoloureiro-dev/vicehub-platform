@@ -569,8 +569,110 @@ export const fr = (p: Tools): Messages => ({
 
         TOPIC_LOCKED: 'Cette question est fermée aux nouvelles réponses.',
 
-        NOT_YOURS: 'Seul l\'auteur peut retirer ceci.',
+        NOT_YOURS: 'Seul l\'auteur peut y toucher.',
 
+        LISTING_NOT_FOUND: 'Cette annonce n\'existe pas ou a été retirée.',
+
+        NOT_ON_SERVER: 'Seuls les joueurs de ce serveur peuvent y vendre.',
+
+        ALREADY_CLOSED: 'Cette annonce n\'est plus en vente.',
+
+    },
+
+    mercado: {
+        titulo: 'Marché',
+
+        sub: (servidor: string) => `Ce qui se vend sur ${servidor}.`,
+
+        moedaDeJogo:
+            'Les prix ici sont en monnaie du jeu. ViceHub ne touche à aucun argent réel, et vendre quoi que ce soit contre de l\'argent réel est contraire aux Conditions.',
+
+        anunciar: 'Vendre quelque chose',
+
+        entrarParaAnunciar: 'Connecte-toi pour vendre quelque chose',
+
+        aindaSemAnuncios: 'Rien à vendre pour l\'instant. Mets la première chose.',
+
+        nadaNesteFiltro: 'Rien de tel ici.',
+
+        naoCarregou: 'Le marché n\'a pas pu être chargé.',
+
+        naoEncontrado: 'Nous n\'avons pas trouvé cette annonce.',
+
+        voltar: 'Retour au marché',
+
+        verMercado: 'Marché',
+
+        categorias: {
+            vehicle: 'Véhicules',
+            property: 'Biens',
+            business: 'Commerces',
+            service: 'Services',
+            item: 'Objets',
+            other: 'Autre chose',
+        },
+
+        categoriaLabel: 'Catégorie',
+
+        todasAsCategorias: 'Tout',
+
+        estados: {
+            open: 'À vendre',
+            sold: 'Vendu',
+            withdrawn: 'Retiré',
+        },
+
+        tituloDoAnuncio: 'Ce que tu vends, en une ligne',
+
+        corpoDoAnuncio:
+            'Décris-le : son état, où tu le remets, ce que tu acceptes en échange',
+
+        preco: 'Prix',
+
+        precoAjuda:
+            'Monnaie du jeu. Nombres entiers, sans points ni espaces.',
+
+        precoInvalido: 'Le prix, ce sont des chiffres, et rien d\'autre.',
+
+        imagem: 'Adresse d\'une image',
+
+        imagemAjuda:
+            'Facultatif. ViceHub n\'héberge pas d\'images — colle l\'adresse de l\'une d\'elles.',
+
+        publicar: 'Mettre en vente',
+
+        naoFoiPossivelPublicar: 'L\'annonce n\'a pas pu être publiée.',
+
+        editar: 'Modifier',
+
+        guardar: 'Enregistrer les modifications',
+
+        cancelar: 'Annuler',
+
+        naoFoiPossivelGuardar: 'Les modifications n\'ont pas pu être enregistrées.',
+
+        marcarVendido: 'Marquer comme vendu',
+
+        marcarRetirado: 'Retirer du marché',
+
+        naoFoiPossivelFechar: 'Cela n\'a pas pu être modifié.',
+
+        retirar: 'Supprimer l\'annonce',
+
+        confirmarRetirar: 'Supprimer définitivement cette annonce ?',
+
+        naoFoiPossivelRetirar: 'L\'annonce n\'a pas pu être supprimée.',
+
+        vendidoEm: (quando: string) => `Vendu le ${quando}`,
+
+        retiradoEm: (quando: string) => `Retiré le ${quando}`,
+
+        porQuem: 'Vendu par',
+
+        contaApagada: 'un compte supprimé',
+
+        quantos: (n: number) =>
+            n === 1 ? '1 chose à vendre' : `${n} choses à vendre`,
     },
 
     forum: {

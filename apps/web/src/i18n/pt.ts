@@ -568,8 +568,109 @@ export const pt = (p: Tools): Messages => ({
 
         TOPIC_LOCKED: 'Esta pergunta está fechada a respostas novas.',
 
-        NOT_YOURS: 'Só quem escreveu isto o pode retirar.',
+        NOT_YOURS: 'Só quem escreveu isto lhe pode mexer.',
 
+        LISTING_NOT_FOUND: 'Este anúncio não existe ou foi retirado.',
+
+        NOT_ON_SERVER: 'Só quem joga neste servidor pode vender aqui.',
+
+        ALREADY_CLOSED: 'Este anúncio já não está à venda.',
+
+    },
+
+    mercado: {
+        titulo: 'Mercado',
+
+        sub: (servidor: string) => `O que se vende no ${servidor}.`,
+
+        moedaDeJogo:
+            'Os preços aqui são em moeda de jogo. O ViceHub não mexe em dinheiro real, e vender seja o que for por dinheiro verdadeiro é contra os Termos.',
+
+        anunciar: 'Vender alguma coisa',
+
+        entrarParaAnunciar: 'Entra para venderes alguma coisa',
+
+        aindaSemAnuncios: 'Ainda não há nada à venda. Põe a primeira coisa.',
+
+        nadaNesteFiltro: 'Não há nada assim aqui.',
+
+        naoCarregou: 'Não foi possível carregar o mercado.',
+
+        naoEncontrado: 'Não encontrámos este anúncio.',
+
+        voltar: 'Voltar ao mercado',
+
+        verMercado: 'Mercado',
+
+        categorias: {
+            vehicle: 'Veículos',
+            property: 'Propriedades',
+            business: 'Negócios',
+            service: 'Serviços',
+            item: 'Objetos',
+            other: 'Outra coisa',
+        },
+
+        categoriaLabel: 'Categoria',
+
+        todasAsCategorias: 'Tudo',
+
+        estados: {
+            open: 'À venda',
+            sold: 'Vendido',
+            withdrawn: 'Retirado',
+        },
+
+        tituloDoAnuncio: 'O que vendes, numa linha',
+
+        corpoDoAnuncio:
+            'Descreve: o estado em que está, onde entregas, o que aceitas por isso',
+
+        preco: 'Preço',
+
+        precoAjuda: 'Moeda de jogo. Números inteiros, sem pontos nem espaços.',
+
+        precoInvalido: 'O preço são algarismos, e mais nada.',
+
+        imagem: 'Endereço de uma imagem',
+
+        imagemAjuda:
+            'Opcional. O ViceHub não aloja imagens — cola o endereço de uma.',
+
+        publicar: 'Pôr à venda',
+
+        naoFoiPossivelPublicar: 'Não foi possível pôr o anúncio.',
+
+        editar: 'Editar',
+
+        guardar: 'Guardar as alterações',
+
+        cancelar: 'Cancelar',
+
+        naoFoiPossivelGuardar: 'Não foi possível guardar as alterações.',
+
+        marcarVendido: 'Marcar como vendido',
+
+        marcarRetirado: 'Tirar do mercado',
+
+        naoFoiPossivelFechar: 'Não foi possível mudar isso.',
+
+        retirar: 'Apagar o anúncio',
+
+        confirmarRetirar: 'Apagar este anúncio de vez?',
+
+        naoFoiPossivelRetirar: 'Não foi possível apagar o anúncio.',
+
+        vendidoEm: (quando: string) => `Vendido a ${quando}`,
+
+        retiradoEm: (quando: string) => `Retirado a ${quando}`,
+
+        porQuem: 'Vendido por',
+
+        contaApagada: 'uma conta apagada',
+
+        quantos: (n: number) =>
+            n === 1 ? '1 coisa à venda' : `${n} coisas à venda`,
     },
 
     forum: {

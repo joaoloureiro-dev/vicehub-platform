@@ -61,6 +61,13 @@ export const PERMISSIONS = {
         description:
             'Retirar tópicos e respostas de qualquer pessoa, e fechar tópicos.',
     },
+    'marketplace:post': {
+        scope: PermissionScope.marketplace,
+        slug: 'post',
+        name: 'Anunciar no mercado',
+        description:
+            'Pôr à venda no mercado de um servidor onde se joga, e mexer no que se anunciou.',
+    },
     'crew:read': {
         scope: PermissionScope.crew,
         slug: 'read',
@@ -189,6 +196,7 @@ export const ROLES = {
             'server:read',
             'forum:post',
             'forum:moderate',
+            'marketplace:post',
         ],
     },
     player: {
@@ -196,7 +204,13 @@ export const ROLES = {
         slug: 'player',
         name: 'Jogador',
         description: 'Cargo atribuído a qualquer utilizador registado.',
-        permissions: ['user:read', 'crew:read', 'server:read', 'forum:post'],
+        permissions: [
+            'user:read',
+            'crew:read',
+            'server:read',
+            'forum:post',
+            'marketplace:post',
+        ],
     },
     crew_leader: {
         scope: RoleScope.crew,

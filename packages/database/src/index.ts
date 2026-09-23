@@ -103,6 +103,25 @@ export {
 } from './forum.js';
 
 export {
+    ANUNCIOS_POR_PAGINA,
+    ANUNCIO_CORPO_MAXIMO,
+    ANUNCIO_CORPO_MINIMO,
+    ANUNCIO_TITULO_MAXIMO,
+    ANUNCIO_TITULO_MINIMO,
+    CATEGORIAS_DE_ANUNCIO,
+    ESTADOS_DE_ANUNCIO,
+    PRECO_MAXIMO,
+    PRECO_MINIMO,
+    anuncioEstaFechado,
+    precoLegivel,
+} from './market.js';
+
+export type {
+    CategoriaDeAnuncio,
+    EstadoDeAnuncio,
+} from './market.js';
+
+export {
     REPUTACAO_POR_FALTA,
     REPUTACAO_POR_PRESENCA,
     reputacaoDe,

@@ -582,8 +582,113 @@ export const en = (p: Tools) => ({
 
         TOPIC_LOCKED: 'This question is closed to new replies.',
 
-        NOT_YOURS: 'Only whoever wrote this can remove it.',
+        NOT_YOURS: 'Only whoever wrote this can change it.',
 
+        LISTING_NOT_FOUND: 'This listing does not exist or was taken down.',
+
+        NOT_ON_SERVER: 'Only people who play on this server can sell here.',
+
+        ALREADY_CLOSED: 'This listing is no longer for sale.',
+
+    },
+
+    mercado: {
+        titulo: 'Market',
+
+        sub: (servidor: string) => `What people are selling on ${servidor}.`,
+
+        /**
+         * A frase que tem de estar onde se vê, e não nos termos: é aqui
+         * que alguém vai a pensar em vender alguma coisa.
+         */
+        moedaDeJogo:
+            'Prices here are in in-game currency. ViceHub moves no real money, and selling anything for real money is against the Terms.',
+
+        anunciar: 'Sell something',
+
+        entrarParaAnunciar: 'Sign in to sell something',
+
+        aindaSemAnuncios: 'Nothing for sale here yet. Put up the first thing.',
+
+        nadaNesteFiltro: 'Nothing here matches that.',
+
+        naoCarregou: 'The market could not be loaded.',
+
+        naoEncontrado: 'We could not find this listing.',
+
+        voltar: 'Back to the market',
+
+        verMercado: 'Market',
+
+        categorias: {
+            vehicle: 'Vehicles',
+            property: 'Property',
+            business: 'Businesses',
+            service: 'Services',
+            item: 'Items',
+            other: 'Anything else',
+        },
+
+        categoriaLabel: 'Category',
+
+        todasAsCategorias: 'Everything',
+
+        estados: {
+            open: 'For sale',
+            sold: 'Sold',
+            withdrawn: 'Taken down',
+        },
+
+        tituloDoAnuncio: 'What you are selling, in one line',
+
+        corpoDoAnuncio:
+            'Describe it: the state it is in, where you hand it over, what you will take for it',
+
+        preco: 'Price',
+
+        precoAjuda: 'In-game currency. Whole numbers, no dots or spaces.',
+
+        precoInvalido: 'The price is digits, and nothing else.',
+
+        imagem: 'Link to a picture',
+
+        imagemAjuda:
+            'Optional. ViceHub does not host images — paste the address of one.',
+
+        publicar: 'Put it up',
+
+        naoFoiPossivelPublicar: 'The listing could not be put up.',
+
+        editar: 'Edit',
+
+        guardar: 'Save the changes',
+
+        cancelar: 'Cancel',
+
+        naoFoiPossivelGuardar: 'The changes could not be saved.',
+
+        marcarVendido: 'Mark it sold',
+
+        marcarRetirado: 'Take it off the market',
+
+        naoFoiPossivelFechar: 'That could not be changed.',
+
+        retirar: 'Delete the listing',
+
+        confirmarRetirar: 'Delete this listing for good?',
+
+        naoFoiPossivelRetirar: 'The listing could not be deleted.',
+
+        vendidoEm: (quando: string) => `Sold on ${quando}`,
+
+        retiradoEm: (quando: string) => `Taken down on ${quando}`,
+
+        porQuem: 'Sold by',
+
+        contaApagada: 'a deleted account',
+
+        quantos: (n: number) =>
+            n === 1 ? '1 thing for sale' : `${n} things for sale`,
     },
 
     forum: {
