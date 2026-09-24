@@ -37,6 +37,16 @@ declare module 'fastify' {
         authorize(...permissions: PermissionKey[]): preHandlerHookHandler;
 
         /**
+         * Constrói um preHandler que exige **uma** das permissões.
+         *
+         * Existe por causa da fila de denúncias, que é uma só para as
+         * duas superfícies onde o público escreve: quem modera o fórum
+         * e quem modera o mercado abrem a mesma fila, e exigir as duas
+         * fechava a porta a quem só modera uma.
+         */
+        authorizeAny(...permissions: PermissionKey[]): preHandlerHookHandler;
+
+        /**
          * Constrói um preHandler que exige subscrição ativa.
          *
          * O titular é indicado explicitamente: 'user' por omissão, ou

@@ -7,31 +7,29 @@ import type {
     CreateReplyDto,
     CreateReportDto,
     CreateTopicDto,
-    HandleReportDto,
-    ListReportsQueryDto,
     ListTopicsQueryDto,
     ReplyIdParamDto,
-    ReportIdParamDto,
     TopicIdParamDto,
 } from '../schemas/forum.schemas.js';
 import type { ForumService } from '../services/forum.service.js';
+import type { ModerationController } from '../../moderation/controllers/moderation.controller.js';
+import type { Alvo } from '../../moderation/repositories/report.repository.js';
+import type { ReportService } from '../../moderation/services/report.service.js';
 
 /** Que resposta HTTP corresponde a cada recusa. */
 const ESTADO: Record<string, number> = {
     TOPIC_NOT_FOUND: 404,
     REPLY_NOT_FOUND: 404,
-    REPORT_NOT_FOUND: 404,
     TOPIC_LOCKED: 409,
-    ALREADY_REPORTED: 409,
-    REPORT_ALREADY_HANDLED: 409,
     NOT_YOURS: 403,
-    IS_YOURS: 409,
 };
 
 export class ForumController {
     constructor(
         private readonly forumService: ForumService,
         private readonly authorizationService: AuthorizationService,
+        private readonly reportService: ReportService,
+        private readonly moderationController: ModerationController,
     ) { }
 
     /**
@@ -188,11 +186,10 @@ export class ForumController {
         }>,
         reply: FastifyReply,
     ): Promise<void> {
-        await this.denunciar(
-            request,
-            reply,
-            { topicId: request.params.topicId },
-        );
+        await this.denunciar(request, reply, {
+            kind: 'topic',
+            id: request.params.topicId,
+        });
     }
 
     async reportReply(
@@ -202,22 +199,29 @@ export class ForumController {
         }>,
         reply: FastifyReply,
     ): Promise<void> {
-        await this.denunciar(
-            request,
-            reply,
-            { replyId: request.params.replyId },
-        );
+        await this.denunciar(request, reply, {
+            kind: 'reply',
+            id: request.params.replyId,
+        });
     }
 
+    /**
+     * Denunciar uma publicação do fórum.
+     *
+     * O botão vive ao lado do que se denuncia, e por isso a rota é
+     * daqui. O que acontece a seguir — a fila, a ordem, a decisão — é
+     * do módulo da moderação, porque é uma fila só para as duas
+     * superfícies onde o público escreve.
+     */
     private async denunciar(
         request: FastifyRequest<{ Body: CreateReportDto }>,
         reply: FastifyReply,
-        alvo: { topicId: string } | { replyId: string },
+        alvo: Alvo,
     ): Promise<void> {
         const { user } = requireAuthContext(request);
 
         try {
-            const criada = await this.forumService.report(
+            const criada = await this.reportService.report(
                 alvo,
                 user.id,
                 request.body.reason,
@@ -226,50 +230,7 @@ export class ForumController {
 
             reply.code(201).send(criada);
         } catch (erro: unknown) {
-            this.responder(erro, reply);
-        }
-    }
-
-    async listReports(
-        request: FastifyRequest<{ Querystring: ListReportsQueryDto }>,
-        reply: FastifyReply,
-    ): Promise<void> {
-        const pagina = await this.forumService.listReports(
-            request.query.status,
-            request.query.page,
-        );
-
-        reply.send({
-            reports: pagina.denuncias.map((denuncia) => ({
-                ...denuncia,
-                createdAt: denuncia.createdAt.toISOString(),
-                handledAt: denuncia.handledAt?.toISOString() ?? null,
-            })),
-            page: pagina.pagina,
-            pages: pagina.paginas,
-            total: pagina.total,
-        });
-    }
-
-    async handleReport(
-        request: FastifyRequest<{
-            Params: ReportIdParamDto;
-            Body: HandleReportDto;
-        }>,
-        reply: FastifyReply,
-    ): Promise<void> {
-        const { user } = requireAuthContext(request);
-
-        try {
-            await this.forumService.handleReport(
-                request.params.reportId,
-                user.id,
-                request.body.outcome,
-            );
-
-            reply.code(204).send();
-        } catch (erro: unknown) {
-            this.responder(erro, reply);
+            this.moderationController.responder(erro, reply);
         }
     }
 

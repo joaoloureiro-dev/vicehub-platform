@@ -51,6 +51,7 @@ describe('ligação das rotas do mercado', () => {
             update: vi.fn(),
             close: vi.fn(),
             remove: vi.fn(),
+            report: vi.fn(),
         } as unknown as MarketController;
 
         await app.register(marketRoutes, { controller });
@@ -106,6 +107,7 @@ describe('ligação das rotas do mercado', () => {
         'PATCH /listings/:listingId',
         'POST /listings/:listingId/close',
         'DELETE /listings/:listingId',
+        'POST /listings/:listingId/reports',
     ])('%s pede sessão e a permissão de anunciar', (chave) => {
         expect(preHandlersDe(chave)).toHaveLength(2);
         expect(permissoesPorRota.get(chave)).toEqual(['marketplace:post']);
@@ -118,11 +120,27 @@ describe('ligação das rotas do mercado', () => {
      * ser um —, e não o aplicar a criar deixava uma conta com um guião
      * a encher o mercado de um servidor numa tarde.
      */
-    it('anunciar leva limite de escrita', () => {
-        const limite = limiteDe('POST /servers/:serverId/listings');
+    it.each([
+        'POST /servers/:serverId/listings',
+        'POST /listings/:listingId/reports',
+    ])('%s leva limite de escrita', (chave) => {
+        const limite = limiteDe(chave);
 
         expect(limite?.max).toBeGreaterThan(0);
         expect(limite?.timeWindow).toBeTruthy();
+    });
+
+    /**
+     * Retirar exige a permissão de anunciar, e não a de moderar.
+     *
+     * Quem pode retirar **este** anúncio decide-se no serviço: o dono,
+     * sempre, e quem modera. Exigir a permissão de moderação à entrada
+     * fechava a porta a quem quer apagar o que ele próprio anunciou.
+     */
+    it('retirar não exige a permissão de moderar', () => {
+        expect(permissoesPorRota.get('DELETE /listings/:listingId')).toEqual([
+            'marketplace:post',
+        ]);
     });
 
     it.each([

@@ -1,11 +1,10 @@
 import {
-    DENUNCIAS_POR_PAGINA,
     RESPOSTAS_POR_PAGINA,
     TOPICOS_POR_PAGINA,
     type DatabaseClient,
-    type ForumReportReason,
-    type ForumReportStatus,
 } from '@vicehub/database';
+
+import { colunaDoAlvo, type Alvo } from '../../moderation/repositories/report.repository.js';
 
 /** A transação em curso, tal como no resto da plataforma. */
 type Escritor = Parameters<
@@ -144,7 +143,7 @@ export class ForumRepository {
                 select: { id: true },
             });
 
-            await this.fecharDenuncias(tx, { topicId }, actorId);
+            await this.fecharDenuncias(tx, { kind: 'topic', id: topicId }, actorId);
 
             return topico;
         });
@@ -194,7 +193,7 @@ export class ForumRepository {
                 select: { id: true },
             });
 
-            await this.fecharDenuncias(tx, { replyId }, actorId);
+            await this.fecharDenuncias(tx, { kind: 'reply', id: replyId }, actorId);
 
             return resposta;
         });
@@ -207,13 +206,9 @@ export class ForumRepository {
      * agiu, e a denúncia que pedia isso está respondida. Deixá-la aberta
      * mandava o moderador seguinte olhar para texto que já não existe.
      */
-    private fecharDenuncias(
-        tx: Escritor,
-        alvo: { topicId: string } | { replyId: string },
-        actorId: string,
-    ) {
-        return tx.forumReport.updateMany({
-            where: { ...alvo, status: 'open' },
+    private fecharDenuncias(tx: Escritor, alvo: Alvo, actorId: string) {
+        return tx.report.updateMany({
+            where: { ...colunaDoAlvo(alvo), status: 'open' },
             data: {
                 status: 'acted',
                 handled_at: new Date(),
@@ -221,113 +216,6 @@ export class ForumRepository {
                 updated_by: actorId,
                 version: { increment: 1 },
             },
-        });
-    }
-
-    findReportTarget(alvo: { topicId: string } | { replyId: string }) {
-        if ('topicId' in alvo) {
-            return this.database.forumTopic.findFirst({
-                where: { id: alvo.topicId, is_deleted: false },
-                select: { id: true, authorId: true },
-            });
-        }
-
-        return this.database.forumReply.findFirst({
-            where: { id: alvo.replyId, is_deleted: false },
-            select: { id: true, authorId: true },
-        });
-    }
-
-    createReport(input: {
-        alvo: { topicId: string } | { replyId: string };
-        reporterId: string;
-        reason: ForumReportReason;
-        note?: string;
-    }) {
-        return this.database.forumReport.create({
-            data: {
-                ...input.alvo,
-                reporterId: input.reporterId,
-                reason: input.reason,
-                ...(input.note === undefined || input.note === ''
-                    ? {}
-                    : { note: input.note }),
-                created_by: input.reporterId,
-            },
-            select: { id: true },
-        });
-    }
-
-    /**
-     * A fila de quem modera.
-     *
-     * As mais velhas primeiro, ao contrário de tudo o resto na
-     * plataforma: uma denúncia por abrir é trabalho, e trabalho velho é
-     * o que mais urge. Ordenar pela mais recente deixava a primeira
-     * denúncia do dia a ser sempre a última a ser vista.
-     */
-    listReports(status: ForumReportStatus, pagina: number) {
-        return this.database.forumReport.findMany({
-            where: { status },
-            orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
-            skip: (pagina - 1) * DENUNCIAS_POR_PAGINA,
-            take: DENUNCIAS_POR_PAGINA,
-            select: {
-                id: true,
-                reason: true,
-                note: true,
-                status: true,
-                created_at: true,
-                handled_at: true,
-                reporter: AUTOR,
-                topic: {
-                    select: {
-                        id: true,
-                        title: true,
-                        body: true,
-                        is_deleted: true,
-                        author: AUTOR,
-                    },
-                },
-                reply: {
-                    select: {
-                        id: true,
-                        topicId: true,
-                        body: true,
-                        is_deleted: true,
-                        author: AUTOR,
-                    },
-                },
-            },
-        });
-    }
-
-    countReports(status: ForumReportStatus) {
-        return this.database.forumReport.count({ where: { status } });
-    }
-
-    findReport(reportId: string) {
-        return this.database.forumReport.findUnique({
-            where: { id: reportId },
-            select: { id: true, status: true },
-        });
-    }
-
-    handleReport(
-        reportId: string,
-        outcome: 'acted' | 'dismissed',
-        actorId: string,
-    ) {
-        return this.database.forumReport.update({
-            where: { id: reportId },
-            data: {
-                status: outcome,
-                handled_at: new Date(),
-                handled_by: actorId,
-                updated_by: actorId,
-                version: { increment: 1 },
-            },
-            select: { id: true },
         });
     }
 }

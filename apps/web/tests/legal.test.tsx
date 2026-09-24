@@ -272,7 +272,12 @@ describe('as páginas legais', () => {
 
             expect(texto).toMatch(/no profiling/i);
             expect(texto).toMatch(/locks itself temporarily/);
-            expect(texto).toMatch(/Moderation of the forum is done by people/);
+            /**
+             * A frase cobre as superfícies todas, e não só o fórum: o
+             * teste de `superficies-publicas` é que o garante uma a
+             * uma. Aqui fica só que a afirmação existe.
+             */
+            expect(texto).toMatch(/Moderation is done by people/);
         });
 
         it('aponta para a exportação e a eliminação', () => {

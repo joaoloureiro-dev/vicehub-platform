@@ -359,7 +359,7 @@ export const buildAccountExport = async (
             },
             orderBy: { created_at: 'desc' },
         }),
-        database.forumReport.findMany({
+        database.report.findMany({
             where: { reporterId: userId },
             select: { reason: true, note: true, created_at: true },
             orderBy: { created_at: 'desc' },

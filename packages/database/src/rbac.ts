@@ -68,6 +68,13 @@ export const PERMISSIONS = {
         description:
             'Pôr à venda no mercado de um servidor onde se joga, e mexer no que se anunciou.',
     },
+    'marketplace:moderate': {
+        scope: PermissionScope.marketplace,
+        slug: 'moderate',
+        name: 'Moderar o mercado',
+        description:
+            'Retirar anúncios de qualquer pessoa, a partir da fila de denúncias.',
+    },
     'crew:read': {
         scope: PermissionScope.crew,
         slug: 'read',
@@ -197,6 +204,7 @@ export const ROLES = {
             'forum:post',
             'forum:moderate',
             'marketplace:post',
+            'marketplace:moderate',
         ],
     },
     player: {

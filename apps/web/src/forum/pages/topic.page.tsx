@@ -12,12 +12,14 @@ import {
     removeReply,
     removeTopic,
     replyToTopic,
-    reportReply,
-    reportTopic,
     unlockTopic,
     type ForumAuthor,
 } from '../forum.api.js';
-import { Denunciar } from '../components/denunciar.js';
+import { Denunciar } from '../../moderation/denunciar.js';
+import {
+    reportReply,
+    reportTopic,
+} from '../../moderation/moderation.api.js';
 
 /**
  * O texto de alguém, como o fórum o mostra.

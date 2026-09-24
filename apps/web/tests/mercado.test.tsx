@@ -75,6 +75,10 @@ const responder = (opcoes: {
             );
         }
 
+        if (endereco.includes('/market/listings/anuncio-1/reports')) {
+            return Promise.resolve(json(201, { id: 'denuncia-1' }));
+        }
+
         if (endereco.includes('/market/listings/anuncio-1/close')) {
             return Promise.resolve(opcoes.aoFechar ?? json(200, { id: 'anuncio-1' }));
         }
@@ -384,6 +388,87 @@ describe('um anúncio', () => {
         expect(screen.queryByText(t.mercado.editar)).toBeNull();
         expect(screen.queryByText(t.mercado.retirar)).toBeNull();
         expect(screen.queryByText(t.mercado.marcarVendido)).toBeNull();
+    });
+
+    /**
+     * Denunciar é para quem não escreveu o anúncio. A quem o escreveu
+     * mostrar-lhe um botão de denunciar o que é seu era convidá-lo a
+     * pôr trabalho na fila de outra pessoa por nada.
+     */
+    it('mostra o botão de denunciar a quem não o escreveu', async () => {
+        vi.stubGlobal(
+            'fetch',
+            responder({
+                anuncio: {
+                    sellerId: 'u2',
+                    seller: { id: 'u2', username: 'ana', avatarUrl: null },
+                },
+            }),
+        );
+
+        montarAnuncio();
+
+        expect(await screen.findByText(t.moderacao.denunciar)).toBeDefined();
+    });
+
+    it('e não o mostra a quem o escreveu', async () => {
+        vi.stubGlobal('fetch', responder());
+
+        montarAnuncio();
+
+        expect(await screen.findByText(t.mercado.editar)).toBeDefined();
+        expect(screen.queryByText(t.moderacao.denunciar)).toBeNull();
+    });
+
+    it('nem a quem está sem sessão', async () => {
+        vi.stubGlobal('fetch', responder({ semSessao: true }));
+
+        montarAnuncio();
+
+        expect(await screen.findByText('Banshee 900R')).toBeDefined();
+        expect(screen.queryByText(t.moderacao.denunciar)).toBeNull();
+    });
+
+    it('manda a razão e a nota da denúncia', async () => {
+        const chamadas = responder({
+            anuncio: {
+                sellerId: 'u2',
+                seller: { id: 'u2', username: 'ana', avatarUrl: null },
+            },
+        });
+
+        vi.stubGlobal('fetch', chamadas);
+
+        montarAnuncio();
+
+        await userEvent.click(await screen.findByText(t.moderacao.denunciar));
+        await userEvent.click(
+            screen.getByLabelText(t.moderacao.razoes.spam),
+        );
+        await userEvent.type(
+            screen.getByLabelText(t.moderacao.notaDaDenuncia),
+            'Isto é publicidade a outro servidor.',
+        );
+        await userEvent.click(screen.getByText(t.moderacao.enviarDenuncia));
+
+        await waitFor(() => {
+            const denuncia = chamadas.mock.calls.find(([url]) =>
+                String(url).includes('/market/listings/anuncio-1/reports'),
+            );
+
+            expect(denuncia).toBeDefined();
+
+            expect(
+                JSON.parse((denuncia?.[1] as { body: string }).body),
+            ).toEqual({
+                reason: 'spam',
+                note: 'Isto é publicidade a outro servidor.',
+            });
+        });
+
+        expect(
+            await screen.findByText(t.moderacao.denunciaRecebida),
+        ).toBeDefined();
     });
 
     it('esconde os botões de fechar num anúncio já vendido', async () => {

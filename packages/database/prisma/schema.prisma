@@ -292,7 +292,7 @@ model User {
   reputationAwards  ReputationAward[]
   forumTopics       ForumTopic[]
   forumReplies      ForumReply[]
-  forumReports      ForumReport[]
+  reports           Report[]
 
   /// O que esta pessoa pôs à venda no mercado de um servidor.
   listings     MarketListing[]
@@ -1328,7 +1328,7 @@ model XpAward {
 /// Enum e não texto livre: a razão é o que faz um moderador decidir o
 /// que abrir primeiro, e uma lista fechada é ordenável e contável. O
 /// texto que a pessoa queira acrescentar vai no `note`, que é dela.
-enum ForumReportReason {
+enum ReportReason {
   /// Publicidade, links a granel, a mesma mensagem em todo o lado.
   spam
 
@@ -1347,7 +1347,7 @@ enum ForumReportReason {
 /// `dismissed` existe por uma razão prática: sem ele, uma denúncia sem
 /// razão voltava à fila para o moderador seguinte a analisar outra vez.
 /// Dizer "foi visto e está bem" é trabalho que não se repete.
-enum ForumReportStatus {
+enum ReportStatus {
   open
   acted
   dismissed
@@ -1366,18 +1366,25 @@ enum ForumReportStatus {
 /// **Uma por pessoa e por publicação**, também pela base de dados. Sem
 /// isso, a própria fila de denúncias passava a ser a maneira mais barata
 /// de encher o ecrã de um moderador.
-model ForumReport {
+model Report {
   id String @id @default(uuid())
 
   /// Exatamente um destes está preenchido.
-  topicId String?
-  replyId String?
+  ///
+  /// Eram dois e passaram a três quando o mercado abriu. Não é uma
+  /// coluna a mais: é a plataforma a ter uma segunda superfície onde o
+  /// público escreve, e uma fila só onde as duas se denunciam. Duas
+  /// filas dariam duas caixas de entrada para o mesmo trabalho, e uma
+  /// delas ficaria por abrir.
+  topicId   String?
+  replyId   String?
+  listingId String?
 
   /// Sai quando a conta sai; a denúncia fica, porque o que ela aponta
   /// continua lá e o moderador ainda tem de decidir.
   reporterId String?
 
-  reason ForumReportReason
+  reason ReportReason
 
   /// O que quem denunciou escreveu, se escreveu.
   ///
@@ -1385,7 +1392,7 @@ model ForumReport {
   /// a quem sai que o seu texto é apagado.
   note String?
 
-  status     ForumReportStatus @default(open)
+  status     ReportStatus @default(open)
   handled_at DateTime?
   handled_by String?
 
@@ -1397,16 +1404,19 @@ model ForumReport {
   created_by String?
   updated_by String?
 
-  topic    ForumTopic? @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  reply    ForumReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
-  reporter User?       @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  topic    ForumTopic?    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  reply    ForumReply?    @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  listing  MarketListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reporter User?          @relation(fields: [reporterId], references: [id], onDelete: SetNull)
 
   @@unique([reporterId, topicId])
   @@unique([reporterId, replyId])
+  @@unique([reporterId, listingId])
   /// A fila do moderador: as abertas, mais velhas primeiro.
   @@index([status, created_at])
   @@index([topicId])
   @@index([replyId])
+  @@index([listingId])
 }
 
 model ForumTopic {
@@ -1430,9 +1440,9 @@ model ForumTopic {
   created_by String?
   updated_by String?
 
-  author  User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  author  User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
   replies ForumReply[]
-  reports ForumReport[]
+  reports Report[]
 
   @@index([created_at(sort: Desc)])
   @@index([authorId])
@@ -1460,9 +1470,9 @@ model ForumReply {
   created_by String?
   updated_by String?
 
-  topic   ForumTopic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  author  User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  reports ForumReport[]
+  topic   ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author  User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  reports Report[]
 
   @@index([topicId, created_at])
   @@index([authorId])
@@ -1808,8 +1818,9 @@ model MarketListing {
   created_by String?
   updated_by String?
 
-  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  seller User?  @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  server  Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  seller  User?    @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  reports Report[]
 
   /// O índice da única listagem que existe: os anúncios de um servidor,
   /// num estado, do mais recente para o mais antigo.

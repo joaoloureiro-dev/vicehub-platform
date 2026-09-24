@@ -70,8 +70,6 @@ describe('ligação das rotas do fórum', () => {
             unlock: vi.fn(),
             reportTopic: vi.fn(),
             reportReply: vi.fn(),
-            listReports: vi.fn(),
-            handleReport: vi.fn(),
             removeTopic: vi.fn(),
             removeReply: vi.fn(),
         } as unknown as ForumController;
@@ -204,27 +202,19 @@ describe('ligação das rotas do fórum', () => {
     );
 
     /**
-     * A fila e o fechar de cada denúncia são de quem modera.
+     * A fila **não é daqui**.
      *
-     * A fila mostra texto que alguém achou mau o suficiente para
-     * avisar, com o nome de quem avisou: é o contrário de uma coisa
-     * para se ver de fora.
+     * Quando o mercado abriu, a plataforma passou a ter duas
+     * superfícies onde o público escreve, e a fila passou a ser uma só
+     * para as duas — no módulo da moderação. Deixar aqui uma segunda
+     * porta para a mesma fila era o princípio de duas filas.
      */
     it.each(['GET /reports', 'POST /reports/:reportId'])(
-        '%s exige a permissão de moderar',
+        '%s já não existe no fórum',
         (chave) => {
-            expect(preHandlersDe(chave)).toHaveLength(2);
-            expect(permissoesPorRota.get(chave)).toEqual(['forum:moderate']);
+            expect(rotas.get(chave)).toBeUndefined();
         },
     );
-
-    /**
-     * Ler a fila não leva limite, como nenhuma leitura leva: um
-     * moderador a percorrer denúncias depressa está a trabalhar.
-     */
-    it('GET /reports não leva limite próprio', () => {
-        expect(limiteDe('GET /reports')).toBeUndefined();
-    });
 
     /**
      * E fechar não leva o limite da escrita.
@@ -278,9 +268,6 @@ describe('ligação das rotas do fórum', () => {
         ['POST /topics/:topicId/reports', 'params'],
         ['POST /topics/:topicId/reports', 'body'],
         ['POST /replies/:replyId/reports', 'body'],
-        ['GET /reports', 'querystring'],
-        ['POST /reports/:reportId', 'params'],
-        ['POST /reports/:reportId', 'body'],
     ])('%s valida o %s do pedido', (chave, parte) => {
         const schema = rotas.get(chave)?.schema as
             | Record<string, unknown>

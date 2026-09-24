@@ -5,20 +5,35 @@ import { MarketController } from './controllers/market.controller.js';
 import { MarketRepository } from './repositories/market.repository.js';
 import { MarketService } from './services/market.service.js';
 import marketRoutes from './market.routes.js';
+import { AuthorizationRepository } from '../authorization/repositories/authorization.repository.js';
+import { AuthorizationService } from '../authorization/services/authorization.service.js';
+import { ModerationController } from '../moderation/controllers/moderation.controller.js';
+import { construirReportService } from '../moderation/moderation.module.js';
 
 /**
  * Módulo do mercado.
  *
- * Sem o serviço de autorização, ao contrário do fórum: aqui não há
- * nenhuma pergunta branda a fazer. Um anúncio é de quem o escreveu, e
- * de mais ninguém — não há moderador que lhe mexa enquanto não houver
- * por onde alguém se queixar dele.
+ * Leva o serviço de autorização pela mesma razão do fórum: há uma
+ * pergunta **branda** a fazer — quem está a pedir modera o mercado? O
+ * `authorize` responde a isso recusando o pedido, e aqui a resposta não
+ * pode ser uma recusa, porque quem não modera continua a poder retirar
+ * o que anunciou.
+ *
+ * E leva o serviço das denúncias, que é de outro módulo: o botão vive
+ * ao lado do anúncio, a fila é uma só para as duas superfícies.
  */
 const marketModule: FastifyPluginAsync = async (fastify) => {
+    const reportService = construirReportService(fastify.prisma);
+
     await fastify.register(marketRoutes, {
         prefix: '/api/v1/market',
         controller: new MarketController(
             new MarketService(new MarketRepository(fastify.prisma)),
+            new AuthorizationService(
+                new AuthorizationRepository(fastify.prisma),
+            ),
+            reportService,
+            new ModerationController(reportService),
         ),
     });
 };

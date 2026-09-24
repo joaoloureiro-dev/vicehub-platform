@@ -82,26 +82,67 @@ const authorizePlugin: FastifyPluginAsync = async (fastify) => {
         return effective;
     };
 
+    /**
+     * As permissões reunidas deste pedido, com o âmbito da rota.
+     *
+     * O corpo era o mesmo nos dois decoradores, e duas cópias eram dois
+     * sítios onde o `requireAuthContext` podia ser esquecido — que é
+     * como uma rota protegida passa a aberta sem ninguém reparar.
+     */
+    const permissoesDoPedido = async (
+        request: FastifyRequest,
+    ): Promise<EffectivePermissions> => {
+        /**
+         * Sem contexto autenticado não há nada a autorizar. O guard
+         * lança em vez de assumir um utilizador anónimo, para que
+         * esquecer o authenticate seja um erro visível e não uma
+         * rota aberta.
+         */
+        const { user } = requireAuthContext(request);
+
+        return resolvePermissions(
+            request,
+            user.id,
+            readScopeFromRequest(request),
+        );
+    };
+
+    /**
+     * Uma das permissões chega.
+     *
+     * A fila de denúncias é uma só para o fórum e para o mercado, e
+     * quem modera uma das superfícies tem de a poder abrir. Exigir as
+     * duas fechava-lhe a porta; escolher uma delas obrigava a decidir
+     * qual, sendo que a fila é a mesma.
+     *
+     * A recusa nomeia **todas** as que serviriam, e não uma: quem lê a
+     * mensagem tem de saber o que pedir.
+     */
+    fastify.decorate(
+        'authorizeAny',
+        (...permitidas: PermissionKey[]): preHandlerHookHandler => {
+            return async (request: FastifyRequest): Promise<void> => {
+                const effective = await permissoesDoPedido(request);
+
+                const serve = permitidas.some((permissao) =>
+                    authorizationService.hasPermissions(effective, [permissao]),
+                );
+
+                if (!serve) {
+                    authorizationService.assertPermissions(
+                        effective,
+                        permitidas,
+                    );
+                }
+            };
+        },
+    );
+
     fastify.decorate(
         'authorize',
         (...required: PermissionKey[]): preHandlerHookHandler => {
-            return async (
-                request: FastifyRequest,
-                _reply: FastifyReply,
-            ): Promise<void> => {
-                /**
-                 * Sem contexto autenticado não há nada a autorizar. O guard
-                 * lança em vez de assumir um utilizador anónimo, para que
-                 * esquecer o authenticate seja um erro visível e não uma
-                 * rota aberta.
-                 */
-                const { user } = requireAuthContext(request);
-
-                const effective = await resolvePermissions(
-                    request,
-                    user.id,
-                    readScopeFromRequest(request),
-                );
+            return async (request: FastifyRequest): Promise<void> => {
+                const effective = await permissoesDoPedido(request);
 
                 authorizationService.assertPermissions(effective, required);
             };

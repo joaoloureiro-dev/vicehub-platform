@@ -6,20 +6,14 @@ import {
     createReplySchema,
     createReportSchema,
     createTopicSchema,
-    handleReportSchema,
-    listReportsQuerySchema,
     listTopicsQuerySchema,
     replyIdParamSchema,
-    reportIdParamSchema,
     topicIdParamSchema,
     type CreateReplyDto,
     type CreateReportDto,
     type CreateTopicDto,
-    type HandleReportDto,
-    type ListReportsQueryDto,
     type ListTopicsQueryDto,
     type ReplyIdParamDto,
-    type ReportIdParamDto,
     type TopicIdParamDto,
 } from './schemas/forum.schemas.js';
 
@@ -175,41 +169,6 @@ const forumRoutes: FastifyPluginAsync<ForumRoutesOptions> = async (
             schema: { params: replyIdParamSchema, body: createReportSchema },
         },
         controller.reportReply.bind(controller),
-    );
-
-    /**
-     * A fila de quem modera, e o fechar de cada denúncia.
-     *
-     * `forum:moderate` nas duas: a fila mostra texto que alguém achou
-     * mau o suficiente para avisar, com o nome de quem avisou. É o
-     * contrário de uma coisa para se ver de fora.
-     *
-     * Ler a fila não leva limite, como nenhuma leitura leva: um
-     * moderador a percorrer denúncias depressa está a trabalhar, e um
-     * limite aqui dava-lhe um erro por isso.
-     */
-    fastify.get<{ Querystring: ListReportsQueryDto }>(
-        '/reports',
-        {
-            preHandler: [
-                fastify.authenticate,
-                fastify.authorize('forum:moderate'),
-            ],
-            schema: { querystring: listReportsQuerySchema },
-        },
-        controller.listReports.bind(controller),
-    );
-
-    fastify.post<{ Params: ReportIdParamDto; Body: HandleReportDto }>(
-        '/reports/:reportId',
-        {
-            preHandler: [
-                fastify.authenticate,
-                fastify.authorize('forum:moderate'),
-            ],
-            schema: { params: reportIdParamSchema, body: handleReportSchema },
-        },
-        controller.handleReport.bind(controller),
     );
 
     /**

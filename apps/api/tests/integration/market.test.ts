@@ -29,6 +29,8 @@ describe('o mercado', () => {
     let membro: { token: string; id: string };
     /** Não joga lá de maneira nenhuma. */
     let estranha: { token: string; id: string };
+    /** Modera. Não joga lá, e não precisa: moderar não é anunciar. */
+    let moderadora: { token: string; id: string };
 
     let serverId: string;
     let outroServerId: string;
@@ -139,6 +141,20 @@ describe('o mercado', () => {
         dona = await registar(`md${marca}`);
         membro = await registar(`mm${marca}`);
         estranha = await registar(`me${marca}`);
+        moderadora = await registar(`mo${marca}`);
+
+        /**
+         * O cargo de moderador não se alcança pela API: dá-se pela base
+         * de dados, que é como se dá na vida real.
+         */
+        const cargo = await prisma.role.findFirstOrThrow({
+            where: { slug: 'moderator' },
+            select: { id: true },
+        });
+
+        await prisma.userRole.create({
+            data: { userId: moderadora.id, roleId: cargo.id },
+        });
 
         serverId = await criarServidor(dona.token, `Mercado ${marca}`);
         outroServerId = await criarServidor(estranha.token, `Outro ${marca}`);
@@ -512,6 +528,300 @@ describe('o mercado', () => {
         const outro = await listar(outroServerId);
 
         expect(outro.listings.some((um) => um.id === listingId)).toBe(false);
+    });
+
+    describe('denunciar um anúncio', () => {
+        /**
+         * A razão de esta metade existir. Um anúncio é texto escrito
+         * por uma pessoa à vista de todas as outras, e antes disto não
+         * havia por onde ninguém se queixar de um.
+         */
+        const denunciar = (
+            quem: { token: string },
+            listingId: string,
+            corpo: Record<string, unknown> = {},
+        ) =>
+            app.inject({
+                method: 'POST',
+                url: `/api/v1/market/listings/${listingId}/reports`,
+                headers: auth(quem.token),
+                payload: { reason: 'spam', ...corpo },
+            });
+
+        const fila = async (quem: { token: string }, query = '') => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: `/api/v1/moderation/reports${query}`,
+                headers: auth(quem.token),
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+
+            return resposta.json() as {
+                reports: {
+                    id: string;
+                    reason: string;
+                    note: string | null;
+                    status: string;
+                    target: {
+                        kind: string;
+                        openId: string;
+                        title: string | null;
+                        body: string | null;
+                        isRemoved: boolean;
+                    };
+                }[];
+                pages: number;
+                total: number;
+            };
+        };
+
+        /**
+         * Procura na fila, da última página para trás.
+         *
+         * A fila é ordenada pelas mais velhas primeiro, por isso o que
+         * este teste acabou de criar está no fim. Ler só a última
+         * página não chega: as outras suites correm contra a mesma base
+         * de dados e vão empurrando denúncias para o meio, e o que se
+         * procura cai na penúltima sem nada ter mudado. Foi o que
+         * aconteceu — passava sozinho e falhava na suite inteira.
+         */
+        const PAGINAS_A_PROCURAR = 5;
+
+        const procurarNaFila = async (
+            quem: { token: string },
+            condicao: (denuncia: { id: string; target: { openId: string; kind: string } }) => boolean,
+            status = 'open',
+        ) => {
+            const primeira = await fila(quem, `?status=${status}`);
+
+            for (
+                let pagina = primeira.pages;
+                pagina > 0 && pagina > primeira.pages - PAGINAS_A_PROCURAR;
+                pagina -= 1
+            ) {
+                const lida = await fila(
+                    quem,
+                    `?status=${status}&page=${pagina}`,
+                );
+
+                const encontrada = lida.reports.find(condicao);
+
+                if (encontrada !== undefined) {
+                    return encontrada;
+                }
+            }
+
+            return undefined;
+        };
+
+        const daFila = (quem: { token: string }, listingId: string) =>
+            procurarNaFila(
+                quem,
+                (denuncia) => denuncia.target.openId === listingId,
+            );
+
+        it('deixa denunciar o anúncio de outra pessoa', async () => {
+            const listingId = await anunciarOk(dona, serverId, {
+                title: `Vem para o meu servidor ${marca}`,
+            });
+
+            const resposta = await denunciar(membro, listingId, {
+                note: 'Isto é publicidade a outro servidor.',
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(201);
+
+            const naFila = await daFila(moderadora, listingId);
+
+            expect(naFila?.target.kind).toBe('listing');
+            expect(naFila?.target.title).toContain('Vem para o meu servidor');
+            expect(naFila?.note).toContain('publicidade');
+        });
+
+        it('não deixa denunciar o que é nosso', async () => {
+            const listingId = await anunciarOk(dona, serverId);
+
+            const resposta = await denunciar(dona, listingId);
+
+            expect(resposta.statusCode).toBe(409);
+            expect(resposta.json().code).toBe('IS_YOURS');
+        });
+
+        it('não deixa denunciar duas vezes a mesma coisa', async () => {
+            const listingId = await anunciarOk(dona, serverId);
+
+            expect((await denunciar(membro, listingId)).statusCode).toBe(201);
+
+            const segunda = await denunciar(membro, listingId);
+
+            expect(segunda.statusCode).toBe(409);
+            expect(segunda.json().code).toBe('ALREADY_REPORTED');
+        });
+
+        it('não deixa denunciar um anúncio que já foi retirado', async () => {
+            const listingId = await anunciarOk(dona, serverId);
+
+            await app.inject({
+                method: 'DELETE',
+                url: `/api/v1/market/listings/${listingId}`,
+                headers: auth(dona.token),
+            });
+
+            const resposta = await denunciar(membro, listingId);
+
+            expect(resposta.statusCode).toBe(404);
+            expect(resposta.json().code).toBe('TARGET_NOT_FOUND');
+        });
+
+        /**
+         * A fila é **uma só**, e quem modera só o mercado tem de a
+         * poder abrir. O cargo semeado traz as duas permissões, por
+         * isso este caso precisa de um cargo feito à mão: sem ele,
+         * apertar a fila a `forum:moderate` não partia nada, e era
+         * exactamente o que um mutante mostrou.
+         */
+        it('deixa ver a fila a quem só modera o mercado', async () => {
+            const soDoMercado = await registar(`ms${marca}`);
+
+            const permissao = await prisma.permission.findFirstOrThrow({
+                where: { scope: 'marketplace', slug: 'moderate' },
+                select: { id: true },
+            });
+
+            const cargo = await prisma.role.create({
+                data: {
+                    scope: 'global',
+                    slug: `market_moderator_${marca}`,
+                    name: 'Moderador do mercado',
+                    description: 'Só o mercado, para este teste.',
+                    rolePermissions: {
+                        create: { permissionId: permissao.id },
+                    },
+                },
+                select: { id: true },
+            });
+
+            await prisma.userRole.create({
+                data: { userId: soDoMercado.id, roleId: cargo.id },
+            });
+
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/moderation/reports',
+                headers: auth(soDoMercado.token),
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(200);
+        });
+
+        it('não deixa ver a fila a quem não modera', async () => {
+            const resposta = await app.inject({
+                method: 'GET',
+                url: '/api/v1/moderation/reports',
+                headers: auth(membro.token),
+            });
+
+            expect(resposta.statusCode).toBe(403);
+        });
+
+        /**
+         * A fila é **uma só**. Uma denúncia do fórum e uma do mercado
+         * aparecem na mesma lista, porque são o mesmo trabalho: duas
+         * filas seriam duas caixas de entrada, e a segunda ficava por
+         * abrir.
+         */
+        it('mistura o fórum e o mercado na mesma fila', async () => {
+            const listingId = await anunciarOk(dona, serverId);
+
+            await denunciar(membro, listingId);
+
+            const topico = await app.inject({
+                method: 'POST',
+                url: '/api/v1/forum/topics',
+                headers: auth(dona.token),
+                payload: {
+                    title: `Uma pergunta para denunciar ${marca}`,
+                    body: 'O corpo da pergunta, com tamanho suficiente.',
+                },
+            });
+
+            expect(topico.statusCode, topico.body).toBe(201);
+
+            const topicId = topico.json().id as string;
+
+            const denunciaDoForum = await app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/topics/${topicId}/reports`,
+                headers: auth(membro.token),
+                payload: { reason: 'off_topic' },
+            });
+
+            expect(denunciaDoForum.statusCode, denunciaDoForum.body).toBe(201);
+
+            /**
+             * As duas procuradas pelo alvo, e não pelo que calhar estar
+             * na última página: o que se prova é que a mesma fila
+             * devolve as duas espécies, e não onde elas caem.
+             */
+            const doMercado = await procurarNaFila(
+                moderadora,
+                (denuncia) => denuncia.target.openId === listingId,
+            );
+
+            const doForum = await procurarNaFila(
+                moderadora,
+                (denuncia) => denuncia.target.openId === topicId,
+            );
+
+            expect(doMercado?.target.kind).toBe('listing');
+            expect(doForum?.target.kind).toBe('topic');
+        });
+
+        /**
+         * Quem modera o mercado retira o anúncio, e a denúncia que
+         * pedia isso fecha-se sozinha: deixá-la aberta mandava o
+         * moderador seguinte olhar para um anúncio que já não existe.
+         */
+        it('deixa quem modera retirar, e fecha a denúncia', async () => {
+            const listingId = await anunciarOk(dona, serverId, {
+                title: `Para ser retirado ${marca}`,
+            });
+
+            await denunciar(membro, listingId);
+
+            const retirada = await app.inject({
+                method: 'DELETE',
+                url: `/api/v1/market/listings/${listingId}`,
+                headers: auth(moderadora.token),
+            });
+
+            expect(retirada.statusCode, retirada.body).toBe(204);
+
+            const abertas = await daFila(moderadora, listingId);
+
+            expect(abertas).toBeUndefined();
+
+            const tratadas = await procurarNaFila(
+                moderadora,
+                (denuncia) => denuncia.target.openId === listingId,
+                'acted',
+            );
+
+            expect(tratadas?.target.isRemoved).toBe(true);
+        });
+
+        it('não deixa quem não modera retirar o anúncio de outra pessoa', async () => {
+            const listingId = await anunciarOk(dona, serverId);
+
+            const resposta = await app.inject({
+                method: 'DELETE',
+                url: `/api/v1/market/listings/${listingId}`,
+                headers: auth(membro.token),
+            });
+
+            expect(resposta.statusCode).toBe(403);
+        });
     });
 
     it('recusa a lista de um servidor que não existe', async () => {
