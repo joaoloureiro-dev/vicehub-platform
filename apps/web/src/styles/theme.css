@@ -4192,3 +4192,21 @@ button.link:hover {
     display: grid;
     gap: 12px;
 }
+
+/*
+ * A nota de quem vende, ao lado do nome.
+ *
+ * Discreta de propósito: é um sinal a acompanhar o nome, e não um
+ * título. Numa grelha de vinte e quatro anúncios, vinte e quatro notas
+ * do tamanho do preço davam um ecrã de estrelas.
+ */
+.nota-do-vendedor {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+}
+
+.nota-do-vendedor .quantas {
+    margin-left: 3px;
+    color: var(--faint);
+}

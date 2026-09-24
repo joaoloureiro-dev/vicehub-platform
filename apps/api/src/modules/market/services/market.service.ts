@@ -76,6 +76,23 @@ export class MarketService {
             this.marketRepository.countListings(filtro),
         ]);
 
+        /**
+         * As notas dos vendedores desta página, de uma vez.
+         *
+         * Depois da lista e não ao mesmo tempo, porque só depois de a
+         * ler se sabe de quem são os anúncios — e uma consulta para a
+         * página toda é melhor do que vinte e quatro.
+         */
+        const notas = await this.marketRepository.ratingsFor(
+            [
+                ...new Set(
+                    linhas.flatMap((linha) =>
+                        linha.seller === null ? [] : [linha.seller.id],
+                    ),
+                ),
+            ],
+        );
+
         return {
             servidor,
             anuncios: linhas.map((linha) => ({
@@ -86,6 +103,10 @@ export class MarketService {
                 imageUrl: linha.imageUrl,
                 status: linha.status,
                 seller: linha.seller,
+                sellerRating:
+                    linha.seller === null
+                        ? null
+                        : notas.get(linha.seller.id) ?? null,
                 createdAt: linha.created_at,
                 updatedAt: linha.updated_at,
             })),
@@ -105,11 +126,20 @@ export class MarketService {
             );
         }
 
+        const notas =
+            anuncio.sellerId === null
+                ? new Map()
+                : await this.marketRepository.ratingsFor([anuncio.sellerId]);
+
         return {
             id: anuncio.id,
             category: anuncio.category,
             title: anuncio.title,
             body: anuncio.body,
+            sellerRating:
+                anuncio.sellerId === null
+                    ? null
+                    : notas.get(anuncio.sellerId) ?? null,
             price: anuncio.price,
             imageUrl: anuncio.imageUrl,
             status: anuncio.status,

@@ -1,5 +1,6 @@
 import {
     ANUNCIOS_POR_PAGINA,
+    arredondarMedia,
     MembershipStatus,
     MembershipType,
     type CategoriaDeAnuncio,
@@ -86,6 +87,48 @@ export class MarketRepository {
                 server: { select: { name: true } },
             },
         });
+    }
+
+    /**
+     * A nota de cada um destes vendedores.
+     *
+     * Uma consulta para a página toda, e não uma por anúncio: vinte e
+     * quatro anúncios de vinte e quatro pessoas dariam vinte e quatro
+     * idas à base de dados para desenhar uma grelha.
+     *
+     * O arredondamento vem do package de dados, o mesmo que a soma em
+     * memória usa. Sem isso, a mesma pessoa aparecia com `4,3` no
+     * perfil e `4,333` no mercado.
+     */
+    async ratingsFor(
+        sellerIds: readonly string[],
+    ): Promise<Map<string, { average: number; count: number }>> {
+        if (sellerIds.length === 0) {
+            return new Map();
+        }
+
+        const linhas = await this.database.marketReview.groupBy({
+            by: ['subjectId'],
+            where: { subjectId: { in: [...sellerIds] }, is_deleted: false },
+            _avg: { rating: true },
+            _count: { _all: true },
+        });
+
+        return new Map(
+            linhas.flatMap((linha) =>
+                linha.subjectId === null || linha._avg.rating === null
+                    ? []
+                    : [
+                        [
+                            linha.subjectId,
+                            {
+                                average: arredondarMedia(linha._avg.rating),
+                                count: linha._count._all,
+                            },
+                        ] as const,
+                    ],
+            ),
+        );
     }
 
     findServer(serverId: string) {

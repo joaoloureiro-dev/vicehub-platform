@@ -6,6 +6,7 @@ import {
     separadorDoIdioma,
 } from '../../treasury/treasury.types.js';
 import type { AnuncioResumo } from '../market.api.js';
+import { NotaDoVendedor } from './nota-do-vendedor.js';
 
 /**
  * Um anúncio na grelha do mercado.
@@ -52,6 +53,8 @@ export const CartaoDeAnuncio = ({ anuncio }: { anuncio: AnuncioResumo }) => {
                 {t.mercado.categorias[anuncio.category]}
                 {' · '}
                 {anuncio.seller?.username ?? t.mercado.contaApagada}
+                {' '}
+                <NotaDoVendedor nota={anuncio.sellerRating} />
                 {anuncio.status === 'open'
                     ? ''
                     : ` · ${t.mercado.estados[anuncio.status]}`}

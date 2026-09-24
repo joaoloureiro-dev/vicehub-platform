@@ -21,6 +21,7 @@ import { Denunciar } from '../../moderation/denunciar.js';
 import { reportListing } from '../../moderation/moderation.api.js';
 import { openConversation } from '../conversas.api.js';
 import { FormularioDeAvaliacao } from '../components/formulario-de-avaliacao.js';
+import { NotaDoVendedor } from '../components/nota-do-vendedor.js';
 
 /**
  * Um anúncio.
@@ -122,6 +123,8 @@ export const AnuncioPage = () => {
                     ) : (
                         t.mercado.contaApagada
                     )}
+                    {' '}
+                    <NotaDoVendedor nota={dados.sellerRating} />
                 </p>
 
                 {/*
