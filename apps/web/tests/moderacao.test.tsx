@@ -9,7 +9,7 @@ import { pt } from '../src/i18n/pt.js';
 import { es } from '../src/i18n/es.js';
 import { fr } from '../src/i18n/fr.js';
 import { criarTools } from '../src/i18n/tools.js';
-import { DenunciasPage } from '../src/forum/pages/denuncias.page.js';
+import { FilaPage } from '../src/moderation/pages/fila.page.js';
 import { TopicPage } from '../src/forum/pages/topic.page.js';
 import { sessionStore } from '../src/lib/session.js';
 import { montarEcra, t } from './helpers.js';
@@ -51,18 +51,20 @@ const TOPICO = {
 
 const DENUNCIA = {
     id: 'denuncia-1',
-    reason: 'spam' as const,
+    reason: 'spam' as 'spam' | 'abuse' | 'off_topic' | 'other',
     note: 'Isto é publicidade a um servidor.',
     status: 'open' as const,
     createdAt: '2026-09-21T09:00:00.000Z',
     handledAt: null,
     reporter: { id: 'u4', username: 'carla', avatarUrl: null },
     target: {
-        kind: 'topic' as const,
-        topicId: 'topico-1',
-        title: 'Vem para o meu servidor',
-        body: null,
-        author: { id: 'u2', username: 'ana', avatarUrl: null },
+        kind: 'topic' as 'topic' | 'reply' | 'listing',
+        openId: 'topico-1',
+        title: 'Vem para o meu servidor' as string | null,
+        body: null as string | null,
+        author: { id: 'u2', username: 'ana', avatarUrl: null } as
+            | { id: string; username: string; avatarUrl: null }
+            | null,
         isRemoved: false,
     },
 };
@@ -99,11 +101,11 @@ const responder = (opcoes: {
             return Promise.resolve(opcoes.aoDenunciar ?? json(201, { id: 'd2' }));
         }
 
-        if (endereco.includes('/forum/reports/')) {
+        if (endereco.includes('/moderation/reports/')) {
             return Promise.resolve(json(204, null));
         }
 
-        if (endereco.includes('/forum/reports')) {
+        if (endereco.includes('/moderation/reports')) {
             if (opcoes.filaRecusada === true) {
                 return Promise.resolve(json(403, { code: 'FORBIDDEN' }));
             }
@@ -147,9 +149,9 @@ const montarTopico = () =>
 const montarFila = () =>
     montarEcra(
         <AuthProvider>
-            <DenunciasPage />
+            <FilaPage />
         </AuthProvider>,
-        '/forum/denuncias',
+        '/moderacao',
     );
 
 afterEach(() => {
@@ -166,17 +168,17 @@ describe('denunciar uma publicação', () => {
         montarTopico();
 
         /** Um botão para a pergunta e outro para a resposta. */
-        const botoes = await screen.findAllByText(t.forum.denunciar);
+        const botoes = await screen.findAllByText(t.moderacao.denunciar);
 
         expect(botoes).toHaveLength(2);
 
         await userEvent.click(botoes[0] as HTMLElement);
-        await userEvent.click(screen.getByLabelText(t.forum.razoes.abuse));
+        await userEvent.click(screen.getByLabelText(t.moderacao.razoes.abuse));
         await userEvent.type(
-            screen.getByLabelText(t.forum.notaDaDenuncia),
+            screen.getByLabelText(t.moderacao.notaDaDenuncia),
             'O terceiro parágrafo é uma ameaça.',
         );
-        await userEvent.click(screen.getByText(t.forum.enviarDenuncia));
+        await userEvent.click(screen.getByText(t.moderacao.enviarDenuncia));
 
         await waitFor(() => {
             const pedido = chamadas.mock.calls.find(([endereco]) =>
@@ -200,14 +202,14 @@ describe('denunciar uma publicação', () => {
         montarTopico();
 
         await userEvent.click(
-            (await screen.findAllByText(t.forum.denunciar))[0] as HTMLElement,
+            (await screen.findAllByText(t.moderacao.denunciar))[0] as HTMLElement,
         );
-        await userEvent.click(screen.getByText(t.forum.enviarDenuncia));
+        await userEvent.click(screen.getByText(t.moderacao.enviarDenuncia));
 
-        await screen.findByText(t.forum.denunciaRecebida);
+        await screen.findByText(t.moderacao.denunciaRecebida);
 
         /** O da resposta continua lá; o da pergunta é que se foi. */
-        expect(screen.queryAllByText(t.forum.denunciar)).toHaveLength(1);
+        expect(screen.queryAllByText(t.moderacao.denunciar)).toHaveLength(1);
     });
 
     /**
@@ -225,11 +227,11 @@ describe('denunciar uma publicação', () => {
         montarTopico();
 
         await userEvent.click(
-            (await screen.findAllByText(t.forum.denunciar))[0] as HTMLElement,
+            (await screen.findAllByText(t.moderacao.denunciar))[0] as HTMLElement,
         );
-        await userEvent.click(screen.getByText(t.forum.enviarDenuncia));
+        await userEvent.click(screen.getByText(t.moderacao.enviarDenuncia));
 
-        await screen.findByText(t.forum.denunciaRecebida);
+        await screen.findByText(t.moderacao.denunciaRecebida);
     });
 
     /**
@@ -248,7 +250,7 @@ describe('denunciar uma publicação', () => {
         await screen.findByText(TOPICO.title);
 
         /** Só o da resposta, que é de outra pessoa. */
-        expect(screen.queryAllByText(t.forum.denunciar)).toHaveLength(1);
+        expect(screen.queryAllByText(t.moderacao.denunciar)).toHaveLength(1);
     });
 });
 
@@ -258,9 +260,11 @@ describe('a fila de quem modera', () => {
 
         montarFila();
 
-        expect(await screen.findByText(t.forum.razoes.spam)).toBeDefined();
+        expect(await screen.findByText(t.moderacao.razoes.spam)).toBeDefined();
         expect(screen.getByText(DENUNCIA.note)).toBeDefined();
-        expect(screen.getByText(DENUNCIA.target.title)).toBeDefined();
+        expect(
+            screen.getByText(DENUNCIA.target.title as string),
+        ).toBeDefined();
         expect(screen.getByText('carla')).toBeDefined();
     });
 
@@ -271,11 +275,11 @@ describe('a fila de quem modera', () => {
 
         montarFila();
 
-        await userEvent.click(await screen.findByText(t.forum.marcarSemRazao));
+        await userEvent.click(await screen.findByText(t.moderacao.marcarSemRazao));
 
         await waitFor(() => {
             const pedido = chamadas.mock.calls.find(([endereco]) =>
-                String(endereco).includes('/forum/reports/denuncia-1'),
+                String(endereco).includes('/moderation/reports/denuncia-1'),
             );
 
             expect(pedido).toBeDefined();
@@ -298,7 +302,7 @@ describe('a fila de quem modera', () => {
 
         montarFila();
 
-        expect(await screen.findByText(t.forum.filaNegada)).toBeDefined();
+        expect(await screen.findByText(t.moderacao.filaNegada)).toBeDefined();
     });
 
     it('diz que não há nada quando a fila está vazia', async () => {
@@ -306,7 +310,7 @@ describe('a fila de quem modera', () => {
 
         montarFila();
 
-        expect(await screen.findByText(t.forum.filaVazia)).toBeDefined();
+        expect(await screen.findByText(t.moderacao.filaVazia)).toBeDefined();
     });
 });
 
@@ -323,6 +327,66 @@ describe('a fila de quem modera', () => {
  * botão. Fica fixado nos quatro idiomas, porque a colisão aparece na
  * tradução e não no código.
  */
+/**
+ * A fila é uma só para as duas superfícies, e o ecrã tem de mostrar
+ * um anúncio tão bem como uma pergunta — incluindo a ligação para o
+ * sítio certo, que sai do `kind` e não de adivinhar qual dos
+ * identificadores veio preenchido.
+ */
+describe('a fila mostra anúncios ao lado de perguntas', () => {
+    /**
+     * O nome da espécie está no meio de um parágrafo com o autor ao
+     * lado, por isso procura-se pelo texto do parágrafo inteiro.
+     */
+    const noParagrafo = (procurado: string) =>
+        screen.findByText(
+            (_, elemento) =>
+                elemento?.tagName === 'P'
+                && (elemento.textContent ?? '').includes(procurado),
+        );
+
+    const ANUNCIO_DENUNCIADO = {
+        ...DENUNCIA,
+        id: 'denuncia-2',
+        reason: 'spam' as const,
+        target: {
+            kind: 'listing' as const,
+            openId: 'anuncio-1',
+            title: 'Vem para o meu servidor',
+            body: 'Nada a ver com este sítio.',
+            author: { id: 'u5', username: 'diogo', avatarUrl: null },
+            isRemoved: false,
+        },
+    };
+
+    it('nomeia a espécie do alvo e abre-o no sítio certo', async () => {
+        vi.stubGlobal(
+            'fetch',
+            responder({ modera: true, denuncias: [ANUNCIO_DENUNCIADO] }),
+        );
+
+        montarFila();
+
+        expect(await noParagrafo(t.moderacao.alvos.listing)).toBeDefined();
+
+        const abrir = screen.getByText(t.moderacao.verOAlvo);
+
+        expect(abrir.getAttribute('href')).toBe('/mercado/anuncio-1');
+    });
+
+    it('e uma pergunta continua a abrir no fórum', async () => {
+        vi.stubGlobal('fetch', responder({ modera: true }));
+
+        montarFila();
+
+        expect(await noParagrafo(t.moderacao.alvos.topic)).toBeDefined();
+
+        expect(
+            screen.getByText(t.moderacao.verOAlvo).getAttribute('href'),
+        ).toBe('/forum/topico-1');
+    });
+});
+
 describe('os rótulos da fila não se repetem', () => {
     it.each([
         ['en', en],
@@ -330,7 +394,7 @@ describe('os rótulos da fila não se repetem', () => {
         ['es', es],
         ['fr', fr],
     ])('em %s, nenhuma aba tem o nome de um botão', (idioma, dicionario) => {
-        const d = dicionario(criarTools(idioma as 'en')).forum;
+        const d = dicionario(criarTools(idioma as 'en')).moderacao;
 
         const abas = Object.values(d.filaEstados);
         const botoes = [d.marcarTratada, d.marcarSemRazao];

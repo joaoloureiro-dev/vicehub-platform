@@ -546,7 +546,7 @@ describe('o fórum', () => {
                 reporter: { username: string } | null;
                 target: {
                     kind: string;
-                    topicId: string;
+                    openId: string;
                     title: string | null;
                     body: string | null;
                     isRemoved: boolean;
@@ -564,7 +564,7 @@ describe('o fórum', () => {
         ): Promise<Fila> => {
             const resposta = await app.inject({
                 method: 'GET',
-                url: `/api/v1/forum/reports?status=${status}&page=${pagina}`,
+                url: `/api/v1/moderation/reports?status=${status}&page=${pagina}`,
                 headers: auth(quem.token),
             });
 
@@ -615,7 +615,7 @@ describe('o fórum', () => {
 
             const aberta = await fila(moderador);
             const nossa = aberta.reports.find(
-                (denuncia) => denuncia.target.topicId === topicId,
+                (denuncia) => denuncia.target.openId === topicId,
             );
 
             expect(nossa).toBeDefined();
@@ -639,7 +639,7 @@ describe('o fórum', () => {
             const nossa = aberta.reports.find(
                 (denuncia) =>
                     denuncia.target.kind === 'reply'
-                    && denuncia.target.topicId === topicId,
+                    && denuncia.target.openId === topicId,
             );
 
             expect(nossa).toBeDefined();
@@ -653,7 +653,7 @@ describe('o fórum', () => {
         it('recusa a fila a quem não modera', async () => {
             const resposta = await app.inject({
                 method: 'GET',
-                url: '/api/v1/forum/reports',
+                url: '/api/v1/moderation/reports',
                 headers: auth(ana.token),
             });
 
@@ -729,14 +729,14 @@ describe('o fórum', () => {
 
             const abertasAntes = await quantas(moderador);
             const nossa = (await fila(moderador)).reports.find(
-                (denuncia) => denuncia.target.topicId === topicId,
+                (denuncia) => denuncia.target.openId === topicId,
             );
 
             expect(nossa).toBeDefined();
 
             const decisao = await app.inject({
                 method: 'POST',
-                url: `/api/v1/forum/reports/${nossa?.id as string}`,
+                url: `/api/v1/moderation/reports/${nossa?.id as string}`,
                 headers: auth(moderador.token),
                 payload: { outcome: 'dismissed' },
             });
@@ -765,13 +765,13 @@ describe('o fórum', () => {
 
             const aberta = await fila(moderador);
             const nossa = aberta.reports.find(
-                (denuncia) => denuncia.target.topicId === topicId,
+                (denuncia) => denuncia.target.openId === topicId,
             );
 
             const decidir = () =>
                 app.inject({
                     method: 'POST',
-                    url: `/api/v1/forum/reports/${nossa?.id as string}`,
+                    url: `/api/v1/moderation/reports/${nossa?.id as string}`,
                     headers: auth(moderador.token),
                     payload: { outcome: 'acted' },
                 });
@@ -797,7 +797,7 @@ describe('o fórum', () => {
 
             const abertasAntes = await quantas(moderador);
             const nossa = (await fila(moderador)).reports.find(
-                (denuncia) => denuncia.target.topicId === topicId,
+                (denuncia) => denuncia.target.openId === topicId,
             );
 
             expect(nossa).toBeDefined();

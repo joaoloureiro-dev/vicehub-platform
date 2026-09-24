@@ -16,6 +16,10 @@ import {
     type ServerIdParamDto,
     type UpdateListingDto,
 } from './schemas/market.schemas.js';
+import {
+    createReportSchema,
+    type CreateReportDto,
+} from '../moderation/schemas/moderation.schemas.js';
 
 interface MarketRoutesOptions {
     controller: MarketController;
@@ -133,6 +137,46 @@ const marketRoutes: FastifyPluginAsync<MarketRoutesOptions> = async (
         controller.close.bind(controller),
     );
 
+    /**
+     * Denunciar um anúncio.
+     *
+     * Pede sessão e `marketplace:post`, como anunciar: denunciar é uma
+     * coisa que se faz com uma conta, e tirar a permissão a quem abusa
+     * do mercado tira-lhe as duas — o que é o que se quer, porque quem
+     * enche o mercado de lixo também enche a fila de denúncias.
+     *
+     * E leva o limite da escrita, pela mesma razão: é um pedido que
+     * qualquer pessoa registada pode fazer em massa, e a fila de um
+     * moderador é precisamente o sítio onde isso magoa.
+     */
+    fastify.post<{ Params: ListingIdParamDto; Body: CreateReportDto }>(
+        '/listings/:listingId/reports',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            config: limiteDeEscrita,
+            schema: {
+                params: listingIdParamSchema,
+                body: createReportSchema,
+            },
+        },
+        controller.report.bind(controller),
+    );
+
+    /**
+     * Retirar exige `marketplace:post` e mais nada.
+     *
+     * Quem pode retirar **este** anúncio é decidido no serviço: quem o
+     * escreveu, sempre, e quem tiver `marketplace:moderate`. Exigir a
+     * permissão de moderação à entrada fecharia a porta a quem quer
+     * apagar o que ele próprio anunciou — que é o caso mais comum de
+     * todos.
+     *
+     * O preHandler continua a ser preciso: é ele que reúne as
+     * permissões do pedido, e é delas que o serviço sabe quem modera.
+     */
     fastify.delete<{ Params: ListingIdParamDto }>(
         '/listings/:listingId',
         {

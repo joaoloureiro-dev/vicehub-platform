@@ -21,8 +21,13 @@ import { orPlaceholder, type LegalOperator } from './operator.js';
  * A terceira é a da moderação. Uma plataforma onde o público escreve
  * tem de dizer, nos termos que vinculam quem escreve, como é que o que
  * lá está é vigiado: o que se pode denunciar, quem decide, o que pode
- * acontecer ao texto, e o que fazer quem discordar. Está escrito a
- * partir do que o fórum faz, e não do que seria bonito dizer.
+ * acontecer ao texto, e o que fazer quem discordar.
+ *
+ * Esta cláusula **conta as superfícies**, e essa frase tem de
+ * acompanhar o código: nasceu a dizer que o fórum era o único sítio
+ * onde o público escreve, e passou a mentir no dia em que o mercado
+ * abriu. Há um teste que a liga à lista de alvos de denúncia, e que
+ * falha quando aparecer a terceira superfície.
  *
  * Em inglês e só em inglês, pela razão que está na política de
  * privacidade.
@@ -143,15 +148,15 @@ export const termsDocument = (operator: LegalOperator): LegalDocument => {
             {
                 heading: 'Reporting, and how we moderate',
                 body: [
-                    'The forum is the one place where anyone with an account writes text that everyone can read, so this section says exactly how that is policed.',
-                    'Every question and every reply carries a Report button for anyone signed in who did not write it. You pick one of four reasons — spam or advertising, insults or harassment or hate, nothing to do with the question, or something else — and you can add a short note. Reports go into a queue that moderators work through oldest first.',
+                    'There are two places on ViceHub where anyone with an account writes text that everyone else can read: the forum, and the market on each server. This section says exactly how both are policed, and it is the same answer for both.',
+                    'Every question, every reply and every listing carries a Report button for anyone signed in who did not write it. You pick one of four reasons — spam or advertising, insults or harassment or hate, not what the place is for, or something else — and you can add a short note. Every report goes into one queue, which moderators work through oldest first.',
                     'A person decides, not a program. Nothing is removed automatically, and no ranking or filter hides a post before a moderator has read it.',
                 ],
                 list: [
-                    'A moderator can remove a question or a reply, and can close a question to new replies. Closing is the milder tool: what is already written stays readable, and only the conversation stops.',
-                    'Removing hides the text from the forum. It does not erase the record that something was there, because a moderator has to be able to explain a decision afterwards.',
+                    'A moderator can remove a question, a reply or a listing, and can close a question to new replies. Closing is the milder tool: what is already written stays readable, and only the conversation stops.',
+                    'Removing hides the text from where it was. It does not erase the record that something was there, because a moderator has to be able to explain a decision afterwards.',
                     'The account that wrote it keeps its account. Suspension is a separate, heavier step, and it is covered in the section on ending an account.',
-                    `If your post was removed or your question closed and you think it was wrong, write to ${email}. Say what was removed and why you disagree; a different person will look at it, and if we got it wrong we put it back.`,
+                    `If something of yours was removed, or your question was closed, and you think it was wrong, write to ${email}. Say what was removed and why you disagree; a different person will look at it, and if we got it wrong we put it back.`,
                     'We do not tell you who reported you. Telling would turn reporting into a reason for retaliation, and the person who reported is not the person who decided.',
                 ],
             },

@@ -363,7 +363,7 @@ describe('apagar a própria conta', () => {
                 password: PASSWORD,
             });
 
-            const ficou = await prisma.forumReport.findUniqueOrThrow({
+            const ficou = await prisma.report.findUniqueOrThrow({
                 where: { id: denuncia.json().id as string },
                 select: { note: true, reporterId: true, status: true },
             });

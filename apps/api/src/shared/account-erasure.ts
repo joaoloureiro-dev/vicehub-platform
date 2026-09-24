@@ -367,7 +367,7 @@ export const eraseAccount = async (
          * exactamente o que isto existe para impedir. A razão fica,
          * porque é uma de quatro e não diz nada sobre quem a escolheu.
          */
-        database.forumReport.updateMany({
+        database.report.updateMany({
             where: { reporterId: userId },
             data: {
                 note: null,

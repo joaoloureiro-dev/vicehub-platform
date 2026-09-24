@@ -22,6 +22,7 @@ import billingModule from './modules/billing/billing.module.js';
 import eventModule from './modules/events/event.module.js';
 import forumModule from './modules/forum/forum.module.js';
 import marketModule from './modules/market/market.module.js';
+import moderationModule from './modules/moderation/moderation.module.js';
 import treasuryModule from './modules/treasury/treasury.module.js';
 
 import authenticatePlugin from './plugins/auth/authenticate.plugin.js';
@@ -228,6 +229,11 @@ export const buildApp = (): ViceHubFastifyInstance => {
      * `marketplace:post`, e jogar no servidor em causa.
      */
     void app.register(marketModule);
+
+    /**
+     * A fila de quem modera: uma só para o fórum e para o mercado.
+     */
+    void app.register(moderationModule);
 
     /**
      * A interface, quando é a API a servi-la.

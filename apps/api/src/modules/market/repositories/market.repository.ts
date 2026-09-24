@@ -226,17 +226,36 @@ export class MarketRepository {
      * Retirar é apagar em brando, como no fórum: a linha fica, e deixa
      * de se ver. Sem isso, um anúncio apagado levava consigo a prova de
      * que alguma vez existiu.
+     *
+     * E fecha, na mesma transação, as denúncias que pediam isto. Quem
+     * retira já agiu; deixá-las abertas mandava o moderador seguinte
+     * olhar para um anúncio que já não existe.
      */
     softDeleteListing(listingId: string, porQuem: string, quando: Date) {
-        return this.database.marketListing.update({
-            where: { id: listingId },
-            data: {
-                is_deleted: true,
-                deleted_at: quando,
-                updated_by: porQuem,
-                version: { increment: 1 },
-            },
-            select: { id: true },
+        return this.database.$transaction(async (tx) => {
+            const anuncio = await tx.marketListing.update({
+                where: { id: listingId },
+                data: {
+                    is_deleted: true,
+                    deleted_at: quando,
+                    updated_by: porQuem,
+                    version: { increment: 1 },
+                },
+                select: { id: true },
+            });
+
+            await tx.report.updateMany({
+                where: { listingId, status: 'open' },
+                data: {
+                    status: 'acted',
+                    handled_at: quando,
+                    handled_by: porQuem,
+                    updated_by: porQuem,
+                    version: { increment: 1 },
+                },
+            });
+
+            return anuncio;
         });
     }
 }

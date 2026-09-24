@@ -17,14 +17,16 @@ import {
     removeListing,
     updateListing,
 } from '../market.api.js';
+import { Denunciar } from '../../moderation/denunciar.js';
+import { reportListing } from '../../moderation/moderation.api.js';
 
 /**
  * Um anúncio.
  *
- * Quem o escreveu vê os botões; toda a gente vê o anúncio. Não há aqui
- * moderação nenhuma de propósito: enquanto não houver por onde alguém
- * se queixar de um anúncio, um botão de retirar nas mãos de um
- * moderador seria a metade que não serve para nada.
+ * Quem o escreveu vê os botões de mexer; quem não o escreveu vê o de
+ * denunciar. As duas coisas não coexistem de propósito — denunciar o
+ * que é nosso é trabalho posto na fila de outra pessoa por nada, e a
+ * API recusa-o na mesma.
  */
 export const AnuncioPage = () => {
     const t = useT();
@@ -146,6 +148,18 @@ export const AnuncioPage = () => {
             </article>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
+
+            {/*
+              Denunciar é para quem não escreveu isto, e só com sessão
+              aberta: sem conta não há a quem responder, e a API pede-a.
+            */}
+            {user !== null && !eMeu ? (
+                <Denunciar
+                    aoDenunciar={(razao, nota) =>
+                        reportListing(dados.id, razao, nota)
+                    }
+                />
+            ) : null}
 
             {eMeu && aEditar ? (
                 <FormularioDeAnuncio

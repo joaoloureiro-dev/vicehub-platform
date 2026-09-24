@@ -1,13 +1,18 @@
 import { useState, type FormEvent } from 'react';
 
-import { ApiError } from '../../lib/api.js';
-import { mensagemDoErro } from '../../lib/erro.js';
-import { Alert } from '../../auth/components/alert.js';
-import { useT } from '../../i18n/i18n.js';
-import { NOTA_MAXIMA, type RazaoDaDenuncia } from '../forum.api.js';
+import { ApiError } from '../lib/api.js';
+import { mensagemDoErro } from '../lib/erro.js';
+import { Alert } from '../auth/components/alert.js';
+import { useT } from '../i18n/i18n.js';
+import { NOTA_MAXIMA, type RazaoDaDenuncia } from './moderation.api.js';
 
 /**
  * Denunciar uma publicação.
+ *
+ * Um componente só para as três espécies de alvo — uma pergunta, uma
+ * resposta, um anúncio. Quem denuncia está a fazer a mesma coisa nos
+ * três sítios, e três formulários seriam três listas de razões a
+ * divergir.
  *
  * Um botão que abre um formulário pequeno, e não um clique único. A
  * razão é o que o moderador lê primeiro, e pedi-la aqui é a diferença
@@ -41,7 +46,7 @@ export const Denunciar = ({ aoDenunciar }: DenunciarProps) => {
      * pela API, e mostrar o formulário outra vez convidava-a a tentar.
      */
     if (feito) {
-        return <p className="hint denuncia-feita">{t.forum.denunciaRecebida}</p>;
+        return <p className="hint denuncia-feita">{t.moderacao.denunciaRecebida}</p>;
     }
 
     if (!aberto) {
@@ -53,7 +58,7 @@ export const Denunciar = ({ aoDenunciar }: DenunciarProps) => {
                     setAberto(true);
                 }}
             >
-                {t.forum.denunciar}
+                {t.moderacao.denunciar}
             </button>
         );
     }
@@ -77,7 +82,7 @@ export const Denunciar = ({ aoDenunciar }: DenunciarProps) => {
                 return;
             }
 
-            setErro(mensagemDoErro(falha, t, t.forum.naoFoiPossivelDenunciar));
+            setErro(mensagemDoErro(falha, t, t.moderacao.naoFoiPossivelDenunciar));
         } finally {
             setAEnviar(false);
         }
@@ -86,7 +91,7 @@ export const Denunciar = ({ aoDenunciar }: DenunciarProps) => {
     return (
         <form className="denuncia" onSubmit={enviar}>
             <fieldset>
-                <legend>{t.forum.porqueDenuncias}</legend>
+                <legend>{t.moderacao.porqueDenuncias}</legend>
 
                 {RAZOES.map((uma) => (
                     <label key={uma} className="escolha">
@@ -99,13 +104,13 @@ export const Denunciar = ({ aoDenunciar }: DenunciarProps) => {
                                 setRazao(uma);
                             }}
                         />
-                        <span>{t.forum.razoes[uma]}</span>
+                        <span>{t.moderacao.razoes[uma]}</span>
                     </label>
                 ))}
             </fieldset>
 
             <label className="field">
-                <span>{t.forum.notaDaDenuncia}</span>
+                <span>{t.moderacao.notaDaDenuncia}</span>
                 <textarea
                     rows={3}
                     maxLength={NOTA_MAXIMA}
@@ -120,7 +125,7 @@ export const Denunciar = ({ aoDenunciar }: DenunciarProps) => {
 
             <div className="grupo-botoes">
                 <button className="primary" type="submit" disabled={aEnviar}>
-                    {aEnviar ? t.comum.aGuardar : t.forum.enviarDenuncia}
+                    {aEnviar ? t.comum.aGuardar : t.moderacao.enviarDenuncia}
                 </button>
                 <button
                     className="btn-secondary"
@@ -130,7 +135,7 @@ export const Denunciar = ({ aoDenunciar }: DenunciarProps) => {
                         setErro(null);
                     }}
                 >
-                    {t.forum.cancelarDenuncia}
+                    {t.moderacao.cancelarDenuncia}
                 </button>
             </div>
         </form>

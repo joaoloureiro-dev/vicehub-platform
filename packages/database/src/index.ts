@@ -27,8 +27,8 @@ export {
     DistributionStatus,
     EventParticipantStatus,
     EventStatus,
-    ForumReportReason,
-    ForumReportStatus,
+    ReportReason,
+    ReportStatus,
     MembershipStatus,
     MembershipType,
     Prisma,
@@ -120,6 +120,14 @@ export type {
     CategoriaDeAnuncio,
     EstadoDeAnuncio,
 } from './market.js';
+
+export {
+    ALVOS_DE_DENUNCIA,
+    SUPERFICIES_PUBLICAS,
+    SUPERFICIE_DO_ALVO,
+} from './reports.js';
+
+export type { AlvoDeDenuncia } from './reports.js';
 
 export {
     REPUTACAO_POR_FALTA,

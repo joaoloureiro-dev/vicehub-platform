@@ -39,7 +39,7 @@ import { ForumPage } from './forum/pages/forum.page.js';
 import { MercadoPage } from './market/pages/mercado.page.js';
 import { AnuncioPage } from './market/pages/anuncio.page.js';
 import { TopicPage } from './forum/pages/topic.page.js';
-import { DenunciasPage } from './forum/pages/denuncias.page.js';
+import { FilaPage } from './moderation/pages/fila.page.js';
 
 /** Um "a carregar" que já sabe falar o idioma escolhido. */
 const Carregando = () => {
@@ -275,7 +275,11 @@ export const App = () => (
             <Route path="/mercado/:listingId" element={<AnuncioPage />} />
 
             <Route path="/forum" element={<ForumPage />} />
-            <Route path="/forum/denuncias" element={<DenunciasPage />} />
+            {/*
+              A fila de quem modera não vive debaixo do fórum: é uma só
+              para o fórum e para o mercado.
+            */}
+            <Route path="/moderacao" element={<FilaPage />} />
             <Route path="/forum/:topicId" element={<TopicPage />} />
 
             {/*

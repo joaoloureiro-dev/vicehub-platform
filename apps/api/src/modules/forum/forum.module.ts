@@ -7,6 +7,8 @@ import { ForumController } from './controllers/forum.controller.js';
 import { ForumRepository } from './repositories/forum.repository.js';
 import { ForumService } from './services/forum.service.js';
 import forumRoutes from './forum.routes.js';
+import { ModerationController } from '../moderation/controllers/moderation.controller.js';
+import { construirReportService } from '../moderation/moderation.module.js';
 
 /**
  * Módulo do fórum.
@@ -15,8 +17,16 @@ import forumRoutes from './forum.routes.js';
  * **branda**: quem está a pedir consegue moderar? O `authorize` responde
  * a isso recusando o pedido, e aqui a resposta não pode ser uma recusa —
  * quem não modera continua a poder retirar o que escreveu.
+ *
+ * E leva o serviço das denúncias, que é de outro módulo: o botão de
+ * denunciar vive ao lado do que se denuncia, mas a fila é uma só para
+ * as duas superfícies onde o público escreve. O controlador da
+ * moderação vem com ele para as recusas de uma denúncia darem o mesmo
+ * código HTTP venham elas de onde vierem.
  */
 const forumModule: FastifyPluginAsync = async (fastify) => {
+    const reportService = construirReportService(fastify.prisma);
+
     await fastify.register(forumRoutes, {
         prefix: '/api/v1/forum',
         controller: new ForumController(
@@ -24,6 +34,8 @@ const forumModule: FastifyPluginAsync = async (fastify) => {
             new AuthorizationService(
                 new AuthorizationRepository(fastify.prisma),
             ),
+            reportService,
+            new ModerationController(reportService),
         ),
     });
 };

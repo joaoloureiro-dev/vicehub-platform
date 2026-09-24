@@ -673,6 +673,45 @@ export const pt = (p: Tools): Messages => ({
             n === 1 ? '1 coisa à venda' : `${n} coisas à venda`,
     },
 
+    moderacao: {
+        denunciar: 'Denunciar',
+        porqueDenuncias: 'O que é que está mal?',
+        razoes: {
+            spam: 'Spam ou publicidade',
+            abuse: 'Insultos, perseguição ou ódio',
+            off_topic: 'Não é para isto que este sítio serve',
+            other: 'Outra coisa',
+        },
+        notaDaDenuncia: 'O que um moderador deve saber (opcional)',
+        enviarDenuncia: 'Enviar a denúncia',
+        cancelarDenuncia: 'Cancelar',
+        denunciaRecebida: 'Denunciado. Um moderador vai ver.',
+        naoFoiPossivelDenunciar: 'Não foi possível enviar a denúncia.',
+        naoFoiPossivelDecidir: 'Não foi possível guardar isso.',
+        filaTitulo: 'Denúncias',
+        filaSub: 'As mais velhas primeiro, porque são as que esperam há mais tempo.',
+        filaEstados: {
+            open: 'À espera',
+            acted: 'Tratadas',
+            dismissed: 'Sem razão',
+        },
+        filaVazia: 'Não há nada aqui.',
+        filaNegada: 'Isto é para moderadores.',
+        irParaFila: 'Denúncias à espera',
+        marcarTratada: 'Tratei disto',
+        marcarSemRazao: 'Dispensar',
+        jaTratada: 'Tratada.',
+        jaDispensada: 'Vista, sem nada de mal.',
+        /** As três espécies de coisa que caem na fila. */
+        alvos: {
+            topic: 'Uma pergunta',
+            reply: 'Uma resposta',
+            listing: 'Um anúncio',
+        },
+
+        verOAlvo: 'Abrir',
+    },
+
     forum: {
 
         titulo: 'Fórum',
@@ -723,60 +762,7 @@ export const pt = (p: Tools): Messages => ({
 
         entrarParaPerguntar: 'Entra para fazer uma pergunta',
 
-        denunciar: 'Denunciar',
-
-        porqueDenuncias: 'O que é que está mal?',
-
-        razoes: {
-            spam: 'Spam ou publicidade',
-            abuse: 'Insultos, perseguição ou ódio',
-            off_topic: 'Não tem nada a ver com a pergunta',
-            other: 'Outra coisa',
-        },
-
-        notaDaDenuncia: 'O que um moderador deve saber (opcional)',
-
-        enviarDenuncia: 'Enviar a denúncia',
-
-        cancelarDenuncia: 'Cancelar',
-
-        denunciaRecebida: 'Denunciado. Um moderador vai ver.',
-
-        naoFoiPossivelDenunciar: 'Não foi possível enviar a denúncia.',
-
-        irParaFila: 'Denúncias à espera',
-
-        filaTitulo: 'Denúncias',
-
-        filaSub: 'As mais velhas primeiro, porque são as que esperam há mais tempo.',
-
-        filaEstados: {
-            open: 'À espera',
-            acted: 'Tratadas',
-            dismissed: 'Sem razão',
-        },
-
-        filaVazia: 'Não há nada aqui.',
-
-        filaNegada: 'Isto é para moderadores.',
-
-        alvoPergunta: 'Uma pergunta',
-
-        alvoResposta: 'Uma resposta',
-
         jaRetirado: 'Já foi retirado.',
-
-        verNoForum: 'Ler no fórum',
-
-        marcarTratada: 'Tratei disto',
-
-        marcarSemRazao: 'Dispensar',
-
-        jaTratada: 'Tratada.',
-
-        jaDispensada: 'Vista, sem nada de mal.',
-
-        naoFoiPossivelDecidir: 'Não foi possível guardar isso.',
 
     },
 

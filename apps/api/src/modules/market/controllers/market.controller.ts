@@ -11,6 +11,10 @@ import type {
     UpdateListingDto,
 } from '../schemas/market.schemas.js';
 import type { MarketService } from '../services/market.service.js';
+import type { AuthorizationService } from '../../authorization/services/authorization.service.js';
+import type { ModerationController } from '../../moderation/controllers/moderation.controller.js';
+import type { ReportService } from '../../moderation/services/report.service.js';
+import type { CreateReportDto } from '../../moderation/schemas/moderation.schemas.js';
 import type { AnuncioResumo, AnuncioView } from '../types/market.types.js';
 
 /** Que resposta HTTP corresponde a cada recusa. */
@@ -47,7 +51,63 @@ const inteiroEmJson = (anuncio: AnuncioView) => ({
 });
 
 export class MarketController {
-    constructor(private readonly marketService: MarketService) { }
+    constructor(
+        private readonly marketService: MarketService,
+        private readonly authorizationService: AuthorizationService,
+        private readonly reportService: ReportService,
+        private readonly moderationController: ModerationController,
+    ) { }
+
+    /**
+     * Se quem faz o pedido pode moderar o mercado.
+     *
+     * Passa pelo serviço de autorização e não por uma leitura directa
+     * do conjunto: é lá que está a regra de o `system:manage` cobrir
+     * tudo, e lê-lo à mão aqui escrevia essa regra uma segunda vez.
+     *
+     * As permissões já foram reunidas pelo preHandler deste pedido, por
+     * isso isto não custa uma consulta.
+     */
+    private podeModerar(request: FastifyRequest): boolean {
+        const reunidas = request.effectivePermissions;
+
+        if (reunidas === null) {
+            return false;
+        }
+
+        return this.authorizationService.hasPermissions(reunidas, [
+            'marketplace:moderate',
+        ]);
+    }
+
+    /**
+     * Denunciar um anúncio.
+     *
+     * O botão vive ao lado do anúncio; a fila é do módulo da moderação,
+     * e é a mesma do fórum.
+     */
+    async report(
+        request: FastifyRequest<{
+            Params: ListingIdParamDto;
+            Body: CreateReportDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            const criada = await this.reportService.report(
+                { kind: 'listing', id: request.params.listingId },
+                user.id,
+                request.body.reason,
+                request.body.note,
+            );
+
+            reply.code(201).send(criada);
+        } catch (erro: unknown) {
+            this.moderationController.responder(erro, reply);
+        }
+    }
 
     async list(
         request: FastifyRequest<{
@@ -171,6 +231,7 @@ export class MarketController {
             await this.marketService.removeListing(
                 request.params.listingId,
                 user.id,
+                this.podeModerar(request),
             );
 
             reply.code(204).send();

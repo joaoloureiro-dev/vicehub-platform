@@ -79,7 +79,7 @@ export const ForumPage = () => {
                 <p>{t.forum.subtitulo}</p>
                 {moderacao.data?.canModerate === true ? (
                     <p className="hint">
-                        <Link to="/forum/denuncias">{t.forum.irParaFila}</Link>
+                        <Link to="/moderacao">{t.moderacao.irParaFila}</Link>
                     </p>
                 ) : null}
             </header>

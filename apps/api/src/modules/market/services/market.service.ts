@@ -47,10 +47,11 @@ interface Filtro {
  * interessa: sem ela, uma conta feita há dois minutos anunciava nos
  * trezentos servidores da plataforma ao mesmo tempo.
  *
- * Mexer num anúncio é de quem o escreveu e de mais ninguém. Não há aqui
- * moderação — a fila de denúncias do fórum ainda não sabe destes
- * anúncios, e dar um botão de retirar a quem não tem por onde receber
- * uma queixa era construir a metade que não serve.
+ * Editar e fechar são de quem escreveu, e de mais ninguém. **Retirar é
+ * das duas pessoas**: de quem escreveu, sempre, e de quem modera — e
+ * essa segunda só passou a existir quando a fila de denúncias aprendeu
+ * a receber anúncios. Um botão de retirar nas mãos de um moderador sem
+ * ninguém ter por onde se queixar era a metade que não serve.
  */
 export class MarketService {
     constructor(private readonly marketRepository: MarketRepository) { }
@@ -235,6 +236,7 @@ export class MarketService {
     async removeListing(
         listingId: string,
         userId: string,
+        podeModerar = false,
         agora: Date = new Date(),
     ): Promise<void> {
         const anuncio = await this.marketRepository.findListing(listingId);
@@ -246,7 +248,7 @@ export class MarketService {
             );
         }
 
-        if (anuncio.sellerId !== userId) {
+        if (!podeModerar && anuncio.sellerId !== userId) {
             throw new MarketError('NOT_YOURS', 'Este anúncio não é teu.');
         }
 
