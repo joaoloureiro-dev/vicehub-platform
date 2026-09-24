@@ -19,12 +19,18 @@ export const ALVOS_DE_DENUNCIA = [
     'reply',
     'listing',
     'message',
+    'review',
 ] as const;
 
 export type AlvoDeDenuncia = (typeof ALVOS_DE_DENUNCIA)[number];
 
 /** As superfícies onde se escreve, cada uma com as suas espécies de alvo. */
-export const SUPERFICIES = ['forum', 'market', 'messages'] as const;
+export const SUPERFICIES = [
+    'forum',
+    'market',
+    'messages',
+    'reviews',
+] as const;
 
 export type Superficie = (typeof SUPERFICIES)[number];
 
@@ -41,6 +47,7 @@ export const SUPERFICIE_DO_ALVO: Readonly<Record<AlvoDeDenuncia, Superficie>> =
         reply: 'forum',
         listing: 'market',
         message: 'messages',
+        review: 'reviews',
     };
 
 /**
@@ -62,6 +69,7 @@ export const QUEM_LE: Readonly<Record<Superficie, 'todos' | 'as duas pessoas'>> 
         forum: 'todos',
         market: 'todos',
         messages: 'as duas pessoas',
+        reviews: 'todos',
     };
 
 /** As superfícies onde qualquer pessoa com conta escreve à vista de todos. */

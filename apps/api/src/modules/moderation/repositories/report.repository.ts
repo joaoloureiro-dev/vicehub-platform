@@ -21,12 +21,16 @@ const AUTOR = {
 export type Alvo = { kind: AlvoDeDenuncia; id: string };
 
 const COLUNA: Readonly<
-    Record<AlvoDeDenuncia, 'topicId' | 'replyId' | 'listingId' | 'messageId'>
+    Record<
+        AlvoDeDenuncia,
+        'topicId' | 'replyId' | 'listingId' | 'messageId' | 'reviewId'
+    >
 > = {
     topic: 'topicId',
     reply: 'replyId',
     listing: 'listingId',
     message: 'messageId',
+    review: 'reviewId',
 };
 
 /** A coluna do alvo, preenchida, para um `where` ou um `create`. */
@@ -71,14 +75,25 @@ export class ReportRepository {
                 : { id: anuncio.id, authorId: anuncio.sellerId };
         }
 
-        const mensagem = await this.database.marketMessage.findFirst({
+        if (alvo.kind === 'message') {
+            const mensagem = await this.database.marketMessage.findFirst({
+                where: { id: alvo.id, is_deleted: false },
+                select: { id: true, senderId: true },
+            });
+
+            return mensagem === null
+                ? null
+                : { id: mensagem.id, authorId: mensagem.senderId };
+        }
+
+        const avaliacao = await this.database.marketReview.findFirst({
             where: { id: alvo.id, is_deleted: false },
-            select: { id: true, senderId: true },
+            select: { id: true, reviewerId: true },
         });
 
-        return mensagem === null
+        return avaliacao === null
             ? null
-            : { id: mensagem.id, authorId: mensagem.senderId };
+            : { id: avaliacao.id, authorId: avaliacao.reviewerId };
     }
 
     /**
@@ -199,6 +214,22 @@ export class ReportRepository {
                         body: true,
                         is_deleted: true,
                         sender: AUTOR,
+                    },
+                },
+                /**
+                 * Uma avaliação é pública, por isso vem inteira — a
+                 * nota, o que se escreveu, e o anúncio de que fala. É
+                 * disso que um moderador precisa para decidir se aquilo
+                 * é uma opinião ou um ataque.
+                 */
+                review: {
+                    select: {
+                        id: true,
+                        rating: true,
+                        body: true,
+                        is_deleted: true,
+                        reviewer: AUTOR,
+                        listing: { select: { id: true, title: true } },
                     },
                 },
             },

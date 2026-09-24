@@ -594,6 +594,18 @@ export const en = (p: Tools) => ({
 
         MESSAGE_NOT_FOUND: 'This message does not exist or was removed.',
 
+        REVIEW_NOT_FOUND: 'This review does not exist or was removed.',
+
+        NOT_SOLD: 'Only a sale that happened can be reviewed.',
+
+        NO_DEAL: 'Only someone who talked to the seller about this listing can review it.',
+
+        ALREADY_REVIEWED: 'You have already reviewed this sale.',
+
+        ALREADY_REPLIED: 'You have already replied to this review.',
+
+        SELLER_GONE: 'Whoever listed this no longer has an account.',
+
         IS_YOURS: 'This is yours. Use the remove button instead.',
 
     },
@@ -738,6 +750,47 @@ export const en = (p: Tools) => ({
         voltarAsConversas: 'Back to messages',
 
         sobreOAnuncio: 'About',
+
+        avaliacoes: 'Reviews',
+
+        /** O que se lê antes de avaliar alguém. */
+        avaliacaoPublica:
+            'Reviews are public. Only someone who talked to the seller about a listing that was sold can leave one, and the seller gets one reply.',
+
+        semAvaliacoes: 'No reviews yet.',
+
+        naoCarregouAvaliacoes: 'The reviews could not be loaded.',
+
+        avaliar: 'Review this sale',
+
+        aNota: 'Your rating',
+
+        oComentario: 'What happened (optional)',
+
+        enviarAvaliacao: 'Leave the review',
+
+        naoFoiPossivelAvaliar: 'The review could not be left.',
+
+        responderAvaliacao: 'Reply',
+
+        aResposta: 'Your reply, once',
+
+        enviarResposta: 'Send the reply',
+
+        naoFoiPossivelResponder: 'The reply could not be sent.',
+
+        retirarAvaliacao: 'Remove',
+
+        naoFoiPossivelRetirarAvaliacao: 'The review could not be removed.',
+
+        media: (nota: number, quantas: number) =>
+            quantas === 1
+                ? `${nota} out of 5, from 1 review`
+                : `${nota} out of 5, from ${quantas} reviews`,
+
+        estrelas: (nota: number) => `${nota} out of 5`,
+
+        sobreAVenda: 'About',
     },
 
     moderacao: {
@@ -775,6 +828,7 @@ export const en = (p: Tools) => ({
             reply: 'A reply',
             listing: 'A listing',
             message: 'A message in a conversation',
+            review: 'A review',
         },
 
         verOAlvo: 'Open it',

@@ -20,6 +20,7 @@ import {
 import { Denunciar } from '../../moderation/denunciar.js';
 import { reportListing } from '../../moderation/moderation.api.js';
 import { openConversation } from '../conversas.api.js';
+import { FormularioDeAvaliacao } from '../components/formulario-de-avaliacao.js';
 
 /**
  * Um anúncio.
@@ -150,6 +151,22 @@ export const AnuncioPage = () => {
             </article>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
+
+            {/*
+              Avaliar aparece depois de a venda ter acontecido, e só a
+              quem não vendeu. Quem pode mesmo avaliar decide-se na
+              API — é preciso ter falado com quem vendeu —, e a recusa
+              é dita por palavras em vez de esconder o botão: esconder
+              deixava a pessoa sem saber o que lhe faltava.
+            */}
+            {!eMeu && dados.status === 'sold' && user !== null ? (
+                <FormularioDeAvaliacao
+                    listingId={dados.id}
+                    aoAvaliar={() => {
+                        anuncio.reload();
+                    }}
+                />
+            ) : null}
 
             {/*
               Perguntar é o que faltava para o mercado servir para

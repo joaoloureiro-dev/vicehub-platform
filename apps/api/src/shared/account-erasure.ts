@@ -374,6 +374,31 @@ export const eraseAccount = async (
         }),
 
         /**
+         * O que escreveu numa avaliação, e o que respondeu a uma.
+         *
+         * Duas escritas e não uma, porque são dois papéis: numa linha
+         * esta pessoa é quem avaliou, noutra é quem foi avaliado, e o
+         * texto de cada uma é dela.
+         *
+         * **A nota fica.** É a média de outra pessoa, construída ao
+         * longo de muitas vendas, e apagá-la porque um comprador saiu
+         * mudava o histórico de quem não fez nada.
+         */
+        database.marketReview.updateMany({
+            where: { reviewerId: userId, is_deleted: false },
+            data: { body: null, updated_by: userId, version: { increment: 1 } },
+        }),
+
+        database.marketReview.updateMany({
+            where: { subjectId: userId, is_deleted: false },
+            data: {
+                reply: null,
+                updated_by: userId,
+                version: { increment: 1 },
+            },
+        }),
+
+        /**
          * E a nota que a pessoa escreveu numa denúncia, pela mesma
          * razão: é texto dela.
          *

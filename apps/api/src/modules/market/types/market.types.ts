@@ -109,3 +109,27 @@ export interface ConversaResumo {
     } | null;
     updatedAt: Date;
 }
+
+/** Uma avaliação, como se lê num perfil. */
+export interface AvaliacaoView {
+    id: string;
+    rating: number;
+    body: string | null;
+    /** A resposta de quem foi avaliado, quando a escreveu. */
+    reply: string | null;
+    repliedAt: Date | null;
+    reviewer: VendedorView | null;
+    listing: { id: string; title: string };
+    createdAt: Date;
+}
+
+/**
+ * A média e a contagem.
+ *
+ * `null` quando não há avaliações — e não zero, que é uma nota péssima
+ * e não é o que quem ainda não vendeu nada merece.
+ */
+export interface ResumoDeAvaliacoes {
+    average: number | null;
+    count: number;
+}

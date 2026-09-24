@@ -8,6 +8,10 @@ import marketRoutes from './market.routes.js';
 import { ConversationController } from './controllers/conversation.controller.js';
 import { ConversationRepository } from './repositories/conversation.repository.js';
 import { ConversationService } from './services/conversation.service.js';
+import { ReviewController } from './controllers/review.controller.js';
+import { ReviewRepository } from './repositories/review.repository.js';
+import { ReviewService } from './services/review.service.js';
+import { UserLookup } from './repositories/user-lookup.js';
 import { AuthorizationRepository } from '../authorization/repositories/authorization.repository.js';
 import { AuthorizationService } from '../authorization/services/authorization.service.js';
 import { ModerationController } from '../moderation/controllers/moderation.controller.js';
@@ -43,6 +47,13 @@ const marketModule: FastifyPluginAsync = async (fastify) => {
             new ConversationService(
                 new ConversationRepository(fastify.prisma),
             ),
+            autorizacao,
+            reportService,
+            new ModerationController(reportService),
+        ),
+        reviews: new ReviewController(
+            new ReviewService(new ReviewRepository(fastify.prisma)),
+            new UserLookup(fastify.prisma),
             autorizacao,
             reportService,
             new ModerationController(reportService),

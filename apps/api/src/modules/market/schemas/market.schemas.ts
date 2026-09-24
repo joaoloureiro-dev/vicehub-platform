@@ -5,6 +5,9 @@ import {
     ANUNCIO_CORPO_MINIMO,
     ANUNCIO_TITULO_MAXIMO,
     ANUNCIO_TITULO_MINIMO,
+    AVALIACAO_MAXIMA,
+    AVALIACAO_MINIMA,
+    AVALIACAO_TEXTO_MAXIMO,
     CATEGORIAS_DE_ANUNCIO,
     MENSAGEM_MAXIMA,
     ESTADOS_DE_ANUNCIO,
@@ -169,3 +172,42 @@ export type MessageIdParamDto = z.infer<typeof messageIdParamSchema>;
 export type ListConversationsQueryDto = z.infer<
     typeof listConversationsQuerySchema
 >;
+
+/**
+ * Uma avaliação.
+ *
+ * A nota é obrigatória e o texto não: uma estrela sem explicação
+ * continua a ser uma avaliação, e obrigar a escrever fazia com que
+ * quem não quer escrever não avaliasse.
+ */
+export const createReviewSchema = z.object({
+    rating: z.coerce
+        .number()
+        .int()
+        .min(AVALIACAO_MINIMA)
+        .max(AVALIACAO_MAXIMA),
+    body: texto(1, AVALIACAO_TEXTO_MAXIMO, 'O comentário').optional(),
+});
+
+/** A resposta de quem foi avaliado. Uma só, e escrita. */
+export const replyToReviewSchema = z.object({
+    body: texto(1, AVALIACAO_TEXTO_MAXIMO, 'A resposta'),
+});
+
+export const reviewIdParamSchema = z.object({
+    reviewId: z.string().uuid(),
+});
+
+export const usernameParamSchema = z.object({
+    username: z.string().min(1).max(64),
+});
+
+export const listReviewsQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+});
+
+export type CreateReviewDto = z.infer<typeof createReviewSchema>;
+export type ReplyToReviewDto = z.infer<typeof replyToReviewSchema>;
+export type ReviewIdParamDto = z.infer<typeof reviewIdParamSchema>;
+export type UsernameParamDto = z.infer<typeof usernameParamSchema>;
+export type ListReviewsQueryDto = z.infer<typeof listReviewsQuerySchema>;

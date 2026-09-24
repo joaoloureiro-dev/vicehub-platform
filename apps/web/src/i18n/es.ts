@@ -572,6 +572,18 @@ export const es = (p: Tools): Messages => ({
 
         MESSAGE_NOT_FOUND: 'Este mensaje no existe o fue retirado.',
 
+        REVIEW_NOT_FOUND: 'Esta valoración no existe o fue retirada.',
+
+        NOT_SOLD: 'Solo se valora una venta que ocurrió.',
+
+        NO_DEAL: 'Solo valora quien habló con quien vendió sobre este anuncio.',
+
+        ALREADY_REVIEWED: 'Ya valoraste esta venta.',
+
+        ALREADY_REPLIED: 'Ya respondiste a esta valoración.',
+
+        SELLER_GONE: 'Quien lo anunció ya no tiene cuenta.',
+
         IS_YOURS: 'Esto es tuyo. Usa el botón de retirar.',
 
     },
@@ -704,6 +716,46 @@ export const es = (p: Tools): Messages => ({
         voltarAsConversas: 'Volver a los mensajes',
 
         sobreOAnuncio: 'Sobre',
+
+        avaliacoes: 'Valoraciones',
+
+        avaliacaoPublica:
+            'Las valoraciones son públicas. Solo valora quien habló con quien vendió sobre un anuncio que se vendió, y quien vendió tiene derecho a una respuesta.',
+
+        semAvaliacoes: 'Todavía no hay valoraciones.',
+
+        naoCarregouAvaliacoes: 'No se pudieron cargar las valoraciones.',
+
+        avaliar: 'Valorar esta venta',
+
+        aNota: 'Tu nota',
+
+        oComentario: 'Qué pasó (opcional)',
+
+        enviarAvaliacao: 'Dejar la valoración',
+
+        naoFoiPossivelAvaliar: 'No se pudo dejar la valoración.',
+
+        responderAvaliacao: 'Responder',
+
+        aResposta: 'Tu respuesta, una sola',
+
+        enviarResposta: 'Enviar la respuesta',
+
+        naoFoiPossivelResponder: 'No se pudo enviar la respuesta.',
+
+        retirarAvaliacao: 'Retirar',
+
+        naoFoiPossivelRetirarAvaliacao: 'No se pudo retirar la valoración.',
+
+        media: (nota: number, quantas: number) =>
+            quantas === 1
+                ? `${nota} de 5, de 1 valoración`
+                : `${nota} de 5, de ${quantas} valoraciones`,
+
+        estrelas: (nota: number) => `${nota} de 5`,
+
+        sobreAVenda: 'Sobre',
     },
 
     moderacao: {
@@ -741,6 +793,7 @@ export const es = (p: Tools): Messages => ({
             reply: 'Una respuesta',
             listing: 'Un anuncio',
             message: 'Un mensaje en una conversación',
+            review: 'Una valoración',
         },
 
         verOAlvo: 'Abrir',

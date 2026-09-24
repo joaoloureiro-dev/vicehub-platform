@@ -581,6 +581,18 @@ export const fr = (p: Tools): Messages => ({
 
         MESSAGE_NOT_FOUND: 'Ce message n\'existe pas ou a été retiré.',
 
+        REVIEW_NOT_FOUND: 'Cet avis n\'existe pas ou a été retiré.',
+
+        NOT_SOLD: 'Seule une vente qui a eu lieu peut être évaluée.',
+
+        NO_DEAL: 'Seule une personne qui a parlé au vendeur de cette annonce peut l\'évaluer.',
+
+        ALREADY_REVIEWED: 'Tu as déjà évalué cette vente.',
+
+        ALREADY_REPLIED: 'Tu as déjà répondu à cet avis.',
+
+        SELLER_GONE: 'La personne qui a publié ceci n\'a plus de compte.',
+
         IS_YOURS: 'Ceci est à toi. Utilise plutôt le bouton retirer.',
 
     },
@@ -714,6 +726,46 @@ export const fr = (p: Tools): Messages => ({
         voltarAsConversas: 'Retour aux messages',
 
         sobreOAnuncio: 'À propos de',
+
+        avaliacoes: 'Avis',
+
+        avaliacaoPublica:
+            'Les avis sont publics. Seule une personne qui a parlé au vendeur d\'une annonce vendue peut en laisser un, et le vendeur a droit à une réponse.',
+
+        semAvaliacoes: 'Pas encore d\'avis.',
+
+        naoCarregouAvaliacoes: 'Les avis n\'ont pas pu être chargés.',
+
+        avaliar: 'Évaluer cette vente',
+
+        aNota: 'Ta note',
+
+        oComentario: 'Ce qui s\'est passé (facultatif)',
+
+        enviarAvaliacao: 'Laisser l\'avis',
+
+        naoFoiPossivelAvaliar: 'L\'avis n\'a pas pu être laissé.',
+
+        responderAvaliacao: 'Répondre',
+
+        aResposta: 'Ta réponse, une seule',
+
+        enviarResposta: 'Envoyer la réponse',
+
+        naoFoiPossivelResponder: 'La réponse n\'a pas pu être envoyée.',
+
+        retirarAvaliacao: 'Retirer',
+
+        naoFoiPossivelRetirarAvaliacao: 'L\'avis n\'a pas pu être retiré.',
+
+        media: (nota: number, quantas: number) =>
+            quantas === 1
+                ? `${nota} sur 5, sur 1 avis`
+                : `${nota} sur 5, sur ${quantas} avis`,
+
+        estrelas: (nota: number) => `${nota} sur 5`,
+
+        sobreAVenda: 'À propos de',
     },
 
     moderacao: {
@@ -751,6 +803,7 @@ export const fr = (p: Tools): Messages => ({
             reply: 'Une réponse',
             listing: 'Une annonce',
             message: 'Un message dans une conversation',
+            review: 'Un avis',
         },
 
         verOAlvo: 'Ouvrir',

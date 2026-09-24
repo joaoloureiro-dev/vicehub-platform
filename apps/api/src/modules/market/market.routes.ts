@@ -3,10 +3,16 @@ import type { FastifyPluginAsync } from 'fastify';
 import { env } from '../../config/env.js';
 import type { MarketController } from './controllers/market.controller.js';
 import type { ConversationController } from './controllers/conversation.controller.js';
+import type { ReviewController } from './controllers/review.controller.js';
 import {
     closeListingSchema,
     conversationIdParamSchema,
     createListingSchema,
+    createReviewSchema,
+    listReviewsQuerySchema,
+    replyToReviewSchema,
+    reviewIdParamSchema,
+    usernameParamSchema,
     listConversationsQuerySchema,
     messageIdParamSchema,
     sendMessageSchema,
@@ -17,6 +23,11 @@ import {
     type CloseListingDto,
     type ConversationIdParamDto,
     type CreateListingDto,
+    type CreateReviewDto,
+    type ListReviewsQueryDto,
+    type ReplyToReviewDto,
+    type ReviewIdParamDto,
+    type UsernameParamDto,
     type ListConversationsQueryDto,
     type MessageIdParamDto,
     type SendMessageDto,
@@ -33,6 +44,7 @@ import {
 interface MarketRoutesOptions {
     controller: MarketController;
     conversations: ConversationController;
+    reviews: ReviewController;
 }
 
 /**
@@ -50,7 +62,7 @@ interface MarketRoutesOptions {
  */
 const marketRoutes: FastifyPluginAsync<MarketRoutesOptions> = async (
     fastify,
-    { controller, conversations },
+    { controller, conversations, reviews },
 ) => {
 
     /**
@@ -299,6 +311,96 @@ const marketRoutes: FastifyPluginAsync<MarketRoutesOptions> = async (
             schema: { params: messageIdParamSchema },
         },
         conversations.removeMessage.bind(conversations),
+    );
+
+    /**
+     * As avaliações de uma venda.
+     *
+     * **Ler não pede sessão**, ao contrário das conversas: uma
+     * avaliação é pública, e quem está a decidir se compra a alguém
+     * pode nem ter conta. É essa a diferença entre esta superfície e a
+     * das mensagens, e é por isso que as duas não podem partilhar a
+     * mesma regra.
+     */
+    fastify.get<{ Params: UsernameParamDto; Querystring: ListReviewsQueryDto }>(
+        '/people/:username/reviews',
+        {
+            schema: {
+                params: usernameParamSchema,
+                querystring: listReviewsQuerySchema,
+            },
+        },
+        reviews.list.bind(reviews),
+    );
+
+    fastify.post<{ Params: ListingIdParamDto; Body: CreateReviewDto }>(
+        '/listings/:listingId/reviews',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            config: limiteDeEscrita,
+            schema: {
+                params: listingIdParamSchema,
+                body: createReviewSchema,
+            },
+        },
+        reviews.create.bind(reviews),
+    );
+
+    /**
+     * A resposta de quem foi avaliado. Uma só — a segunda é recusada
+     * pelo serviço, e não por não haver rota.
+     */
+    fastify.post<{ Params: ReviewIdParamDto; Body: ReplyToReviewDto }>(
+        '/reviews/:reviewId/reply',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            config: limiteDeEscrita,
+            schema: {
+                params: reviewIdParamSchema,
+                body: replyToReviewSchema,
+            },
+        },
+        reviews.reply.bind(reviews),
+    );
+
+    fastify.post<{ Params: ReviewIdParamDto; Body: CreateReportDto }>(
+        '/reviews/:reviewId/reports',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            config: limiteDeEscrita,
+            schema: {
+                params: reviewIdParamSchema,
+                body: createReportSchema,
+            },
+        },
+        reviews.report.bind(reviews),
+    );
+
+    /**
+     * Retirar uma avaliação é de quem a escreveu e de quem modera —
+     * **nunca de quem foi avaliado**. Isso decide-se no serviço; aqui
+     * pede-se a permissão de participar no mercado, como em tudo o
+     * resto.
+     */
+    fastify.delete<{ Params: ReviewIdParamDto }>(
+        '/reviews/:reviewId',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            schema: { params: reviewIdParamSchema },
+        },
+        reviews.remove.bind(reviews),
     );
 };
 

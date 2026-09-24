@@ -108,6 +108,10 @@ export {
     ANUNCIO_CORPO_MINIMO,
     ANUNCIO_TITULO_MAXIMO,
     ANUNCIO_TITULO_MINIMO,
+    AVALIACAO_MAXIMA,
+    AVALIACAO_MINIMA,
+    AVALIACAO_TEXTO_MAXIMO,
+    AVALIACOES_POR_PAGINA,
     CATEGORIAS_DE_ANUNCIO,
     CONVERSAS_POR_PAGINA,
     MENSAGEM_MAXIMA,
@@ -116,6 +120,7 @@ export {
     PRECO_MAXIMO,
     PRECO_MINIMO,
     anuncioEstaFechado,
+    mediaDasAvaliacoes,
     precoLegivel,
 } from './market.js';
 
