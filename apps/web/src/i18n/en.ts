@@ -590,6 +590,12 @@ export const en = (p: Tools) => ({
 
         ALREADY_CLOSED: 'This listing is no longer for sale.',
 
+        CONVERSATION_NOT_FOUND: 'We could not find this conversation.',
+
+        MESSAGE_NOT_FOUND: 'This message does not exist or was removed.',
+
+        IS_YOURS: 'This is yours. Use the remove button instead.',
+
     },
 
     mercado: {
@@ -689,6 +695,49 @@ export const en = (p: Tools) => ({
 
         quantos: (n: number) =>
             n === 1 ? '1 thing for sale' : `${n} things for sale`,
+
+        conversas: 'Messages',
+
+        /**
+         * O que se lê antes de escrever a primeira mensagem.
+         */
+        /**
+         * A mesma promessa, dita da caixa de entrada: lá são muitas
+         * conversas, e "esta conversa" a falar de uma lista era uma
+         * frase a olhar para o sítio errado.
+         */
+        conversasPrivadas:
+            'Each of these is between you and one other person. Nobody else reads them — a moderator only sees a message if one of you reports it.',
+        conversaPrivada:
+            'This conversation is between the two of you. Nobody else reads it — a moderator only sees a message if one of you reports it.',
+
+        perguntar: 'Ask about this',
+
+        entrarParaPerguntar: 'Sign in to ask about this',
+
+        semConversas: 'No messages yet.',
+
+        naoCarregouConversas: 'Your messages could not be loaded.',
+
+        conversaNaoEncontrada: 'We could not find this conversation.',
+
+        escreverMensagem: 'Write a message',
+
+        enviarMensagem: 'Send',
+
+        naoFoiPossivelEnviar: 'The message could not be sent.',
+
+        anuncioRetirado: 'This listing was taken down. The conversation stays readable, but it is closed to new messages.',
+
+        retiradaComAConta: 'Withdrawn with the account.',
+
+        retirarMensagem: 'Remove',
+
+        naoFoiPossivelRetirarMensagem: 'The message could not be removed.',
+
+        voltarAsConversas: 'Back to messages',
+
+        sobreOAnuncio: 'About',
     },
 
     moderacao: {
@@ -725,6 +774,7 @@ export const en = (p: Tools) => ({
             topic: 'A question',
             reply: 'A reply',
             listing: 'A listing',
+            message: 'A message in a conversation',
         },
 
         verOAlvo: 'Open it',

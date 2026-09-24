@@ -19,6 +19,7 @@ import {
 } from '../market.api.js';
 import { Denunciar } from '../../moderation/denunciar.js';
 import { reportListing } from '../../moderation/moderation.api.js';
+import { openConversation } from '../conversas.api.js';
 
 /**
  * Um anúncio.
@@ -36,6 +37,7 @@ export const AnuncioPage = () => {
     const navegar = useNavigate();
 
     const [aEditar, setAEditar] = useState(false);
+    const [aPerguntar, setAPerguntar] = useState(false);
     const [erro, setErro] = useState<string | null>(null);
     const [aAgir, setAAgir] = useState(false);
 
@@ -148,6 +150,54 @@ export const AnuncioPage = () => {
             </article>
 
             {erro ? <Alert kind="bad">{erro}</Alert> : null}
+
+            {/*
+              Perguntar é o que faltava para o mercado servir para
+              alguma coisa: o anúncio diz "entrego no parque do porto"
+              e alguém tem de poder perguntar a que horas.
+            */}
+            {!eMeu && aberto ? (
+                user === null ? (
+                    <p className="hint">
+                        <Link to="/entrar">
+                            {t.mercado.entrarParaPerguntar}
+                        </Link>
+                    </p>
+                ) : (
+                    <div className="grupo-botoes">
+                        <button
+                            className="primary"
+                            type="button"
+                            disabled={aPerguntar}
+                            onClick={() => {
+                                setAPerguntar(true);
+
+                                void (async () => {
+                                    try {
+                                        const conversa =
+                                            await openConversation(dados.id);
+
+                                        await navegar(
+                                            `/mercado/conversas/${conversa.id}`,
+                                        );
+                                    } catch (falha) {
+                                        setErro(
+                                            mensagemDoErro(
+                                                falha,
+                                                t,
+                                                t.mercado.naoFoiPossivelEnviar,
+                                            ),
+                                        );
+                                        setAPerguntar(false);
+                                    }
+                                })();
+                            }}
+                        >
+                            {t.mercado.perguntar}
+                        </button>
+                    </div>
+                )
+            ) : null}
 
             {/*
               Denunciar é para quem não escreveu isto, e só com sessão

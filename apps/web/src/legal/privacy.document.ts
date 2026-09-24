@@ -52,6 +52,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                     'Subscriptions: which plan, its status, what it costs, and when it began and ends. Card details never reach ViceHub. Stripe handles them and sends back only the outcome.',
                     'Friendships: who you are connected to, and the state of each request.',
                     'What you write in public: your forum questions and replies, and the listings you put up on a server market — the title, the description, the asking price and the address of any picture you linked. And if you report something, which of the four reasons you picked, anything you added in your own words, and that it was you who reported it. A moderator sees the report; nobody else does.',
+                    'Your messages about a listing: what you wrote, who you wrote it to, and when. These are private — see the section on who reads them.',
                     'A linked Discord or Google account, if you choose to link one: the identifier that provider gives us and the email address on it. No token from either provider is kept once the sign-in is done, and ViceHub has no access to anything else on those accounts.',
                     'Sessions: when you signed in, and the IP address and browser the request came from, so that a session can be recognised and revoked. Failed sign-in attempts are counted so that an account locks after repeated failures.',
                     'An audit trail of actions that change a community — money decided, roles granted, members removed — with who did it, when, and from which address. A community that cannot show who approved a payout has no way to settle an argument about it.',
@@ -69,6 +70,15 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                     'No tracking of you on other sites. ViceHub has nothing on any site but its own.',
                     'Your data is never sold, rented, or passed to a data broker. There is no arrangement under which that could happen.',
                     'No date of birth, no phone number, no postal address, no identity document. ViceHub never asks, so it never has them.',
+                ],
+            },
+
+            {
+                heading: 'Who reads your messages',
+                body: [
+                    'Messages about a listing are between the two people in the conversation. Nobody else on ViceHub reads them as a matter of course — not other members, not the server owner, and not us.',
+                    'There are exactly two ways one leaves that conversation. **If one of you reports a message**, a moderator sees that message: the text, who wrote it, and the reason given. Not the conversation around it, and not the messages before or after. And if the law obliges us to hand something over, we do, and we say so below.',
+                    'This is worth knowing before you write, which is why it is also said on the screen where you write. Treat a message the way you would treat one anywhere else: private between two people, and not a vault.',
                 ],
             },
 
@@ -135,7 +145,7 @@ export const privacyDocument = (operator: LegalOperator): LegalDocument => {
                 body: [
                     'Nothing about you is decided by a program in a way that has legal or similarly significant effects. There is no profiling, no scoring, and no ranking of people.',
                     'Two things do happen automatically, and both are said here so the sentence above is not a sleight of hand. An account locks itself temporarily after repeated failed sign-ins, which is a security measure and lifts by itself. And whether a paid plan is active is computed from what Stripe reports, which is arithmetic on dates rather than a judgement about you.',
-                    'Moderation is done by people, in the forum and in the market alike. A report is read by a moderator, and nothing is removed by a program.',
+                    'Moderation is done by people, in the forum, in the market and in messages alike. A report is read by a moderator, and nothing is removed by a program.',
                 ],
             },
 

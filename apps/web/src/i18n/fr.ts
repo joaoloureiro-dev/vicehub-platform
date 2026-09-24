@@ -577,6 +577,12 @@ export const fr = (p: Tools): Messages => ({
 
         ALREADY_CLOSED: 'Cette annonce n\'est plus en vente.',
 
+        CONVERSATION_NOT_FOUND: 'Nous n\'avons pas trouvé cette conversation.',
+
+        MESSAGE_NOT_FOUND: 'Ce message n\'existe pas ou a été retiré.',
+
+        IS_YOURS: 'Ceci est à toi. Utilise plutôt le bouton retirer.',
+
     },
 
     mercado: {
@@ -673,6 +679,41 @@ export const fr = (p: Tools): Messages => ({
 
         quantos: (n: number) =>
             n === 1 ? '1 chose à vendre' : `${n} choses à vendre`,
+
+        conversas: 'Messages',
+
+        conversasPrivadas:
+            'Chacune est entre toi et une autre personne. Personne d\'autre ne les lit — un modérateur ne voit un message que si l\'un de vous le signale.',
+        conversaPrivada:
+            'Cette conversation est entre vous deux. Personne d\'autre ne la lit — un modérateur ne voit un message que si l\'un de vous le signale.',
+
+        perguntar: 'Poser une question',
+
+        entrarParaPerguntar: 'Connecte-toi pour poser une question',
+
+        semConversas: 'Pas encore de messages.',
+
+        naoCarregouConversas: 'Tes messages n\'ont pas pu être chargés.',
+
+        conversaNaoEncontrada: 'Nous n\'avons pas trouvé cette conversation.',
+
+        escreverMensagem: 'Écrire un message',
+
+        enviarMensagem: 'Envoyer',
+
+        naoFoiPossivelEnviar: 'Le message n\'a pas pu être envoyé.',
+
+        anuncioRetirado: 'Cette annonce a été retirée. La conversation reste lisible, mais elle est fermée aux nouveaux messages.',
+
+        retiradaComAConta: 'Retiré avec le compte.',
+
+        retirarMensagem: 'Retirer',
+
+        naoFoiPossivelRetirarMensagem: 'Le message n\'a pas pu être retiré.',
+
+        voltarAsConversas: 'Retour aux messages',
+
+        sobreOAnuncio: 'À propos de',
     },
 
     moderacao: {
@@ -709,6 +750,7 @@ export const fr = (p: Tools): Messages => ({
             topic: 'Une question',
             reply: 'Une réponse',
             listing: 'Une annonce',
+            message: 'Un message dans une conversation',
         },
 
         verOAlvo: 'Ouvrir',

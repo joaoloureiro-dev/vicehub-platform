@@ -5,6 +5,7 @@ import type { RouteOptions } from 'fastify';
 import marketRoutes from '../../src/modules/market/market.routes.js';
 import validationPlugin from '../../src/plugins/http/validation.plugin.js';
 import type { MarketController } from '../../src/modules/market/controllers/market.controller.js';
+import type { ConversationController } from '../../src/modules/market/controllers/conversation.controller.js';
 
 /**
  * Quem pode o quê no mercado, e o que custa anunciar.
@@ -54,7 +55,16 @@ describe('ligação das rotas do mercado', () => {
             report: vi.fn(),
         } as unknown as MarketController;
 
-        await app.register(marketRoutes, { controller });
+        const conversations = {
+            open: vi.fn(),
+            list: vi.fn(),
+            get: vi.fn(),
+            send: vi.fn(),
+            report: vi.fn(),
+            removeMessage: vi.fn(),
+        } as unknown as ConversationController;
+
+        await app.register(marketRoutes, { controller, conversations });
         await app.ready();
 
         /**
@@ -108,6 +118,12 @@ describe('ligação das rotas do mercado', () => {
         'POST /listings/:listingId/close',
         'DELETE /listings/:listingId',
         'POST /listings/:listingId/reports',
+        'POST /listings/:listingId/conversations',
+        'GET /conversations',
+        'GET /conversations/:conversationId',
+        'POST /conversations/:conversationId/messages',
+        'POST /messages/:messageId/reports',
+        'DELETE /messages/:messageId',
     ])('%s pede sessão e a permissão de anunciar', (chave) => {
         expect(preHandlersDe(chave)).toHaveLength(2);
         expect(permissoesPorRota.get(chave)).toEqual(['marketplace:post']);
@@ -120,9 +136,27 @@ describe('ligação das rotas do mercado', () => {
      * ser um —, e não o aplicar a criar deixava uma conta com um guião
      * a encher o mercado de um servidor numa tarde.
      */
+    /**
+     * **Ler uma conversa pede sessão.**
+     *
+     * É a única leitura do mercado que a pede, e é a decisão toda: uma
+     * conversa é de duas pessoas, e uma rota pública aqui punha a
+     * correspondência delas ao alcance de quem adivinhasse um
+     * identificador.
+     */
+    it.each([
+        'GET /conversations',
+        'GET /conversations/:conversationId',
+    ])('%s não é pública, ao contrário do resto do mercado', (chave) => {
+        expect(preHandlersDe(chave)).toHaveLength(2);
+    });
+
     it.each([
         'POST /servers/:serverId/listings',
         'POST /listings/:listingId/reports',
+        'POST /listings/:listingId/conversations',
+        'POST /conversations/:conversationId/messages',
+        'POST /messages/:messageId/reports',
     ])('%s leva limite de escrita', (chave) => {
         const limite = limiteDe(chave);
 

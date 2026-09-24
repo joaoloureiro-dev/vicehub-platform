@@ -169,6 +169,12 @@ export interface AccountExport {
             note: string | null;
             createdAt: string;
         }[];
+        /** O que esta pessoa escreveu em conversas do mercado. */
+        marketMessages: {
+            listing: string;
+            body: string;
+            createdAt: string;
+        }[];
     };
 }
 
@@ -229,6 +235,7 @@ export const buildAccountExport = async (
         topicosDoForum,
         respostasDoForum,
         denuncias,
+        mensagensDoMercado,
     ] = await Promise.all([
         database.userAuthProvider.findMany({
             where: { userId, is_deleted: false },
@@ -362,6 +369,24 @@ export const buildAccountExport = async (
         database.report.findMany({
             where: { reporterId: userId },
             select: { reason: true, note: true, created_at: true },
+            orderBy: { created_at: 'desc' },
+        }),
+        /**
+         * E o que escreveu nas conversas do mercado.
+         *
+         * Só o que **esta** pessoa escreveu. Uma conversa tem duas, e
+         * levar a exportação de uma a carregar o texto da outra era
+         * dar-lhe dados que não são dela.
+         */
+        database.marketMessage.findMany({
+            where: { senderId: userId, is_deleted: false },
+            select: {
+                body: true,
+                created_at: true,
+                conversation: {
+                    select: { listing: { select: { title: true } } },
+                },
+            },
             orderBy: { created_at: 'desc' },
         }),
     ]);
@@ -502,6 +527,11 @@ export const buildAccountExport = async (
                 reason: denuncia.reason,
                 note: denuncia.note,
                 createdAt: denuncia.created_at.toISOString(),
+            })),
+            marketMessages: mensagensDoMercado.map((mensagem) => ({
+                listing: mensagem.conversation.listing.title,
+                body: mensagem.body,
+                createdAt: mensagem.created_at.toISOString(),
             })),
         },
     };

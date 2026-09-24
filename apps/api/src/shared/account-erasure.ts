@@ -357,6 +357,23 @@ export const eraseAccount = async (
         }),
 
         /**
+         * E o que escreveu numa conversa do mercado.
+         *
+         * A mensagem fica vazia em vez de desaparecer: do outro lado há
+         * uma pessoa que leu aquilo e que respondeu a seguir, e uma
+         * conversa com buracos lê-se pior do que uma com "retirado com
+         * a conta" no sítio certo.
+         *
+         * `body` não aceita nulo aqui — uma mensagem sem texto não é
+         * uma mensagem —, por isso fica vazia, e é assim que o ecrã a
+         * reconhece.
+         */
+        database.marketMessage.updateMany({
+            where: { senderId: userId, is_deleted: false },
+            data: { body: '', updated_by: userId, version: { increment: 1 } },
+        }),
+
+        /**
          * E a nota que a pessoa escreveu numa denúncia, pela mesma
          * razão: é texto dela.
          *
