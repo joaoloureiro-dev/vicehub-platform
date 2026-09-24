@@ -109,6 +109,9 @@ export {
     ANUNCIO_TITULO_MAXIMO,
     ANUNCIO_TITULO_MINIMO,
     CATEGORIAS_DE_ANUNCIO,
+    CONVERSAS_POR_PAGINA,
+    MENSAGEM_MAXIMA,
+    MENSAGENS_POR_PAGINA,
     ESTADOS_DE_ANUNCIO,
     PRECO_MAXIMO,
     PRECO_MINIMO,
@@ -123,11 +126,14 @@ export type {
 
 export {
     ALVOS_DE_DENUNCIA,
+    QUEM_LE,
+    SUPERFICIES,
+    SUPERFICIES_PRIVADAS,
     SUPERFICIES_PUBLICAS,
     SUPERFICIE_DO_ALVO,
 } from './reports.js';
 
-export type { AlvoDeDenuncia } from './reports.js';
+export type { AlvoDeDenuncia, Superficie } from './reports.js';
 
 export {
     REPUTACAO_POR_FALTA,

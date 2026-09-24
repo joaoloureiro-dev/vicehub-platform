@@ -5,6 +5,9 @@ import { MarketController } from './controllers/market.controller.js';
 import { MarketRepository } from './repositories/market.repository.js';
 import { MarketService } from './services/market.service.js';
 import marketRoutes from './market.routes.js';
+import { ConversationController } from './controllers/conversation.controller.js';
+import { ConversationRepository } from './repositories/conversation.repository.js';
+import { ConversationService } from './services/conversation.service.js';
 import { AuthorizationRepository } from '../authorization/repositories/authorization.repository.js';
 import { AuthorizationService } from '../authorization/services/authorization.service.js';
 import { ModerationController } from '../moderation/controllers/moderation.controller.js';
@@ -24,14 +27,23 @@ import { construirReportService } from '../moderation/moderation.module.js';
  */
 const marketModule: FastifyPluginAsync = async (fastify) => {
     const reportService = construirReportService(fastify.prisma);
+    const autorizacao = new AuthorizationService(
+        new AuthorizationRepository(fastify.prisma),
+    );
 
     await fastify.register(marketRoutes, {
         prefix: '/api/v1/market',
         controller: new MarketController(
             new MarketService(new MarketRepository(fastify.prisma)),
-            new AuthorizationService(
-                new AuthorizationRepository(fastify.prisma),
+            autorizacao,
+            reportService,
+            new ModerationController(reportService),
+        ),
+        conversations: new ConversationController(
+            new ConversationService(
+                new ConversationRepository(fastify.prisma),
             ),
+            autorizacao,
             reportService,
             new ModerationController(reportService),
         ),

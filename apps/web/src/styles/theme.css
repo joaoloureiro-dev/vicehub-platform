@@ -4001,3 +4001,105 @@ button.link:hover {
     font-size: 13px;
     padding: 6px 12px;
 }
+
+/* ---------- as conversas do mercado ---------- */
+
+.lista-conversas {
+    list-style: none;
+    display: grid;
+    gap: 12px;
+    margin: 16px 0 0;
+    padding: 0;
+}
+
+.lista-conversas .card a {
+    display: grid;
+    gap: 6px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.conversa-cabeca {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+}
+
+.conversa-cabeca time {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+}
+
+/*
+ * A última mensagem, numa linha só.
+ *
+ * Uma caixa de entrada com quatro linhas por conversa mostra três
+ * conversas num telemóvel; com uma, mostra doze. O que interessa é
+ * saber quem falou e sobre o quê — o resto lê-se lá dentro.
+ */
+.ultima-mensagem {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+}
+
+/*
+ * O fio da conversa.
+ *
+ * As minhas encostadas à direita e as da outra pessoa à esquerda: é o
+ * desenho que toda a gente já sabe ler, e poupa ao olho a leitura do
+ * nome em cada mensagem para saber quem falou.
+ */
+.fio-de-mensagens {
+    list-style: none;
+    display: grid;
+    gap: 14px;
+    margin: 16px 0 0;
+    padding: 0;
+}
+
+.fio-de-mensagens li {
+    display: grid;
+    gap: 6px;
+    max-width: min(86%, 560px);
+    padding: 12px 14px;
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.fio-de-mensagens li.minha {
+    justify-self: end;
+    background: var(--wash);
+}
+
+.fio-de-mensagens li.dela {
+    justify-self: start;
+}
+
+.mensagem-cabeca {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    font-size: 12px;
+}
+
+/*
+ * Os botões de uma mensagem ficam discretos até se precisar deles: são
+ * dois por mensagem num fio com trinta, e à mesma escala do texto
+ * transformavam a conversa numa lista de botões.
+ */
+.fio-de-mensagens .grupo-botoes button {
+    font-size: 13px;
+    min-height: 0;
+    padding: 4px 10px;
+}

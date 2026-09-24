@@ -20,10 +20,13 @@ const AUTOR = {
  */
 export type Alvo = { kind: AlvoDeDenuncia; id: string };
 
-const COLUNA: Readonly<Record<AlvoDeDenuncia, 'topicId' | 'replyId' | 'listingId'>> = {
+const COLUNA: Readonly<
+    Record<AlvoDeDenuncia, 'topicId' | 'replyId' | 'listingId' | 'messageId'>
+> = {
     topic: 'topicId',
     reply: 'replyId',
     listing: 'listingId',
+    message: 'messageId',
 };
 
 /** A coluna do alvo, preenchida, para um `where` ou um `create`. */
@@ -57,14 +60,58 @@ export class ReportRepository {
             });
         }
 
-        const anuncio = await this.database.marketListing.findFirst({
+        if (alvo.kind === 'listing') {
+            const anuncio = await this.database.marketListing.findFirst({
+                where: { id: alvo.id, is_deleted: false },
+                select: { id: true, sellerId: true },
+            });
+
+            return anuncio === null
+                ? null
+                : { id: anuncio.id, authorId: anuncio.sellerId };
+        }
+
+        const mensagem = await this.database.marketMessage.findFirst({
             where: { id: alvo.id, is_deleted: false },
-            select: { id: true, sellerId: true },
+            select: { id: true, senderId: true },
         });
 
-        return anuncio === null
+        return mensagem === null
             ? null
-            : { id: anuncio.id, authorId: anuncio.sellerId };
+            : { id: mensagem.id, authorId: mensagem.senderId };
+    }
+
+    /**
+     * Quem está nesta conversa.
+     *
+     * Uma conversa é privada, e por isso denunciar uma mensagem dela
+     * não é como denunciar um anúncio: é preciso lá estar. Sem esta
+     * pergunta, bastava adivinhar um identificador para pôr uma
+     * mensagem de duas pessoas em frente a um moderador.
+     */
+    async quemEstaNaConversaDaMensagem(
+        messageId: string,
+    ): Promise<{ buyerId: string | null; sellerId: string | null } | null> {
+        const mensagem = await this.database.marketMessage.findFirst({
+            where: { id: messageId, is_deleted: false },
+            select: {
+                conversation: {
+                    select: {
+                        buyerId: true,
+                        listing: { select: { sellerId: true } },
+                    },
+                },
+            },
+        });
+
+        if (mensagem === null) {
+            return null;
+        }
+
+        return {
+            buyerId: mensagem.conversation.buyerId,
+            sellerId: mensagem.conversation.listing.sellerId,
+        };
     }
 
     createReport(input: {
@@ -134,6 +181,24 @@ export class ReportRepository {
                         body: true,
                         is_deleted: true,
                         seller: AUTOR,
+                    },
+                },
+                /**
+                 * Da conversa vem **a mensagem denunciada, e só ela**.
+                 *
+                 * O que um moderador precisa de ver para decidir é o
+                 * que foi denunciado. Mandar-lhe a conversa inteira era
+                 * abrir a correspondência de duas pessoas por causa de
+                 * uma linha, e a política de privacidade promete o
+                 * contrário.
+                 */
+                message: {
+                    select: {
+                        id: true,
+                        conversationId: true,
+                        body: true,
+                        is_deleted: true,
+                        sender: AUTOR,
                     },
                 },
             },

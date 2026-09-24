@@ -38,6 +38,8 @@ import { PublicProfilePage } from './profile/pages/public-profile.page.js';
 import { ForumPage } from './forum/pages/forum.page.js';
 import { MercadoPage } from './market/pages/mercado.page.js';
 import { AnuncioPage } from './market/pages/anuncio.page.js';
+import { ConversasPage } from './market/pages/conversas.page.js';
+import { ConversaPage } from './market/pages/conversa.page.js';
 import { TopicPage } from './forum/pages/topic.page.js';
 import { FilaPage } from './moderation/pages/fila.page.js';
 
@@ -320,6 +322,21 @@ export const App = () => (
                   não há carteira de outra pessoa para ver.
                 */}
                 <Route path="/eu/carteira" element={<MyWalletPage />} />
+
+                {/*
+                  As conversas do mercado pedem sessão as duas: uma
+                  conversa é de duas pessoas, e ler uma pede sessão
+                  como escrever nela. É a única parte do mercado que
+                  não é pública.
+                */}
+                <Route
+                    path="/mercado/conversas"
+                    element={<ConversasPage />}
+                />
+                <Route
+                    path="/mercado/conversas/:conversationId"
+                    element={<ConversaPage />}
+                />
                 <Route path="/crews/nova" element={<CreateCrewPage />} />
                 <Route path="/servidores/novo" element={<CreateServerPage />} />
                 <Route path="/eu/comunidades" element={<MyCommunitiesPage />} />

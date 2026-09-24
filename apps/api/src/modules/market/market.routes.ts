@@ -2,15 +2,24 @@ import type { FastifyPluginAsync } from 'fastify';
 
 import { env } from '../../config/env.js';
 import type { MarketController } from './controllers/market.controller.js';
+import type { ConversationController } from './controllers/conversation.controller.js';
 import {
     closeListingSchema,
+    conversationIdParamSchema,
     createListingSchema,
+    listConversationsQuerySchema,
+    messageIdParamSchema,
+    sendMessageSchema,
     listListingsQuerySchema,
     listingIdParamSchema,
     serverIdParamSchema,
     updateListingSchema,
     type CloseListingDto,
+    type ConversationIdParamDto,
     type CreateListingDto,
+    type ListConversationsQueryDto,
+    type MessageIdParamDto,
+    type SendMessageDto,
     type ListListingsQueryDto,
     type ListingIdParamDto,
     type ServerIdParamDto,
@@ -23,6 +32,7 @@ import {
 
 interface MarketRoutesOptions {
     controller: MarketController;
+    conversations: ConversationController;
 }
 
 /**
@@ -40,7 +50,7 @@ interface MarketRoutesOptions {
  */
 const marketRoutes: FastifyPluginAsync<MarketRoutesOptions> = async (
     fastify,
-    { controller },
+    { controller, conversations },
 ) => {
 
     /**
@@ -187,6 +197,108 @@ const marketRoutes: FastifyPluginAsync<MarketRoutesOptions> = async (
             schema: { params: listingIdParamSchema },
         },
         controller.remove.bind(controller),
+    );
+
+    /**
+     * As conversas sobre um anúncio.
+     *
+     * **Nada disto é público.** Uma conversa é de duas pessoas, e todas
+     * estas rotas pedem sessão — a de ler inclusive, ao contrário de
+     * tudo o resto no mercado. Quem não está na conversa recebe a mesma
+     * resposta de quem pede uma conversa que não existe.
+     *
+     * Pedem `marketplace:post`, como anunciar: é a permissão de
+     * participar no mercado, e tirá-la a quem abusa dele tira-lhe as
+     * duas coisas de uma vez.
+     */
+    fastify.post<{ Params: ListingIdParamDto }>(
+        '/listings/:listingId/conversations',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            config: limiteDeEscrita,
+            schema: { params: listingIdParamSchema },
+        },
+        conversations.open.bind(conversations),
+    );
+
+    fastify.get<{ Querystring: ListConversationsQueryDto }>(
+        '/conversations',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            schema: { querystring: listConversationsQuerySchema },
+        },
+        conversations.list.bind(conversations),
+    );
+
+    fastify.get<{ Params: ConversationIdParamDto }>(
+        '/conversations/:conversationId',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            schema: { params: conversationIdParamSchema },
+        },
+        conversations.get.bind(conversations),
+    );
+
+    /**
+     * Escrever leva o limite, como tudo o que uma conta pode fazer em
+     * massa contra outra pessoa.
+     */
+    fastify.post<{ Params: ConversationIdParamDto; Body: SendMessageDto }>(
+        '/conversations/:conversationId/messages',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            config: limiteDeEscrita,
+            schema: {
+                params: conversationIdParamSchema,
+                body: sendMessageSchema,
+            },
+        },
+        conversations.send.bind(conversations),
+    );
+
+    fastify.post<{ Params: MessageIdParamDto; Body: CreateReportDto }>(
+        '/messages/:messageId/reports',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            config: limiteDeEscrita,
+            schema: {
+                params: messageIdParamSchema,
+                body: createReportSchema,
+            },
+        },
+        conversations.report.bind(conversations),
+    );
+
+    /**
+     * Retirar uma mensagem exige `marketplace:post`, como retirar um
+     * anúncio: quem pode retirar **esta** decide-se no serviço — quem a
+     * escreveu, sempre, e quem modera.
+     */
+    fastify.delete<{ Params: MessageIdParamDto }>(
+        '/messages/:messageId',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorize('marketplace:post'),
+            ],
+            schema: { params: messageIdParamSchema },
+        },
+        conversations.removeMessage.bind(conversations),
     );
 };
 

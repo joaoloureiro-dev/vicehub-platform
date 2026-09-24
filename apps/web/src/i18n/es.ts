@@ -568,6 +568,12 @@ export const es = (p: Tools): Messages => ({
 
         ALREADY_CLOSED: 'Este anuncio ya no está a la venta.',
 
+        CONVERSATION_NOT_FOUND: 'No encontramos esta conversación.',
+
+        MESSAGE_NOT_FOUND: 'Este mensaje no existe o fue retirado.',
+
+        IS_YOURS: 'Esto es tuyo. Usa el botón de retirar.',
+
     },
 
     mercado: {
@@ -663,6 +669,41 @@ export const es = (p: Tools): Messages => ({
 
         quantos: (n: number) =>
             n === 1 ? '1 cosa a la venta' : `${n} cosas a la venta`,
+
+        conversas: 'Mensajes',
+
+        conversasPrivadas:
+            'Cada una de estas es entre tú y otra persona. Nadie más las lee — un moderador solo ve un mensaje si uno de vosotros lo denuncia.',
+        conversaPrivada:
+            'Esta conversación es entre vosotros dos. Nadie más la lee — un moderador solo ve un mensaje si uno de vosotros lo denuncia.',
+
+        perguntar: 'Preguntar por esto',
+
+        entrarParaPerguntar: 'Entra para preguntar por esto',
+
+        semConversas: 'Todavía no hay mensajes.',
+
+        naoCarregouConversas: 'No se pudieron cargar tus mensajes.',
+
+        conversaNaoEncontrada: 'No encontramos esta conversación.',
+
+        escreverMensagem: 'Escribir un mensaje',
+
+        enviarMensagem: 'Enviar',
+
+        naoFoiPossivelEnviar: 'No se pudo enviar el mensaje.',
+
+        anuncioRetirado: 'Este anuncio fue retirado. La conversación se sigue leyendo, pero está cerrada a mensajes nuevos.',
+
+        retiradaComAConta: 'Retirado con la cuenta.',
+
+        retirarMensagem: 'Retirar',
+
+        naoFoiPossivelRetirarMensagem: 'No se pudo retirar el mensaje.',
+
+        voltarAsConversas: 'Volver a los mensajes',
+
+        sobreOAnuncio: 'Sobre',
     },
 
     moderacao: {
@@ -699,6 +740,7 @@ export const es = (p: Tools): Messages => ({
             topic: 'Una pregunta',
             reply: 'Una respuesta',
             listing: 'Un anuncio',
+            message: 'Un mensaje en una conversación',
         },
 
         verOAlvo: 'Abrir',

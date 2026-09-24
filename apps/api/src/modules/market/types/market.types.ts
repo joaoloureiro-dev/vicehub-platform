@@ -69,3 +69,43 @@ export interface MudancasDoAnuncio {
     price?: bigint | undefined;
     imageUrl?: string | null | undefined;
 }
+
+/** O anúncio de que uma conversa fala, resumido. */
+export interface AnuncioDaConversa {
+    id: string;
+    title: string;
+    price: bigint;
+    status: EstadoDeAnuncio;
+    isRemoved: boolean;
+}
+
+export interface MensagemView {
+    id: string;
+    body: string;
+    sender: VendedorView | null;
+    /** Para o ecrã saber de que lado a desenhar. */
+    isMine: boolean;
+    createdAt: Date;
+}
+
+export interface ConversaView {
+    id: string;
+    listing: AnuncioDaConversa;
+    buyer: VendedorView | null;
+    seller: VendedorView | null;
+    messages: MensagemView[];
+}
+
+/** Uma conversa na caixa de entrada. */
+export interface ConversaResumo {
+    id: string;
+    listing: AnuncioDaConversa;
+    /** Quem está do outro lado, visto de quem pede a lista. */
+    comQuem: VendedorView | null;
+    ultima: {
+        body: string;
+        isMine: boolean;
+        createdAt: Date;
+    } | null;
+    updatedAt: Date;
+}

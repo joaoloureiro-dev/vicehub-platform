@@ -302,8 +302,10 @@ model User {
   ///
   /// São dois campos porque o par está ordenado e uma pessoa pode ser
   /// qualquer uma das pontas — não são dois tipos de amizade.
-  friendshipsAsA Friendship[] @relation("FriendshipUserA")
-  friendshipsAsB Friendship[] @relation("FriendshipUserB")
+  friendshipsAsA      Friendship[]         @relation("FriendshipUserA")
+  friendshipsAsB      Friendship[]         @relation("FriendshipUserB")
+  marketConversations MarketConversation[]
+  marketMessages      MarketMessage[]
 }
 
 model Crew {
@@ -1379,6 +1381,7 @@ model Report {
   topicId   String?
   replyId   String?
   listingId String?
+  messageId String?
 
   /// Sai quando a conta sai; a denúncia fica, porque o que ela aponta
   /// continua lá e o moderador ainda tem de decidir.
@@ -1407,16 +1410,19 @@ model Report {
   topic    ForumTopic?    @relation(fields: [topicId], references: [id], onDelete: Cascade)
   reply    ForumReply?    @relation(fields: [replyId], references: [id], onDelete: Cascade)
   listing  MarketListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  message  MarketMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
   reporter User?          @relation(fields: [reporterId], references: [id], onDelete: SetNull)
 
   @@unique([reporterId, topicId])
   @@unique([reporterId, replyId])
   @@unique([reporterId, listingId])
+  @@unique([reporterId, messageId])
   /// A fila do moderador: as abertas, mais velhas primeiro.
   @@index([status, created_at])
   @@index([topicId])
   @@index([replyId])
   @@index([listingId])
+  @@index([messageId])
 }
 
 model ForumTopic {
@@ -1818,13 +1824,94 @@ model MarketListing {
   created_by String?
   updated_by String?
 
-  server  Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  seller  User?    @relation(fields: [sellerId], references: [id], onDelete: SetNull)
-  reports Report[]
+  server              Server               @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  seller              User?                @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  reports             Report[]
+  marketConversations MarketConversation[]
 
   /// O índice da única listagem que existe: os anúncios de um servidor,
   /// num estado, do mais recente para o mais antigo.
   @@index([serverId, status, updated_at(sort: Desc)])
   @@index([serverId, category])
   @@index([sellerId])
+}
+
+/// Uma conversa sobre um anúncio, entre quem vende e quem pergunta.
+///
+/// É a peça que faltava para o mercado servir para alguma coisa: um
+/// anúncio dizia "entrego no parque do porto" e não havia por onde
+/// combinar nada. Sem isto, a conversa acontecia toda no Discord, e o
+/// mercado era um placard.
+///
+/// Uma por anúncio e por interessado. Duas pessoas diferentes a
+/// perguntar pelo mesmo carro são duas conversas, e a mesma pessoa a
+/// voltar ao mesmo anúncio volta à conversa que já tinha — o índice
+/// único é o que o garante, e não uma leitura antes da escrita.
+///
+/// **Quem vende não está aqui.** É lido do anúncio: um anúncio tem um
+/// vendedor, e guardá-lo outra vez nesta tabela era a mesma verdade em
+/// dois sítios à espera de divergir.
+model MarketConversation {
+  id String @id @default(uuid())
+
+  listingId String
+
+  /// Quem perguntou. Nulo quando a conta sai; a conversa fica, porque
+  /// do outro lado continua a haver uma pessoa que a leu.
+  buyerId String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  listing  MarketListing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer    User?           @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+  messages MarketMessage[]
+
+  @@unique([listingId, buyerId])
+  /// A lista de conversas de uma pessoa, da mais recente para a mais
+  /// antiga: é o que a caixa de entrada mostra.
+  @@index([buyerId, updated_at(sort: Desc)])
+  @@index([listingId])
+}
+
+/// Uma mensagem dentro de uma conversa.
+///
+/// **É privada.** Só as duas pessoas da conversa a leem — e um
+/// moderador, se ela for denunciada, e só essa. A política de
+/// privacidade diz isto por palavras, porque é a espécie de coisa que
+/// uma pessoa tem o direito de saber antes de escrever.
+model MarketMessage {
+  id String @id @default(uuid())
+
+  conversationId String
+
+  /// Quem escreveu. Nulo quando a conta sai.
+  senderId String?
+
+  body String
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  conversation MarketConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?              @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  reports      Report[]
+
+  /// Uma conversa lê-se do princípio para o fim.
+  @@index([conversationId, created_at])
+  @@index([senderId])
 }

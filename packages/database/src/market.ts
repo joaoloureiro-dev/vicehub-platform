@@ -119,3 +119,19 @@ export const anuncioEstaFechado = (estado: EstadoDeAnuncio): boolean =>
  */
 export const precoLegivel = (preco: bigint, idioma?: string): string =>
     new Intl.NumberFormat(idioma, { maximumFractionDigits: 0 }).format(preco);
+
+/**
+ * Uma mensagem numa conversa sobre um anúncio.
+ *
+ * O mínimo é um caractere: "sim" é uma resposta completa a "ainda
+ * tens isso?", e um mínimo maior obrigava as pessoas a escrever de
+ * mais para dizer o mesmo. O máximo é curto ao lado do de um anúncio —
+ * uma conversa é feita de muitas mensagens, e não de uma dissertação.
+ */
+export const MENSAGEM_MAXIMA = 2_000;
+
+/** Quantas mensagens se leem de uma vez numa conversa. */
+export const MENSAGENS_POR_PAGINA = 100;
+
+/** Quantas conversas por página na caixa de entrada. */
+export const CONVERSAS_POR_PAGINA = 20;

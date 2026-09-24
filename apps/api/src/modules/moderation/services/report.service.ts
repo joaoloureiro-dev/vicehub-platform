@@ -63,6 +63,38 @@ export class ReportService {
             );
         }
 
+        /**
+         * Denunciar uma mensagem exige estar na conversa.
+         *
+         * As outras três superfícies são públicas: quem as lê pode
+         * denunciá-las, e é assim que a moderação deixa de depender de
+         * sorte. Uma conversa não — sem esta verificação, bastava
+         * adivinhar um identificador para pôr a correspondência de duas
+         * pessoas em frente a um moderador.
+         *
+         * E a recusa é a mesma de uma mensagem que não existe, de
+         * propósito: dizer "isso existe mas não é contigo" já era
+         * contar alguma coisa sobre uma conversa alheia.
+         */
+        if (alvo.kind === 'message') {
+            const conversa =
+                await this.reportRepository.quemEstaNaConversaDaMensagem(
+                    alvo.id,
+                );
+
+            const participa =
+                conversa !== null
+                && (conversa.buyerId === reporterId
+                    || conversa.sellerId === reporterId);
+
+            if (!participa) {
+                throw new ModerationError(
+                    'TARGET_NOT_FOUND',
+                    'Isto não existe ou foi retirado.',
+                );
+            }
+        }
+
         if (publicacao.authorId === reporterId) {
             throw new ModerationError(
                 'IS_YOURS',
@@ -180,6 +212,13 @@ const alvoDaLinha = (linha: {
         is_deleted: boolean;
         seller: DenunciaView['reporter'];
     } | null;
+    message: {
+        id: string;
+        conversationId: string;
+        body: string;
+        is_deleted: boolean;
+        sender: DenunciaView['reporter'];
+    } | null;
 }): DenunciaView['target'] => {
     if (linha.topic !== null) {
         return {
@@ -216,6 +255,22 @@ const alvoDaLinha = (linha: {
             body: linha.listing.body,
             author: linha.listing.seller,
             isRemoved: linha.listing.is_deleted,
+        };
+    }
+
+    if (linha.message !== null) {
+        return {
+            kind: 'message',
+            /**
+             * A conversa, que é o que se abre — mas o que se lê aqui
+             * é só a mensagem denunciada. Quem modera entra na
+             * conversa se a decisão o exigir, e isso fica registado.
+             */
+            openId: linha.message.conversationId,
+            title: null,
+            body: linha.message.body,
+            author: linha.message.sender,
+            isRemoved: linha.message.is_deleted,
         };
     }
 

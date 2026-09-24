@@ -6,6 +6,7 @@ import {
     ANUNCIO_TITULO_MAXIMO,
     ANUNCIO_TITULO_MINIMO,
     CATEGORIAS_DE_ANUNCIO,
+    MENSAGEM_MAXIMA,
     ESTADOS_DE_ANUNCIO,
     PRECO_MAXIMO,
     PRECO_MINIMO,
@@ -138,3 +139,33 @@ export type CloseListingDto = z.infer<typeof closeListingSchema>;
 export type ServerIdParamDto = z.infer<typeof serverIdParamSchema>;
 export type ListingIdParamDto = z.infer<typeof listingIdParamSchema>;
 export type ListListingsQueryDto = z.infer<typeof listListingsQuerySchema>;
+
+/**
+ * Uma mensagem.
+ *
+ * O mínimo é um caractere depois de arrumado: "sim" é uma resposta
+ * completa a "ainda tens isso?", e exigir mais obrigava as pessoas a
+ * escrever de mais para dizer o mesmo.
+ */
+export const sendMessageSchema = z.object({
+    body: texto(1, MENSAGEM_MAXIMA, 'A mensagem'),
+});
+
+export const conversationIdParamSchema = z.object({
+    conversationId: z.string().uuid(),
+});
+
+export const messageIdParamSchema = z.object({
+    messageId: z.string().uuid(),
+});
+
+export const listConversationsQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+});
+
+export type SendMessageDto = z.infer<typeof sendMessageSchema>;
+export type ConversationIdParamDto = z.infer<typeof conversationIdParamSchema>;
+export type MessageIdParamDto = z.infer<typeof messageIdParamSchema>;
+export type ListConversationsQueryDto = z.infer<
+    typeof listConversationsQuerySchema
+>;

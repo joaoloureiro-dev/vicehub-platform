@@ -31,8 +31,13 @@ export const NOTA_MAXIMA = 500;
  */
 export type RazaoDaDenuncia = 'spam' | 'abuse' | 'off_topic' | 'other';
 
-/** O que se pode denunciar. Três espécies, duas superfícies. */
-export type EspecieDeAlvo = 'topic' | 'reply' | 'listing';
+/**
+ * O que se pode denunciar: quatro espécies, três superfícies.
+ *
+ * Duas delas são públicas — o fórum e o mercado —, e a terceira não: uma
+ * conversa é de duas pessoas, e uma mensagem só se denuncia por dentro.
+ */
+export type EspecieDeAlvo = 'topic' | 'reply' | 'listing' | 'message';
 
 export interface DenunciaNaFila {
     id: string;
@@ -74,10 +79,21 @@ export interface PaginaDeDenuncias {
  * espécie nova sem entrada aqui é um erro de compilação em vez de uma
  * ligação para lado nenhum.
  */
+const ONDE_SE_ABRE: Readonly<Record<EspecieDeAlvo, (id: string) => string>> = {
+    topic: (id) => `/forum/${id}`,
+    reply: (id) => `/forum/${id}`,
+    listing: (id) => `/mercado/${id}`,
+    /**
+     * Uma mensagem abre a conversa — e um moderador que não esteja
+     * nela leva um "não existe", que é o que a API responde. A
+     * ligação existe na mesma: uma das duas pessoas também abre a
+     * fila se for ela a moderar, e para essa o caminho é o certo.
+     */
+    message: (id) => `/mercado/conversas/${id}`,
+};
+
 export const enderecoDoAlvo = (alvo: DenunciaNaFila['target']): string =>
-    alvo.kind === 'listing'
-        ? `/mercado/${alvo.openId}`
-        : `/forum/${alvo.openId}`;
+    ONDE_SE_ABRE[alvo.kind](alvo.openId);
 
 export const listReports = (
     status: 'open' | 'acted' | 'dismissed' = 'open',
@@ -112,6 +128,16 @@ export const reportReply = (
     note?: string,
 ): Promise<{ id: string }> =>
     api<{ id: string }>(`/forum/replies/${replyId}/reports`, {
+        method: 'POST',
+        body: { reason, ...(note ? { note } : {}) },
+    });
+
+export const reportMessage = (
+    messageId: string,
+    reason: RazaoDaDenuncia,
+    note?: string,
+): Promise<{ id: string }> =>
+    api<{ id: string }>(`/market/messages/${messageId}/reports`, {
         method: 'POST',
         body: { reason, ...(note ? { note } : {}) },
     });
