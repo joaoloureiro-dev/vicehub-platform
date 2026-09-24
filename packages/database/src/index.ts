@@ -120,6 +120,7 @@ export {
     PRECO_MAXIMO,
     PRECO_MINIMO,
     anuncioEstaFechado,
+    arredondarMedia,
     mediaDasAvaliacoes,
     precoLegivel,
 } from './market.js';

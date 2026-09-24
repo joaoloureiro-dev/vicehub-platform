@@ -174,5 +174,16 @@ export const mediaDasAvaliacoes = (notas: readonly number[]): number | null => {
 
     const soma = notas.reduce((total, nota) => total + nota, 0);
 
-    return Math.round((soma / notas.length) * 10) / 10;
+    return arredondarMedia(soma / notas.length);
 };
+
+/**
+ * O arredondamento, à parte.
+ *
+ * Existe porque há dois caminhos até uma média: somar as notas em
+ * memória, e pedir a média à base de dados quando são muitas pessoas de
+ * uma vez. Os dois têm de arredondar da mesma maneira, senão a mesma
+ * pessoa aparece com `4,3` num ecrã e `4,333` noutro.
+ */
+export const arredondarMedia = (valor: number): number =>
+    Math.round(valor * 10) / 10;

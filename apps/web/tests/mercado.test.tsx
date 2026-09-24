@@ -47,6 +47,9 @@ const ANUNCIO = {
     seller: { id: 'u1', username: 'quem', avatarUrl: null } as
         | { id: string; username: string; avatarUrl: null }
         | null,
+    sellerRating: { average: 4.5, count: 2 } as
+        | { average: number; count: number }
+        | null,
     sellerId: 'u1' as string | null,
     serverId: 's1',
     serverName: 'Vice Roleplay',
@@ -469,6 +472,41 @@ describe('um anúncio', () => {
         expect(
             await screen.findByText(t.moderacao.denunciaRecebida),
         ).toBeDefined();
+    });
+
+    /**
+     * A nota de quem vende, onde a decisão se toma. A média estava no
+     * perfil e ninguém vai a trinta perfis para percorrer um mercado.
+     */
+    it('mostra a nota de quem vende', async () => {
+        vi.stubGlobal('fetch', responder());
+
+        montarAnuncio();
+
+        expect(await screen.findByText(/★ 4.5/)).toBeDefined();
+    });
+
+    /**
+     * Quem ainda não vendeu nada não leva um zero ao lado do nome: zero
+     * é a pior nota da escala, e não é nota nenhuma. E o campo em falta
+     * conta como nenhuma — `undefined === null` é falso, e sem essa
+     * guarda o ecrã inteiro rebentava por causa de um adorno.
+     */
+    it.each([
+        ['sem nota nenhuma', null],
+        ['com o campo por preencher', undefined],
+    ])('não mostra nota %s', async (_nome, sellerRating) => {
+        vi.stubGlobal(
+            'fetch',
+            responder({
+                anuncio: { sellerRating } as Partial<typeof ANUNCIO>,
+            }),
+        );
+
+        montarAnuncio();
+
+        expect(await screen.findByText('Banshee 900R')).toBeDefined();
+        expect(screen.queryByText(/★/)).toBeNull();
     });
 
     it('esconde os botões de fechar num anúncio já vendido', async () => {

@@ -343,6 +343,150 @@ describe('as avaliações do mercado', () => {
         expect(dela.summary.average).toBe(4.3);
     });
 
+    /**
+     * A nota tem de chegar **onde a decisão se toma**: no anúncio e na
+     * grelha do mercado. A média no perfil não serve de nada a quem
+     * percorre trinta anúncios — e era esse o defeito antes disto.
+     */
+    it('leva a nota de quem vende para o anúncio e para a lista', async () => {
+        const listingId = await negocioFeito('Com nota no mercado');
+
+        await avaliar(compradora, listingId, { rating: 5 });
+
+        const outro = await anunciar('Outro do mesmo vendedor');
+
+        const anuncio = await app.inject({
+            method: 'GET',
+            url: `/api/v1/market/listings/${outro}`,
+        });
+
+        expect(anuncio.statusCode, anuncio.body).toBe(200);
+        expect(anuncio.json().sellerRating.count).toBeGreaterThan(0);
+        expect(anuncio.json().sellerRating.average).toBeGreaterThan(0);
+
+        const lista = await app.inject({
+            method: 'GET',
+            url: `/api/v1/market/servers/${serverId}/listings`,
+        });
+
+        const naLista = (
+            lista.json().listings as {
+                id: string;
+                sellerRating: { average: number; count: number } | null;
+            }[]
+        ).find((um) => um.id === outro);
+
+        expect(naLista?.sellerRating?.count).toBeGreaterThan(0);
+    });
+
+    /**
+     * A mesma pessoa, a mesma nota, nos dois sítios.
+     *
+     * Há dois caminhos até uma média: somar as notas em memória, para
+     * um perfil, e pedi-la à base de dados, para uma página inteira de
+     * anúncios. Se arredondarem de maneiras diferentes, a mesma pessoa
+     * aparece com `4,3` num ecrã e `4,333…` no outro — e foi um
+     * mutante a mostrar que nada o impedia.
+     */
+    it('dá a mesma média no perfil e no mercado', async () => {
+        const dela = await registar(`ar${marca}`);
+
+        const servidor = await app.inject({
+            method: 'POST',
+            url: '/api/v1/servers',
+            headers: auth(dela.token),
+            payload: { name: `Servidor do arredondamento ${marca}` },
+        });
+
+        const servidorId = servidor.json().id as string;
+
+        const vendaDe = async (titulo: string, nota: number) => {
+            const anuncio = await app.inject({
+                method: 'POST',
+                url: `/api/v1/market/servers/${servidorId}/listings`,
+                headers: auth(dela.token),
+                payload: {
+                    category: 'item',
+                    title: `${titulo} ${marca}`,
+                    body: 'Uma descrição que chegue.',
+                    price: '1000',
+                },
+            });
+
+            const listingId = anuncio.json().id as string;
+
+            await falar(compradora, listingId);
+
+            await app.inject({
+                method: 'POST',
+                url: `/api/v1/market/listings/${listingId}/close`,
+                headers: auth(dela.token),
+                payload: { outcome: 'sold' },
+            });
+
+            await avaliar(compradora, listingId, { rating: nota });
+        };
+
+        /** 13/3 = 4,333…, que é onde os dois caminhos se separam. */
+        await vendaDe('Arredondar um', 5);
+        await vendaDe('Arredondar dois', 4);
+        await vendaDe('Arredondar tres', 4);
+
+        const noPerfil = await perfil(dela.nome);
+
+        const porVender = await app.inject({
+            method: 'POST',
+            url: `/api/v1/market/servers/${servidorId}/listings`,
+            headers: auth(dela.token),
+            payload: {
+                category: 'item',
+                title: `Ainda a venda ${marca}`,
+                body: 'Uma descrição que chegue.',
+                price: '1000',
+            },
+        });
+
+        const noMercado = await app.inject({
+            method: 'GET',
+            url: `/api/v1/market/listings/${porVender.json().id as string}`,
+        });
+
+        expect(noPerfil.summary.average).toBe(4.3);
+        expect(noMercado.json().sellerRating.average).toBe(
+            noPerfil.summary.average,
+        );
+    });
+
+    it('não inventa uma nota no mercado a quem não tem avaliações', async () => {
+        const dela = await registar(`an${marca}`);
+
+        const servidor = await app.inject({
+            method: 'POST',
+            url: '/api/v1/servers',
+            headers: auth(dela.token),
+            payload: { name: `Servidor sem notas ${marca}` },
+        });
+
+        const anuncio = await app.inject({
+            method: 'POST',
+            url: `/api/v1/market/servers/${servidor.json().id as string}/listings`,
+            headers: auth(dela.token),
+            payload: {
+                category: 'item',
+                title: `Sem nota nenhuma ${marca}`,
+                body: 'Uma descrição que chegue.',
+                price: '500',
+            },
+        });
+
+        const lido = await app.inject({
+            method: 'GET',
+            url: `/api/v1/market/listings/${anuncio.json().id as string}`,
+        });
+
+        expect(lido.json().sellerRating).toBeNull();
+    });
+
     it('não inventa uma média a quem não tem avaliações', async () => {
         const dela = await perfil(estranha.nome);
 

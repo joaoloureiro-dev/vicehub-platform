@@ -59,6 +59,14 @@ export interface AnuncioResumo {
     imageUrl: string | null;
     status: EstadoDeAnuncio;
     seller: Vendedor | null;
+    /**
+     * A nota de quem vende, onde a decisão se toma.
+     *
+     * `null` quando ainda não tem nenhuma. Não é zero: zero é a pior
+     * nota da escala, e um mercado que a desse a quem começa punha os
+     * novos abaixo dos maus.
+     */
+    sellerRating: { average: number; count: number } | null;
     createdAt: string;
     updatedAt: string;
 }
