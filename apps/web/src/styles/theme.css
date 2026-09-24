@@ -4103,3 +4103,92 @@ button.link:hover {
     min-height: 0;
     padding: 4px 10px;
 }
+
+/* ---------- as avaliações do mercado ---------- */
+
+/*
+ * Texto só para quem lê com um leitor de ecrã.
+ *
+ * Cinco símbolos iguais não dizem nada a quem não os vê, e um `title`
+ * não é lido de forma fiável. A nota por extenso fica no documento,
+ * fora do ecrã.
+ */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.estrelas {
+    color: var(--ink);
+    letter-spacing: 2px;
+}
+
+.media-avaliacoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0;
+    font-size: 15px;
+}
+
+.media-avaliacoes .estrelas {
+    font-size: 20px;
+}
+
+.lista-avaliacoes {
+    list-style: none;
+    display: grid;
+    gap: 16px;
+    margin: 16px 0 0;
+    padding: 0;
+}
+
+.lista-avaliacoes .card {
+    display: grid;
+    gap: 8px;
+}
+
+.avaliacao-cabeca {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--faint);
+}
+
+.avaliacao-cabeca .quem {
+    color: var(--muted);
+}
+
+.avaliacao-cabeca time {
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+/*
+ * A resposta de quem foi avaliado, recuada.
+ *
+ * Lê-se como o que é: a outra versão da mesma história, e não uma
+ * segunda avaliação. O filete à esquerda é o que faz essa diferença
+ * sem precisar de uma etiqueta a dizê-la.
+ */
+.lista-avaliacoes .resposta {
+    margin: 0;
+    padding: 8px 0 8px 14px;
+    border-left: 2px solid var(--edge-lit);
+}
+
+.resposta-avaliacao {
+    display: grid;
+    gap: 12px;
+}

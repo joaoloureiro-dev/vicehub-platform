@@ -175,6 +175,13 @@ export interface AccountExport {
             body: string;
             createdAt: string;
         }[];
+        /** E as avaliações que escreveu sobre quem lhe vendeu. */
+        marketReviews: {
+            listing: string;
+            rating: number;
+            body: string | null;
+            createdAt: string;
+        }[];
     };
 }
 
@@ -236,6 +243,7 @@ export const buildAccountExport = async (
         respostasDoForum,
         denuncias,
         mensagensDoMercado,
+        avaliacoesEscritas,
     ] = await Promise.all([
         database.userAuthProvider.findMany({
             where: { userId, is_deleted: false },
@@ -389,6 +397,21 @@ export const buildAccountExport = async (
             },
             orderBy: { created_at: 'desc' },
         }),
+        /**
+         * As avaliações que esta pessoa escreveu. As que recebeu não
+         * vão aqui: são texto de outras pessoas sobre ela, e uma
+         * exportação leva o que é dela.
+         */
+        database.marketReview.findMany({
+            where: { reviewerId: userId, is_deleted: false },
+            select: {
+                rating: true,
+                body: true,
+                created_at: true,
+                listing: { select: { title: true } },
+            },
+            orderBy: { created_at: 'desc' },
+        }),
     ]);
 
     return {
@@ -532,6 +555,12 @@ export const buildAccountExport = async (
                 listing: mensagem.conversation.listing.title,
                 body: mensagem.body,
                 createdAt: mensagem.created_at.toISOString(),
+            })),
+            marketReviews: avaliacoesEscritas.map((avaliacao) => ({
+                listing: avaliacao.listing.title,
+                rating: avaliacao.rating,
+                body: avaliacao.body,
+                createdAt: avaliacao.created_at.toISOString(),
             })),
         },
     };

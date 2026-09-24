@@ -82,6 +82,7 @@ const COMO_OS_DOCUMENTOS_LHE_CHAMAM: Readonly<Record<string, string>> = {
     forum: 'forum',
     market: 'market',
     messages: 'messages',
+    reviews: 'review',
 };
 
 /** Os números por extenso, que é como um documento os escreve. */

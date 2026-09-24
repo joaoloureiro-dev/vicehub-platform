@@ -16,8 +16,17 @@ export type MarketErrorCode =
      */
     | 'CONVERSATION_NOT_FOUND'
     | 'MESSAGE_NOT_FOUND'
-    /** Falar com o próprio anúncio. Quem pergunta é quem o lê. */
-    | 'IS_YOURS';
+    /** Falar com o próprio anúncio, ou avaliá-lo. */
+    | 'IS_YOURS'
+    | 'REVIEW_NOT_FOUND'
+    /** Avaliar um anúncio que não chegou a ser vendido. */
+    | 'NOT_SOLD'
+    /** Avaliar alguém com quem nunca se falou sobre aquele anúncio. */
+    | 'NO_DEAL'
+    | 'ALREADY_REVIEWED'
+    | 'ALREADY_REPLIED'
+    /** Avaliar quem já não tem conta. Não há a quem dar a nota. */
+    | 'SELLER_GONE';
 
 export class MarketError extends Error {
     constructor(

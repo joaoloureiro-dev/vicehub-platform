@@ -6,6 +6,7 @@ import marketRoutes from '../../src/modules/market/market.routes.js';
 import validationPlugin from '../../src/plugins/http/validation.plugin.js';
 import type { MarketController } from '../../src/modules/market/controllers/market.controller.js';
 import type { ConversationController } from '../../src/modules/market/controllers/conversation.controller.js';
+import type { ReviewController } from '../../src/modules/market/controllers/review.controller.js';
 
 /**
  * Quem pode o quê no mercado, e o que custa anunciar.
@@ -64,7 +65,19 @@ describe('ligação das rotas do mercado', () => {
             removeMessage: vi.fn(),
         } as unknown as ConversationController;
 
-        await app.register(marketRoutes, { controller, conversations });
+        const reviews = {
+            list: vi.fn(),
+            create: vi.fn(),
+            reply: vi.fn(),
+            report: vi.fn(),
+            remove: vi.fn(),
+        } as unknown as ReviewController;
+
+        await app.register(marketRoutes, {
+            controller,
+            conversations,
+            reviews,
+        });
         await app.ready();
 
         /**
@@ -105,9 +118,15 @@ describe('ligação das rotas do mercado', () => {
             | { rateLimit?: { max?: number; timeWindow?: string } }
             | undefined)?.rateLimit;
 
+    /**
+     * As avaliações são públicas como os anúncios: quem está a decidir
+     * se compra a alguém pode nem ter conta. É a diferença que as
+     * separa das conversas, e é aqui que ela se prova.
+     */
     it.each([
         'GET /servers/:serverId/listings',
         'GET /listings/:listingId',
+        'GET /people/:username/reviews',
     ])('%s não pede sessão', (chave) => {
         expect(preHandlersDe(chave)).toHaveLength(0);
     });
@@ -124,6 +143,10 @@ describe('ligação das rotas do mercado', () => {
         'POST /conversations/:conversationId/messages',
         'POST /messages/:messageId/reports',
         'DELETE /messages/:messageId',
+        'POST /listings/:listingId/reviews',
+        'POST /reviews/:reviewId/reply',
+        'POST /reviews/:reviewId/reports',
+        'DELETE /reviews/:reviewId',
     ])('%s pede sessão e a permissão de anunciar', (chave) => {
         expect(preHandlersDe(chave)).toHaveLength(2);
         expect(permissoesPorRota.get(chave)).toEqual(['marketplace:post']);
@@ -157,6 +180,9 @@ describe('ligação das rotas do mercado', () => {
         'POST /listings/:listingId/conversations',
         'POST /conversations/:conversationId/messages',
         'POST /messages/:messageId/reports',
+        'POST /listings/:listingId/reviews',
+        'POST /reviews/:reviewId/reply',
+        'POST /reviews/:reviewId/reports',
     ])('%s leva limite de escrita', (chave) => {
         const limite = limiteDe(chave);
 

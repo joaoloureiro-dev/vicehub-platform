@@ -37,7 +37,12 @@ export type RazaoDaDenuncia = 'spam' | 'abuse' | 'off_topic' | 'other';
  * Duas delas são públicas — o fórum e o mercado —, e a terceira não: uma
  * conversa é de duas pessoas, e uma mensagem só se denuncia por dentro.
  */
-export type EspecieDeAlvo = 'topic' | 'reply' | 'listing' | 'message';
+export type EspecieDeAlvo =
+    | 'topic'
+    | 'reply'
+    | 'listing'
+    | 'message'
+    | 'review';
 
 export interface DenunciaNaFila {
     id: string;
@@ -90,6 +95,12 @@ const ONDE_SE_ABRE: Readonly<Record<EspecieDeAlvo, (id: string) => string>> = {
      * fila se for ela a moderar, e para essa o caminho é o certo.
      */
     message: (id) => `/mercado/conversas/${id}`,
+    /**
+     * Uma avaliação abre-se **no anúncio de que fala**: é lá que se vê
+     * o caso — o que se vendeu, por quanto, e quem vendeu. A nota e o
+     * texto já vêm na própria linha da fila.
+     */
+    review: (id) => `/mercado/${id}`,
 };
 
 export const enderecoDoAlvo = (alvo: DenunciaNaFila['target']): string =>
@@ -128,6 +139,16 @@ export const reportReply = (
     note?: string,
 ): Promise<{ id: string }> =>
     api<{ id: string }>(`/forum/replies/${replyId}/reports`, {
+        method: 'POST',
+        body: { reason, ...(note ? { note } : {}) },
+    });
+
+export const reportReview = (
+    reviewId: string,
+    reason: RazaoDaDenuncia,
+    note?: string,
+): Promise<{ id: string }> =>
+    api<{ id: string }>(`/market/reviews/${reviewId}/reports`, {
         method: 'POST',
         body: { reason, ...(note ? { note } : {}) },
     });

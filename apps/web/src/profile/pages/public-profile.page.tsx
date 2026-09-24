@@ -6,6 +6,7 @@ import { Alert } from '../../auth/components/alert.js';
 import { BotaoDeAmizade } from '../components/botao-de-amizade.js';
 import { listFriendRequests, listFriends } from '../friends.api.js';
 import { getProfile } from '../profile.api.js';
+import { Avaliacoes } from '../../market/components/avaliacoes.js';
 import { Conquistas } from '../../components/conquistas.js';
 import { useIdioma, useT } from '../../i18n/i18n.js';
 
@@ -110,6 +111,13 @@ export const PublicProfilePage = () => {
               razão para lhe tocar.
             */}
             <Conquistas conquistas={data.achievements} />
+
+            {/*
+              As avaliações vivem aqui, e não na página de cada anúncio:
+              quem as lê está a decidir se compra **a esta pessoa**, e
+              uma média espalhada por trinta anúncios não é uma média.
+            */}
+            <Avaliacoes username={data.username} userId={data.id} />
 
             {/*
               O botão só existe para outra pessoa: no próprio perfil não

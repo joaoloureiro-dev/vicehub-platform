@@ -219,6 +219,14 @@ const alvoDaLinha = (linha: {
         is_deleted: boolean;
         sender: DenunciaView['reporter'];
     } | null;
+    review: {
+        id: string;
+        rating: number;
+        body: string | null;
+        is_deleted: boolean;
+        reviewer: DenunciaView['reporter'];
+        listing: { id: string; title: string };
+    } | null;
 }): DenunciaView['target'] => {
     if (linha.topic !== null) {
         return {
@@ -255,6 +263,23 @@ const alvoDaLinha = (linha: {
             body: linha.listing.body,
             author: linha.listing.seller,
             isRemoved: linha.listing.is_deleted,
+        };
+    }
+
+    if (linha.review !== null) {
+        return {
+            kind: 'review',
+            /**
+             * O anúncio de que a avaliação fala, e não a avaliação: é
+             * lá que um moderador vê o caso — o que se vendeu, por
+             * quanto, e quem vendeu. A nota e o texto vêm já aqui.
+             */
+            openId: linha.review.listing.id,
+            /** O anúncio de que a avaliação fala, e a nota que deu. */
+            title: `${linha.review.listing.title} — ${linha.review.rating}/5`,
+            body: linha.review.body,
+            author: linha.review.reviewer,
+            isRemoved: linha.review.is_deleted,
         };
     }
 

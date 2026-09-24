@@ -306,6 +306,11 @@ model User {
   friendshipsAsB      Friendship[]         @relation("FriendshipUserB")
   marketConversations MarketConversation[]
   marketMessages      MarketMessage[]
+
+  /// As avaliações que escreveu, e as que recebeu. São dois campos
+  /// porque são dois papéis na mesma tabela, e não duas tabelas.
+  avaliacoesEscritas  MarketReview[] @relation("avaliacoesEscritas")
+  avaliacoesRecebidas MarketReview[] @relation("avaliacoesRecebidas")
 }
 
 model Crew {
@@ -1382,6 +1387,7 @@ model Report {
   replyId   String?
   listingId String?
   messageId String?
+  reviewId  String?
 
   /// Sai quando a conta sai; a denúncia fica, porque o que ela aponta
   /// continua lá e o moderador ainda tem de decidir.
@@ -1411,18 +1417,21 @@ model Report {
   reply    ForumReply?    @relation(fields: [replyId], references: [id], onDelete: Cascade)
   listing  MarketListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
   message  MarketMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  review   MarketReview?  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
   reporter User?          @relation(fields: [reporterId], references: [id], onDelete: SetNull)
 
   @@unique([reporterId, topicId])
   @@unique([reporterId, replyId])
   @@unique([reporterId, listingId])
   @@unique([reporterId, messageId])
+  @@unique([reporterId, reviewId])
   /// A fila do moderador: as abertas, mais velhas primeiro.
   @@index([status, created_at])
   @@index([topicId])
   @@index([replyId])
   @@index([listingId])
   @@index([messageId])
+  @@index([reviewId])
 }
 
 model ForumTopic {
@@ -1828,6 +1837,7 @@ model MarketListing {
   seller              User?                @relation(fields: [sellerId], references: [id], onDelete: SetNull)
   reports             Report[]
   marketConversations MarketConversation[]
+  reviews             MarketReview[]
 
   /// O índice da única listagem que existe: os anúncios de um servidor,
   /// num estado, do mais recente para o mais antigo.
@@ -1914,4 +1924,67 @@ model MarketMessage {
   /// Uma conversa lê-se do princípio para o fim.
   @@index([conversationId, created_at])
   @@index([senderId])
+}
+
+/// A avaliação de uma venda.
+///
+/// **Amarrada a um negócio que existiu.** Avaliações abertas a quem
+/// quiser são um sistema de vinganças com outro nome: quem avalia tem
+/// de ter falado com quem vendeu, sobre aquele anúncio, e o anúncio tem
+/// de ter sido marcado como vendido. As duas condições são verificadas
+/// no serviço, e a unicidade aqui garante a terceira — uma avaliação
+/// por venda e por pessoa.
+///
+/// É **pública**, e isso faz dela uma superfície como o fórum e o
+/// mercado: qualquer pessoa a lê, e por isso denuncia-se como eles.
+///
+/// Quem vendeu tem **uma** resposta, e não uma conversa. Uma avaliação
+/// injusta sem direito de resposta é um problema a sério; uma discussão
+/// por baixo de cada estrela é outro. Uma resposta por avaliação é o
+/// meio-termo que deixa explicar sem abrir um segundo fórum.
+model MarketReview {
+  id String @id @default(uuid())
+
+  listingId String
+
+  /// Quem avaliou. Nulo quando a conta sai — a avaliação fica, porque
+  /// a média de quem vendeu não pode mudar porque um comprador se foi
+  /// embora.
+  reviewerId String?
+
+  /// Quem foi avaliado. Lido do anúncio na criação e guardado aqui: é
+  /// a única desnormalização desta tabela, e existe porque a média de
+  /// uma pessoa tem de sobreviver ao anúncio ser retirado.
+  subjectId String?
+
+  /// De uma a cinco. O `CHECK` está na base de dados.
+  rating Int
+
+  /// O que quem avaliou escreveu. Público, e opcional: uma estrela sem
+  /// explicação continua a ser uma avaliação.
+  body String?
+
+  /// A resposta de quem vendeu. Uma só, e também pública.
+  reply      String?
+  replied_at DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  is_deleted Boolean   @default(false)
+  version    Int       @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  listing  MarketListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reviewer User?         @relation("avaliacoesEscritas", fields: [reviewerId], references: [id], onDelete: SetNull)
+  subject  User?         @relation("avaliacoesRecebidas", fields: [subjectId], references: [id], onDelete: SetNull)
+  reports  Report[]
+
+  @@unique([listingId, reviewerId])
+  /// As avaliações de uma pessoa, da mais recente para a mais antiga.
+  @@index([subjectId, created_at(sort: Desc)])
+  @@index([listingId])
 }

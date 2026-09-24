@@ -135,3 +135,44 @@ export const MENSAGENS_POR_PAGINA = 100;
 
 /** Quantas conversas por página na caixa de entrada. */
 export const CONVERSAS_POR_PAGINA = 20;
+
+/**
+ * A escala de uma avaliação.
+ *
+ * Cinco pontos, e não dez nem cem: a diferença entre um sete e um oito
+ * não é uma coisa que alguém consiga responder sobre uma venda, e uma
+ * escala que ninguém sabe usar dá uma média que não quer dizer nada.
+ */
+export const AVALIACAO_MINIMA = 1;
+export const AVALIACAO_MAXIMA = 5;
+
+/**
+ * O que se escreve com a avaliação, e a resposta de quem vendeu.
+ *
+ * Curtas de propósito. Uma avaliação é para ser lida de relance por
+ * quem está a decidir se compra a alguém, e um texto de mil palavras
+ * por baixo de cada estrela transformava um perfil num fórum.
+ */
+export const AVALIACAO_TEXTO_MAXIMO = 1_000;
+
+/** Quantas avaliações por página no perfil de alguém. */
+export const AVALIACOES_POR_PAGINA = 20;
+
+/**
+ * A média de uma pessoa, arredondada a uma casa.
+ *
+ * Uma casa e não duas: `4,3` diz o que há a dizer, e `4,27` finge uma
+ * precisão que doze avaliações não têm.
+ *
+ * Sem avaliações não há média — `null`, e não zero. Zero é uma nota
+ * péssima, e quem ainda não vendeu nada não a merece.
+ */
+export const mediaDasAvaliacoes = (notas: readonly number[]): number | null => {
+    if (notas.length === 0) {
+        return null;
+    }
+
+    const soma = notas.reduce((total, nota) => total + nota, 0);
+
+    return Math.round((soma / notas.length) * 10) / 10;
+};

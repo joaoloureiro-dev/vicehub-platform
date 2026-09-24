@@ -148,16 +148,17 @@ export const termsDocument = (operator: LegalOperator): LegalDocument => {
             {
                 heading: 'Reporting, and how we moderate',
                 body: [
-                    'There are two places on ViceHub where anyone with an account writes text that everyone else can read: the forum, and the market on each server. This section says exactly how both are policed, and it is the same answer for both. It also covers the one place where people write to each other in private — the messages about a listing — which is policed differently, and that difference is set out below.',
-                    'Every question, every reply and every listing carries a Report button for anyone signed in who did not write it. You pick one of four reasons — spam or advertising, insults or harassment or hate, not what the place is for, or something else — and you can add a short note. Every report goes into one queue, which moderators work through oldest first.',
+                    'There are three places on ViceHub where anyone with an account writes text that everyone else can read: the forum, the market on each server, and the reviews people leave after a sale. This section says exactly how all three are policed, and it is the same answer for each. It also covers the one place where people write to each other in private — the messages about a listing — which is policed differently, and that difference is set out below.',
+                    'Every question, every reply, every listing and every review carries a Report button for anyone signed in who did not write it. You pick one of four reasons — spam or advertising, insults or harassment or hate, not what the place is for, or something else — and you can add a short note. Every report goes into one queue, which moderators work through oldest first.',
                     'A person decides, not a program. Nothing is removed automatically, and no ranking or filter hides a post before a moderator has read it.',
                 ],
                 list: [
                     'Messages between a buyer and a seller are private, and they are reported from inside: only the two people in a conversation can report a message in it, because only they can read it. A moderator then sees that message and nothing else — not the conversation it came from.',
-                    'A moderator can remove a question, a reply, a listing or a reported message, and can close a question to new replies. Closing is the milder tool: what is already written stays readable, and only the conversation stops.',
+                    'A moderator can remove a question, a reply, a listing, a review or a reported message, and can close a question to new replies. Closing is the milder tool: what is already written stays readable, and only the conversation stops.',
                     'Removing hides the text from where it was. It does not erase the record that something was there, because a moderator has to be able to explain a decision afterwards.',
                     'The account that wrote it keeps its account. Suspension is a separate, heavier step, and it is covered in the section on ending an account.',
                     `If something of yours was removed, or your question was closed, and you think it was wrong, write to ${email}. Say what was removed and why you disagree; a different person will look at it, and if we got it wrong we put it back.`,
+                    'A review can only be left by someone who talked to the seller about a listing that was sold, and only once per sale. Whoever was reviewed gets one public reply, and cannot remove the review: a rating its owner can delete tells nobody anything. We remove a review when it breaks these terms, not when it is unflattering.',
                     'We do not tell you who reported you. Telling would turn reporting into a reason for retaliation, and the person who reported is not the person who decided.',
                 ],
             },
