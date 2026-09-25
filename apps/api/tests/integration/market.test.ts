@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { PRECO_MAXIMO, prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { tagAoAcaso } from '../helpers/crew-tags.js';
 
 /**
  * O mercado de um servidor, contra PostgreSQL a sério.
@@ -170,7 +171,7 @@ describe('o mercado', () => {
             headers: auth(membro.token),
             payload: {
                 name: `Crew ${marca}`,
-                tag: `M${marca.slice(-3)}`,
+                tag: tagAoAcaso(),
             },
         });
 
@@ -269,7 +270,7 @@ describe('o mercado', () => {
             headers: auth(candidata.token),
             payload: {
                 name: `Crew candidata ${marca}`,
-                tag: `C${marca.slice(-3)}`,
+                tag: tagAoAcaso(),
             },
         });
 
