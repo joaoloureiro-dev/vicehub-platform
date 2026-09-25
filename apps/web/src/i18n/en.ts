@@ -18,6 +18,7 @@ export const en = (p: Tools) => ({
     },
 
     nav: {
+        avisos: 'Notifications',
         crews: 'Crews',
         servidores: 'Servers',
         asMinhas: 'Mine',
@@ -608,6 +609,37 @@ export const en = (p: Tools) => ({
 
         IS_YOURS: 'This is yours. Use the remove button instead.',
 
+    },
+
+    avisos: {
+        titulo: 'What you missed',
+
+        sub: 'Things other people did that concern you. Nothing here is sent by email — that is not built yet.',
+
+        vazio: 'Nothing waiting for you.',
+
+        naoCarregou: 'Your notifications could not be loaded.',
+
+        darTodosPorLidos: 'Mark all as read',
+
+        naoFoiPossivelLer: 'That could not be marked as read.',
+
+        porLer: (quantos: string) => `${quantos} waiting`,
+
+        /**
+         * Uma frase por espécie, e não uma frase com um buraco: cada
+         * uma diz o que aconteceu na ordem em que a língua a diz, e um
+         * modelo só obrigava as quatro a caberem na ordem do inglês.
+         */
+        oQueAconteceu: {
+            market_message: (quem: string) => `${quem} wrote to you about`,
+            forum_reply: (quem: string) => `${quem} replied to`,
+            market_review: (quem: string) => `${quem} reviewed your sale of`,
+            market_review_reply: (quem: string) =>
+                `${quem} replied to your review of`,
+        },
+
+        alguem: 'Someone',
     },
 
     mercado: {

@@ -6,6 +6,7 @@ import { App } from './app.js';
 import { AuthProvider } from './auth/auth.context.js';
 import { I18nProvider } from './i18n/i18n.js';
 import { PendingProvider } from './pages/pending.context.js';
+import { AvisosProvider } from './notifications/avisos.context.js';
 import './styles/theme.css';
 
 const root = document.getElementById('root');
@@ -25,7 +26,9 @@ createRoot(root).render(
                       como a página das comunidades leem daqui.
                     */}
                     <PendingProvider>
-                        <App />
+                        <AvisosProvider>
+                            <App />
+                        </AvisosProvider>
                     </PendingProvider>
                 </AuthProvider>
             </BrowserRouter>

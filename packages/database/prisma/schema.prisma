@@ -311,6 +311,10 @@ model User {
   /// porque são dois papéis na mesma tabela, e não duas tabelas.
   avaliacoesEscritas  MarketReview[] @relation("avaliacoesEscritas")
   avaliacoesRecebidas MarketReview[] @relation("avaliacoesRecebidas")
+
+  /// Os avisos que recebeu, e os que causou a outras pessoas.
+  avisosRecebidos Notification[] @relation("avisosRecebidos")
+  avisosCausados  Notification[] @relation("avisosCausados")
 }
 
 model Crew {
@@ -1485,9 +1489,10 @@ model ForumReply {
   created_by String?
   updated_by String?
 
-  topic   ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  author  User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  reports Report[]
+  topic         ForumTopic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author        User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  reports       Report[]
+  notifications Notification[]
 
   @@index([topicId, created_at])
   @@index([authorId])
@@ -1917,9 +1922,10 @@ model MarketMessage {
   created_by String?
   updated_by String?
 
-  conversation MarketConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User?              @relation(fields: [senderId], references: [id], onDelete: SetNull)
-  reports      Report[]
+  conversation  MarketConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender        User?              @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  reports       Report[]
+  notifications Notification[]
 
   /// Uma conversa lê-se do princípio para o fim.
   @@index([conversationId, created_at])
@@ -1978,13 +1984,86 @@ model MarketReview {
   created_by String?
   updated_by String?
 
-  listing  MarketListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  reviewer User?         @relation("avaliacoesEscritas", fields: [reviewerId], references: [id], onDelete: SetNull)
-  subject  User?         @relation("avaliacoesRecebidas", fields: [subjectId], references: [id], onDelete: SetNull)
-  reports  Report[]
+  listing       MarketListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reviewer      User?          @relation("avaliacoesEscritas", fields: [reviewerId], references: [id], onDelete: SetNull)
+  subject       User?          @relation("avaliacoesRecebidas", fields: [subjectId], references: [id], onDelete: SetNull)
+  reports       Report[]
+  notifications Notification[]
 
   @@unique([listingId, reviewerId])
   /// As avaliações de uma pessoa, da mais recente para a mais antiga.
   @@index([subjectId, created_at(sort: Desc)])
   @@index([listingId])
+}
+
+/// De que espécie é um aviso.
+///
+/// Lista fechada, como os alvos de uma denúncia, e pela mesma razão: é
+/// dela que o ecrã sabe o que escrever e para onde apontar. Uma espécie
+/// nova sem entrada nos dicionários é um erro de compilação, e não um
+/// aviso em branco na caixa de alguém.
+enum NotificationKind {
+  /// Alguém escreveu numa conversa do mercado.
+  market_message
+  /// Alguém respondeu a uma pergunta do fórum.
+  forum_reply
+  /// Alguém avaliou uma venda.
+  market_review
+  /// Quem foi avaliado respondeu.
+  market_review_reply
+}
+
+/// Um aviso: aconteceu qualquer coisa que te diz respeito.
+///
+/// Existe porque a plataforma passou a ter sítios onde outra pessoa
+/// fala contigo — uma conversa sobre um anúncio, uma resposta a uma
+/// pergunta, uma avaliação — e nenhum deles tinha como te dizer que
+/// falou. Sem isto, a conversa que se construiu ontem é uma conversa
+/// que ninguém sabe que tem, e toda a gente volta ao Discord.
+///
+/// **Nasce na mesma transação do que o causou.** Um aviso escrito a
+/// seguir, fora da transação, é um aviso que se perde quando a escrita
+/// seguinte falha — e o que se perde é a única coisa que dizia à pessoa
+/// que havia ali alguma coisa.
+model Notification {
+  id String @id @default(uuid())
+
+  /// Quem recebe.
+  userId String
+
+  kind NotificationKind
+
+  /// Quem causou. Nulo quando essa conta sai: o aviso continua a valer,
+  /// porque o que ele aponta continua lá.
+  actorId String?
+
+  /// Exatamente um destes está preenchido. A soma está num `CHECK`.
+  messageId String?
+  replyId   String?
+  reviewId  String?
+
+  /// Quando foi lido. Nulo é por ler, e é o que a contagem conta.
+  read_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  version    Int      @default(1)
+
+  source     SourceType @default(api)
+  created_by String?
+  updated_by String?
+
+  user    User           @relation("avisosRecebidos", fields: [userId], references: [id], onDelete: Cascade)
+  actor   User?          @relation("avisosCausados", fields: [actorId], references: [id], onDelete: SetNull)
+  message MarketMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reply   ForumReply?    @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  review  MarketReview?  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  /// A caixa de uma pessoa: os dela, do mais recente para o mais antigo.
+  @@index([userId, created_at(sort: Desc)])
+  /// E a contagem do que está por ler, que é o que a barra mostra.
+  @@index([userId, read_at])
+  @@index([messageId])
+  @@index([replyId])
+  @@index([reviewId])
 }

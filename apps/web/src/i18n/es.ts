@@ -11,6 +11,7 @@ export const es = (p: Tools): Messages => ({
     },
 
     nav: {
+        avisos: 'Avisos',
         crews: 'Crews',
         servidores: 'Servidores',
         asMinhas: 'Las mías',
@@ -586,6 +587,32 @@ export const es = (p: Tools): Messages => ({
 
         IS_YOURS: 'Esto es tuyo. Usa el botón de retirar.',
 
+    },
+
+    avisos: {
+        titulo: 'Lo que te perdiste',
+
+        sub: 'Cosas que otras personas hicieron y que te afectan. Nada de esto va por correo — eso todavía no está hecho.',
+
+        vazio: 'No tienes nada esperando.',
+
+        naoCarregou: 'No se pudieron cargar tus avisos.',
+
+        darTodosPorLidos: 'Marcar todo como leído',
+
+        naoFoiPossivelLer: 'No se pudo marcar como leído.',
+
+        porLer: (quantos: string) => `${quantos} esperando`,
+
+        oQueAconteceu: {
+            market_message: (quem: string) => `${quem} te escribió sobre`,
+            forum_reply: (quem: string) => `${quem} respondió a`,
+            market_review: (quem: string) => `${quem} valoró tu venta de`,
+            market_review_reply: (quem: string) =>
+                `${quem} respondió a tu valoración de`,
+        },
+
+        alguem: 'Alguien',
     },
 
     mercado: {
