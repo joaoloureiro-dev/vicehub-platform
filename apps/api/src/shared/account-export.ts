@@ -33,7 +33,7 @@ export interface AccountExport {
      * Que formato é este. Existe para que uma exportação guardada hoje
      * continue a poder ser lida quando o formato mudar.
      */
-    format: 'vicehub.account.v1';
+    format: 'vicehub.account.v2';
 
     account: {
         id: string;
@@ -169,20 +169,66 @@ export interface AccountExport {
             note: string | null;
             createdAt: string;
         }[];
+    };
+
+    /**
+     * O mercado: o que pôs à venda, o que escreveu sobre isso e o que
+     * avaliou.
+     *
+     * Estava tudo debaixo de `forum`, que era o nome de onde a primeira
+     * destas coisas nasceu e deixou de ser verdade no dia em que o
+     * mercado abriu. E os **anúncios** não estavam em sítio nenhum: a
+     * política diz que a exportação leva tudo o que a plataforma tem
+     * sobre a pessoa, e o anúncio é texto dela — título, descrição,
+     * preço pedido e o endereço da imagem que lá pôs.
+     */
+    market: {
+        listings: {
+            id: string;
+            /** Em que servidor foi posto à venda. */
+            server: string;
+            category: string;
+            title: string;
+            body: string;
+            /** Moeda de jogo, em texto como o resto do dinheiro. */
+            price: string;
+            imageUrl: string | null;
+            status: string;
+            createdAt: string;
+            closedAt: string | null;
+        }[];
         /** O que esta pessoa escreveu em conversas do mercado. */
-        marketMessages: {
+        messages: {
             listing: string;
             body: string;
             createdAt: string;
         }[];
         /** E as avaliações que escreveu sobre quem lhe vendeu. */
-        marketReviews: {
+        reviews: {
             listing: string;
             rating: number;
             body: string | null;
             createdAt: string;
         }[];
     };
+
+    /**
+     * Os avisos que recebeu.
+     *
+     * Do aviso sai o que é dela: que foi avisada, de que espécie, sobre
+     * o quê, quando, e **se já o leu** — que é o único desses factos
+     * que não está em mais lado nenhum. Não sai o texto a que o aviso
+     * aponta quando esse texto é de outra pessoa: uma resposta à sua
+     * pergunta foi escrita por alguém, e uma exportação leva o que é
+     * seu. Nem quem o causou, pela mesma razão.
+     */
+    notifications: {
+        kind: string;
+        /** O anúncio ou a pergunta a que diz respeito. */
+        about: string | null;
+        createdAt: string;
+        readAt: string | null;
+    }[];
 }
 
 /**
@@ -244,6 +290,8 @@ export const buildAccountExport = async (
         denuncias,
         mensagensDoMercado,
         avaliacoesEscritas,
+        anuncios,
+        avisos,
     ] = await Promise.all([
         database.userAuthProvider.findMany({
             where: { userId, is_deleted: false },
@@ -412,11 +460,56 @@ export const buildAccountExport = async (
             },
             orderBy: { created_at: 'desc' },
         }),
+        /**
+         * Os anúncios que pôs à venda.
+         *
+         * Faltavam, e a política diz que daqui sai tudo o que a
+         * plataforma tem sobre a pessoa. Um anúncio é texto dela — e é
+         * o texto dela que mais trabalho deu a escrever.
+         */
+        database.marketListing.findMany({
+            where: { sellerId: userId, is_deleted: false },
+            select: {
+                id: true,
+                category: true,
+                title: true,
+                body: true,
+                price: true,
+                imageUrl: true,
+                status: true,
+                created_at: true,
+                closed_at: true,
+                server: { select: { name: true } },
+            },
+            orderBy: { created_at: 'desc' },
+        }),
+        /**
+         * E os avisos que recebeu, sem o texto a que apontam: esse é,
+         * quase sempre, de outra pessoa.
+         */
+        database.notification.findMany({
+            where: { userId },
+            select: {
+                kind: true,
+                created_at: true,
+                read_at: true,
+                message: {
+                    select: {
+                        conversation: {
+                            select: { listing: { select: { title: true } } },
+                        },
+                    },
+                },
+                reply: { select: { topic: { select: { title: true } } } },
+                review: { select: { listing: { select: { title: true } } } },
+            },
+            orderBy: { created_at: 'desc' },
+        }),
     ]);
 
     return {
         exportedAt: new Date().toISOString(),
-        format: 'vicehub.account.v1',
+        format: 'vicehub.account.v2',
 
         account: {
             id: user.id,
@@ -551,20 +644,61 @@ export const buildAccountExport = async (
                 note: denuncia.note,
                 createdAt: denuncia.created_at.toISOString(),
             })),
-            marketMessages: mensagensDoMercado.map((mensagem) => ({
+        },
+
+        market: {
+            listings: anuncios.map((anuncio) => ({
+                id: anuncio.id,
+                server: anuncio.server.name,
+                category: anuncio.category,
+                title: anuncio.title,
+                body: anuncio.body,
+                /** Em texto, como o resto do dinheiro: é um `BigInt`. */
+                price: anuncio.price.toString(),
+                imageUrl: anuncio.imageUrl,
+                status: anuncio.status,
+                createdAt: anuncio.created_at.toISOString(),
+                closedAt: anuncio.closed_at?.toISOString() ?? null,
+            })),
+            messages: mensagensDoMercado.map((mensagem) => ({
                 listing: mensagem.conversation.listing.title,
                 body: mensagem.body,
                 createdAt: mensagem.created_at.toISOString(),
             })),
-            marketReviews: avaliacoesEscritas.map((avaliacao) => ({
+            reviews: avaliacoesEscritas.map((avaliacao) => ({
                 listing: avaliacao.listing.title,
                 rating: avaliacao.rating,
                 body: avaliacao.body,
                 createdAt: avaliacao.created_at.toISOString(),
             })),
         },
+
+        notifications: avisos.map((aviso) => ({
+            kind: aviso.kind,
+            about: tituloDoAviso(aviso),
+            createdAt: aviso.created_at.toISOString(),
+            readAt: aviso.read_at?.toISOString() ?? null,
+        })),
     };
 };
+
+/**
+ * Sobre o que era o aviso, sem o texto de ninguém.
+ *
+ * O título do anúncio ou da pergunta chega para a pessoa reconhecer a
+ * que é que aquilo dizia respeito, e é o que ela própria vê na caixa.
+ * O corpo da mensagem, da resposta ou da avaliação não vem: foi outra
+ * pessoa que o escreveu.
+ */
+const tituloDoAviso = (aviso: {
+    message: { conversation: { listing: { title: string } } } | null;
+    reply: { topic: { title: string } } | null;
+    review: { listing: { title: string } } | null;
+}): string | null =>
+    aviso.message?.conversation.listing.title
+    ?? aviso.reply?.topic.title
+    ?? aviso.review?.listing.title
+    ?? null;
 
 const movimentoExportado = (movimento: {
     id: string;

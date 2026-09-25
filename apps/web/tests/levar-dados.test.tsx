@@ -13,7 +13,7 @@ const json = (status: number, body: unknown): Response =>
     }) as Response;
 
 const EXPORTACAO = {
-    format: 'vicehub.account.v1',
+    format: 'vicehub.account.v2',
     account: { username: 'player', email: 'player@vicehub.test' },
     profile: { xp: '9007199254740993' },
 };
