@@ -3,6 +3,8 @@ import {
     type DatabaseClient,
 } from '@vicehub/database';
 
+import { NotificationRepository } from '../../notifications/repositories/notification.repository.js';
+
 /** O que se lê de quem escreve, e nada mais. */
 const PESSOA = {
     select: { id: true, username: true, avatarUrl: true },
@@ -55,6 +57,13 @@ export class ReviewRepository {
         return conversa !== null;
     }
 
+    /**
+     * Grava a avaliação e avisa quem foi avaliado, na mesma transação.
+     *
+     * Dentro dela pela razão de sempre: um aviso escrito a seguir
+     * perde-se quando a escrita seguinte falha, e quem foi avaliado
+     * ficava sem saber que o foi.
+     */
     createReview(input: {
         listingId: string;
         reviewerId: string;
@@ -62,18 +71,29 @@ export class ReviewRepository {
         rating: number;
         body?: string;
     }) {
-        return this.database.marketReview.create({
-            data: {
-                listingId: input.listingId,
-                reviewerId: input.reviewerId,
-                subjectId: input.subjectId,
-                rating: input.rating,
-                ...(input.body === undefined || input.body === ''
-                    ? {}
-                    : { body: input.body }),
-                created_by: input.reviewerId,
-            },
-            select: { id: true },
+        return this.database.$transaction(async (tx) => {
+            const avaliacao = await tx.marketReview.create({
+                data: {
+                    listingId: input.listingId,
+                    reviewerId: input.reviewerId,
+                    subjectId: input.subjectId,
+                    rating: input.rating,
+                    ...(input.body === undefined || input.body === ''
+                        ? {}
+                        : { body: input.body }),
+                    created_by: input.reviewerId,
+                },
+                select: { id: true },
+            });
+
+            await NotificationRepository.criar(tx, {
+                userId: input.subjectId,
+                kind: 'market_review',
+                actorId: input.reviewerId,
+                reviewId: avaliacao.id,
+            });
+
+            return avaliacao;
         });
     }
 
@@ -84,17 +104,39 @@ export class ReviewRepository {
         });
     }
 
-    /** A resposta de quem foi avaliado. Uma só — daí o `replied_at`. */
+    /**
+     * A resposta de quem foi avaliado. Uma só — daí o `replied_at`.
+     *
+     * E avisa quem escreveu a avaliação: uma resposta pública que a
+     * pessoa avaliada escreve e a outra nunca vê é uma resposta a
+     * ninguém.
+     */
     reply(reviewId: string, subjectId: string, texto: string, quando: Date) {
-        return this.database.marketReview.update({
-            where: { id: reviewId },
-            data: {
-                reply: texto,
-                replied_at: quando,
-                updated_by: subjectId,
-                version: { increment: 1 },
-            },
-            select: { id: true },
+        return this.database.$transaction(async (tx) => {
+            const avaliacao = await tx.marketReview.update({
+                where: { id: reviewId },
+                data: {
+                    reply: texto,
+                    replied_at: quando,
+                    updated_by: subjectId,
+                    version: { increment: 1 },
+                },
+                select: { id: true, reviewerId: true },
+            });
+
+            if (
+                avaliacao.reviewerId !== null
+                && avaliacao.reviewerId !== subjectId
+            ) {
+                await NotificationRepository.criar(tx, {
+                    userId: avaliacao.reviewerId,
+                    kind: 'market_review_reply',
+                    actorId: subjectId,
+                    reviewId: avaliacao.id,
+                });
+            }
+
+            return { id: avaliacao.id };
         });
     }
 

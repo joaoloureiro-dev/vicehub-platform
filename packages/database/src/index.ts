@@ -131,6 +131,13 @@ export type {
 } from './market.js';
 
 export {
+    AVISOS_POR_PAGINA,
+    ESPECIES_DE_AVISO,
+} from './notifications.js';
+
+export type { EspecieDeAviso } from './notifications.js';
+
+export {
     ALVOS_DE_DENUNCIA,
     QUEM_LE,
     SUPERFICIES,

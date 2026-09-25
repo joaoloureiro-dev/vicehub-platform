@@ -31,6 +31,8 @@ import { Navegacao } from './components/navegacao.js';
 import { PrivacyPage, TermsPage } from './legal/pages/legal.page.js';
 import { Rodape } from './components/rodape.js';
 import { usePendente } from './pages/pending.context.js';
+import { useAvisos } from './notifications/avisos.context.js';
+import { AvisosPage } from './notifications/pages/avisos.page.js';
 import { MyWalletPage } from './treasury/pages/my-wallet.page.js';
 import { TreasuryPage } from './treasury/pages/treasury.page.js';
 import { MyProfilePage } from './profile/pages/my-profile.page.js';
@@ -102,6 +104,34 @@ const Pendencia = ({ quantos }: { quantos: number }) => {
     );
 };
 
+/**
+ * O número de avisos por ler.
+ *
+ * Igual ao das pendências no desenho e diferente em duas coisas: a
+ * frase é outra, e tem **tecto**. Quem tem trezentos avisos por ler não
+ * precisa de saber que são trezentos — precisa de saber que são muitos
+ * —, e um número de três algarismos ao lado de um item de menu empurra
+ * o resto da barra para fora do ecrã de um telemóvel.
+ */
+const AVISOS_A_CONTAR = 99;
+
+const AvisosPorLer = ({ quantos }: { quantos: number }) => {
+    const t = useT();
+
+    if (quantos === 0) {
+        return null;
+    }
+
+    const escrito =
+        quantos > AVISOS_A_CONTAR ? `${AVISOS_A_CONTAR}+` : String(quantos);
+
+    return (
+        <span className="pendencia" title={t.avisos.porLer(escrito)}>
+            {escrito}
+        </span>
+    );
+};
+
 const Shell = () => {
     const t = useT();
     const { user } = useAuth();
@@ -116,6 +146,7 @@ const Shell = () => {
      * estava certo depois de a pessoa ver as respostas.
      */
     const { pendente } = usePendente();
+    const { porLer } = useAvisos();
 
     const porResponder = pendente?.total ?? 0;
 
@@ -145,6 +176,15 @@ const Shell = () => {
                                     </NavLink>
                                 ))}
                             </span>
+                            {/*
+                              Os avisos vivem no cabeçalho e não na
+                              navegação de baixo: são da pessoa, como o
+                              nome e o sair, e não uma parte do sítio.
+                            */}
+                            <NavLink className="avisos-link" to="/avisos">
+                                {t.nav.avisos}
+                                <AvisosPorLer quantos={porLer} />
+                            </NavLink>
                             <span className="who">{user.email}</span>
                             <button
                                 className="link"
@@ -322,6 +362,9 @@ export const App = () => (
                   não há carteira de outra pessoa para ver.
                 */}
                 <Route path="/eu/carteira" element={<MyWalletPage />} />
+
+                {/* A caixa de avisos de quem tem sessão, e de mais ninguém. */}
+                <Route path="/avisos" element={<AvisosPage />} />
 
                 {/*
                   As conversas do mercado pedem sessão as duas: uma

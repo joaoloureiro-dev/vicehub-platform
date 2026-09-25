@@ -20,6 +20,7 @@ export const fr = (p: Tools): Messages => ({
     },
 
     nav: {
+        avisos: 'Notifications',
         crews: 'Crews',
         servidores: 'Serveurs',
         asMinhas: 'Les miennes',
@@ -595,6 +596,32 @@ export const fr = (p: Tools): Messages => ({
 
         IS_YOURS: 'Ceci est à toi. Utilise plutôt le bouton retirer.',
 
+    },
+
+    avisos: {
+        titulo: 'Ce que tu as manqué',
+
+        sub: 'Ce que d\'autres ont fait et qui te concerne. Rien de tout cela ne part par e-mail — ce n\'est pas encore fait.',
+
+        vazio: 'Rien ne t\'attend.',
+
+        naoCarregou: 'Tes notifications n\'ont pas pu être chargées.',
+
+        darTodosPorLidos: 'Tout marquer comme lu',
+
+        naoFoiPossivelLer: 'Impossible de marquer comme lu.',
+
+        porLer: (quantos: string) => `${quantos} en attente`,
+
+        oQueAconteceu: {
+            market_message: (quem: string) => `${quem} t\'a écrit au sujet de`,
+            forum_reply: (quem: string) => `${quem} a répondu à`,
+            market_review: (quem: string) => `${quem} a évalué ta vente de`,
+            market_review_reply: (quem: string) =>
+                `${quem} a répondu à ton avis sur`,
+        },
+
+        alguem: 'Quelqu\'un',
     },
 
     mercado: {

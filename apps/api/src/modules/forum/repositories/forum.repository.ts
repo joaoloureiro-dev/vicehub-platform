@@ -5,6 +5,7 @@ import {
 } from '@vicehub/database';
 
 import { colunaDoAlvo, type Alvo } from '../../moderation/repositories/report.repository.js';
+import { NotificationRepository } from '../../notifications/repositories/notification.repository.js';
 
 /** A transação em curso, tal como no resto da plataforma. */
 type Escritor = Parameters<
@@ -107,10 +108,29 @@ export class ForumRepository {
                 select: { id: true },
             });
 
-            await tx.forumTopic.update({
+            const topico = await tx.forumTopic.update({
                 where: { id: input.topicId },
                 data: { version: { increment: 1 } },
+                select: { authorId: true },
             });
+
+            /**
+             * E avisa quem perguntou, na mesma transação.
+             *
+             * Quem responde à sua própria pergunta não se avisa, e uma
+             * pergunta de uma conta já apagada não avisa ninguém.
+             */
+            if (
+                topico.authorId !== null
+                && topico.authorId !== input.authorId
+            ) {
+                await NotificationRepository.criar(tx, {
+                    userId: topico.authorId,
+                    kind: 'forum_reply',
+                    actorId: input.authorId,
+                    replyId: resposta.id,
+                });
+            }
 
             return resposta;
         });

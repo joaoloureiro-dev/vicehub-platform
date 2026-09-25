@@ -4,6 +4,8 @@ import {
     type DatabaseClient,
 } from '@vicehub/database';
 
+import { NotificationRepository } from '../../notifications/repositories/notification.repository.js';
+
 /** O que se lê de quem escreve, e nada mais. */
 const PESSOA = {
     select: { id: true, username: true, avatarUrl: true },
@@ -113,6 +115,41 @@ export class ConversationRepository {
                 where: { id: input.conversationId },
                 data: { version: { increment: 1 } },
             });
+
+            /**
+             * E avisa a outra pessoa, na mesma transação.
+             *
+             * Dentro e não a seguir: uma conversa que se escreve e um
+             * aviso que se perde é uma conversa que ninguém sabe que
+             * tem — que é exactamente o problema que isto veio
+             * resolver.
+             *
+             * Quem escreveu não se avisa a si próprio, e uma conversa
+             * cujo outro lado já apagou a conta não avisa ninguém.
+             */
+            const conversa = await tx.marketConversation.findFirst({
+                where: { id: input.conversationId },
+                select: {
+                    buyerId: true,
+                    listing: { select: { sellerId: true } },
+                },
+            });
+
+            const outra =
+                conversa === null
+                    ? null
+                    : conversa.buyerId === input.senderId
+                        ? conversa.listing.sellerId
+                        : conversa.buyerId;
+
+            if (outra !== null && outra !== input.senderId) {
+                await NotificationRepository.criar(tx, {
+                    userId: outra,
+                    kind: 'market_message',
+                    actorId: input.senderId,
+                    messageId: mensagem.id,
+                });
+            }
 
             return mensagem;
         });
