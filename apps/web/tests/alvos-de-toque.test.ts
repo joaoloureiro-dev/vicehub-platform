@@ -61,6 +61,39 @@ describe('o que se carrega num telemóvel', () => {
     });
 
     /**
+     * E ninguém a desfaz mais abaixo.
+     *
+     * O rodapé de um formulário punha `min-height: 0` nas suas
+     * ligações a partir dos 480px — e 480 ainda é um telemóvel
+     * deitado. Dava 23 pixéis, e desfazia a medida que o resto do
+     * produto respeita. Uma varredura num browser encontrou-o; nenhum
+     * teste podia, porque a regra só se aplica acima de uma largura
+     * que o jsdom não tem.
+     */
+    it('e nenhuma regra a põe a zero mais abaixo', () => {
+        const aZero = CSS.split('\n')
+            .map((linha, indice) => ({ linha, indice }))
+            .filter(({ linha }) => /min-height:\s*0;/u.test(linha))
+            .map(({ indice }) => {
+                const linhas = CSS.split('\n');
+                let cursor = indice;
+
+                while (cursor > 0 && !linhas[cursor]?.includes('{')) {
+                    cursor -= 1;
+                }
+
+                return (linhas[cursor] ?? '').replace('{', '').trim();
+            });
+
+        /**
+         * A excepção tem nome e razão: os botões de uma mensagem são
+         * dois por mensagem num fio com trinta, e à escala do texto
+         * transformavam a conversa numa lista de botões.
+         */
+        expect(aZero).toEqual(['.fio-de-mensagens .grupo-botoes button']);
+    });
+
+    /**
      * O nome da classe diz a regra, e não um dos casos dela. Chamava-se
      * `.voltar` e à terceira ligação que não voltava a lado nenhum — o
      * "abrir" de uma denúncia — o nome passava a mentir.

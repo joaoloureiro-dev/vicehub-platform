@@ -11,7 +11,6 @@ import {
 import { useAuth } from './auth/auth.context.js';
 import { logout } from './auth/auth.api.js';
 import { useT } from './i18n/i18n.js';
-import { LanguagePicker } from './i18n/language-picker.js';
 import { LoginPage } from './auth/pages/login.page.js';
 import { RegisterPage } from './auth/pages/register.page.js';
 import { RecoverPasswordPage } from './auth/pages/recover-password.page.js';
@@ -214,7 +213,6 @@ const Shell = () => {
                     ) : SEM_CONVITE.has(pathname) ? null : (
                         <Link to="/entrar">{t.nav.entrar}</Link>
                     )}
-                    <LanguagePicker />
                 </nav>
             </header>
 
