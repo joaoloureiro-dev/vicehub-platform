@@ -8,6 +8,7 @@ import {
 } from 'react';
 
 import { useAuth } from '../auth/auth.context.js';
+import { useManterFresco } from '../lib/manter-fresco.js';
 import { countUnread } from './avisos.api.js';
 
 interface Contexto {
@@ -51,19 +52,35 @@ export const AvisosProvider = ({ children }: { children: ReactNode }) => {
 
         /**
          * Uma falha aqui não é para mostrar: isto desenha um número ao
-         * lado de um item de menu. Sem resposta fica sem número, que é
-         * o que a plataforma mostra a quem não tem nada à espera.
+         * lado de um item de menu, e um ecrã de erro por causa de um
+         * algarismo era pagar caro de mais por ele. Sem resposta fica
+         * sem número, que é o que a plataforma mostra a quem não tem
+         * nada à espera.
+         *
+         * **Mas não apaga o que já lá estava.** Isto passou a correr
+         * sozinho de minuto a minuto: pôr zero a cada falha de rede
+         * fazia o número desaparecer à frente de quem tem cinco avisos
+         * por ler, e voltar um minuto depois. Um número que pisca é um
+         * número que se deixa de ler.
          */
         void countUnread()
             .then((resposta) => {
                 setPorLer(resposta.unread);
             })
-            .catch(() => {
-                setPorLer(0);
-            });
+            .catch(() => undefined);
     }, [idDaSessao]);
 
     useEffect(recarregar, [recarregar]);
+
+    /**
+     * E volta a perguntar enquanto a pessoa lá está.
+     *
+     * Sem isto, o número era pedido **uma vez**, no arranque. Quem
+     * entrasse de manhã e navegasse a tarde inteira sem recarregar a
+     * página nunca mais via um número novo — e um aviso que só aparece
+     * a quem carrega em F5 é um aviso que não avisa ninguém.
+     */
+    useManterFresco(recarregar, idDaSessao !== undefined);
 
     return (
         <AvisosContext.Provider value={{ porLer, recarregar }}>

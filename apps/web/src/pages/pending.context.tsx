@@ -8,6 +8,7 @@ import {
 } from 'react';
 
 import { useAuth } from '../auth/auth.context.js';
+import { useManterFresco } from '../lib/manter-fresco.js';
 import { getPending, type PendingForUser } from './pending.api.js';
 
 interface Contexto {
@@ -55,13 +56,26 @@ export const PendingProvider = ({ children }: { children: ReactNode }) => {
          * Uma falha aqui não é para mostrar: isto desenha um número ao
          * lado de um item de menu. Sem resposta fica sem número, que é
          * o mesmo que a plataforma mostra a quem não tem nada à espera.
+         *
+         * E não apaga o que já lá estava, pela mesma razão da caixa de
+         * avisos: isto corre sozinho, e um número que pisca a cada
+         * falha de rede é um número que se deixa de ler.
          */
         void getPending()
             .then(setPendente)
-            .catch(() => setPendente(null));
+            .catch(() => undefined);
     }, [idDaSessao]);
 
     useEffect(recarregar, [recarregar]);
+
+    /**
+     * Pela mesma razão que a caixa de avisos, e com o mesmo relógio:
+     * uma candidatura respondida enquanto a pessoa navega é uma
+     * resposta que ela merece ver sem recarregar a página. Duas
+     * grafias da mesma regra era a espécie de diferença que ninguém se
+     * lembra de ter decidido.
+     */
+    useManterFresco(recarregar, idDaSessao !== undefined);
 
     return (
         <PendingContext.Provider value={{ pendente, recarregar }}>

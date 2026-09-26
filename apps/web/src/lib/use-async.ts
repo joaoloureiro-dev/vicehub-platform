@@ -18,7 +18,7 @@ interface AsyncState<T> {
 export const useAsync = <T>(
     carregar: () => Promise<T>,
     dependencias: readonly unknown[],
-): AsyncState<T> & { reload: () => void } => {
+): AsyncState<T> & { reload: () => void; refrescar: () => void } => {
     const [estado, setEstado] = useState<AsyncState<T>>({
         data: null,
         loading: true,
@@ -61,5 +61,34 @@ export const useAsync = <T>(
         setTentativa((valor) => valor + 1);
     }, []);
 
-    return { ...estado, reload };
+    /**
+     * Volta a carregar **por trás**, sem mexer no que está no ecrã até
+     * haver resposta.
+     *
+     * É a diferença entre um pedido que a pessoa fez e um que o
+     * relógio fez por ela. Num recarregamento normal, uma falha de rede
+     * é informação: ela carregou num botão e tem de saber que não
+     * resultou. Num que corre de minuto a minuto, a mesma falha
+     * substituía a página que ela está a ler por um aviso de erro que
+     * ela não pediu — e uma lista que desaparece sozinha é pior do que
+     * uma lista com um minuto de atraso.
+     *
+     * Por isso também não acende o `loading`: não há nada a esperar,
+     * há uma página já desenhada que fica como está.
+     */
+    const refrescar = useCallback(() => {
+        const meuPedido = pedidoAtual.current + 1;
+        pedidoAtual.current = meuPedido;
+
+        carregarRef
+            .current()
+            .then((data) => {
+                if (pedidoAtual.current === meuPedido) {
+                    setEstado({ data, loading: false, error: null });
+                }
+            })
+            .catch(() => undefined);
+    }, []);
+
+    return { ...estado, reload, refrescar };
 };

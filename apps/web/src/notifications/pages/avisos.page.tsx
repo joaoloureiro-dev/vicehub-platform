@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 
 import { Alert } from '../../auth/components/alert.js';
 import { useAsync } from '../../lib/use-async.js';
+import { useManterFresco } from '../../lib/manter-fresco.js';
 import { useT, useIdioma } from '../../i18n/i18n.js';
 import { mensagemDoErro } from '../../lib/erro.js';
 import { useAvisos } from '../avisos.context.js';
@@ -72,6 +73,16 @@ export const AvisosPage = () => {
     const [erro, setErro] = useState<string | null>(null);
 
     const caixa = useAsync(() => listNotifications(1), []);
+
+    /**
+     * E a própria lista acompanha, não só o número da barra: quem está
+     * **nesta** página é precisamente quem está à espera de ver
+     * aparecer alguma coisa.
+     */
+    useManterFresco(() => {
+        caixa.refrescar();
+        recarregar();
+    });
 
     if (caixa.error) {
         return (

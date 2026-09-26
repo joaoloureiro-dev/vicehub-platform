@@ -1,4 +1,4 @@
-import { render, type RenderResult } from '@testing-library/react';
+import { act, render, type RenderResult } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import type { ReactNode } from 'react';
 
@@ -31,3 +31,27 @@ export const montarEcra = (
             <I18nProvider>{conteudo}</I18nProvider>
         </MemoryRouter>,
     );
+
+/**
+ * O separador passa a estar à vista, ou deixa de estar.
+ *
+ * Vive aqui e não em cada teste porque três ficheiros precisam do mesmo
+ * gesto: o relógio que mantém um número fresco só pergunta com a página
+ * à vista, e é isso que todos eles têm de poder fingir.
+ */
+export const verSeparador = (estado: 'visible' | 'hidden'): void => {
+    Object.defineProperty(document, 'visibilityState', {
+        value: estado,
+        configurable: true,
+    });
+
+    act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+    });
+};
+
+/** Sair do separador e voltar, como quem foi ao Discord e voltou. */
+export const irEVoltar = (): void => {
+    verSeparador('hidden');
+    verSeparador('visible');
+};

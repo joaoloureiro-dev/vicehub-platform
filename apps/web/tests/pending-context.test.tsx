@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 
 import { AuthProvider } from '../src/auth/auth.context.js';
 import { PendingProvider, usePendente } from '../src/pages/pending.context.js';
-import { montarEcra } from './helpers.js';
+import { irEVoltar, montarEcra } from './helpers.js';
 
 const json = (status: number, body: unknown): Response =>
     ({
@@ -19,6 +19,9 @@ const PENDENTE = {
     answersSeenAt: null,
     total: 3,
 };
+
+/** O que a API responde, e que pode mudar a meio de um teste. */
+const estado = { total: PENDENTE.total };
 
 const servir = (comSessao = true) =>
     vi.fn((url: string) => {
@@ -40,7 +43,9 @@ const servir = (comSessao = true) =>
         }
 
         if (endereco.includes('/users/me/pending')) {
-            return Promise.resolve(json(200, PENDENTE));
+            return Promise.resolve(
+                json(200, { ...PENDENTE, total: estado.total }),
+            );
         }
 
         throw new Error(`pedido inesperado a ${endereco}`);
@@ -76,6 +81,7 @@ const pedidosAoPendente = (fetchMock: ReturnType<typeof vi.fn>): number =>
     ).length;
 
 afterEach(() => {
+    estado.total = PENDENTE.total;
     vi.unstubAllGlobals();
 });
 
@@ -101,6 +107,31 @@ describe('o pendente partilhado', () => {
 
         expect(screen.getByText('seccao:3')).toBeTruthy();
         expect(pedidosAoPendente(fetchMock)).toBe(1);
+    });
+
+    /**
+     * E acompanha quem não recarrega a página.
+     *
+     * Numa aplicação de uma página só, quem entra de manhã e navega a
+     * tarde inteira nunca mais via um número novo. Uma candidatura
+     * respondida enquanto a pessoa navega é uma resposta que ela
+     * merece ver sem carregar em F5 — o mesmo relógio da caixa de
+     * avisos, e pela mesma razão.
+     */
+    it('acerta sozinho quando a pessoa volta ao separador', async () => {
+        montar();
+
+        await waitFor(() => {
+            expect(screen.getByText('nav:3')).toBeTruthy();
+        });
+
+        estado.total = 7;
+
+        irEVoltar();
+
+        await waitFor(() => {
+            expect(screen.getByText('nav:7')).toBeTruthy();
+        });
     });
 
     /**
