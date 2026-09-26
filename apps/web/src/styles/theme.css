@@ -284,13 +284,27 @@ a:hover {
 /*
  * O nome leva o degradê recortado no texto. Onde o browser não souber
  * fazê-lo, a cor por baixo é a do texto normal e nada se perde.
+ *
+ * **E no telemóvel fica só o logótipo.** A barra de cima de quem tem
+ * sessão ganhou mais um item — os avisos — e deixou de caber em 390px:
+ * a página inteira passou a arrastar-se de lado, em todos os ecrãs, por
+ * causa de noventa pixéis de palavra. De tudo o que ali está, o nome do
+ * sítio é o que menos diz a quem já lá está dentro: o logótipo fica, e
+ * continua a levar a casa.
  */
 .brand strong {
+    display: none;
     font-weight: 800;
     background: var(--brand-ink);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+}
+
+@media (min-width: 560px) {
+    .brand strong {
+        display: inline;
+    }
 }
 
 .topbar nav {
