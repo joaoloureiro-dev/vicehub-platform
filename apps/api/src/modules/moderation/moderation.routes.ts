@@ -4,9 +4,11 @@ import type { ModerationController } from './controllers/moderation.controller.j
 import {
     handleReportSchema,
     listReportsQuerySchema,
+    moderationUserParamSchema,
     reportIdParamSchema,
     type HandleReportDto,
     type ListReportsQueryDto,
+    type ModerationUserParamDto,
     type ReportIdParamDto,
 } from './schemas/moderation.schemas.js';
 
@@ -44,6 +46,28 @@ const moderationRoutes: FastifyPluginAsync<ModerationRoutesOptions> = async (
             schema: { querystring: listReportsQuerySchema },
         },
         controller.listReports.bind(controller),
+    );
+
+    /**
+     * O historial de uma pessoa, do lado de quem escreve e do lado de
+     * quem denuncia.
+     *
+     * A mesma porta da fila, e pela mesma razão: quem pode ver uma
+     * denúncia é quem tem de a decidir, e estes números só existem
+     * para essa decisão. Fora daqui não há nenhuma rota que os
+     * devolva — um cadastro à vista de toda a gente era outra coisa,
+     * que esta plataforma não tem.
+     */
+    fastify.get<{ Params: ModerationUserParamDto }>(
+        '/users/:userId/history',
+        {
+            preHandler: [
+                fastify.authenticate,
+                fastify.authorizeAny('forum:moderate', 'marketplace:moderate'),
+            ],
+            schema: { params: moderationUserParamSchema },
+        },
+        controller.history.bind(controller),
     );
 
     fastify.post<{ Params: ReportIdParamDto; Body: HandleReportDto }>(

@@ -3725,6 +3725,26 @@ button.link:hover {
 }
 
 /*
+ * O que já foi decidido antes.
+ *
+ * Recuado como o texto denunciado, e com a mesma razão invertida: não
+ * é o caso, é o que o rodeia. A nota de leitura fica mais apagada do
+ * que os números — quem já sabe a regra passa por cima dela, e quem
+ * não sabe lê-a antes de a confundir com um cadastro.
+ */
+.historial {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--edge);
+}
+
+.historial .nota-do-historial {
+    font-size: 12px;
+    opacity: 0.75;
+}
+
+/*
  * As três vistas da fila.
  *
  * Botões e não links: mudam o que está no ecrã e não o endereço, e um

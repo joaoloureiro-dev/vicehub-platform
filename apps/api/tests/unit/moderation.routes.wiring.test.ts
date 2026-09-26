@@ -52,6 +52,7 @@ describe('ligação das rotas da moderação', () => {
         const controller = {
             listReports: vi.fn(),
             handleReport: vi.fn(),
+            history: vi.fn(),
         } as unknown as ModerationController;
 
         await app.register(moderationRoutes, { controller });
@@ -89,7 +90,11 @@ describe('ligação das rotas da moderação', () => {
         return Array.isArray(preHandler) ? preHandler : [preHandler];
     };
 
-    it.each(['GET /reports', 'POST /reports/:reportId'])(
+    it.each([
+        'GET /reports',
+        'POST /reports/:reportId',
+        'GET /users/:userId/history',
+    ])(
         '%s pede sessão',
         (chave) => {
             expect(preHandlersDe(chave)).toHaveLength(2);
@@ -100,7 +105,11 @@ describe('ligação das rotas da moderação', () => {
      * Qualquer uma das duas, e não as duas: quem modera só o mercado
      * abre a mesma fila que quem modera só o fórum.
      */
-    it.each(['GET /reports', 'POST /reports/:reportId'])(
+    it.each([
+        'GET /reports',
+        'POST /reports/:reportId',
+        'GET /users/:userId/history',
+    ])(
         '%s aceita qualquer uma das permissões de moderar',
         (chave) => {
             expect(quaisquerPorRota.get(chave)).toEqual([
@@ -110,7 +119,11 @@ describe('ligação das rotas da moderação', () => {
         },
     );
 
-    it.each(['GET /reports', 'POST /reports/:reportId'])(
+    it.each([
+        'GET /reports',
+        'POST /reports/:reportId',
+        'GET /users/:userId/history',
+    ])(
         '%s não exige as duas ao mesmo tempo',
         (chave) => {
             expect(exigidasPorRota.get(chave)).toEqual([]);
@@ -122,7 +135,11 @@ describe('ligação das rotas da moderação', () => {
      * moderador a percorrer denúncias depressa está a trabalhar, e um
      * limite aqui dava-lhe um erro por isso.
      */
-    it.each(['GET /reports', 'POST /reports/:reportId'])(
+    it.each([
+        'GET /reports',
+        'POST /reports/:reportId',
+        'GET /users/:userId/history',
+    ])(
         '%s não leva limite de escrita',
         (chave) => {
             expect(rotas.get(chave)?.config).toBeUndefined();
@@ -133,5 +150,8 @@ describe('ligação das rotas da moderação', () => {
         expect(rotas.get('GET /reports')?.schema?.querystring).toBeDefined();
         expect(rotas.get('POST /reports/:reportId')?.schema?.params).toBeDefined();
         expect(rotas.get('POST /reports/:reportId')?.schema?.body).toBeDefined();
+        expect(
+            rotas.get('GET /users/:userId/history')?.schema?.params,
+        ).toBeDefined();
     });
 });

@@ -5,6 +5,7 @@ import { ModerationError } from '../errors/moderation.errors.js';
 import type {
     HandleReportDto,
     ListReportsQueryDto,
+    ModerationUserParamDto,
     ReportIdParamDto,
 } from '../schemas/moderation.schemas.js';
 import type { ReportService } from '../services/report.service.js';
@@ -42,6 +43,22 @@ export class ModerationController {
             pages: pagina.paginas,
             total: pagina.total,
         });
+    }
+
+    /**
+     * O historial de uma pessoa, para quem está a decidir.
+     *
+     * Devolve sempre, mesmo para quem nunca teve nada decidido: quatro
+     * zeros é uma resposta, e é diferente de um 404 — que se lia como
+     * "essa pessoa não existe" para alguém que a tem à frente na fila.
+     */
+    async history(
+        request: FastifyRequest<{ Params: ModerationUserParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        reply.send(
+            await this.reportService.historyFor(request.params.userId),
+        );
     }
 
     async handleReport(

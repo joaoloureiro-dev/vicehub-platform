@@ -824,6 +824,14 @@ export const es = (p: Tools): Messages => ({
         },
 
         verOAlvo: 'Abrir',
+        verHistorial: 'Lo que ya se decidió antes',
+        historialFalhou: 'No se pudo cargar ese historial.',
+        escreveu: (quem: string, retiradas: number, mantidas: number) =>
+            `Lo que escribió ${quem}: ${retiradas} retiradas, ${mantidas} vistas y mantenidas`,
+        denunciou: (quem: string, comRazao: number, semRazao: number) =>
+            `Denuncias que presentó ${quem}: ${comRazao} con razón, ${semRazao} sin razón`,
+        historialNota:
+            'Se cuentan cosas ya decididas, no denuncias recibidas: diez personas denunciando la misma publicación son una decisión, no diez.',
     },
 
     forum: {

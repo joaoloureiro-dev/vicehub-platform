@@ -6,9 +6,12 @@ import { useAsync } from '../../lib/use-async.js';
 import { useT } from '../../i18n/i18n.js';
 import {
     enderecoDoAlvo,
+    getHistory,
     handleReport,
     listReports,
+    type Autor,
     type DenunciaNaFila,
+    type Historial,
 } from '../moderation.api.js';
 
 /**
@@ -26,6 +29,113 @@ import {
 const ESTADOS = ['open', 'acted', 'dismissed'] as const;
 
 type Estado = (typeof ESTADOS)[number];
+
+/**
+ * O que já foi decidido antes, de quem escreveu e de quem denunciou.
+ *
+ * A denúncia que o moderador tem à frente diz o que aconteceu uma vez.
+ * Não diz se é a primeira vez ou a décima, nem se quem a apresentou já
+ * apresentou quarenta sem razão — e as duas coisas mudam a decisão.
+ *
+ * **Pede-se, não se mostra sozinho.** São duas idas à API por denúncia,
+ * e uma fila de trinta pedia sessenta para números que, na maior parte
+ * das linhas, ninguém precisa de ver. Quem precisa, carrega.
+ *
+ * E a frase por baixo dos números não é decoração: é a regra de leitura
+ * deles. Sem ela, um "3" ao lado de um nome lê-se como três vezes
+ * denunciado — que é outra coisa, e é coisa que dez pessoas combinadas
+ * conseguem fabricar.
+ */
+const Historico = ({
+    autor,
+    denunciante,
+}: {
+    autor: Autor | null;
+    denunciante: Autor | null;
+}) => {
+    const t = useT();
+
+    const [aberto, setAberto] = useState(false);
+    const [aCarregar, setACarregar] = useState(false);
+    const [falhou, setFalhou] = useState(false);
+    const [doAutor, setDoAutor] = useState<Historial | null>(null);
+    const [doDenunciante, setDoDenunciante] = useState<Historial | null>(null);
+
+    const abrir = async () => {
+        setAberto(true);
+        setACarregar(true);
+        setFalhou(false);
+
+        try {
+            const [primeiro, segundo] = await Promise.all([
+                autor === null ? null : getHistory(autor.id),
+                denunciante === null ? null : getHistory(denunciante.id),
+            ]);
+
+            setDoAutor(primeiro);
+            setDoDenunciante(segundo);
+        } catch {
+            setFalhou(true);
+        } finally {
+            setACarregar(false);
+        }
+    };
+
+    /**
+     * Sem nenhum dos dois não há nada a perguntar: as duas contas
+     * saíram, e o que resta é uma denúncia sem ninguém de qualquer dos
+     * lados.
+     */
+    if (autor === null && denunciante === null) {
+        return null;
+    }
+
+    if (!aberto) {
+        return (
+            <p className="hint">
+                <button className="link" type="button" onClick={() => void abrir()}>
+                    {t.moderacao.verHistorial}
+                </button>
+            </p>
+        );
+    }
+
+    return (
+        <div className="historial">
+            {aCarregar ? <p className="hint">{t.comum.aCarregar}</p> : null}
+
+            {falhou ? (
+                <p className="hint">{t.moderacao.historialFalhou}</p>
+            ) : null}
+
+            {doAutor ? (
+                <p className="hint">
+                    {t.moderacao.escreveu(
+                        autor?.username ?? '',
+                        doAutor.written.acted,
+                        doAutor.written.dismissed,
+                    )}
+                </p>
+            ) : null}
+
+            {doDenunciante ? (
+                <p className="hint">
+                    {t.moderacao.denunciou(
+                        denunciante?.username ?? '',
+                        doDenunciante.filed.acted,
+                        doDenunciante.filed.dismissed,
+                    )}
+                </p>
+            ) : null}
+
+            {doAutor || doDenunciante ? (
+                <p className="hint nota-do-historial">
+                    {t.moderacao.historialNota}
+                </p>
+            ) : null}
+        </div>
+    );
+};
 
 export const FilaPage = () => {
     const t = useT();
@@ -160,6 +270,11 @@ export const FilaPage = () => {
                                     </Link>
                                 </p>
                             </div>
+
+                            <Historico
+                                autor={denuncia.target.author}
+                                denunciante={denuncia.reporter}
+                            />
 
                             {denuncia.status === 'open' ? (
                                 <div className="grupo-botoes">

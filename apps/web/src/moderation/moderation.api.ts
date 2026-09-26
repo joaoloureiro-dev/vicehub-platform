@@ -106,6 +106,27 @@ const ONDE_SE_ABRE: Readonly<Record<EspecieDeAlvo, (id: string) => string>> = {
 export const enderecoDoAlvo = (alvo: DenunciaNaFila['target']): string =>
     ONDE_SE_ABRE[alvo.kind](alvo.openId);
 
+/**
+ * O que já foi decidido sobre uma pessoa, dos dois lados.
+ *
+ * **Conta coisas decididas, e não denúncias recebidas.** Dez pessoas a
+ * denunciar a mesma publicação são dez linhas na tabela e um erro de
+ * quem a escreveu; contar denúncias fazia de uma campanha organizada um
+ * passado. Do lado de quem denuncia conta-se cada denúncia, e está
+ * certo: quarenta sem razão são quarenta idas à fila de outra pessoa.
+ */
+export interface Historial {
+    /** Publicações desta pessoa que um moderador já decidiu. */
+    written: { acted: number; dismissed: number };
+    /** Denúncias que esta pessoa apresentou, e como acabaram. */
+    filed: { acted: number; dismissed: number };
+}
+
+export const getHistory = (userId: string): Promise<Historial> =>
+    api<Historial>(
+        `/moderation/users/${encodeURIComponent(userId)}/history`,
+    );
+
 export const listReports = (
     status: 'open' | 'acted' | 'dismissed' = 'open',
     page = 1,
