@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router';
 import { Alert } from '../../auth/components/alert.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useAuth } from '../../auth/auth.context.js';
-import { useT, useIdioma } from '../../i18n/i18n.js';
+import { useT, useIdioma, useTools } from '../../i18n/i18n.js';
 import { mensagemDoErro } from '../../lib/erro.js';
 import {
     formatarMontante,
@@ -34,6 +34,7 @@ import {
 export const ConversaPage = () => {
     const t = useT();
     const { idioma } = useIdioma();
+    const { quando } = useTools();
     const { user } = useAuth();
     const { conversationId = '' } = useParams();
 
@@ -146,10 +147,16 @@ export const ConversaPage = () => {
                                 {mensagem.sender?.username
                                     ?? t.mercado.contaApagada}
                             </span>
+                            {/*
+                              A data pela mesma regra do resto do
+                              produto, e não por uma chamada escrita
+                              aqui: `toLocaleString` sem opções traz os
+                              **segundos**, e uma conversa com
+                              "9:52:32" em cada linha conta o que
+                              ninguém perguntou.
+                            */}
                             <time dateTime={mensagem.createdAt}>
-                                {new Date(
-                                    mensagem.createdAt,
-                                ).toLocaleString(idioma)}
+                                {quando(mensagem.createdAt)}
                             </time>
                         </p>
 
