@@ -128,7 +128,7 @@ export const TopicPage = () => {
     const meu = user !== null && dados.author?.id === user.id;
 
     return (
-        <main className="panel wide">
+        <main className="panel wide esticado">
             <p className="hint">
                 <Link className="ligacao-solta" to="/forum">{t.forum.voltar}</Link>
             </p>

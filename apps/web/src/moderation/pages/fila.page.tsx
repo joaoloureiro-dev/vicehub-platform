@@ -180,7 +180,7 @@ export const FilaPage = () => {
     const dados = fila.data;
 
     return (
-        <main className="panel wide">
+        <main className="panel wide esticado">
             <header className="card header">
                 <h1>{t.moderacao.filaTitulo}</h1>
                 <p>{t.moderacao.filaSub}</p>
