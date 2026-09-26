@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 
 import { App } from '../src/app.js';
 import { AuthProvider } from '../src/auth/auth.context.js';
-import { AvisosProvider } from '../src/notifications/avisos.context.js';
+import { AvisosProvider, useAvisos } from '../src/notifications/avisos.context.js';
 import { AvisosPage } from '../src/notifications/pages/avisos.page.js';
 import { PendingProvider } from '../src/pages/pending.context.js';
-import { montarEcra, t } from './helpers.js';
+import { irEVoltar, montarEcra, t } from './helpers.js';
 
 /**
  * A caixa de avisos.
@@ -108,10 +108,22 @@ const caixa = (avisos: Aviso[], porLer: number) => ({
  * "dar tudo por lido" muda — é isso que prova que o número da barra
  * acompanha o que a pessoa acabou de fazer, e não fica a mentir.
  */
+interface Estado {
+    avisos: Aviso[];
+    porLer: number;
+    /** Liga-se a meio de um teste, para simular uma falha de rede. */
+    falha?: boolean;
+}
+
 const responder = (
-    opcoes: { avisos?: Aviso[]; porLer?: number; recusada?: boolean } = {},
+    opcoes: {
+        avisos?: Aviso[];
+        porLer?: number;
+        recusada?: boolean;
+        estado?: Estado;
+    } = {},
 ) => {
-    const estado = {
+    const estado: Estado = opcoes.estado ?? {
         avisos: opcoes.avisos ?? AVISOS,
         porLer: opcoes.porLer ?? 2,
     };
@@ -139,7 +151,9 @@ const responder = (
         }
 
         if (endereco.includes('/notifications/unread')) {
-            return Promise.resolve(json(200, { unread: estado.porLer }));
+            return estado.falha === true
+                ? Promise.reject(new Error('sem rede'))
+                : Promise.resolve(json(200, { unread: estado.porLer }));
         }
 
         if (endereco.endsWith('/notifications/read') && metodo === 'POST') {
@@ -186,8 +200,10 @@ const montarPagina = (opcoes: Parameters<typeof responder>[0] = {}) => {
 };
 
 /** O cabeçalho inteiro, que é onde o número vive. */
-const montarAplicacao = (porLer: number) => {
-    vi.stubGlobal('fetch', responder({ porLer }));
+const montarAplicacao = (porLer: number): Estado => {
+    const estado: Estado = { avisos: AVISOS, porLer };
+
+    vi.stubGlobal('fetch', responder({ estado }));
 
     montarEcra(
         <AuthProvider>
@@ -199,6 +215,39 @@ const montarAplicacao = (porLer: number) => {
         </AuthProvider>,
         '/avisos',
     );
+
+    return estado;
+};
+
+
+/**
+ * Só o contexto e um consumidor, sem a página dos avisos.
+ *
+ * A distinção não é um detalhe do teste: o cabeçalho aparece em **todos
+ * os ecrãs**, e é precisamente a quem está noutro sítio qualquer que o
+ * número tem de chegar. Montar a página junto escondia isso — ela
+ * manda recarregar por sua conta, e um cabeçalho parado passava.
+ */
+const Contagem = () => {
+    const { porLer } = useAvisos();
+
+    return <span>{`por ler:${porLer}`}</span>;
+};
+
+const montarContexto = (porLer: number): Estado => {
+    const estado: Estado = { avisos: AVISOS, porLer };
+
+    vi.stubGlobal('fetch', responder({ estado }));
+
+    montarEcra(
+        <AuthProvider>
+            <AvisosProvider>
+                <Contagem />
+            </AvisosProvider>
+        </AuthProvider>,
+    );
+
+    return estado;
 };
 
 const pedidos = (fetchMock: ReturnType<typeof responder>, parte: string) =>
@@ -369,6 +418,49 @@ describe('a caixa de avisos', () => {
         ).toBeNull();
     });
 
+    /**
+     * E a lista acompanha quem está **nesta** página: é precisamente
+     * quem está à espera de ver aparecer alguma coisa.
+     */
+    it('e a lista vai buscar o que chegou entretanto', async () => {
+        const estado: Estado = { avisos: AVISOS, porLer: 2 };
+
+        vi.stubGlobal('fetch', responder({ estado }));
+
+        montarEcra(
+            <AuthProvider>
+                <AvisosProvider>
+                    <AvisosPage />
+                </AvisosProvider>
+            </AuthProvider>,
+            '/avisos',
+        );
+
+        await waitFor(() => {
+            expect(screen.getAllByRole('listitem').length).toBe(4);
+        });
+
+        estado.avisos = [
+            {
+                id: 'aviso-5',
+                kind: 'forum_reply',
+                actor: ANA,
+                openId: 'topico-2',
+                about: 'Uma pergunta que chegou agora',
+                excerpt: null,
+                isRead: false,
+                createdAt: '2026-09-24T12:00:00.000Z',
+            },
+            ...AVISOS,
+        ];
+
+        irEVoltar();
+
+        await waitFor(() => {
+            expect(screen.getAllByRole('listitem').length).toBe(5);
+        });
+    });
+
     it('diz que não há nada em vez de mostrar uma lista vazia', async () => {
         montarPagina({ avisos: [], porLer: 0 });
 
@@ -423,6 +515,67 @@ describe('o número por ler no cabeçalho', () => {
         });
 
         expect(screen.queryByText('99+')).toBeNull();
+    });
+
+    /**
+     * E acompanha quem não recarrega a página.
+     *
+     * O número era pedido **uma vez**, no arranque. Numa aplicação de
+     * uma página só, quem entra de manhã e navega a tarde inteira
+     * nunca mais via um número novo — e um aviso que só aparece a quem
+     * carrega em F5 não avisa ninguém.
+     */
+    it('e acerta sozinho quando a pessoa volta ao separador', async () => {
+        const estado = montarContexto(1);
+
+        await waitFor(() => {
+            expect(screen.getByText('por ler:1')).toBeTruthy();
+        });
+
+        /** Chegaram mais quatro enquanto ela estava noutro lado. */
+        estado.porLer = 5;
+
+        irEVoltar();
+
+        await waitFor(() => {
+            expect(screen.getByText('por ler:5')).toBeTruthy();
+        });
+    });
+
+    /**
+     * E uma falha de rede não apaga um número que estava certo.
+     *
+     * Isto passou a correr sozinho de minuto a minuto. Pôr zero a cada
+     * resposta que não chega fazia o número desaparecer à frente de
+     * quem tem cinco avisos por ler, e voltar um minuto depois — e um
+     * número que pisca é um número que se deixa de ler.
+     */
+    it('e não apaga o número quando a rede falha', async () => {
+        const estado = montarContexto(5);
+
+        await waitFor(() => {
+            expect(screen.getByText('por ler:5')).toBeTruthy();
+        });
+
+        estado.falha = true;
+
+        irEVoltar();
+
+        /**
+         * Esperar que o pedido tenha mesmo ido e falhado: sem isto, a
+         * asserção corria antes da resposta e passava com o defeito
+         * lá dentro. Um mutante mostrou-o.
+         */
+        await waitFor(() => {
+            expect(
+                pedidos(
+                    global.fetch as ReturnType<typeof responder>,
+                    '/notifications/unread',
+                ).length,
+            ).toBe(2);
+        });
+
+        expect(screen.getByText('por ler:5')).toBeTruthy();
     });
 
     it('não desenha algarismo nenhum a quem não tem avisos', async () => {
