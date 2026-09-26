@@ -688,9 +688,17 @@ button.link:hover {
         font-size: 14.5px;
     }
 
+    /*
+      Numa linha, as ligações deixam de precisar de uma faixa cada uma
+      — mas continuam a precisar de ser carregáveis. Estava a zero, e
+      zero dava 23 pixéis: menos do que um dedo acerta, e uma regra a
+      desfazer a medida que o resto do produto respeita.
+
+      Um ecrã com 480 de largura continua a ser um telemóvel deitado.
+    */
     .foot a,
     .foot span {
-        min-height: 0;
+        min-height: var(--tap-ligacao);
     }
 
     .foot .sep {

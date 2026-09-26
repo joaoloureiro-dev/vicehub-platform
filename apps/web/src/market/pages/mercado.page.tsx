@@ -85,7 +85,10 @@ export const MercadoPage = () => {
                 <h1>{t.mercado.titulo}</h1>
                 {pagina.data ? (
                     <p>
-                        <Link to={`/servidores/${serverId}`}>
+                        <Link
+                            className="ligacao-solta"
+                            to={`/servidores/${serverId}`}
+                        >
                             {t.mercado.sub(pagina.data.server.name)}
                         </Link>
                     </p>
