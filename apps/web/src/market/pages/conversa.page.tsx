@@ -107,7 +107,7 @@ export const ConversaPage = () => {
     return (
         <main className="panel wide mercado">
             <p className="hint">
-                <Link to="/mercado/conversas">
+                <Link className="ligacao-solta" to="/mercado/conversas">
                     {t.mercado.voltarAsConversas}
                 </Link>
             </p>

@@ -88,6 +88,26 @@ const DESTINOS = [
 ] as const;
 
 /**
+ * Um número ao lado de um item de menu, e o que ele quer dizer.
+ *
+ * O algarismo cola-se ao rótulo do link: quem ouve o ecrã ouvia
+ * "Notifications3", que não é uma frase. E o `title` não resolvia nada
+ * — num telemóvel não há onde passar o rato, e nem sequer é lido de
+ * forma fiável por quem ouve o ecrã.
+ *
+ * Por isso são dois: o algarismo desenha-se e não se ouve, e a frase
+ * ouve-se e não se desenha.
+ */
+const Contagem = ({ escrita, frase }: { escrita: string; frase: string }) => (
+    <>
+        <span className="pendencia" aria-hidden="true">
+            {escrita}
+        </span>
+        <span className="sr-only">{frase}</span>
+    </>
+);
+
+/**
  * O número que aparece ao lado de "as minhas".
  *
  * Existe para que não seja preciso abrir a página para saber que há
@@ -98,9 +118,10 @@ const Pendencia = ({ quantos }: { quantos: number }) => {
     const t = useT();
 
     return quantos === 0 ? null : (
-        <span className="pendencia" title={t.pendentes.porResponder(quantos)}>
-            {quantos}
-        </span>
+        <Contagem
+            escrita={String(quantos)}
+            frase={t.pendentes.porResponder(quantos)}
+        />
     );
 };
 
@@ -125,11 +146,7 @@ const AvisosPorLer = ({ quantos }: { quantos: number }) => {
     const escrito =
         quantos > AVISOS_A_CONTAR ? `${AVISOS_A_CONTAR}+` : String(quantos);
 
-    return (
-        <span className="pendencia" title={t.avisos.porLer(escrito)}>
-            {escrito}
-        </span>
-    );
+    return <Contagem escrita={escrito} frase={t.avisos.porLer(escrito)} />;
 };
 
 const Shell = () => {

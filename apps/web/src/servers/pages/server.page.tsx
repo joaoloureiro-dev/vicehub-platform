@@ -115,7 +115,7 @@ export const ServerPage = () => {
             <div className="panel">
                 <Alert kind="bad">{t.servidores.naoEncontrado}</Alert>
                 <div className="foot">
-                    <Link to="/servidores">{t.crews.voltarDiretorio}</Link>
+                    <Link className="ligacao-solta" to="/servidores">{t.crews.voltarDiretorio}</Link>
                 </div>
             </div>
         );
@@ -177,7 +177,10 @@ export const ServerPage = () => {
               aquilo tem gente a fazer alguma coisa.
             */}
             <p className="hint">
-                <Link to={`/servidores/${perfil.id}/mercado`}>
+                <Link
+                    className="ligacao-solta"
+                    to={`/servidores/${perfil.id}/mercado`}
+                >
                     {t.mercado.verMercado}
                 </Link>
             </p>

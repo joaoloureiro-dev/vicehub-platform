@@ -104,7 +104,7 @@ export const CreateServerPage = () => {
             </form>
 
             <div className="foot">
-                <Link to="/servidores">{t.crews.voltarDiretorio}</Link>
+                <Link className="ligacao-solta" to="/servidores">{t.crews.voltarDiretorio}</Link>
             </div>
         </div>
     );

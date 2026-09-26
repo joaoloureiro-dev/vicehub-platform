@@ -88,7 +88,9 @@ export const CrewDirectoryPage = ({
                         <Link to="/crews">{t.crews.verTodas}</Link>
                     </>
                 ) : (
-                    <Link to="/recrutamento">{t.crews.verQuemRecruta}</Link>
+                    <Link className="ligacao-solta" to="/recrutamento">
+                        {t.crews.verQuemRecruta}
+                    </Link>
                 )}
             </p>
 

@@ -32,7 +32,7 @@ export const NotaDoVendedor = ({
     return (
         <span className="nota-do-vendedor" title={t.mercado.media(nota.average, nota.count)}>
             <span aria-hidden="true">★ {nota.average}</span>
-            <span className="visually-hidden">
+            <span className="sr-only">
                 {t.mercado.media(nota.average, nota.count)}
             </span>
             <span className="quantas" aria-hidden="true">

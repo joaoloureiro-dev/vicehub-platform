@@ -119,7 +119,7 @@ export const CreateCrewPage = () => {
             </form>
 
             <div className="foot">
-                <Link to="/crews">{t.crews.voltarDiretorio}</Link>
+                <Link className="ligacao-solta" to="/crews">{t.crews.voltarDiretorio}</Link>
             </div>
         </div>
     );
