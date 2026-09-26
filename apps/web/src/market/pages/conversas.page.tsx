@@ -45,7 +45,7 @@ export const ConversasPage = () => {
     const conversas = caixa.data?.conversations ?? [];
 
     return (
-        <main className="panel wide mercado">
+        <main className="panel wide esticado">
             <header className="card header">
                 <h1>{t.mercado.conversas}</h1>
                 <p className="hint">{t.mercado.conversasPrivadas}</p>

@@ -120,7 +120,7 @@ export const AvisosPage = () => {
     };
 
     return (
-        <main className="panel wide mercado">
+        <main className="panel wide esticado">
             <header className="card header">
                 <h1>{t.avisos.titulo}</h1>
                 <p className="hint">{t.avisos.sub}</p>

@@ -3622,11 +3622,21 @@ button.link:hover {
  * HTML come-as, e uma resposta com passos numerados fica num parágrafo
  * só. E `anywhere` para um endereço comprido não empurrar o ecrã.
  */
+/*
+ * O que uma pessoa escreveu: uma pergunta, uma resposta, uma mensagem,
+ * o corpo de um anúncio.
+ *
+ * Leva a medida como qualquer outro texto corrido, e aqui isso passou
+ * a contar: as listas de cartões deixaram de parar nos 440 e vão até
+ * aos 836. Uma coluna larga é para a **lista** caber, e não para a
+ * linha de texto crescer com ela.
+ */
 .texto {
     margin: 12px 0 0;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     line-height: 1.6;
+    max-width: var(--medida);
 }
 
 .lista-respostas {
@@ -3985,19 +3995,37 @@ button.link:hover {
 /* ---------- o mercado de um servidor ---------- */
 
 /*
- * O mercado alinha tudo pela mesma margem esquerda.
+ * Uma página cujo conteúdo usa a largura toda do painel.
  *
- * O `main` centra os filhos, e o cartão comum pára nos 440px: sem isto,
- * o cabeçalho ficava uma coluna estreita ao meio e a grelha de anúncios
- * abria-se por baixo com novecentos — duas larguras diferentes na mesma
- * página, e nenhuma delas a acompanhar a outra. Um catálogo lê-se de
- * cima a baixo pela mesma aresta.
+ * O `main` centra os filhos e o cartão comum pára nos 440px — o que
+ * está certo para uma caixa de início de sessão e errado para uma
+ * lista. Sem isto, o cabeçalho ficava uma coluna estreita ao meio e a
+ * grelha abria-se por baixo com novecentos: duas larguras na mesma
+ * página, nenhuma a acompanhar a outra. Uma lista lê-se de cima a
+ * baixo pela mesma aresta.
+ *
+ * Chamava-se `.mercado`, que era o sítio onde o problema apareceu
+ * primeiro. O nome passou a ser a regra quando a quarta página a
+ * precisar dela não era mercado nenhum: a fila de quem modera é uma
+ * lista de cartões que se lê e se decide, exactamente como a caixa de
+ * avisos, e estava a 440 ao lado de uma que estava a 836.
+ *
+ * O texto lá dentro continua a ter a medida: uma coluna larga é para a
+ * lista caber, e não para a linha de texto crescer com ela.
  */
-.panel.mercado > * {
+.panel.esticado > * {
     align-self: stretch;
 }
 
-.panel.mercado > .card {
+/*
+ * E os cartões lá dentro, a qualquer profundidade.
+ *
+ * Era `> .card`, filho directo, e por isso o cabeçalho da fila de
+ * denúncias esticava-se e os cartões das denúncias — que vivem dentro
+ * de um `ul` — ficavam nos 440. Duas larguras na mesma página, que é
+ * exactamente o que esta regra existe para não deixar acontecer.
+ */
+.panel.esticado .card {
     max-width: none;
 }
 

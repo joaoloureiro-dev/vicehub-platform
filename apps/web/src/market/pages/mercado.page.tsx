@@ -80,7 +80,7 @@ export const MercadoPage = () => {
     const anuncios = pagina.data?.listings ?? [];
 
     return (
-        <main className="panel wide mercado">
+        <main className="panel wide esticado">
             <header className="card header">
                 <h1>{t.mercado.titulo}</h1>
                 {pagina.data ? (
