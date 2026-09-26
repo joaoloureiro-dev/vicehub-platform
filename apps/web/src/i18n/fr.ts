@@ -834,6 +834,14 @@ export const fr = (p: Tools): Messages => ({
         },
 
         verOAlvo: 'Ouvrir',
+        verHistorial: 'Ce qui a déjà été décidé',
+        historialFalhou: 'Cet historique n’a pas pu être chargé.',
+        escreveu: (quem: string, retiradas: number, mantidas: number) =>
+            `Ce que ${quem} a écrit : ${retiradas} retirés, ${mantidas} examinés et conservés`,
+        denunciou: (quem: string, comRazao: number, semRazao: number) =>
+            `Signalements déposés par ${quem} : ${comRazao} fondés, ${semRazao} rejetés`,
+        historialNota:
+            'On compte ce qui a déjà été décidé, pas les signalements reçus : dix personnes signalant la même publication, c’est une décision et non dix.',
     },
 
     forum: {

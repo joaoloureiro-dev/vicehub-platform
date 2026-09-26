@@ -10,6 +10,7 @@ import { es } from '../src/i18n/es.js';
 import { fr } from '../src/i18n/fr.js';
 import { criarTools } from '../src/i18n/tools.js';
 import { FilaPage } from '../src/moderation/pages/fila.page.js';
+import type { Historial } from '../src/moderation/moderation.api.js';
 import { TopicPage } from '../src/forum/pages/topic.page.js';
 import { sessionStore } from '../src/lib/session.js';
 import { montarEcra, t } from './helpers.js';
@@ -77,6 +78,9 @@ const responder = (opcoes: {
     aoDenunciar?: Response;
     filaRecusada?: boolean;
     autor?: { id: string; username: string; avatarUrl: null };
+    historialDoAutor?: Historial;
+    historialDoDenunciante?: Historial;
+    historialRecusado?: boolean;
 }) =>
     vi.fn((url: string, _init?: { method?: string }) => {
         const endereco = String(url);
@@ -99,6 +103,23 @@ const responder = (opcoes: {
 
         if (endereco.includes('/reports') && endereco.includes('/forum/replies/')) {
             return Promise.resolve(opcoes.aoDenunciar ?? json(201, { id: 'd2' }));
+        }
+
+        if (endereco.includes('/moderation/users/')) {
+            if (opcoes.historialRecusado === true) {
+                return Promise.resolve(json(500, { code: 'INTERNAL_ERROR' }));
+            }
+
+            const deQuem = endereco.includes('/u2/')
+                ? opcoes.historialDoAutor
+                : opcoes.historialDoDenunciante;
+
+            return Promise.resolve(
+                json(200, deQuem ?? {
+                    written: { acted: 0, dismissed: 0 },
+                    filed: { acted: 0, dismissed: 0 },
+                }),
+            );
         }
 
         if (endereco.includes('/moderation/reports/')) {
@@ -402,5 +423,113 @@ describe('os rótulos da fila não se repetem', () => {
         for (const botao of botoes) {
             expect(abas, `"${botao}" também é uma aba`).not.toContain(botao);
         }
+    });
+});
+
+/**
+ * O que já foi decidido antes, ao lado da denúncia.
+ *
+ * A denúncia que o moderador tem à frente diz o que aconteceu uma vez.
+ * Não diz se é a primeira vez ou a décima, nem se quem a apresentou já
+ * apresentou quarenta sem razão — e as duas coisas mudam a decisão.
+ *
+ * O que aqui se guarda, acima de tudo, é a **regra de leitura** dos
+ * números. Sem a frase que os acompanha, um "3" ao lado de um nome
+ * lê-se como três vezes denunciado — que é outra coisa, e é coisa que
+ * dez pessoas combinadas conseguem fabricar.
+ */
+describe('o historial ao lado da denúncia', () => {
+    it('não vai à API sem alguém carregar', async () => {
+        const chamadas = responder({ modera: true });
+
+        vi.stubGlobal('fetch', chamadas);
+
+        montarFila();
+
+        await screen.findByText(t.moderacao.verHistorial);
+
+        expect(
+            chamadas.mock.calls.filter(([endereco]) =>
+                String(endereco).includes('/moderation/users/'),
+            ),
+        ).toHaveLength(0);
+    });
+
+    it('mostra os dois lados, de quem escreveu e de quem denunciou', async () => {
+        vi.stubGlobal(
+            'fetch',
+            responder({
+                modera: true,
+                historialDoAutor: {
+                    written: { acted: 3, dismissed: 1 },
+                    filed: { acted: 0, dismissed: 0 },
+                },
+                historialDoDenunciante: {
+                    written: { acted: 0, dismissed: 0 },
+                    filed: { acted: 2, dismissed: 40 },
+                },
+            }),
+        );
+
+        montarFila();
+
+        await userEvent.click(
+            await screen.findByText(t.moderacao.verHistorial),
+        );
+
+        await waitFor(() => {
+            expect(
+                screen.getByText(t.moderacao.escreveu('ana', 3, 1)),
+            ).toBeTruthy();
+        });
+
+        expect(
+            screen.getByText(t.moderacao.denunciou('carla', 2, 40)),
+        ).toBeTruthy();
+    });
+
+    /**
+     * A frase que diz como se lêem os números vai com eles, e não num
+     * sítio onde alguém tenha de a ir procurar.
+     */
+    it('e diz que conta decisões, e não denúncias recebidas', async () => {
+        vi.stubGlobal('fetch', responder({ modera: true }));
+
+        montarFila();
+
+        await userEvent.click(
+            await screen.findByText(t.moderacao.verHistorial),
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText(t.moderacao.historialNota)).toBeTruthy();
+        });
+    });
+
+    /**
+     * Uma falha a carregar isto não pode levar a fila com ela: o
+     * moderador está a meio de uma decisão, e o historial é o que ele
+     * consultou a mais.
+     */
+    it('e uma falha não leva a fila atrás', async () => {
+        vi.stubGlobal(
+            'fetch',
+            responder({ modera: true, historialRecusado: true }),
+        );
+
+        montarFila();
+
+        await userEvent.click(
+            await screen.findByText(t.moderacao.verHistorial),
+        );
+
+        await waitFor(() => {
+            expect(
+                screen.getByText(t.moderacao.historialFalhou),
+            ).toBeTruthy();
+        });
+
+        /** A denúncia continua lá, e os botões de decidir também. */
+        expect(screen.getByText(t.moderacao.marcarTratada)).toBeTruthy();
     });
 });

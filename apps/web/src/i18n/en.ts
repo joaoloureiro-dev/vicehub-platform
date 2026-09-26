@@ -864,6 +864,21 @@ export const en = (p: Tools) => ({
         },
 
         verOAlvo: 'Open it',
+        /**
+         * O historial, que só aqui aparece.
+         *
+         * A frase que acompanha os números não é decoração: é a regra
+         * de leitura deles. Sem ela, "3" ao lado de um nome lê-se como
+         * três vezes denunciado, que é outra coisa e é brigadável.
+         */
+        verHistorial: 'What has been decided before',
+        historialFalhou: 'That record could not be loaded.',
+        escreveu: (quem: string, retiradas: number, mantidas: number) =>
+            `What ${quem} wrote: ${retiradas} taken down, ${mantidas} looked at and kept`,
+        denunciou: (quem: string, comRazao: number, semRazao: number) =>
+            `Reports ${quem} filed: ${comRazao} upheld, ${semRazao} dismissed`,
+        historialNota:
+            'These count things already decided, not reports received: ten people reporting one post is one decision, not ten.',
     },
 
     forum: {

@@ -156,6 +156,27 @@ export class ReportService {
         };
     }
 
+    /**
+     * O que já foi decidido sobre uma pessoa, para quem está a decidir
+     * agora.
+     *
+     * A denúncia que o moderador tem à frente diz o que aconteceu uma
+     * vez. Não diz se é a primeira vez ou a décima, nem se quem
+     * denunciou já apresentou quarenta sem razão — e as duas coisas
+     * mudam a decisão. Os números já estavam todos na tabela; não
+     * estavam onde a decisão se toma, que é o defeito que este projeto
+     * continua a encontrar em si próprio.
+     *
+     * Não decide nada nem sugere nada. Quem decide é uma pessoa, e o
+     * que isto lhe dá é o que ela perguntaria a seguir.
+     */
+    async historyFor(userId: string): Promise<{
+        written: { acted: number; dismissed: number };
+        filed: { acted: number; dismissed: number };
+    }> {
+        return this.reportRepository.historicoDe(userId);
+    }
+
     async handleReport(
         reportId: string,
         actorId: string,

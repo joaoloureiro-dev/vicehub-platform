@@ -28,6 +28,11 @@ export const reportIdParamSchema = z.object({
     reportId: z.string().uuid(),
 });
 
+/** De quem é o historial que se pede. */
+export const moderationUserParamSchema = z.object({
+    userId: z.string().uuid(),
+});
+
 /**
  * A fila de quem modera.
  *
@@ -52,5 +57,6 @@ export const handleReportSchema = z.object({
 
 export type CreateReportDto = z.infer<typeof createReportSchema>;
 export type ReportIdParamDto = z.infer<typeof reportIdParamSchema>;
+export type ModerationUserParamDto = z.infer<typeof moderationUserParamSchema>;
 export type ListReportsQueryDto = z.infer<typeof listReportsQuerySchema>;
 export type HandleReportDto = z.infer<typeof handleReportSchema>;

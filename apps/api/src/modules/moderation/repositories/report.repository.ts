@@ -247,6 +247,96 @@ export class ReportRepository {
         });
     }
 
+    /**
+     * O que já foi decidido sobre uma pessoa, dos dois lados.
+     *
+     * **Conta peças de conteúdo, e não denúncias.** A diferença é a
+     * coisa toda: dez pessoas a denunciar a mesma publicação são dez
+     * linhas na tabela e **um** erro de quem a escreveu. Contar
+     * denúncias fazia de uma campanha organizada um cadastro, e era
+     * precisamente o que um moderador não pode confundir.
+     *
+     * Só conta o que uma pessoa já decidiu. Uma denúncia por abrir é
+     * uma acusação, não um facto, e pô-la numa contagem ao lado do
+     * nome de alguém era deixá-la valer antes de alguém a ler.
+     *
+     * A consulta é em SQL por causa do `COUNT(DISTINCT ...)` sobre a
+     * coluna que estiver preenchida: exatamente uma está, e é o
+     * `CHECK` da tabela que o garante. Feita pelo ORM, eram cinco
+     * consultas e um `distinct` do lado de cá.
+     */
+    async historicoDe(userId: string): Promise<{
+        written: { acted: number; dismissed: number };
+        filed: { acted: number; dismissed: number };
+    }> {
+        const [escrito, apresentadas] = await Promise.all([
+            this.database.$queryRaw<{ status: string; quantos: bigint }[]>`
+                SELECT
+                    r.status::text AS status,
+                    COUNT(DISTINCT COALESCE(
+                        r."topicId",
+                        r."replyId",
+                        r."listingId",
+                        r."messageId",
+                        r."reviewId"
+                    )) AS quantos
+                FROM "Report" r
+                LEFT JOIN "ForumTopic"    t  ON t.id  = r."topicId"
+                LEFT JOIN "ForumReply"    rp ON rp.id = r."replyId"
+                LEFT JOIN "MarketListing" l  ON l.id  = r."listingId"
+                LEFT JOIN "MarketMessage" m  ON m.id  = r."messageId"
+                LEFT JOIN "MarketReview"  rv ON rv.id = r."reviewId"
+                WHERE r.status <> 'open'
+                  AND COALESCE(
+                        t."authorId",
+                        rp."authorId",
+                        l."sellerId",
+                        m."senderId",
+                        rv."reviewerId"
+                      ) = ${userId}
+                GROUP BY r.status
+            `,
+            /**
+             * Do lado de quem denuncia conta-se cada denúncia, e é o
+             * que está certo: apresentar quarenta denúncias sem razão
+             * são quarenta idas à fila de outra pessoa.
+             */
+            this.database.report.groupBy({
+                by: ['status'],
+                where: { reporterId: userId, status: { not: 'open' } },
+                _count: { _all: true },
+            }),
+        ]);
+
+        const doEstado = (
+            linhas: { status: string; quantos: number }[],
+            status: string,
+        ): number =>
+            linhas.find((linha) => linha.status === status)?.quantos ?? 0;
+
+        const escritoLegivel = escrito.map((linha) => ({
+            status: linha.status,
+            /** `COUNT` devolve um inteiro de 64 bits, e estes são pequenos. */
+            quantos: Number(linha.quantos),
+        }));
+
+        const apresentadasLegiveis = apresentadas.map((linha) => ({
+            status: String(linha.status),
+            quantos: linha._count._all,
+        }));
+
+        return {
+            written: {
+                acted: doEstado(escritoLegivel, 'acted'),
+                dismissed: doEstado(escritoLegivel, 'dismissed'),
+            },
+            filed: {
+                acted: doEstado(apresentadasLegiveis, 'acted'),
+                dismissed: doEstado(apresentadasLegiveis, 'dismissed'),
+            },
+        };
+    }
+
     handleReport(
         reportId: string,
         outcome: 'acted' | 'dismissed',
