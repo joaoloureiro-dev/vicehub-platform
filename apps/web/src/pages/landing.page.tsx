@@ -7,8 +7,7 @@ import { listServers } from '../servers/server.api.js';
 import { Noticias } from '../news/components/noticias.js';
 import { listNews } from '../news/news.api.js';
 import { useAsync } from '../lib/use-async.js';
-import { useIdioma, useT } from '../i18n/i18n.js';
-import { criarTools } from '../i18n/tools.js';
+import { useT, useTools } from '../i18n/i18n.js';
 
 /** Quantos se mostram de cada coisa. Chega para dar sinal de vida. */
 const AMOSTRA = 3;
@@ -34,8 +33,7 @@ const AMOSTRA = 3;
  */
 export const LandingPage = () => {
     const t = useT();
-    const { idioma } = useIdioma();
-    const { quando } = criarTools(idioma);
+    const { quando } = useTools();
 
     /**
      * A montra vem da rota pública de eventos, que não pede sessão. É a

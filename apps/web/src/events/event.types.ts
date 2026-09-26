@@ -98,12 +98,3 @@ export const transicoesDe = (
     status: string,
 ): { status: EventStatus; nome: string }[] => TRANSICOES[status] ?? [];
 
-/** Data e hora como uma pessoa as lê. */
-export const quando = (iso: string): string =>
-    new Date(iso).toLocaleString('pt-PT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });

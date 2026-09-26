@@ -17,8 +17,7 @@ import {
     withdraw,
 } from '../event.api.js';
 import { useDono } from '../use-dono.js';
-import { useIdioma, useT } from '../../i18n/i18n.js';
-import { criarTools } from '../../i18n/tools.js';
+import { useT, useTools } from '../../i18n/i18n.js';
 import { transicoesDe } from '../event.types.js';
 
 /**
@@ -32,8 +31,7 @@ import { transicoesDe } from '../event.types.js';
  */
 export const EventPage = () => {
     const t = useT();
-    const { idioma } = useIdioma();
-    const { quando } = criarTools(idioma);
+    const { quando } = useTools();
     const { eventId } = useParams<{ eventId: string }>();
     const { dono, calendario } = useDono();
     const { user } = useAuth();

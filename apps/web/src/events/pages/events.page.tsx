@@ -7,8 +7,7 @@ import { useAsync } from '../../lib/use-async.js';
 import { Alert } from '../../auth/components/alert.js';
 import { createEvent, listEvents } from '../event.api.js';
 import { useDono } from '../use-dono.js';
-import { useIdioma, useT } from '../../i18n/i18n.js';
-import { criarTools } from '../../i18n/tools.js';
+import { useT, useTools } from '../../i18n/i18n.js';
 
 /**
  * O calendário de uma comunidade — de uma crew ou de um servidor.
@@ -21,8 +20,7 @@ import { criarTools } from '../../i18n/tools.js';
  */
 export const EventsPage = () => {
     const t = useT();
-    const { idioma } = useIdioma();
-    const { quando } = criarTools(idioma);
+    const { quando } = useTools();
     const { dono, comunidade, calendario } = useDono();
 
     const [passados, setPassados] = useState(false);
