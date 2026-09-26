@@ -165,6 +165,25 @@
       a outra é para texto que leva a algum lado.
     */
     --tap-ligacao: 32px;
+
+    /*
+      A medida: quantos caracteres cabem numa linha de texto corrido.
+
+      Acima de uns noventa, o olho perde a linha ao voltar à esquerda e
+      salta uma — e quem salta uma linha duas vezes fecha a página. Num
+      portátil, um parágrafo à largura do painel dá **cento e trinta e
+      sete**, que é o dobro do que se lê sem esforço.
+
+      Em `ch` e não em pixéis, porque a conta é de caracteres: um texto
+      maior leva a mesma quantidade de letras numa linha mais larga, e
+      é isso que está certo.
+
+      Estava escrita em sete sítios, com quatro números diferentes —
+      52, 58, 62, 68 — cada um decidido à parte. Dois deles eram a
+      mesma regra aplicada à mão ao `.hint` de uma página, porque quem
+      lá chegou viu o problema e resolveu-o só ali.
+    */
+    --medida: 58ch;
 }
 
 @media (min-width: 640px) {
@@ -525,11 +544,22 @@ form {
     border-color: var(--danger-ink);
 }
 
+/*
+ * A letra pequena, que neste produto é onde mora metade do que há para
+ * ler: o que um cargo decide, o que acontece a quem sai, porque é que
+ * um número está ali.
+ *
+ * Leva a medida como qualquer outro texto corrido. Sem ela, num
+ * portátil, estas linhas chegavam aos 137 caracteres — e são
+ * precisamente as linhas que explicam o que a pessoa está prestes a
+ * fazer.
+ */
 .hint {
     margin: 0;
     font-size: 13px;
     color: var(--faint);
     line-height: 1.45;
+    max-width: var(--medida);
 }
 
 /*
@@ -694,7 +724,7 @@ button.link:hover {
     margin: 0;
     color: var(--muted);
     font-size: 15.5px;
-    max-width: 58ch;
+    max-width: var(--medida);
     text-wrap: pretty;
 }
 
@@ -2098,7 +2128,7 @@ button.link:hover {
     font-size: 14.5px;
     line-height: 1.55;
     color: var(--muted);
-    max-width: 62ch;
+    max-width: var(--medida);
     text-wrap: pretty;
 }
 
@@ -2128,10 +2158,6 @@ button.link:hover {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-}
-
-.premium-hero .hint {
-    max-width: 58ch;
 }
 
 /*
@@ -2395,7 +2421,7 @@ button.link:hover {
     font-size: 15px;
     line-height: 1.55;
     color: var(--muted);
-    max-width: 58ch;
+    max-width: var(--medida);
     text-wrap: pretty;
 }
 
@@ -2452,7 +2478,7 @@ button.link:hover {
 }
 
 .vitalicio-nota {
-    max-width: 58ch;
+    max-width: var(--medida);
     border-top: 1px solid var(--edge);
     padding-top: 18px;
 }
@@ -3067,7 +3093,6 @@ button.link:hover {
 }
 
 .landing-planos > .hint {
-    max-width: 62ch;
     margin: 8px auto 24px;
 }
 
@@ -3367,9 +3392,12 @@ button.link:hover {
   O aviso de marcas, à medida do texto que o rodeia e não à da página:
   esticado a toda a largura ficava uma linha só, de um lado ao outro do
   ecrã, que é a forma de garantir que não se lê.
+
+  A medida vem de cima, como a de qualquer outro texto corrido. Era 68
+  escrito aqui, e a diferença para os 58 do resto do produto não tinha
+  razão nenhuma — era só o número que ocorreu a quem escreveu a regra.
 */
 .rodape .hint {
-    max-width: 68ch;
     margin: 0;
     font-size: 12px;
 }
