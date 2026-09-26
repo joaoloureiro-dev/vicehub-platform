@@ -79,7 +79,7 @@ export const RequestResetPage = () => {
                 </header>
                 <Alert kind="good">{t.auth.seExistir}</Alert>
                 <div className="foot">
-                    <Link to="/entrar">{t.auth.voltarAoLogin}</Link>
+                    <Link className="ligacao-solta" to="/entrar">{t.auth.voltarAoLogin}</Link>
                 </div>
             </div>
         );

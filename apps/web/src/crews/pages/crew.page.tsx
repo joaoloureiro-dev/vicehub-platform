@@ -148,7 +148,7 @@ export const CrewPage = () => {
             <div className="panel">
                 <Alert kind="bad">{t.crews.naoEncontrada}</Alert>
                 <div className="foot">
-                    <Link to="/crews">{t.crews.voltarDiretorio}</Link>
+                    <Link className="ligacao-solta" to="/crews">{t.crews.voltarDiretorio}</Link>
                 </div>
             </div>
         );

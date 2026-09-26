@@ -483,7 +483,7 @@ describe('o número por ler no cabeçalho', () => {
         montarAplicacao(7);
 
         await waitFor(() => {
-            expect(screen.getByTitle(t.avisos.porLer('7'))).toBeTruthy();
+            expect(screen.getByText(t.avisos.porLer('7'))).toBeTruthy();
         });
     });
 
@@ -496,10 +496,42 @@ describe('o número por ler no cabeçalho', () => {
         montarAplicacao(300);
 
         await waitFor(() => {
-            expect(screen.getByTitle(t.avisos.porLer('99+'))).toBeTruthy();
+            expect(screen.getByText(t.avisos.porLer('99+'))).toBeTruthy();
         });
 
         expect(screen.getByText('99+')).toBeTruthy();
+    });
+
+    /**
+     * O que se ouve, e não só o que se vê.
+     *
+     * O algarismo cola-se ao rótulo do link: quem ouve o ecrã ouvia
+     * "Notifications3", que não é uma frase. E o `title` que lá estava
+     * não resolvia nada — num telemóvel não há onde passar o rato, e
+     * nem sequer é lido de forma fiável.
+     */
+    it('diz por palavras quantos são, a quem ouve o ecrã', async () => {
+        montarAplicacao(3);
+
+        await waitFor(() => {
+            expect(screen.getByText(t.avisos.porLer('3'))).toBeTruthy();
+        });
+
+        const ligacao = screen
+            .getAllByRole('link')
+            .find((uma) => uma.getAttribute('href') === '/avisos');
+
+        expect(ligacao).toBeDefined();
+
+        /** O rótulo inteiro, como um leitor de ecrã o junta. */
+        expect(ligacao?.textContent).toBe(
+            `${t.nav.avisos}3${t.avisos.porLer('3')}`,
+        );
+
+        /** E o algarismo desenhado não entra na conta duas vezes. */
+        expect(
+            ligacao?.querySelector('.pendencia')?.getAttribute('aria-hidden'),
+        ).toBe('true');
     });
 
     /**
@@ -511,7 +543,7 @@ describe('o número por ler no cabeçalho', () => {
         montarAplicacao(99);
 
         await waitFor(() => {
-            expect(screen.getByTitle(t.avisos.porLer('99'))).toBeTruthy();
+            expect(screen.getByText(t.avisos.porLer('99'))).toBeTruthy();
         });
 
         expect(screen.queryByText('99+')).toBeNull();
@@ -585,6 +617,6 @@ describe('o número por ler no cabeçalho', () => {
             expect(screen.getAllByText(t.nav.avisos).length).toBeGreaterThan(0);
         });
 
-        expect(screen.queryByTitle(t.avisos.porLer('0'))).toBeNull();
+        expect(screen.queryByText(t.avisos.porLer('0'))).toBeNull();
     });
 });

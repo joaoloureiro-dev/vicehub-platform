@@ -50,7 +50,7 @@ const Estrelas = ({ nota }: { nota: number }) => {
                 {'★'.repeat(nota)}
                 {'☆'.repeat(5 - nota)}
             </span>
-            <span className="visually-hidden">{t.mercado.estrelas(nota)}</span>
+            <span className="sr-only">{t.mercado.estrelas(nota)}</span>
         </span>
     );
 };

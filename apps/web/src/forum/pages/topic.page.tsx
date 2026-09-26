@@ -110,7 +110,7 @@ export const TopicPage = () => {
         return (
             <main className="panel wide">
                 <Alert kind="bad">{t.forum.naoEncontrada}</Alert>
-                <p><Link to="/forum">{t.forum.voltar}</Link></p>
+                <p><Link className="ligacao-solta" to="/forum">{t.forum.voltar}</Link></p>
             </main>
         );
     }
@@ -130,7 +130,7 @@ export const TopicPage = () => {
     return (
         <main className="panel wide">
             <p className="hint">
-                <Link to="/forum">{t.forum.voltar}</Link>
+                <Link className="ligacao-solta" to="/forum">{t.forum.voltar}</Link>
             </p>
 
             <article className="card header forum-topico">

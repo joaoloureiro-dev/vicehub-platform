@@ -172,7 +172,7 @@ export const FilaPage = () => {
         return (
             <main className="panel wide">
                 <Alert kind="bad">{t.moderacao.filaNegada}</Alert>
-                <p><Link to="/forum">{t.forum.voltar}</Link></p>
+                <p><Link className="ligacao-solta" to="/forum">{t.forum.voltar}</Link></p>
             </main>
         );
     }
@@ -265,7 +265,10 @@ export const FilaPage = () => {
                                   anúncio abre-se no anúncio.
                                 */}
                                 <p className="hint">
-                                    <Link to={enderecoDoAlvo(denuncia.target)}>
+                                    <Link
+                                        className="ligacao-solta"
+                                        to={enderecoDoAlvo(denuncia.target)}
+                                    >
                                         {t.moderacao.verOAlvo}
                                     </Link>
                                 </p>

@@ -92,7 +92,7 @@ export const AnuncioPage = () => {
     return (
         <main className="panel">
             <p className="hint">
-                <Link to={`/servidores/${dados.serverId}/mercado`}>
+                <Link className="ligacao-solta" to={`/servidores/${dados.serverId}/mercado`}>
                     {t.mercado.voltar}
                 </Link>
             </p>
