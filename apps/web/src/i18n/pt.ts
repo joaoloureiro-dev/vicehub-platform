@@ -10,6 +10,15 @@ import type { Tools } from './tools.js';
  * escrito à mão, uma crew sem inscritos anunciaria "1 inscrito".
  */
 export const pt = (p: Tools): Messages => ({
+    avaria: {
+        titulo: 'Este ecrã avariou',
+        explicacao:
+            'Alguma coisa correu mal a desenhar esta página. Não foste tu'
+            + ' que a partiste, e nada do que tinhas guardado se perdeu.',
+        recarregar: 'Recarregar a página',
+        inicio: 'Ir para a página inicial',
+    },
+
     comum: {
         aCarregar: 'A carregar…',
         aGuardar: 'A guardar…',

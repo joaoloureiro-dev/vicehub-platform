@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import {
     Link,
     Navigate,
@@ -13,36 +14,134 @@ import { logout } from './auth/auth.api.js';
 import { useT } from './i18n/i18n.js';
 import { LoginPage } from './auth/pages/login.page.js';
 import { RegisterPage } from './auth/pages/register.page.js';
-import { RecoverPasswordPage } from './auth/pages/recover-password.page.js';
-import { VerifyEmailPage } from './auth/pages/verify-email.page.js';
-import { PremiumPage } from './billing/pages/premium.page.js';
-import { CreateCrewPage } from './crews/pages/create-crew.page.js';
-import { CrewDirectoryPage } from './crews/pages/crew-directory.page.js';
-import { CrewPage } from './crews/pages/crew.page.js';
-import { MyCommunitiesPage } from './pages/my-communities.page.js';
-import { CreateServerPage } from './servers/pages/create-server.page.js';
-import { ServerDirectoryPage } from './servers/pages/server-directory.page.js';
-import { ServerPage } from './servers/pages/server.page.js';
-import { EventPage } from './events/pages/event.page.js';
-import { EventsPage } from './events/pages/events.page.js';
 import { LandingPage } from './pages/landing.page.js';
+import { LimiteDeErro } from './components/limite-de-erro.js';
 import { Navegacao } from './components/navegacao.js';
-import { PrivacyPage, TermsPage } from './legal/pages/legal.page.js';
 import { Rodape } from './components/rodape.js';
 import { usePendente } from './pages/pending.context.js';
 import { useAvisos } from './notifications/avisos.context.js';
-import { AvisosPage } from './notifications/pages/avisos.page.js';
-import { MyWalletPage } from './treasury/pages/my-wallet.page.js';
-import { TreasuryPage } from './treasury/pages/treasury.page.js';
-import { MyProfilePage } from './profile/pages/my-profile.page.js';
-import { PublicProfilePage } from './profile/pages/public-profile.page.js';
-import { ForumPage } from './forum/pages/forum.page.js';
-import { MercadoPage } from './market/pages/mercado.page.js';
-import { AnuncioPage } from './market/pages/anuncio.page.js';
-import { ConversasPage } from './market/pages/conversas.page.js';
-import { ConversaPage } from './market/pages/conversa.page.js';
-import { TopicPage } from './forum/pages/topic.page.js';
-import { FilaPage } from './moderation/pages/fila.page.js';
+
+/**
+ * As páginas que não são a primeira coisa que se vê.
+ *
+ * Tudo isto vinha num pacote só: quem abrisse a página de entrada
+ * descarregava também a fila de moderação, as páginas legais e a
+ * tesouraria — 593 KB de JavaScript antes de ver uma palavra. Assim,
+ * cada ecrã chega quando alguém lá vai.
+ *
+ * O que **não** sai daqui é a entrada, o login e o registo. São o funil
+ * inteiro da primeira visita, e pedi-los num segundo pedido punha um
+ * «a carregar» entre a pessoa e a única coisa que ela veio fazer.
+ *
+ * `default:` em cada um porque `React.lazy` só sabe abrir um módulo com
+ * exportação por omissão, e estas páginas são todas nomeadas — o
+ * repositório não usa `export default` em lado nenhum, e não vale a pena
+ * mudar vinte e seis ficheiros por causa da forma de um import.
+ */
+const RecoverPasswordPage = lazy(async () => ({
+    default: (await import('./auth/pages/recover-password.page.js')).RecoverPasswordPage,
+}));
+
+const VerifyEmailPage = lazy(async () => ({
+    default: (await import('./auth/pages/verify-email.page.js')).VerifyEmailPage,
+}));
+
+const PremiumPage = lazy(async () => ({
+    default: (await import('./billing/pages/premium.page.js')).PremiumPage,
+}));
+
+const CreateCrewPage = lazy(async () => ({
+    default: (await import('./crews/pages/create-crew.page.js')).CreateCrewPage,
+}));
+
+const CrewDirectoryPage = lazy(async () => ({
+    default: (await import('./crews/pages/crew-directory.page.js')).CrewDirectoryPage,
+}));
+
+const CrewPage = lazy(async () => ({
+    default: (await import('./crews/pages/crew.page.js')).CrewPage,
+}));
+
+const MyCommunitiesPage = lazy(async () => ({
+    default: (await import('./pages/my-communities.page.js')).MyCommunitiesPage,
+}));
+
+const CreateServerPage = lazy(async () => ({
+    default: (await import('./servers/pages/create-server.page.js')).CreateServerPage,
+}));
+
+const ServerDirectoryPage = lazy(async () => ({
+    default: (await import('./servers/pages/server-directory.page.js')).ServerDirectoryPage,
+}));
+
+const ServerPage = lazy(async () => ({
+    default: (await import('./servers/pages/server.page.js')).ServerPage,
+}));
+
+const EventPage = lazy(async () => ({
+    default: (await import('./events/pages/event.page.js')).EventPage,
+}));
+
+const EventsPage = lazy(async () => ({
+    default: (await import('./events/pages/events.page.js')).EventsPage,
+}));
+
+const PrivacyPage = lazy(async () => ({
+    default: (await import('./legal/pages/legal.page.js')).PrivacyPage,
+}));
+
+const TermsPage = lazy(async () => ({
+    default: (await import('./legal/pages/legal.page.js')).TermsPage,
+}));
+
+const AvisosPage = lazy(async () => ({
+    default: (await import('./notifications/pages/avisos.page.js')).AvisosPage,
+}));
+
+const MyWalletPage = lazy(async () => ({
+    default: (await import('./treasury/pages/my-wallet.page.js')).MyWalletPage,
+}));
+
+const TreasuryPage = lazy(async () => ({
+    default: (await import('./treasury/pages/treasury.page.js')).TreasuryPage,
+}));
+
+const MyProfilePage = lazy(async () => ({
+    default: (await import('./profile/pages/my-profile.page.js')).MyProfilePage,
+}));
+
+const PublicProfilePage = lazy(async () => ({
+    default: (await import('./profile/pages/public-profile.page.js')).PublicProfilePage,
+}));
+
+const ForumPage = lazy(async () => ({
+    default: (await import('./forum/pages/forum.page.js')).ForumPage,
+}));
+
+const MercadoPage = lazy(async () => ({
+    default: (await import('./market/pages/mercado.page.js')).MercadoPage,
+}));
+
+const AnuncioPage = lazy(async () => ({
+    default: (await import('./market/pages/anuncio.page.js')).AnuncioPage,
+}));
+
+const ConversasPage = lazy(async () => ({
+    default: (await import('./market/pages/conversas.page.js')).ConversasPage,
+}));
+
+const ConversaPage = lazy(async () => ({
+    default: (await import('./market/pages/conversa.page.js')).ConversaPage,
+}));
+
+const TopicPage = lazy(async () => ({
+    default: (await import('./forum/pages/topic.page.js')).TopicPage,
+}));
+
+const FilaPage = lazy(async () => ({
+    default: (await import('./moderation/pages/fila.page.js')).FilaPage,
+}));
+
 
 /** Um "a carregar" que já sabe falar o idioma escolhido. */
 const Carregando = () => {
@@ -228,8 +327,32 @@ const Shell = () => {
             */}
             <Navegacao />
 
+            {/*
+              Os dois ficam **dentro** da casca, à volta do sítio onde a
+              página entra.
+
+              O `Suspense`, para que a barra de cima, a navegação e o
+              rodapé continuem lá enquanto um ecrã que ainda não chegou
+              está a vir: a pessoa vê que carregou no sítio certo. Posto
+              à volta da casca inteira, o que ela veria era o ecrã a
+              desaparecer e a voltar, que é pior do que a espera.
+
+              O `LimiteDeErro` pela mesma razão, e por uma a mais: um
+              ecrã que rebenta é um ecrã, e não o produto. Se levar a
+              navegação com ele, a única saída que resta é recarregar —
+              e a pessoa fica com a impressão de que o sítio inteiro
+              caiu. Assim, o que cai é a página, e a barra ao lado
+              continua a servir para ir a outro lado.
+
+              Há um segundo, à volta de tudo, em `main.tsx`: se for a
+              própria casca a rebentar, este não chega a existir.
+            */}
             <main>
-                <Outlet />
+                <LimiteDeErro>
+                    <Suspense fallback={<Carregando />}>
+                        <Outlet />
+                    </Suspense>
+                </LimiteDeErro>
             </main>
 
             <Rodape />

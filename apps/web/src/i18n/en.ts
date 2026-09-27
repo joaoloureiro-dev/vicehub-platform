@@ -9,6 +9,15 @@ import type { Tools } from './tools.js';
  * algo que já não existe fica lá esquecida a fingir que serve.
  */
 export const en = (p: Tools) => ({
+    avaria: {
+        titulo: 'This screen broke',
+        explicacao:
+            'Something went wrong while drawing this page. Nothing you did'
+            + ' caused it, and nothing you had saved was lost.',
+        recarregar: 'Reload the page',
+        inicio: 'Go to the home page',
+    },
+
     comum: {
         aCarregar: 'Loading…',
         aGuardar: 'Saving…',

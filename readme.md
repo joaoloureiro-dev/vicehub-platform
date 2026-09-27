@@ -144,6 +144,32 @@ branca no ecrã.
 - Do telemóvel para fora: as regras base servem o ecrã pequeno e as media
   queries só acrescentam à medida que há espaço.
 - Os ecrãs atualizam-se quando se pede — ainda não há ligação ao vivo
+- **Um ecrã que rebenta é um ecrã, e não o produto.** Há uma fronteira de
+  erro à volta da página, por dentro da casca: se um componente falhar a
+  desenhar, a barra e a navegação ficam de pé e há outro sítio para onde
+  ir. Há uma segunda à volta de tudo, para o caso de ser a própria casca
+  a cair. Sem elas o React desmontava a árvore inteira e o que ficava era
+  uma **página branca** — a avaria que se confunde com a rede em baixo,
+  com o telemóvel lento, ou com o produto não existir, e que por isso
+  ninguém reporta.
+- **Cada ecrã chega quando alguém lá vai.** Vinha tudo num pacote só, e
+  quem abrisse a página de entrada descarregava também a fila de
+  moderação, as páginas legais e a tesouraria. Ficam à partida a entrada,
+  o login e o registo — são o funil inteiro da primeira visita, e
+  pedi-los num segundo pedido punha um "a carregar" entre a pessoa e a
+  única coisa que ela veio fazer.
+
+  | | Antes | Agora |
+  |---|---|---|
+  | Primeira visita | 593 KB (175 KB comprimido) | 445 KB (146 KB) |
+  | Cada ecrã a seguir | — | 1 a 10 KB |
+
+  O que sobra por fazer aqui são os **quatro dicionários**, 64 KB
+  comprimidos dos quais três quartos são idiomas que quem está a ler não
+  escolheu. Ficam como estão de propósito: carregá-los à parte trocava
+  esses bytes por um instante de inglês no ecrã de quem escolheu outra
+  coisa, e uma troca dessas é para se decidir e não para se fazer de
+  passagem.
 
 ---
 

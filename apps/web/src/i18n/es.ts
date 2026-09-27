@@ -2,6 +2,15 @@ import type { Messages } from './en.js';
 import type { Tools } from './tools.js';
 
 export const es = (p: Tools): Messages => ({
+    avaria: {
+        titulo: 'Esta pantalla se ha roto',
+        explicacao:
+            'Algo ha salido mal al dibujar esta página. No la has roto tú,'
+            + ' y no se ha perdido nada de lo que tenías guardado.',
+        recarregar: 'Recargar la página',
+        inicio: 'Ir a la página de inicio',
+    },
+
     comum: {
         aCarregar: 'Cargando…',
         aGuardar: 'Guardando…',

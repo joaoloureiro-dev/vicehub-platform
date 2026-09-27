@@ -2654,6 +2654,51 @@ button.link:hover {
 }
 
 
+/* ---------- o ecrã de avaria ---------- */
+
+/*
+ * O que fica quando um ecrã rebenta a desenhar.
+ *
+ * Deliberadamente sóbrio: vermelho e um ícone de aviso fariam disto um
+ * susto, e o que a pessoa precisa de perceber é que não partiu nada e
+ * que tem um botão para carregar.
+ *
+ * Aparece quase sempre **dentro** da casca, com a barra e a navegação
+ * de pé à volta: o que caiu foi um ecrã, e há outros sítios para onde
+ * ir sem recarregar nada. Sozinho no meio da página só quando foi a
+ * própria casca a cair.
+ */
+.avaria {
+    max-width: var(--medida);
+    margin: 48px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.avaria h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.avaria p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.avaria .primary {
+    width: auto;
+    align-self: stretch;
+}
+
+@media (min-width: 560px) {
+    .avaria .primary {
+        align-self: flex-start;
+        min-width: 220px;
+    }
+}
+
 /* ---------- progresso de nível ---------- */
 
 .progresso {

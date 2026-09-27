@@ -11,6 +11,16 @@ import type { Tools } from './tools.js';
  * "1 inscrit".
  */
 export const fr = (p: Tools): Messages => ({
+    avaria: {
+        titulo: 'Cet écran a planté',
+        explicacao:
+            'Quelque chose s’est mal passé à l’affichage de cette page. Ce'
+            + ' n’est pas toi qui l’as cassée, et rien de ce que tu avais'
+            + ' enregistré n’a été perdu.',
+        recarregar: 'Recharger la page',
+        inicio: 'Aller à la page d’accueil',
+    },
+
     comum: {
         aCarregar: 'Chargement…',
         aGuardar: 'Enregistrement…',
