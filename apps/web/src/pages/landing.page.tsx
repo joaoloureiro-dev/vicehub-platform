@@ -196,7 +196,7 @@ export const LandingPage = () => {
                         {online.map((servidor) => (
                             <li key={servidor.id}>
                                 <Link to={`/servidores/${servidor.id}`}>
-                                    <span className="ponto-online" aria-hidden="true" />
+                                    <span className="estado online pulsa" aria-hidden="true" />
                                     <b>{servidor.name}</b>
                                     {/*
                                       A contagem só aparece a quem a

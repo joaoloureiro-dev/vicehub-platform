@@ -18,6 +18,13 @@
  *   2. `npm run build` na web (a API serve o `dist`)
  *   3. `npm run varrer --workspace @vicehub/web`
  *
+ * **Com os travões levantados.** Semear trinta ecrãs são centenas de
+ * pedidos, e dez mensagens de mercado — e a API conta-os como contaria
+ * os de uma pessoa. À segunda corrida a sementeira morre com um 429 que
+ * não tem nada a ver com o que se está a medir. Arranca a API com
+ * `RATE_LIMIT_MAX=100000 FORUM_RATE_LIMIT_MAX=10000`, que é o mesmo que
+ * dizer que quem semeia não é quem se está a proteger.
+ *
  * Opções: `--largura=390` (ou 1280, ou as duas separadas por vírgula),
  * `--idiomas=en,pt,es,fr`, `--base=http://127.0.0.1:4011`, `--controlo`.
  *
@@ -114,7 +121,16 @@ export const DE_FORA = {
 
 const PASSWORD = 'Sup3rS3cret!Pass';
 
-const semear = async (base) => {
+/**
+ * Põe na base o que os ecrãs precisam de ter, e devolve os endereços.
+ *
+ * Exportado porque não serve só esta varredura: um programa que tire
+ * fotografias aos ecrãs precisa exactamente do mesmo estado, e a
+ * alternativa era ter estas cento e tantas linhas escritas duas vezes —
+ * com a segunda a ficar para trás na primeira vez que um ecrã passasse a
+ * precisar de outra coisa.
+ */
+export const semear = async (base) => {
     const marca = Date.now().toString().slice(-7);
 
     const api = async (caminho, opcoes = {}) => {
@@ -226,6 +242,10 @@ const semear = async (base) => {
         marca,
         email: `vr${marca}@vicehub.test`,
         username: `vr${marca}`,
+        /* Vai na semente, e não numa constante exportada: quem semeia
+         * precisa de entrar com a conta que acabou de criar, e a senha é
+         * parte de a ter criado. */
+        password: PASSWORD,
         crewId: crew.id,
         serverId: servidor.id,
         eventoId: evento.id,
