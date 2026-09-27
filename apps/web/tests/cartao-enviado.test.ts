@@ -60,7 +60,7 @@ describe('o cartão do CAPTCHA no pedido', () => {
         ],
         [
             'recuperar a password',
-            () => requestPasswordReset('a@vicehub.test', 'o-cartao'),
+            () => requestPasswordReset('a@vicehub.test', 'en', 'o-cartao'),
             {},
         ],
     ])('%s leva o cartão consigo', async (_nome, pedir, resposta) => {
@@ -80,7 +80,7 @@ describe('o cartão do CAPTCHA no pedido', () => {
         ],
         [
             'recuperar a password',
-            () => requestPasswordReset('a@vicehub.test'),
+            () => requestPasswordReset('a@vicehub.test', 'en'),
             {},
         ],
     ])('%s não leva campo nenhum quando não há cartão', async (_nome, pedir, resposta) => {

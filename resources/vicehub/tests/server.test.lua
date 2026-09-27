@@ -125,7 +125,7 @@ harness.correr(3)
 local avisos = 0
 
 for _, linha in ipairs(harness.logs) do
-    if linha:find('chave foi recusada') then
+    if linha:find('Key rejected') then
         avisos = avisos + 1
     end
 end

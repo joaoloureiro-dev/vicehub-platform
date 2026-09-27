@@ -1,3 +1,4 @@
+import type { Idioma } from '../i18n/locales.js';
 import { api, refreshSession, type AuthPayload } from '../lib/api.js';
 import { sessionStore } from '../lib/session.js';
 
@@ -83,13 +84,29 @@ export const logoutEverywhere = async (): Promise<void> => {
     }
 };
 
+/**
+ * O idioma vai no pedido, e não fica guardado na conta.
+ *
+ * A escolha de idioma é deste browser — quem usa o telemóvel em francês
+ * e o portátil em inglês tem razão nos dois, e é por isso que ela vive
+ * no `localStorage` e não no perfil. Mas o email que sai daqui é escrito
+ * por uma máquina que não vê o ecrã, e escrevê-lo em português a quem
+ * está a ler a página em francês seria a plataforma a mudar de língua a
+ * meio de uma conversa. Por isso o ecrã que pede diz em que língua está,
+ * e o email sai nessa.
+ */
 export const requestPasswordReset = (
     email: string,
+    idioma: Idioma,
     captchaToken?: string,
 ): Promise<void> =>
     api<void>('/auth/password-reset', {
         method: 'POST',
-        body: { email, ...(captchaToken ? { captchaToken } : {}) },
+        body: {
+            email,
+            locale: idioma,
+            ...(captchaToken ? { captchaToken } : {}),
+        },
         withoutRefresh: true,
     });
 
@@ -107,8 +124,11 @@ export const verifyEmail = (token: string): Promise<void> =>
         withoutRefresh: true,
     });
 
-export const requestEmailVerification = (): Promise<void> =>
-    api<void>('/auth/email-verification', { method: 'POST' });
+export const requestEmailVerification = (idioma: Idioma): Promise<void> =>
+    api<void>('/auth/email-verification', {
+        method: 'POST',
+        body: { locale: idioma },
+    });
 
 /**
  * Tenta recuperar a sessão a partir do cookie, ao arrancar.

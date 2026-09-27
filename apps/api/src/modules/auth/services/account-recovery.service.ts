@@ -1,7 +1,13 @@
 import { AccountTokenPurpose } from '@vicehub/database';
 
 import { env } from '../../../config/env.js';
+import type { Idioma } from '../../mail/idiomas.js';
+import { IDIOMA_POR_OMISSAO } from '../../mail/idiomas.js';
 import type { Mailer } from '../../mail/mailer.js';
+import {
+    emailDeConfirmacao,
+    emailDeRecuperacao,
+} from '../../mail/mensagens.js';
 import { AuthError } from '../errors/auth.errors.js';
 import type { AuthRepository } from '../repositories/auth.repository.js';
 import type { AccountTokenService } from './account-token.service.js';
@@ -41,6 +47,7 @@ export class AccountRecoveryService {
     async requestPasswordReset(
         email: string,
         context: RequestContext = {},
+        idioma: Idioma = IDIOMA_POR_OMISSAO,
     ): Promise<void> {
         const utilizador = await this.authRepository.findUserForRecovery(
             normalizeEmail(email),
@@ -71,20 +78,11 @@ export class AccountRecoveryService {
 
         await this.mailer.send({
             to: utilizador.email,
-            subject: 'Recuperar a tua password do ViceHub',
-            text: [
-                `Olá ${utilizador.username},`,
-                '',
-                'Alguém pediu para definir uma password nova nesta conta.',
-                'Se foste tu, segue este link:',
-                '',
+            ...emailDeRecuperacao(idioma, {
+                username: utilizador.username,
                 link,
-                '',
-                `O link serve uma vez e expira dentro de ${horas} hora(s).`,
-                '',
-                'Se não foste tu, não precisas de fazer nada: a password',
-                'atual continua a valer e este link expira sozinho.',
-            ].join('\n'),
+                horas,
+            }),
         });
     }
 
@@ -148,6 +146,7 @@ export class AccountRecoveryService {
     async requestEmailVerification(
         userId: string,
         context: RequestContext = {},
+        idioma: Idioma = IDIOMA_POR_OMISSAO,
     ): Promise<void> {
         const utilizador = await this.authRepository.findUserById(userId);
 
@@ -173,16 +172,10 @@ export class AccountRecoveryService {
 
         await this.mailer.send({
             to: utilizador.email,
-            subject: 'Confirma o teu email no ViceHub',
-            text: [
-                `Olá ${utilizador.username},`,
-                '',
-                'Confirma que este endereço é mesmo teu:',
-                '',
+            ...emailDeConfirmacao(idioma, {
+                username: utilizador.username,
                 link,
-                '',
-                'Se não criaste conta no ViceHub, ignora este email.',
-            ].join('\n'),
+            }),
         });
     }
 

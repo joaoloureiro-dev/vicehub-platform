@@ -8,6 +8,7 @@ import type { FederatedAuthController } from './controllers/federated-auth.contr
 import {
     loginSchema,
     registerSchema,
+    requestEmailVerificationSchema,
     requestPasswordResetSchema,
     resetPasswordSchema,
     verifyEmailSchema,
@@ -15,6 +16,7 @@ import {
 import type {
     LoginDto,
     RegisterDto,
+    RequestEmailVerificationDto,
     RequestPasswordResetDto,
 } from './dto/auth.dto.js';
 import { chavePublicaDoCaptcha } from '../../shared/captcha.js';
@@ -180,9 +182,13 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
      * O pedido exige sessão — é para a própria conta. A confirmação não,
      * porque quem clica vem do email e pode estar noutro dispositivo.
      */
-    fastify.post(
+    fastify.post<{ Body: RequestEmailVerificationDto }>(
         '/email-verification',
-        { config: strictLimit, preHandler: [fastify.authenticate] },
+        {
+            config: strictLimit,
+            preHandler: [fastify.authenticate],
+            schema: { body: requestEmailVerificationSchema },
+        },
         controller.requestEmailVerification.bind(controller),
     );
 

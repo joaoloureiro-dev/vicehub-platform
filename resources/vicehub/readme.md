@@ -1,94 +1,93 @@
-# ViceHub — o recurso do servidor
+# ViceHub — the server resource
 
-Reporta o teu servidor ao ViceHub: se está de pé, e com quantas pessoas
-dentro. É o que faz o servidor aparecer como online no diretório sem
-que ninguém tenha de ligar um interruptor à mão.
+Reports your server to ViceHub: whether it is up, and how many people
+are inside. It is what makes a server show as online in the directory
+without anyone having to flip a switch by hand.
 
-## Que servidores
+## Which servers
 
-O ViceHub é para comunidades de roleplay de **GTA VI**. Do lado da
-plataforma, a ingestão é HTTP simples — um pedido com uma chave — por
-isso qualquer servidor que consiga fazer um pedido consegue reportar-se,
-seja qual for o motor.
+ViceHub is for **GTA VI** roleplay communities. On the platform side the
+ingest is plain HTTP — one request carrying a key — so any server that
+can make a request can report itself, whatever engine it runs.
 
-Este recurso é a **implementação de referência**, e está escrito para o
-runtime do FiveM porque é o que existe hoje para instalar e testar a
-sério. Quando houver ferramentas de servidor para GTA VI, o contrato do
-outro lado é o mesmo e o que muda é este ficheiro.
+This resource is the **reference implementation**, written for the FiveM
+runtime because that is what exists today to install and test for real.
+When there are server tools for GTA VI, the contract on the other side
+is the same and this file is what changes.
 
-## Instalar
+## Install
 
-1. Copia a pasta `vicehub` para os recursos do teu servidor
+1. Copy the `vicehub` folder into your server's resources
    (`resources/`).
 
-2. Vai ao ecrã do teu servidor no ViceHub, em **Chaves do servidor**, e
-   cria uma. **A chave aparece uma vez.** Copia-a nesse momento — do
-   nosso lado fica só um resumo dela, e quem a perder gera outra.
+2. Open your server's page on ViceHub, go to **Server keys**, and create
+   one. **The key is shown once.** Copy it there and then — we keep only
+   a digest of it, and anyone who loses it generates another.
 
-3. No `server.cfg`:
+3. In `server.cfg`:
 
    ```cfg
    ensure vicehub
-   set vicehub_key "vh_<prefixo>_<segredo>"
+   set vicehub_key "vh_<prefix>_<secret>"
    ```
 
-4. Arranca o servidor. Na consola deve aparecer:
+4. Start the server. The console should say:
 
    ```
-   [ViceHub] Ligado como "O Nome Do Teu Servidor".
+   [ViceHub] Connected as "Your Server's Name".
    ```
 
-   Se aparecer outro nome, a chave é do servidor errado.
+   If another name shows up, the key belongs to a different server.
 
-## O que sai daqui
+## What leaves
 
-Um pedido por minuto, com uma linha de JSON:
+One request a minute, carrying one line of JSON:
 
 ```json
 { "playersOnline": 37 }
 ```
 
-E mais nada. Não vai lista de jogadores, não vão identificadores, não
-vai nada sobre quem está a jogar.
+And nothing else. No player list, no identifiers, nothing about who is
+playing.
 
-## Onde a chave não deve estar
+## Where the key must not be
 
-A chave é um segredo do servidor: quem a tiver pode dizer mentiras
-sobre ele — que está online quando não está, ou com gente que não tem.
-Não a metas num repositório público nem num script de cliente. Se
-achares que se perdeu, revoga-a no mesmo ecrã onde a criaste e cria
-outra; a revogação é imediata.
+The key is a secret of the server: whoever holds it can tell lies about
+it — that it is online when it is not, or busier than it is. Do not put
+it in a public repository or in a client script. If you think it has
+leaked, revoke it on the same page where you created it and make
+another; revoking takes effect immediately.
 
-O que a chave **não** consegue fazer: mexer em contas, tesourarias ou
-planos. Fala por um servidor e mais nada.
+What the key **cannot** do: touch accounts, treasuries or plans. It
+speaks for one server and nothing more.
 
-## Se alguma coisa correr mal
+## If something goes wrong
 
-O recurso escreve na consola, e só repete um aviso quando ele muda —
-um servidor mal configurado não te enche o log com a mesma linha de
-minuto a minuto.
+The resource writes to the console, and repeats a warning only when it
+changes — a misconfigured server will not fill your log with the same
+line every minute.
 
-| O que lês | O que se passa |
+| What you read | What is happening |
 |---|---|
-| `Sem vicehub_key no server.cfg` | falta a chave |
-| `A chave foi recusada` | a chave está errada ou foi revogada |
-| `Não foi possível falar com o ViceHub` | rede ou plataforma em baixo — ele volta a tentar sozinho, cada vez mais espaçado |
-| `A reportar outra vez.` | recuperou |
+| `No vicehub_key in server.cfg` | the key is missing |
+| `Key rejected` | the key is wrong, or was revoked |
+| `Could not reach ViceHub` | network or platform down — it retries on its own, waiting longer each time |
+| `Reporting again.` | it recovered |
 
-## Endereço
+## Address
 
-Por omissão aponta para a instalação pública. Para uma instalação tua:
+By default it points at the public installation. For your own:
 
 ```cfg
-set vicehub_url "https://a-tua-instalacao/api/v1"
+set vicehub_url "https://your-installation/api/v1"
 ```
 
-## Testes
+## Tests
 
-O recurso corre dentro do jogo, mas o que decide se ele está certo não
-precisa de jogo nenhum — o que vai no corpo, o que faz quando a chave é
-recusada, quanto espera antes de tentar outra vez. Isso corre-se contra
-um runtime de mentira, com a forma do que o recurso usa:
+The resource runs inside the game, but what decides whether it is
+correct needs no game at all — what goes in the body, what it does when
+the key is rejected, how long it waits before trying again. That runs
+against a fake runtime shaped like the parts the resource uses:
 
 ```bash
 npm run test:lua

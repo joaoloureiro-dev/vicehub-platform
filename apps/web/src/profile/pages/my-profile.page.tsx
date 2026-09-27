@@ -234,7 +234,7 @@ export const MyProfilePage = () => {
                             type="button"
                             disabled={emailPedido}
                             onClick={() => {
-                                void requestEmailVerification()
+                                void requestEmailVerification(idioma)
                                     .then(() => {
                                         setEmailPedido(true);
                                     })
