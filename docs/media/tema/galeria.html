@@ -1,0 +1,664 @@
+<title>ViceHub at Night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700..900&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/*
+ * Os mesmos tokens de apps/web/src/styles/theme.css. Esta página existe
+ * para mostrar o produto, por isso usa as cores do produto e não as suas.
+ */
+:root {
+  color-scheme: dark;
+
+  --ground: #0B0711;
+  --surface: #150E1F;
+  --wash: #1E1430;
+  --ink: #F5F0FF;
+  --muted: #B8ACD0;
+  --faint: #8E82AC;
+  --edge: #2A1F3D;
+  --edge-lit: #4A3568;
+
+  --magenta: #E93CEF;
+  --cyan: #22D3EE;
+  --magenta-ink: #F472F6;
+  --cyan-ink: #67E8F9;
+  --violet-ink: #C4B5FD;
+  --on-brand: #0B0711;
+
+  --brand: linear-gradient(103deg, #E93CEF 0%, #8B5CF6 46%, #22D3EE 100%);
+  --brand-ink: linear-gradient(103deg, #F472F6 0%, #C4B5FD 46%, #67E8F9 100%);
+
+  --radius: 10px;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Archivo", "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+
+/* O filete do logótipo, como no produto: três pixéis e mais nada. */
+.filete {
+  position: fixed;
+  inset: env(safe-area-inset-top, 0px) 0 auto 0;
+  height: 3px;
+  background: var(--brand);
+  z-index: 3;
+}
+
+.pagina {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 44px 72px;
+}
+
+.marca {
+  font-family: var(--display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(30px, 8vw, 46px);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0;
+  background: var(--brand-ink);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-wrap: balance;
+}
+
+.abertura {
+  max-width: 58ch;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.abertura strong { color: var(--ink); font-weight: 600; }
+
+.estado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.estado b {
+  display: block;
+  font-family: var(--sans);
+  font-size: 19px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* O interruptor entre as duas larguras. Néon com a cor da página recortada. */
+.larguras {
+  display: inline-flex;
+  gap: 6px;
+  margin: 34px 0 0;
+  padding: 5px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.larguras button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 7px 18px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.larguras button[aria-pressed="true"] {
+  background: var(--cyan);
+  color: var(--on-brand);
+  font-weight: 600;
+}
+
+.larguras button:hover:not([aria-pressed="true"]) { color: var(--ink); }
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.grupo { margin-top: 56px; }
+
+.grupo h2 {
+  font-family: var(--display);
+  font-stretch: 125%;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--edge);
+}
+
+.grelha {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+
+body[data-largura="portatil"] .grelha {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+}
+
+.ecra {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ecra header { display: flex; flex-direction: column; gap: 3px; }
+
+.rota {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--cyan-ink);
+}
+
+.ecra h3 {
+  font-family: var(--display);
+  font-stretch: 125%;
+  font-weight: 700;
+  font-size: 19px;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.linha {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/*
+ * A moldura rola por dentro. Cada ecrã é uma página inteira, e cortá-la
+ * a meio mostrava só o cabeçalho de trinta páginas iguais.
+ */
+.moldura {
+  height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--edge-lit);
+  border-radius: var(--radius);
+  background: var(--ground);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset,
+              0 18px 40px -24px rgba(0, 0, 0, 0.9);
+  scrollbar-width: thin;
+}
+
+body[data-largura="portatil"] .moldura { height: 420px; }
+
+.tira { display: block; width: 100%; height: auto; }
+
+.rodape {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--edge);
+  color: var(--faint);
+  font-size: 13.5px;
+  max-width: 58ch;
+}
+
+.rodape a { color: var(--cyan-ink); }
+
+@media (max-width: 520px) {
+  .moldura { height: 460px; }
+}
+</style>
+
+<div class="filete" aria-hidden="true"></div>
+
+<div class="pagina">
+  <h1 class="marca">ViceHub at night</h1>
+
+  <p class="abertura">
+    Tooling for <strong>GTA&nbsp;VI roleplay communities</strong>: run your crew,
+    move what it earns, and prove who actually turned up. Every screen below is
+    a real page against a real database, not a mockup.
+  </p>
+
+  <ul class="estado">
+    <li>Screens<b>30</b></li>
+    <li>Languages<b>4</b></li>
+    <li>Tests<b>2,580</b></li>
+    <li>Skipped<b>0</b></li>
+  </ul>
+
+  <div class="larguras" role="group" aria-label="Screen width">
+    <button type="button" id="ver-telemovel" aria-pressed="true">Phone</button>
+    <button type="button" id="ver-portatil" aria-pressed="false">Laptop</button>
+  </div>
+
+      <section class="grupo">
+        <h2>Way in</h2>
+        <div class="grelha">
+        <article class="ecra">
+          <header>
+            <p class="rota">/</p>
+            <h3>Landing</h3>
+            <p class="linha">What the platform is, plus what is happening in the game and across ViceHub right now.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="entrada-telemovel.png" alt="Landing on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="entrada-portatil.png" alt="Landing on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/entrar</p>
+            <h3>Sign in</h3>
+            <p class="linha">Email and password, or Discord and Google. An anti-robot check sits on every door.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="entrar-telemovel.png" alt="Sign in on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="entrar-portatil.png" alt="Sign in on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/registo</p>
+            <h3>Create account</h3>
+            <p class="linha">Playing is free and stays free. What is paid for is running a community.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="registo-telemovel.png" alt="Create account on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="registo-portatil.png" alt="Create account on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/premium</p>
+            <h3>Pricing</h3>
+            <p class="linha">The plan belongs to a crew or a server, never to a person.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="premium-telemovel.png" alt="Pricing on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="premium-portatil.png" alt="Pricing on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/termos</p>
+            <h3>Terms</h3>
+            <p class="linha">Written from what the code actually does, and tied to it by a test.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="termos-telemovel.png" alt="Terms on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="termos-portatil.png" alt="Terms on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/privacidade</p>
+            <h3>Privacy</h3>
+            <p class="linha">No analytics. Two cookies, both strictly necessary, which is why there is no banner.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="privacidade-telemovel.png" alt="Privacy on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="privacidade-portatil.png" alt="Privacy on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        </div>
+      </section>
+      <section class="grupo">
+        <h2>Finding people</h2>
+        <div class="grelha">
+        <article class="ecra">
+          <header>
+            <p class="rota">/crews</p>
+            <h3>Crew directory</h3>
+            <p class="linha">Who is playing, and who is looking for people.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="crews-telemovel.png" alt="Crew directory on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="crews-portatil.png" alt="Crew directory on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/servidores</p>
+            <h3>Server directory</h3>
+            <p class="linha">Sorted by where people actually are, from hour-by-hour history.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="servidores-telemovel.png" alt="Server directory on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="servidores-portatil.png" alt="Server directory on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/recrutamento</p>
+            <h3>Recruitment board</h3>
+            <p class="linha">Crews that are open, with how long each notice has been up.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="recrutamento-telemovel.png" alt="Recruitment board on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="recrutamento-portatil.png" alt="Recruitment board on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/forum</p>
+            <h3>Forum</h3>
+            <p class="linha">One board per language, with the topics people are answering.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="forum-telemovel.png" alt="Forum on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="forum-portatil.png" alt="Forum on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/forum/:id</p>
+            <h3>A topic</h3>
+            <p class="linha">A question and its replies, reportable like everywhere else people write.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="topico-telemovel.png" alt="A topic on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="topico-portatil.png" alt="A topic on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        </div>
+      </section>
+      <section class="grupo">
+        <h2>Running a crew</h2>
+        <div class="grelha">
+        <article class="ecra">
+          <header>
+            <p class="rota">/crews/:id</p>
+            <h3>A crew</h3>
+            <p class="linha">Members, roles, level, and what has already been decided about whom.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="crew-telemovel.png" alt="A crew on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="crew-portatil.png" alt="A crew on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/crews/nova</p>
+            <h3>New crew</h3>
+            <p class="linha">A name and a tag. The tag is claimed, not typed twice.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="crew-nova-telemovel.png" alt="New crew on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="crew-nova-portatil.png" alt="New crew on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/crews/:id/tesouraria</p>
+            <h3>A crew&#x27;s treasury</h3>
+            <p class="linha">Four balances, because available already subtracts what is awaiting a decision.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="tesouraria-crew-telemovel.png" alt="A crew&#x27;s treasury on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="tesouraria-crew-portatil.png" alt="A crew&#x27;s treasury on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/crews/:id/eventos</p>
+            <h3>A crew&#x27;s events</h3>
+            <p class="linha">What is planned, and what has been run and confirmed.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="eventos-telemovel.png" alt="A crew&#x27;s events on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="eventos-portatil.png" alt="A crew&#x27;s events on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/crews/:id/eventos/:id</p>
+            <h3>One event</h3>
+            <p class="linha">Run the job, confirm who was there, split the take by attendance.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="evento-telemovel.png" alt="One event on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="evento-portatil.png" alt="One event on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        </div>
+      </section>
+      <section class="grupo">
+        <h2>Running a server</h2>
+        <div class="grelha">
+        <article class="ecra">
+          <header>
+            <p class="rota">/servidores/:id</p>
+            <h3>A server</h3>
+            <p class="linha">Who plays here, the activity strip, and the keys that feed it.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="servidor-telemovel.png" alt="A server on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="servidor-portatil.png" alt="A server on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/servidores/novo</p>
+            <h3>New server</h3>
+            <p class="linha">A name and a region. The API key comes after.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="servidor-novo-telemovel.png" alt="New server on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="servidor-novo-portatil.png" alt="New server on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/servidores/:id/tesouraria</p>
+            <h3>A server&#x27;s treasury</h3>
+            <p class="linha">The same four balances, for the people who run the place.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="tesouraria-servidor-telemovel.png" alt="A server&#x27;s treasury on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="tesouraria-servidor-portatil.png" alt="A server&#x27;s treasury on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/servidores/:id/eventos</p>
+            <h3>A server&#x27;s events</h3>
+            <p class="linha">Everything the crews on this server have planned.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="eventos-do-servidor-telemovel.png" alt="A server&#x27;s events on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="eventos-do-servidor-portatil.png" alt="A server&#x27;s events on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/servidores/:id/mercado</p>
+            <h3>A server&#x27;s market</h3>
+            <p class="linha">In-game currency only. Selling anything for real money is against the Terms.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="mercado-telemovel.png" alt="A server&#x27;s market on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="mercado-portatil.png" alt="A server&#x27;s market on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/mercado/:id</p>
+            <h3>A listing</h3>
+            <p class="linha">A price, a category, and a seller with a rating that came from real sales.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="anuncio-telemovel.png" alt="A listing on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="anuncio-portatil.png" alt="A listing on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        </div>
+      </section>
+      <section class="grupo">
+        <h2>Talking</h2>
+        <div class="grelha">
+        <article class="ecra">
+          <header>
+            <p class="rota">/mercado/conversas</p>
+            <h3>Conversations</h3>
+            <p class="linha">Every thread about something you are buying or selling.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="conversas-telemovel.png" alt="Conversations on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="conversas-portatil.png" alt="Conversations on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/mercado/conversas/:id</p>
+            <h3>One conversation</h3>
+            <p class="linha">Buyer and seller, about one listing, with the listing still in view.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="conversa-telemovel.png" alt="One conversation on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="conversa-portatil.png" alt="One conversation on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/avisos</p>
+            <h3>Notifications</h3>
+            <p class="linha">Replies, messages and reviews. It refreshes while you are here, not only on F5.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="avisos-telemovel.png" alt="Notifications on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="avisos-portatil.png" alt="Notifications on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/moderacao</p>
+            <h3>Report queue</h3>
+            <p class="linha">One queue for everywhere the public writes: topics, replies, listings, messages, reviews.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="moderacao-telemovel.png" alt="Report queue on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="moderacao-portatil.png" alt="Report queue on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        </div>
+      </section>
+      <section class="grupo">
+        <h2>You</h2>
+        <div class="grelha">
+        <article class="ecra">
+          <header>
+            <p class="rota">/eu</p>
+            <h3>My profile</h3>
+            <p class="linha">Reputation, friends, the account, and the door out with your data in hand.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="eu-telemovel.png" alt="My profile on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="eu-portatil.png" alt="My profile on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/u/:username</p>
+            <h3>A public profile</h3>
+            <p class="linha">What everyone else sees: level, reputation, and the reviews people left.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="perfil-publico-telemovel.png" alt="A public profile on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="perfil-publico-portatil.png" alt="A public profile on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/eu/comunidades</p>
+            <h3>My communities</h3>
+            <p class="linha">Every crew and server you belong to, and what you may do in each.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="comunidades-telemovel.png" alt="My communities on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="comunidades-portatil.png" alt="My communities on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        <article class="ecra">
+          <header>
+            <p class="rota">/eu/carteira</p>
+            <h3>My wallet</h3>
+            <p class="linha">What has been paid to you, and where each payment came from.</p>
+          </header>
+          <div class="moldura">
+            <img class="tira" data-largura="telemovel" src="carteira-telemovel.png" alt="My wallet on a phone" loading="lazy" width="390">
+            <img class="tira" data-largura="portatil" src="carteira-portatil.png" alt="My wallet on a laptop" loading="lazy" width="900" hidden>
+          </div>
+        </article>
+        </div>
+      </section>
+
+  <p class="rodape">
+    Shot at 390&nbsp;px and 1280&nbsp;px. The frames scroll, because each one holds
+    a whole page. Built in the open at
+    <a href="https://github.com/joaoloureiro-dev/vicehub-platform">github.com/joaoloureiro-dev/vicehub-platform</a>.
+    Independent, and not affiliated with or endorsed by Rockstar Games, Take-Two
+    Interactive, or any game publisher.
+  </p>
+</div>
+
+<script>
+(() => {
+  const botoes = {
+    telemovel: document.getElementById('ver-telemovel'),
+    portatil: document.getElementById('ver-portatil'),
+  };
+
+  const mostrar = (qual) => {
+    document.body.dataset.largura = qual;
+
+    for (const [nome, botao] of Object.entries(botoes)) {
+      botao.setAttribute('aria-pressed', String(nome === qual));
+    }
+
+    for (const tira of document.querySelectorAll('.tira')) {
+      tira.hidden = tira.dataset.largura !== qual;
+    }
+  };
+
+  for (const [nome, botao] of Object.entries(botoes)) {
+    botao.addEventListener('click', () => { mostrar(nome); });
+  }
+
+  mostrar('telemovel');
+})();
+</script>

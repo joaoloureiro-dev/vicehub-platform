@@ -1,20 +1,35 @@
-# O tema, como ficou
+# O tema, e cada ecrã nele
 
 Vice City à noite: o letreiro de néon contra o céu, e não em papel
-branco. Capturas a 390px de largura — telemóvel, que é onde a maioria
-vai entrar — contra uma base de dados povoada.
+branco. Aqui estão os **30 ecrãs do produto**, cada um em duas larguras:
+`<ecrã>-telemovel.png` a 390px e `<ecrã>-portatil.png` a 1280px.
 
-| | |
-|---|---|
-| [`landing.png`](landing.png) | A página de entrada |
-| [`entrar.png`](entrar.png) | O formulário, com o botão principal |
-| [`crew.png`](crew.png) | A página de uma crew |
-| [`perfil.png`](perfil.png) | O perfil, com a reputação |
-| [`mercado.png`](mercado.png) | O mercado de um servidor |
-| [`tesouraria.png`](tesouraria.png) | Os quatro saldos |
-| [`forum-lista.png`](forum-lista.png) | O fórum |
-| [`forum-topico.png`](forum-topico.png) | Um tópico |
-| [`portatil.png`](portatil.png) | O mesmo produto a 1280px |
+A página [`galeria.html`](galeria.html) mostra-os todos juntos, com o
+nome, a rota e uma linha do que cada um faz. É a mesma página que está
+publicada como artifact.
+
+## Não são desenhos
+
+São fotografias de páginas a sério contra uma base de dados a sério, e
+saem de [`apps/web/scripts/retratar.mjs`](../../../apps/web/scripts/retratar.mjs),
+que semeia e depois fotografa:
+
+```
+npm run db:migrate:reset --workspace @vicehub/database
+npm run build
+npm run retratar --workspace @vicehub/web
+```
+
+O programa semeia gente com nome — `kestrel`, `marlowe`, uma crew
+chamada Neon Harbour, um servidor chamado Leonida Nights — e não
+`user1` com um número carimbado ao lado. É por isso que é um programa
+separado da varredura: a varredura precisa que os nomes sejam únicos
+entre corridas e carimba-os; isto precisa que pareçam nomes. Uma captura
+de `Os Corredores 8039663` lê-se pelo que é, uma base de dados de teste.
+
+Pela mesma razão, precisa de uma **base vazia**: os nomes são fixos, e
+nomes fixos só são únicos uma vez. O programa recusa-se a correr se já
+lá estiver a conta que ia criar.
 
 ## O que decidiu o desenho
 
