@@ -98,18 +98,32 @@ that asked for it, which is enough at this size and will not stay enough.
 
 ## 🎨 UI/UX
 
-**A neon sign on white paper.** The product is a community's paperwork —
-who joined, who turned up, how much was split and to whom — and that
-reads as a record: black on white, with structure coming from hairlines
-and type, not from stacked grey boxes.
+Screens: [`docs/media/tema/`](docs/media/tema/).
 
-- The logo's colours at full saturation, and **never as text**. On white
-  the magenta scores 3.30 contrast and the cyan 1.81; white text on top
-  of them fails too. Dark ink on top passes comfortably (5.95 and 10.87),
-  which is how a sign works — the colour lights up, the letters are the
-  dark cut-out. So a button here is neon with black type, and anything
-  that must be *read* in colour uses the deep variants, computed to clear
-  4.5 on white. `apps/web/tests/contraste.test.ts` keeps it that way.
+**A neon sign against the night sky.** The product is a community's
+paperwork — who joined, who turned up, how much was split and to whom —
+and that still reads as a record: structure comes from hairlines and
+type, not from stacked boxes. What changed is the hour. This lives in a
+tab next to a game played after dark, and it was the only white thing on
+the screen.
+
+- The logo's colours at full saturation, and the page is what's dark. On
+  `#0B0711` the magenta scores 6.04 contrast and the cyan 11.04 — they
+  pass on their own, and the light variants pass with room to spare. What
+  fails is light ink on top of a lit neon (2.96 and 1.62), so the type on
+  a neon fill is the colour of the page itself: the colour lights up, the
+  letters are the dark cut-out, which is how a sign works. Anything that
+  must be *read* in colour uses the light variants, computed to clear 4.5
+  against the lightest of the theme's three grounds.
+  `apps/web/tests/contraste.test.ts` keeps it that way, gradient stops
+  included.
+- There is no light theme and no `prefers-color-scheme`, by decision: a
+  second theme is a second palette, with twice the numbers to verify. The
+  browser is told once — `color-scheme: dark` in the sheet and in the
+  `<head>` — so the checkboxes, scrollbars and date pickers it draws
+  itself come out dark too, and there is no white flash before the
+  stylesheet lands. `apps/web/tests/controlos-nativos.test.ts` keeps the
+  page colour, the `<meta>` and the web manifest saying the same thing.
 - The logo gradient appears in exactly two places: a three-pixel rule
   above the page, and the wordmark. A whole header painted magenta to
   cyan is the page everyone makes.

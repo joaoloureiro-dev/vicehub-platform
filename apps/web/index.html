@@ -12,7 +12,20 @@
     -->
     <meta name="referrer" content="no-referrer">
 
-    <meta name="theme-color" content="#FFFFFF">
+    <!--
+      A cor da página, dita ao browser antes de haver folha de estilo.
+
+      `color-scheme` evita o clarão branco do primeiro instante: sem ele,
+      o browser pinta a tela de branco até o CSS chegar, e num telemóvel
+      lento isso é meio segundo de flash. `theme-color` é a mesma cor na
+      barra do sistema, para a página não acabar a meio do ecrã.
+
+      O valor está escrito também no `manifest.webmanifest`, que é lido
+      por outro programa (o instalador da app) e não pode ler um token
+      de CSS. Há um teste que os obriga a ser o mesmo que `--ground`.
+    -->
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#0B0711">
     <meta name="description" content="ViceHub — a plataforma para crews, servidores e jogadores.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

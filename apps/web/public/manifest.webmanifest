@@ -4,8 +4,8 @@
     "description": "A plataforma para crews, servidores e jogadores.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#08060F",
-    "theme_color": "#08060F",
+    "background_color": "#0B0711",
+    "theme_color": "#0B0711",
     "icons": [
         { "src": "/vicehub-192.png", "sizes": "192x192", "type": "image/png" },
         { "src": "/vicehub-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }

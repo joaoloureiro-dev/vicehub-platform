@@ -1,20 +1,25 @@
 /*
- * Vice City de dia: letreiro de néon em papel branco.
+ * Vice City à noite: letreiro de néon contra o céu.
  *
  * O produto é o arquivo de uma organização — quem entrou, quem apareceu,
- * quanto se dividiu e para quem. Isso lê-se como **registo**, e um
- * registo é preto sobre branco: a estrutura vem de filetes e de
- * hierarquia de letra, não de caixas cinzentas empilhadas.
+ * quanto se dividiu e para quem. Isso lê-se como **registo**, e o registo
+ * continua a vir de filetes e de hierarquia de letra, e não de caixas
+ * empilhadas. O que mudou foi a hora. Isto vive num separador ao lado de
+ * um jogo que se joga de noite, e era a única coisa branca no ecrã.
  *
- * **As cores do logótipo entram à saturação máxima, e nunca como
- * texto.** Não é gosto, é aritmética: sobre branco, o magenta dá 3,30 de
- * contraste e o ciano 1,81 — os dois reprovam. Texto branco por cima
- * deles reprova na mesma. Mas **tinta escura por cima passa com folga**
- * (5,95 e 10,87), que é exatamente como um letreiro funciona: a cor
- * acende, as letras são o recorte escuro. Por isso um botão desta
- * plataforma é néon com tinta preta, e o que precisa de ser lido em cor
- * usa as versões fundas — `--magenta-ink`, `--cyan-ink` —, calculadas
- * para passarem 4,5 sobre branco.
+ * **As cores do logótipo entram à saturação máxima, e é a página que é
+ * escura.** Não é gosto, é aritmética — e a mesma aritmética que antes
+ * obrigava a inverter agora joga a favor: sobre `#0B0711` o magenta dá
+ * 6,04 de contraste e o ciano 11,04, os dois passam por si, e as versões
+ * claras de cada um — `--magenta-ink`, `--cyan-ink` — passam com folga
+ * larga. O que não passa é tinta clara por cima de um néon aceso. Por
+ * isso a tinta dos preenchimentos é a cor da própria página: a cor
+ * acende, as letras são o recorte escuro, que é como um letreiro
+ * funciona.
+ *
+ * Não há aqui `prefers-color-scheme`, e é decisão e não esquecimento: um
+ * tema claro a sério é uma segunda paleta inteira, com o dobro dos
+ * números para verificar em `contraste.test.ts`. A noite é o tema.
  *
  * **Escrito do telemóvel para fora.** As regras base servem o ecrã
  * pequeno; as media queries só acrescentam à medida que há espaço. O
@@ -23,92 +28,121 @@
  */
 :root {
     /*
-     * O papel.
+     * E o browser tem de saber a que horas é.
      *
-     * Branco a sério para a página e para os cartões: o que os separa é
-     * o filete, e não um cinzento por baixo. O `--wash` fica para o que
-     * tem mesmo de afundar — campos de formulário, sobretudo, onde a
-     * pessoa precisa de ver onde escrever antes de lá chegar.
+     * `color-scheme` é o que pinta o que não é nosso: a caixa de uma
+     * checkbox, o botão de um rádio, a barra de rolar, o calendário de
+     * um campo de data, o quadrado de um `input[type=color]`. Sem isto
+     * o browser desenha-os claros, e uma checkbox branca no meio de uma
+     * página de noite lê-se como uma avaria — foi exactamente o que
+     * apareceu nas definições de uma crew.
+     *
+     * O `accent-color` vai aqui pela mesma razão, e **uma vez só**:
+     * estava escrito em três sítios, com duas cores diferentes, e as
+     * outras cinco caixas do produto não tinham nenhuma. Herdado da
+     * raiz, chega a todas — e a cor de escolhido passa a ser uma, e não
+     * uma por ecrã.
      */
-    --ground: #FFFFFF;
-    --surface: #FFFFFF;
-    --wash: #F5F3F8;
+    color-scheme: dark;
+    accent-color: var(--cyan-ink);
+
+    /*
+     * A noite.
+     *
+     * Três degraus, e o painel **acima** da página: é o que dá relevo
+     * sem precisar de moldura em todo o cartão. O `--wash` é o mais
+     * claro dos três e fica para o que tem de se anunciar — campos de
+     * formulário, sobretudo, onde a pessoa precisa de ver onde escreve
+     * antes de lá chegar.
+     *
+     * Nenhum deles é preto. Preto puro ao lado destes néons parece um
+     * buraco; um violeta muito escuro é o céu por trás do letreiro, e é
+     * o que os deixa acender.
+     */
+    --ground: #0B0711;
+    --surface: #150E1F;
+    --wash: #1E1430;
 
     /*
      * A tinta puxa ao violeta em vez de ser cinzento puro: um neutro
      * exato ao lado destes néons parece lavado, e ao pé deles o olho
-     * lê-o como sujo. O desvio é pequeno e é escolhido.
+     * lê-o como sujo. O desvio é pequeno e é escolhido. Branco puro
+     * também não: sobre um fundo desta escuridão, cansa a ler.
      */
-    --ink: #14121A;
-    --muted: #4A4557;
+    --ink: #F5F0FF;
+    --muted: #B8ACD0;
 
     /*
-     * O mais claro dos três, e mesmo assim legível: 4,70 sobre branco.
+     * O mais fraco dos três, e mesmo assim legível: 4,96 contra o
+     * `--wash`, que é o fundo mais claro onde pode cair.
      *
-     * O primeiro valor que aqui esteve dava 3,53, que é o cinzento a que
-     * o olho chama "discreto" e as WCAG chamam ilegível. E não é
-     * decoração — é a cor das etiquetas do perfil, JOGADOR, NÍVEL, XP,
-     * que são texto pequeno em maiúsculas: o caso mais difícil de ler
-     * que a interface tem.
+     * Não é decoração — é a cor das etiquetas do perfil, JOGADOR, NÍVEL,
+     * XP, que são texto pequeno em maiúsculas: o caso mais difícil de ler
+     * que a interface tem. O valor está medido contra o pior fundo e não
+     * contra a página, que é o erro que deixa passar um cinzento a que o
+     * olho chama "discreto" e as WCAG chamam ilegível.
      */
-    --faint: #767185;
+    --faint: #8E82AC;
 
-    --edge: #E6E3EC;
-    --edge-lit: #C9C4D6;
+    --edge: #2A1F3D;
+    --edge-lit: #4A3568;
 
     /* As três cores do logótipo, na ordem em que lá aparecem. */
     --magenta: #E93CEF;
-    --violet: #8B5CF6;
+    --violet: #A78BFA;
     --cyan: #22D3EE;
 
     /*
-     * As mesmas, fundas o suficiente para serem lidas sobre branco.
-     * Calculadas, não escolhidas a olho: baixou-se a luminosidade de
-     * cada uma até passar 4,5 de contraste, mantendo o tom.
+     * As mesmas, claras o suficiente para serem lidas sobre a noite.
+     * Calculadas, não escolhidas a olho: subiu-se a luminosidade de cada
+     * uma até passar 4,5 de contraste, mantendo o tom. Em papel branco
+     * estas eram as versões **fundas**, pela mesma conta ao contrário.
      */
-    --magenta-ink: #CE11D4;
-    --violet-ink: #6D28D9;
-    --cyan-ink: #0B8193;
+    --magenta-ink: #F472F6;
+    --violet-ink: #C4B5FD;
+    --cyan-ink: #67E8F9;
 
     /* O céu por trás das palmeiras, guardado para o que for raro. */
     --sunset: #FF6B35;
-    --sunset-ink: #D83E06;
+    --sunset-ink: #FFA07A;
 
     --danger: #FF5C7A;
-    --danger-ink: #EC0630;
+    --danger-ink: #FF8FA3;
     --ok: #34D399;
-    --ok-ink: #1D8660;
+    --ok-ink: #6EE7B7;
 
     /*
      * A tinta que assenta por cima de qualquer um dos néons. Uma só
      * para todos: um botão que mudasse de cor de letra conforme o fundo
      * daria dois botões em vez de um.
      */
-    --on-brand: #0B0B0F;
+    --on-brand: #0B0711;
 
     /*
-     * Fundos pálidos para estados. Por cima de branco, a mesma cor em
-     * alfa baixo — assim um estado nunca tem uma cor que a paleta não
-     * tenha.
+     * Fundos de estado. A mesma cor em alfa baixo por cima da noite —
+     * assim um estado nunca tem uma cor que a paleta não tenha. O filete
+     * sai da versão clara e o preenchimento do néon: em alfa baixo sobre
+     * escuro, é o filete que faz a caixa ler-se como uma caixa.
      */
     --ok-wash: rgba(52, 211, 153, 0.14);
-    --ok-edge: rgba(29, 134, 96, 0.34);
+    --ok-edge: rgba(110, 231, 183, 0.34);
     --danger-wash: rgba(255, 92, 122, 0.12);
-    --danger-edge: rgba(236, 6, 48, 0.3);
+    --danger-edge: rgba(255, 143, 163, 0.32);
     --magenta-wash: rgba(233, 60, 239, 0.1);
-    --magenta-edge: rgba(206, 17, 212, 0.32);
+    --magenta-edge: rgba(244, 114, 246, 0.34);
     --cyan-wash: rgba(34, 211, 238, 0.14);
-    --cyan-edge: rgba(11, 129, 147, 0.32);
-    --neutral-wash: #F2F0F6;
+    --cyan-edge: rgba(103, 232, 249, 0.32);
+    --neutral-wash: #1A1228;
 
-    /* O halo do foco. Espesso o bastante para se ver em papel. */
-    --focus-ring: 0 0 0 3px rgba(11, 129, 147, 0.28);
+    /* O halo do foco, em ciano: a cor que mais acende na noite. */
+    --focus-ring: 0 0 0 3px rgba(34, 211, 238, 0.45);
 
     /*
-     * A sombra é rasa e fria. Sombras pretas e fundas, que em fundo
-     * escuro davam profundidade, sobre branco parecem sujidade.
+     * A sombra é funda, e leva um fio de luz no topo. Só sombra, num
+     * fundo já escuro, não se vê: o que separa um painel da página é a
+     * aresta acesa em cima, como um objeto iluminado por baixo do néon.
      */
-    --lift: 0 1px 2px rgba(20, 18, 26, 0.06), 0 8px 24px -16px rgba(20, 18, 26, 0.24);
+    --lift: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.9);
 
     /*
      * O degradê do logótipo. Aparece **pouco** e de propósito: um filete
@@ -118,14 +152,15 @@
     --brand: linear-gradient(103deg, #E93CEF 0%, #8B5CF6 46%, #22D3EE 100%);
 
     /*
-     * O mesmo degradê, fundo o bastante para ser **texto** sobre branco.
+     * O mesmo degradê, nas versões claras, para ser **texto**.
      *
-     * O de cima é para acender: recortado em letras, o extremo ciano
-     * caía para 1,81 de contraste e a palavra acabava por desaparecer
-     * no fim. Este atravessa as mesmas três cores nas versões que
-     * passam, e a marca continua a ler-se como a mesma coisa.
+     * O de cima é para acender, e aguenta-se como letra sobre a noite —
+     * mas o extremo violeta do original caía para 4,38 de contraste, e
+     * a palavra perdia o meio. Este atravessa as mesmas três cores nas
+     * versões que passam, e a marca continua a ler-se como a mesma
+     * coisa.
      */
-    --brand-ink: linear-gradient(103deg, #CE11D4 0%, #6D28D9 46%, #0B8193 100%);
+    --brand-ink: linear-gradient(103deg, #F472F6 0%, #C4B5FD 46%, #67E8F9 100%);
 
     --radius: 10px;
 
@@ -284,7 +319,7 @@ a:hover {
     padding-left: max(var(--pad), env(safe-area-inset-left));
     padding-right: max(var(--pad), env(safe-area-inset-right));
     border-bottom: 1px solid var(--edge);
-    background: rgba(255, 255, 255, 0.86);
+    background: rgba(11, 7, 17, 0.82);
     backdrop-filter: blur(12px);
 }
 
@@ -516,12 +551,13 @@ form {
     width: 100%;
     color: var(--ink);
     /*
-     * Afundado, e não branco.
+     * Acima da página, e não ao nível dela.
      *
-     * Um campo branco com um filete sobre uma página branca obriga a
-     * pessoa a procurar a fronteira para saber onde escreve. O tom
-     * chega para o campo se anunciar sozinho, e é o único sítio do tema
-     * onde há cinzento por baixo de alguma coisa.
+     * Um campo da cor da página, com um filete, obriga a pessoa a
+     * procurar a fronteira para saber onde escreve. O degrau chega para
+     * o campo se anunciar sozinho — e é por isso que `--wash` é o mais
+     * claro dos três fundos, e o fundo contra o qual as cores de texto
+     * deste tema estão medidas.
      */
     background: var(--wash);
     border: 1px solid var(--edge);
@@ -545,6 +581,42 @@ form {
 }
 
 /*
+ * Uma caixa de seleção não é um campo de texto, e não se pinta como um.
+ *
+ * `.field input`, umas linhas abaixo, dá a qualquer `input` largura
+ * total, 48px de altura mínima, fundo e moldura — que é o que um campo
+ * de texto precisa e o que transforma uma checkbox num quadrado enorme
+ * no meio do formulário. Estava assim desde sempre; em papel branco o
+ * quadrado era branco sobre branco e ninguém dava por ele.
+ *
+ * E vem **depois** de `.field input`, de propósito: as duas regras têm
+ * a mesma especificidade — uma classe e um tipo contra um tipo e um
+ * atributo —, e num empate ganha a última. Posta antes, esta não fazia
+ * nada, e foi assim que a primeira tentativa de a corrigir falhou.
+ *
+ * O tamanho está aqui, ao nível do elemento, e não em cada ecrã: eram
+ * três regras, com 20px em duas e 18px na terceira, e as caixas dos
+ * restantes cinco ecrãs sem nenhuma. Uma caixa de escolha tem um
+ * tamanho neste produto.
+ *
+ * Os 20px são a caixa; o alvo de polegar é a etiqueta inteira, que é
+ * clicável e tem a altura de uma linha de texto — por isso é que isto
+ * não usa `--tap`.
+ */
+input[type='checkbox'],
+input[type='radio'] {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+/*
  * A letra pequena, que neste produto é onde mora metade do que há para
  * ler: o que um cargo decide, o que acontece a quem sai, porque é que
  * um número está ali.
@@ -564,8 +636,7 @@ form {
 
 /*
  * O botão principal é o logótipo em forma de ação: o mesmo degradê, do
- * magenta ao ciano. Texto branco, como o contorno das letras — sobre
- * magenta, um texto escuro deixava de se ler.
+ * magenta ao ciano, com a cor da página recortada nas letras.
  */
 /*
  * `.primary` e não `button.primary`: um `<Link>` que faz o trabalho da
@@ -581,9 +652,10 @@ form {
     min-height: var(--tap);
     width: 100%;
     /*
-     * Tinta escura, e não branca. O degradê acaba em ciano, e branco
-     * sobre ciano dá 1,81 de contraste — o fim do botão ficava por ler.
-     * Escura, passa em toda a extensão dele.
+     * A cor da página, e não `--ink`. O degradê acaba em ciano, e tinta
+     * clara sobre ciano dá 1,81 de contraste — o fim do botão ficava
+     * por ler. Escura, passa em toda a extensão dele: 6,04 no magenta,
+     * 4,71 no violeta do meio, 11,04 no ciano.
      */
     color: var(--on-brand);
     background: var(--brand);
@@ -1352,9 +1424,43 @@ button.link:hover {
     background: var(--faint);
 }
 
+/*
+ * O halo sai da própria cor, e não de `--focus-ring`.
+ *
+ * O anel de foco é o que diz "o teclado está aqui", e usá-lo como
+ * decoração de um ponto verde punha um halo ciano à volta de uma coisa
+ * verde — invisível enquanto o anel era um teal pálido de tema claro, e
+ * impossível de não ver assim que passou a acender.
+ */
 .estado.online {
     background: var(--ok);
-    box-shadow: var(--focus-ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent);
+}
+
+/*
+ * E na entrada o mesmo ponto pulsa: é a única coisa daquela página que
+ * afirma um estado a tempo real. Devagar, e parado para quem pediu menos
+ * movimento.
+ *
+ * É a mesma classe, e não uma segunda: eram dois pontos verdes de 8px
+ * com dois halos diferentes e dois nomes — `.estado.online` e
+ * `.ponto-online` —, que é como um produto acaba com duas maneiras de
+ * dizer "este servidor está de pé".
+ */
+.estado.online.pulsa {
+    animation: pulsar 2.4s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .estado.online.pulsa {
+        animation: none;
+    }
 }
 
 .estadotexto {
@@ -1381,13 +1487,6 @@ button.link:hover {
     min-height: 44px;
     cursor: pointer;
     user-select: none;
-}
-
-.filtro input {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--cyan-ink);
-    cursor: pointer;
 }
 
 /* ---------- entrar por outro sítio ---------- */
@@ -1442,10 +1541,13 @@ button.link:hover {
 }
 
 /*
- * A Google não tem uma cor de marca para isto: a regra dela é fundo
- * branco com texto escuro, ou o inverso. Fica o branco, que é o que a
- * marca dela prefere — e o contorno é o que impede
- * que um botão branco sobre fundo claro desapareça.
+ * Os dois únicos hexadecimais fora da paleta desta folha, e é de
+ * propósito: a cor de uma marca alheia não é nossa para afinar. A Google
+ * não tem uma cor única para isto — a regra dela é fundo branco com
+ * texto escuro, ou o inverso —, e fica o branco, que é o que ela
+ * prefere. Numa página de noite, um botão branco não precisa de contorno
+ * para se ver; fica o filete de uma só, porque é o que lhe dá a mesma
+ * altura visual que o botão do Discord ao lado.
  */
 .google {
     color: #1F1F1F;
@@ -1489,7 +1591,7 @@ button.link:hover {
     z-index: 10;
     display: flex;
     border-top: 1px solid var(--edge);
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(11, 7, 17, 0.92);
     backdrop-filter: blur(12px);
     padding-bottom: env(safe-area-inset-bottom);
 }
@@ -2390,10 +2492,6 @@ button.link:hover {
 
 .escalao input {
     grid-row: 1 / span 2;
-    width: 20px;
-    height: 20px;
-    accent-color: var(--cyan-ink);
-    cursor: pointer;
 }
 
 .escalao:hover {
@@ -2854,6 +2952,12 @@ button.link:hover {
 */
 .field-inline {
     display: flex;
+    /*
+      E desfaz a coluna do `.field`, que é a metade que faltava: sem
+      isto a caixa ficava **por cima** da frase que se está a marcar, que
+      é exactamente o que esta classe existe para evitar.
+    */
+    flex-direction: row;
     align-items: center;
     gap: 0.5rem;
 }
@@ -2870,8 +2974,8 @@ button.link:hover {
   faria o quadro de recrutamento parecer comprado.
 */
 .pill.recruta {
-    background: color-mix(in srgb, var(--good, #2e7d32) 18%, transparent);
-    color: var(--good, #2e7d32);
+    background: var(--ok-wash);
+    color: var(--ok-ink);
 }
 
 /* ─── A navegação do sítio ─────────────────────────────────────────── */
@@ -3005,33 +3109,6 @@ button.link:hover {
     border-color: var(--edge-lit);
 }
 
-/*
-  O ponto verde é a única coisa nesta página que afirma um estado a
-  tempo real, por isso pulsa — mas devagar, e para quem pediu menos
-  movimento fica parado.
-*/
-.ponto-online {
-    flex: none;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--good, #34D399);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--good, #34D399) 20%, transparent);
-    animation: pulsar 2.4s ease-in-out infinite;
-}
-
-@keyframes pulsar {
-    50% {
-        opacity: 0.45;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ponto-online {
-        animation: none;
-    }
-}
-
 .landing-jogadores {
     margin-left: auto;
     color: var(--muted);
@@ -3084,7 +3161,7 @@ button.link:hover {
   Lê-se em destaque porque é a que dá para agir já.
 */
 .landing-evento-meta .agora {
-    color: var(--good, #34D399);
+    color: var(--ok-ink);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -3246,7 +3323,7 @@ button.link:hover {
 
     padding: 12px 14px;
     border: 1px solid var(--edge);
-    border-left: 2px solid var(--good, #34D399);
+    border-left: 2px solid var(--ok);
     border-radius: 0 10px 10px 0;
     background: var(--surface);
 }
@@ -3664,25 +3741,6 @@ button.link:hover {
     border-bottom: 0;
 }
 
-.field textarea {
-    font: inherit;
-    font-size: 16px;
-    width: 100%;
-    color: var(--ink);
-    background: var(--wash);
-    border: 1px solid var(--edge);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    resize: vertical;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.field textarea:focus {
-    outline: none;
-    border-color: var(--cyan-ink);
-    box-shadow: var(--focus-ring);
-}
-
 
 /*
  * O título de uma pergunta não vai em maiúsculas.
@@ -3760,13 +3818,6 @@ button.link:hover {
     padding: 6px 0;
     cursor: pointer;
     line-height: 1.4;
-}
-
-.escolha input {
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    accent-color: var(--violet-ink);
 }
 
 .grupo-botoes {
@@ -3891,10 +3942,19 @@ button.link:hover {
     color: var(--ink);
 }
 
+/*
+ * A escolhida acende, em vez de ficar branca.
+ *
+ * Aqui estava `--ink`, que em papel branco era um bloco preto discreto
+ * e de noite passou a ser o contrário: três quadrados brancos a gritar
+ * mais alto do que a ação principal da página. Em ciano, a seleção lê-se
+ * como um HUD — e continua a ser um preenchimento de néon com a cor da
+ * página recortada, que é a mesma regra de todo o resto do tema.
+ */
 .aba.activa {
     border-color: transparent;
-    background: var(--ink);
-    color: var(--surface);
+    background: var(--cyan);
+    color: var(--on-brand);
     font-weight: 600;
 }
 

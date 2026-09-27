@@ -82,15 +82,43 @@ describe('o que se carrega num telemóvel', () => {
                     cursor -= 1;
                 }
 
-                return (linhas[cursor] ?? '').replace('{', '').trim();
+                /*
+                 * E apanha os seletores que vêm antes, separados por
+                 * vírgula: uma regra escrita em duas linhas aparecia
+                 * aqui pela segunda metade, e a excepção ficava com
+                 * metade do nome.
+                 */
+                const partes = [(linhas[cursor] ?? '').replace('{', '').trim()];
+
+                for (
+                    let acima = cursor - 1;
+                    acima >= 0 && linhas[acima]?.trimEnd().endsWith(',');
+                    acima -= 1
+                ) {
+                    partes.unshift((linhas[acima] ?? '').trim().replace(/,$/u, ''));
+                }
+
+                return partes.join(', ');
             });
 
         /**
-         * A excepção tem nome e razão: os botões de uma mensagem são
-         * dois por mensagem num fio com trinta, e à escala do texto
-         * transformavam a conversa numa lista de botões.
+         * As excepções têm nome e razão.
+         *
+         * Os botões de uma mensagem são dois por mensagem num fio com
+         * trinta, e à escala do texto transformavam a conversa numa
+         * lista de botões.
+         *
+         * Uma caixa de escolha é o outro caso, e é o contrário de uma
+         * excepção: a caixa tem 20px porque o alvo de polegar é a
+         * **etiqueta**, que é clicável e leva a linha inteira. Dar-lhe
+         * `--tap` fazia um quadrado de 48px ao lado de uma frase — que
+         * foi exactamente o que apareceu nas definições de uma crew,
+         * herdado de `.field input`.
          */
-        expect(aZero).toEqual(['.fio-de-mensagens .grupo-botoes button']);
+        expect(aZero).toEqual([
+            "input[type='checkbox'], input[type='radio']",
+            '.fio-de-mensagens .grupo-botoes button',
+        ]);
     });
 
     /**
