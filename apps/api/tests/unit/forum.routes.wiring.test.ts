@@ -72,6 +72,8 @@ describe('ligação das rotas do fórum', () => {
             reportReply: vi.fn(),
             removeTopic: vi.fn(),
             removeReply: vi.fn(),
+            acceptReply: vi.fn(),
+            clearAcceptedReply: vi.fn(),
         } as unknown as ForumController;
 
         await app.register(forumRoutes, { controller });
@@ -119,6 +121,14 @@ describe('ligação das rotas do fórum', () => {
         'POST /topics/:topicId/replies',
         'DELETE /topics/:topicId',
         'DELETE /replies/:replyId',
+        /*
+         * Marcar a resposta que resolveu exige `forum:post` e **não**
+         * `forum:moderate`: quem marca é quem perguntou, e essa é uma
+         * regra sobre este tópico — a porta não sabe de que tópico se
+         * trata, por isso é o serviço que a verifica.
+         */
+        'POST /replies/:replyId/accept',
+        'DELETE /replies/:replyId/accept',
     ])('%s pede sessão e permissão', (chave) => {
         expect(preHandlersDe(chave)).toHaveLength(2);
         expect(permissoesPorRota.get(chave)).toEqual(['forum:post']);

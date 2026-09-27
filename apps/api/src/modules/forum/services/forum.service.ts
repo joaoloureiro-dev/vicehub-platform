@@ -53,6 +53,14 @@ export class ForumService {
                 author: linha.author,
                 replyCount: linha._count.replies,
                 isLocked: linha.locked_at !== null,
+                /*
+                 * A lista diz quais já têm resposta escolhida.
+                 *
+                 * É o que faz a lista valer a pena a quem chega com uma
+                 * dúvida: distingue as perguntas que alguém resolveu das
+                 * que estão à espera de quem saiba.
+                 */
+                isAnswered: linha.accepted_reply_id !== null,
                 createdAt: linha.created_at,
                 lastActivityAt: linha.updated_at,
             })),
@@ -79,12 +87,26 @@ export class ForumService {
             author: topico.author,
             isLocked: topico.locked_at !== null,
             createdAt: topico.created_at,
-            replies: topico.replies.map((resposta) => ({
-                id: resposta.id,
-                body: resposta.body,
-                author: resposta.author,
-                createdAt: resposta.created_at,
-            })),
+            askedById: topico.authorId,
+            acceptedReplyId: topico.accepted_reply_id,
+            /*
+             * A aceite vem primeiro, e o resto por ordem de chegada.
+             *
+             * É a razão de isto existir: quem chega a um tópico com nove
+             * respostas seis meses depois não lê nove respostas — lê a
+             * primeira e vai-se embora. Deixá-la no meio, com uma marca,
+             * resolvia metade do problema e deixava a pior metade de pé.
+             */
+            replies: [...topico.replies]
+                .sort((a, b) =>
+                    Number(b.id === topico.accepted_reply_id)
+                    - Number(a.id === topico.accepted_reply_id))
+                .map((resposta) => ({
+                    id: resposta.id,
+                    body: resposta.body,
+                    author: resposta.author,
+                    createdAt: resposta.created_at,
+                })),
         };
     }
 
@@ -208,6 +230,81 @@ export class ForumService {
         }
 
         await this.forumRepository.removeReply(replyId, actorId);
+    }
+
+    /**
+     * Marca uma resposta como a que resolveu a pergunta.
+     *
+     * **Só quem perguntou.** Nem quem modera: a resposta que serviu é um
+     * facto de quem tinha o problema, e um moderador a decidi-lo estaria
+     * a dizer por ele o que o resolveu. É também por isso que um tópico
+     * fechado continua a poder ser marcado — fechar impede respostas
+     * novas, e dizer qual delas serviu é exatamente o que se quer fazer
+     * a seguir.
+     *
+     * Aceitar a própria resposta é permitido: quem responde à sua
+     * pergunta três dias depois está a fazer ao fórum o melhor favor que
+     * há.
+     */
+    async acceptReply(replyId: string, actorId: string): Promise<void> {
+        const resposta = await this.forumRepository.findReplyWithTopic(replyId);
+
+        if (resposta === null || resposta.topic.is_deleted) {
+            throw new ForumError(
+                'REPLY_NOT_FOUND',
+                'Esta resposta não existe ou foi retirada.',
+            );
+        }
+
+        if (resposta.topic.authorId !== actorId) {
+            throw new ForumError(
+                'NOT_THE_ASKER',
+                'Só quem fez a pergunta pode dizer qual resposta a resolveu.',
+            );
+        }
+
+        /*
+         * Marcar a que já está marcada não faz nada.
+         *
+         * Sem isto, dois toques no mesmo botão davam dois avisos à mesma
+         * pessoa pela mesma coisa — e o segundo não acrescentava nada
+         * ao primeiro.
+         */
+        if (resposta.topic.accepted_reply_id === resposta.id) {
+            return;
+        }
+
+        await this.forumRepository.acceptReply({
+            topicId: resposta.topicId,
+            replyId: resposta.id,
+            actorId,
+        });
+    }
+
+    /** Desmarca a resposta aceite. Também só de quem perguntou. */
+    async clearAcceptedReply(replyId: string, actorId: string): Promise<void> {
+        const resposta = await this.forumRepository.findReplyWithTopic(replyId);
+
+        if (resposta === null || resposta.topic.is_deleted) {
+            throw new ForumError(
+                'REPLY_NOT_FOUND',
+                'Esta resposta não existe ou foi retirada.',
+            );
+        }
+
+        if (resposta.topic.authorId !== actorId) {
+            throw new ForumError(
+                'NOT_THE_ASKER',
+                'Só quem fez a pergunta pode dizer qual resposta a resolveu.',
+            );
+        }
+
+        /* Desmarcar outra que não a marcada não mexe em nada. */
+        if (resposta.topic.accepted_reply_id !== resposta.id) {
+            return;
+        }
+
+        await this.forumRepository.clearAcceptedReply(resposta.topicId, actorId);
     }
 }
 

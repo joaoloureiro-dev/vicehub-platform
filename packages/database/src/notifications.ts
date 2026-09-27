@@ -19,6 +19,7 @@ export const ESPECIES_DE_AVISO = [
     'forum_reply',
     'market_review',
     'market_review_reply',
+    'forum_accepted',
 ] as const;
 
 export type EspecieDeAviso = (typeof ESPECIES_DE_AVISO)[number];

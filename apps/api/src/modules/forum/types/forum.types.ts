@@ -12,6 +12,8 @@ export interface ForumTopicSummary {
     excerpt: string | null;
     author: ForumAuthor | null;
     replyCount: number;
+    /** Se quem perguntou já disse qual resposta resolveu. */
+    isAnswered: boolean;
     isLocked: boolean;
     createdAt: Date;
     lastActivityAt: Date;
@@ -31,6 +33,14 @@ export interface ForumTopicView {
     author: ForumAuthor | null;
     isLocked: boolean;
     createdAt: Date;
+    /**
+     * Quem perguntou, para o ecrã saber a quem mostrar o botão de
+     * marcar a resposta. Nulo quando essa conta já saiu — e então
+     * ninguém pode marcar, que é a resposta honesta.
+     */
+    askedById: string | null;
+    /** A resposta que quem perguntou diz ter resolvido, se houver. */
+    acceptedReplyId: string | null;
     replies: ForumReplyView[];
 }
 

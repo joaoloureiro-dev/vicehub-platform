@@ -6,6 +6,8 @@ import { useAuth } from '../../auth/auth.context.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useT } from '../../i18n/i18n.js';
 import {
+    acceptReply,
+    clearAcceptedReply,
     getTopic,
     lockTopic,
     podeModerar,
@@ -127,6 +129,15 @@ export const TopicPage = () => {
 
     const meu = user !== null && dados.author?.id === user.id;
 
+    /**
+     * Quem perguntou é quem marca a resposta que resolveu.
+     *
+     * Nem quem modera: a resposta que serviu é um facto de quem tinha o
+     * problema. A API decide a sério; o que o ecrã faz é não oferecer um
+     * botão que de certeza vai ser recusado.
+     */
+    const perguntei = user !== null && dados.askedById === user.id;
+
     return (
         <main className="panel wide esticado">
             <p className="hint">
@@ -195,8 +206,29 @@ export const TopicPage = () => {
                 <p className="hint">{t.forum.semRespostas}</p>
             ) : (
                 <ul className="lista-respostas">
-                    {dados.replies.map((umaResposta) => (
-                        <li key={umaResposta.id}>
+                    {dados.replies.map((umaResposta) => {
+                        const aceite = umaResposta.id === dados.acceptedReplyId;
+
+                        return (
+                        <li
+                            key={umaResposta.id}
+                            className={aceite ? 'resposta-aceite' : undefined}
+                        >
+                            {/*
+                              A marca é uma frase e não um ícone.
+
+                              Um visto verde sozinho é uma convenção que
+                              quem chega ao fórum pela primeira vez não
+                              conhece — e quem não vê cores não vê nada.
+                              A frase diz quem marcou e o que isso quer
+                              dizer, que é a parte que interessa.
+                            */}
+                            {aceite ? (
+                                <p className="marca-aceite">
+                                    {t.forum.respostaAceite}
+                                </p>
+                            ) : null}
+
                             <Texto corpo={umaResposta.body} />
                             <p className="topico-rodape">
                                 <Quem autor={umaResposta.author} />
@@ -238,9 +270,36 @@ export const TopicPage = () => {
                                             />
                                         </span>
                                     ) : null}
+
+                                {perguntei ? (
+                                    <span className="acoes">
+                                        <button
+                                            className="btn-secondary"
+                                            type="button"
+                                            disabled={aAgir}
+                                            onClick={() =>
+                                                void agir(
+                                                    () => (aceite
+                                                        ? clearAcceptedReply(
+                                                            umaResposta.id,
+                                                        )
+                                                        : acceptReply(
+                                                            umaResposta.id,
+                                                        )),
+                                                    t.forum.naoFoiPossivelMarcar,
+                                                )
+                                            }
+                                        >
+                                            {aceite
+                                                ? t.forum.desmarcarResposta
+                                                : t.forum.marcarResposta}
+                                        </button>
+                                    </span>
+                                ) : null}
                             </p>
                         </li>
-                    ))}
+                        );
+                    })}
                 </ul>
             )}
 

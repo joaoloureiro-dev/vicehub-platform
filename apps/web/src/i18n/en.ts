@@ -646,6 +646,8 @@ export const en = (p: Tools) => ({
             market_review: (quem: string) => `${quem} reviewed your sale of`,
             market_review_reply: (quem: string) =>
                 `${quem} replied to your review of`,
+            forum_accepted: (quem: string) =>
+                `${quem} marked your answer as the one that solved`,
         },
 
         alguem: 'Someone',
@@ -891,6 +893,11 @@ export const en = (p: Tools) => ({
     },
 
     forum: {
+        naoFoiPossivelMarcar: 'That did not work. Try again.',
+        resolvida: 'Answered',
+        marcarResposta: 'This one solved it',
+        desmarcarResposta: 'Not this one after all',
+        respostaAceite: 'Marked by whoever asked as the answer that solved it',
         procurar: 'Search the forum',
         procurarLabel: 'Search the forum',
         semResultados: 'Nothing here matches that. Try a different word, or ask it yourself.',

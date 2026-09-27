@@ -627,6 +627,8 @@ export const pt = (p: Tools): Messages => ({
             market_review: (quem: string) => `${quem} avaliou a tua venda de`,
             market_review_reply: (quem: string) =>
                 `${quem} respondeu à tua avaliação de`,
+            forum_accepted: (quem: string) =>
+                `${quem} marcou a tua resposta como a que resolveu`,
         },
 
         alguem: 'Alguém',
@@ -852,6 +854,11 @@ export const pt = (p: Tools): Messages => ({
     },
 
     forum: {
+        naoFoiPossivelMarcar: 'Não foi possível. Tenta outra vez.',
+        resolvida: 'Resolvida',
+        marcarResposta: 'Foi esta que resolveu',
+        desmarcarResposta: 'Afinal não foi esta',
+        respostaAceite: 'Marcada por quem perguntou como a resposta que resolveu',
         procurar: 'Procurar no fórum',
         procurarLabel: 'Procurar no fórum',
         semResultados: 'Não há nada aqui com isso. Tenta outra palavra, ou pergunta tu.',
