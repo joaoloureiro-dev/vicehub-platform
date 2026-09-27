@@ -50,6 +50,17 @@ export const replyIdParamSchema = z.object({
 
 export const listTopicsQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
+    /**
+     * O que se procura.
+     *
+     * Chama-se `q` e não `search` porque é uma caixa de pesquisa e é
+     * assim que toda a gente lhe chama num endereço — e porque é o que
+     * fica legível quando alguém partilha o link de uma procura.
+     *
+     * 48 caracteres é o mesmo limite do diretório de servidores. Uma
+     * procura mais comprida do que um título não é uma procura.
+     */
+    q: z.string().trim().min(1).max(48).optional(),
 });
 
 /**

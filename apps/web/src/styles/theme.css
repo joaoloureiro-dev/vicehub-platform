@@ -2654,6 +2654,36 @@ button.link:hover {
 }
 
 
+/*
+ * A linha que diz o que se está a procurar, e como sair disso.
+ *
+ * Existe porque uma lista filtrada é indistinguível de uma lista curta:
+ * quem chega a `/forum?q=heist` e vê três perguntas não tem como saber
+ * que o fórum tem trezentas. A frase diz o que está a acontecer, e o
+ * botão ao lado desfaz.
+ */
+.procura-activa {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+}
+
+/*
+ * Um botão que é uma ligação: desfaz uma coisa neste ecrã, por isso não
+ * é um endereço — mas lê-se e toca-se como as outras ligações soltas.
+ */
+.procura-activa .ligacao-solta {
+    font: inherit;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--cyan-ink);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 /* ---------- o ecrã de avaria ---------- */
 
 /*

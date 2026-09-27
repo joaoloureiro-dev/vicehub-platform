@@ -852,6 +852,11 @@ export const pt = (p: Tools): Messages => ({
     },
 
     forum: {
+        procurar: 'Procurar no fórum',
+        procurarLabel: 'Procurar no fórum',
+        semResultados: 'Não há nada aqui com isso. Tenta outra palavra, ou pergunta tu.',
+        limparProcura: 'Limpar a procura',
+        aProcurarPor: (p: string) => `Perguntas com “${p}”`,
 
         titulo: 'Fórum',
 

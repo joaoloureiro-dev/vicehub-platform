@@ -19,12 +19,42 @@ const AUTOR = {
     select: { id: true, username: true, avatarUrl: true },
 } as const;
 
+/**
+ * O que se procura, em título e corpo.
+ *
+ * `contains` e não pesquisa de texto do Postgres, de propósito. É o
+ * mesmo mecanismo do diretório de crews e do de servidores — uma
+ * plataforma com três caixas de procura não deve ter três maneiras de
+ * procurar —, e a esta escala faz o que é preciso: quem escreve
+ * "corrida" encontra "corridas", que uma pesquisa de texto sem
+ * radicalização não encontrava.
+ *
+ * **O que não faz**, e é para saber antes de fazer falta: não ordena por
+ * relevância nenhuma — o que encontra sai pela última atividade, como o
+ * resto da lista, por isso um tópico com a palavra no título não vem à
+ * frente de um que a tem a meio do corpo — e casa no meio das palavras,
+ * por isso "arte" também aparece em "cartas". No dia em que o fórum
+ * tiver milhares de tópicos,
+ * isto passa a ser um índice de texto a sério, com a língua de cada
+ * tópico guardada ao lado dele para o radicalizador saber o que está a
+ * ler. Hoje seria maquinaria a mais para o problema que existe.
+ */
+const filtroDeProcura = (procura: string | undefined) =>
+    procura === undefined
+        ? {}
+        : {
+            OR: [
+                { title: { contains: procura, mode: 'insensitive' as const } },
+                { body: { contains: procura, mode: 'insensitive' as const } },
+            ],
+        };
+
 export class ForumRepository {
     constructor(private readonly database: DatabaseClient) { }
 
-    listTopics(pagina: number) {
+    listTopics(pagina: number, procura?: string) {
         return this.database.forumTopic.findMany({
-            where: { is_deleted: false },
+            where: { is_deleted: false, ...filtroDeProcura(procura) },
             /**
              * Pela última atividade, e não pela criação: um tópico com
              * uma resposta de agora interessa mais do que um aberto
@@ -47,8 +77,17 @@ export class ForumRepository {
         });
     }
 
-    countTopics() {
-        return this.database.forumTopic.count({ where: { is_deleted: false } });
+    countTopics(procura?: string) {
+        /*
+         * Conta com o mesmo filtro da lista.
+         *
+         * Sem isto, uma procura devolvia três tópicos e dizia «página 1
+         * de 9» — o número de páginas saía do fórum inteiro, e quem
+         * carregasse na 2 via uma lista vazia sem perceber porquê.
+         */
+        return this.database.forumTopic.count({
+            where: { is_deleted: false, ...filtroDeProcura(procura) },
+        });
     }
 
     findTopic(topicId: string) {

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { Alert } from '../../auth/components/alert.js';
 import { useAsync } from '../../lib/use-async.js';
@@ -27,7 +27,40 @@ export const ForumPage = () => {
     const [aPublicar, setAPublicar] = useState(false);
     const [erro, setErro] = useState<string | null>(null);
 
-    const pagina = useAsync(() => listTopics(1), []);
+    /**
+     * O que se procura vive no endereço, e não só no estado do ecrã.
+     *
+     * É o que faz uma procura ser partilhável: quem encontrar a resposta
+     * a uma pergunta pode mandar o endereço a outra pessoa, e o que ela
+     * abre é a mesma lista. É também o que faz o botão de voltar do
+     * browser funcionar como toda a gente espera — sem isto, voltar
+     * atrás saía do fórum em vez de desfazer a procura.
+     */
+    const [endereco, setEndereco] = useSearchParams();
+    const procura = endereco.get('q') ?? '';
+
+    /* O que está escrito na caixa, que só vira procura ao submeter. */
+    const [termo, setTermo] = useState(procura);
+
+    const pagina = useAsync(() => listTopics(1, procura), [procura]);
+
+    const procurar = (evento: FormEvent) => {
+        evento.preventDefault();
+
+        const limpo = termo.trim();
+
+        /*
+         * Uma caixa vazia tira o `q` do endereço em vez de lá pôr um
+         * vazio: `/forum?q=` e `/forum` são a mesma lista, e dois
+         * endereços para a mesma página é um deles a sobrar.
+         */
+        setEndereco(limpo === '' ? {} : { q: limpo });
+    };
+
+    const limpar = () => {
+        setTermo('');
+        setEndereco({});
+    };
 
     /**
      * A porta da fila de denúncias, para quem a pode abrir.
@@ -64,6 +97,12 @@ export const ForumPage = () => {
 
     if (pagina.error) {
         return (
+            /*
+              O ecrã de erro não leva `esticado`: o que lá está é um
+              aviso de uma linha, e esticá-lo a toda a largura do painel
+              punha uma frase curta de um lado ao outro da página. A
+              regra é para listas.
+            */
             <main className="panel wide">
                 <Alert kind="bad">{t.forum.naoCarregou}</Alert>
             </main>
@@ -73,7 +112,7 @@ export const ForumPage = () => {
     const topicos = pagina.data?.topics ?? [];
 
     return (
-        <main className="panel wide">
+        <main className="panel wide esticado">
             <header className="card header">
                 <h1>{t.forum.titulo}</h1>
                 <p>{t.forum.subtitulo}</p>
@@ -83,6 +122,34 @@ export const ForumPage = () => {
                     </p>
                 ) : null}
             </header>
+
+            <form className="searchbar" onSubmit={procurar} role="search">
+                <input
+                    type="search"
+                    value={termo}
+                    aria-label={t.forum.procurarLabel}
+                    placeholder={t.forum.procurar}
+                    onChange={(event) => {
+                        setTermo(event.target.value);
+                    }}
+                />
+                <button className="primary" type="submit">
+                    {t.crews.botaoProcurar}
+                </button>
+            </form>
+
+            {procura === '' ? null : (
+                <p className="hint procura-activa">
+                    {t.forum.aProcurarPor(procura)}{' '}
+                    <button
+                        className="ligacao-solta"
+                        type="button"
+                        onClick={limpar}
+                    >
+                        {t.forum.limparProcura}
+                    </button>
+                </p>
+            )}
 
             {user ? (
                 <form className="grupo" onSubmit={(e) => void publicar(e)}>
@@ -120,7 +187,17 @@ export const ForumPage = () => {
             )}
 
             {topicos.length === 0 ? (
-                <p className="hint">{t.forum.aindaSemPerguntas}</p>
+                <p className="hint">
+                    {/*
+                      Duas frases e não uma: «ainda não há perguntas» a
+                      quem procurou por uma palavra é mentira, e deixa a
+                      pessoa a achar que o fórum está vazio quando o que
+                      está vazio é o resultado dela.
+                    */}
+                    {procura === ''
+                        ? t.forum.aindaSemPerguntas
+                        : t.forum.semResultados}
+                </p>
             ) : (
                 <ul className="lista-topicos">
                     {topicos.map((topico) => (
