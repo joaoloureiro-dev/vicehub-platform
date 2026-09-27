@@ -1,139 +1,149 @@
 # 🚀 ViceHub
 
-ViceHub is a **modular SaaS ecosystem for online gaming communities**, initially focused on GTA VI, designed to scale into a multi-game platform.
+O ViceHub é um **ecossistema SaaS modular para comunidades de jogo online**, a começar pelo GTA VI e desenhado para crescer até uma plataforma multi-jogo.
 
-It acts as a **second screen for players**, combining social networking, progression systems, crew management, server ecosystems and an in-game economy. A digital marketplace is planned and has no code yet — the feature list below marks what is built and what is not.
-
----
-
-## 🧠 Vision
-
-To become the central platform where gaming communities interact, grow, compete and trade — all in one unified ecosystem.
+Funciona como **segundo ecrã de quem joga**, e junta num sítio só a rede social, a progressão, a gestão de crews, o ecossistema de servidores e a economia dentro do jogo. Há um mercado digital planeado e ainda sem código — a lista abaixo marca o que está construído e o que não está.
 
 ---
 
-## ⚙️ Core Features
+## 🧠 Visão
 
-What the product does today, and what it does not. `✔` works end to end,
-from the database to a screen; `🚧` is partly there; `○` has no code yet.
+Ser a plataforma onde as comunidades de jogo se encontram, crescem, competem e negoceiam — tudo no mesmo sítio.
 
-### 👤 Players
-- ✔ XP & Level system
-- ✔ Reputation — earned by showing up to an event someone confirmed you at,
-  lost by signing up and not showing
-- ✔ Badges & Achievements — earned from attendance, payouts, events and crew
-  level
-- ✔ Friends & Social graph
-- ✔ Activity tracking
+---
+
+## ⚙️ O que faz
+
+O que o produto faz hoje, e o que não faz. `✔` funciona de ponta a ponta,
+da base de dados até um ecrã; `🚧` está a meio; `○` ainda não tem código.
+
+### 👤 Jogadores
+- ✔ XP e níveis
+- ✔ Reputação — ganha-se ao aparecer num evento onde alguém confirmou a
+  presença, perde-se ao inscrever-se e não aparecer
+- ✔ Emblemas e conquistas — saem das presenças, dos pagamentos, dos eventos
+  e do nível da crew
+- ✔ Amigos e grafo social
+- ✔ Rasto de atividade
 
 ### 🏴 Crews
-- ✔ Crew progression system
-- ✔ Economy & treasury — wallets, approvals, transfers and payouts
-- ✔ Events & missions
-- ✔ Recruitment system
-- ✔ Ranking system — the crew directory sorts by XP
+- ✔ Progressão da crew
+- ✔ Economia e tesouraria — saldos, aprovações, transferências e pagamentos
+- ✔ Eventos e missões
+- ✔ Recrutamento
+- ✔ Classificação — o diretório de crews ordena por XP
 
-### 🌐 Servers
-- ✔ Server profiles
-- ✔ Activity tracking — heartbeats and player counts from the game server
-- ○ Leaderboards
-- ✔ Events integration
-- 🚧 Community engagement metrics — the live player count is collected and
-  shown, but each heartbeat overwrites the last one, so there is no history
-  to trend or rank by
+### 🌐 Servidores
+- ✔ Perfil de servidor
+- ✔ Rasto de atividade — batimentos e contagem de jogadores vindos do
+  servidor de jogo
+- ○ Tabelas de classificação
+- ✔ Integração com os eventos
+- ✔ Medida de movimento da comunidade — a contagem de jogadores é guardada
+  hora a hora, e é por esse passado que o diretório ordena por onde há gente
 
-### 🛒 Marketplace
-- ○ Digital services trading
-- ○ Escrow system
-- ○ Stripe Connect integration
-- ○ Reviews & reputation system
+### 🛒 Mercado
+- ✔ Um mercado por servidor, em moeda do jogo, com anúncios por categoria
+- ✔ Conversas entre quem compra e quem vende, sobre um anúncio
+- ✔ Avaliações depois de uma venda, com direito de resposta de quem vendeu
+- ✔ Denúncia de anúncios, mensagens e avaliações
+- ○ Troca de serviços a dinheiro real, caução e Stripe Connect — e é
+  provável que nunca exista: mover dinheiro a sério entre jogadores é outro
+  produto, com outra lei em cima
 
-### 💬 Forum
-- ✔ Ask a question, answer someone else's — reading needs no account
-- ✔ Remove what you wrote; moderators can remove anything
-- ✔ Your text leaves with your account, and the conversation stays standing
-- ✔ Close a question to new replies — the mild tool, so what is written keeps
-  serving whoever arrives from a search
-- ✔ Report a post, and a queue moderators work through oldest first
-- ○ Categories, search, accepted answers
+### 💬 Fórum
+- ✔ Perguntar e responder — ler não precisa de conta
+- ✔ Apagar o que se escreveu; quem modera pode apagar qualquer coisa
+- ✔ O texto sai com a conta de quem o escreveu, e a conversa fica de pé
+- ✔ Fechar uma pergunta a novas respostas — a ferramenta branda, para o que
+  lá está continuar a servir quem chega de uma pesquisa
+- ✔ Denunciar, e uma fila que quem modera trabalha do mais antigo para o
+  mais recente
+- ○ Categorias, pesquisa, resposta aceite
 
-### 📰 What's happening in the game
-- ✔ A news block on the landing page, fed from an RSS or Atom source
-- ○ Community finds and easter eggs — those are not published by anyone,
-  they are found, so they belong with the forum rather than with a feed
+### 📰 O que se passa no jogo
+- ✔ Um bloco de notícias na página de entrada, alimentado por RSS ou Atom
+- ○ Descobertas e segredos da comunidade — esses não são publicados por
+  ninguém, são encontrados, e por isso pertencem ao fórum e não a um feed
 
-### 🎮 Events System
-- ✔ Live events
-- ✔ Rewards & XP distribution
-- ✔ Competitive challenges
-- ✔ History tracking
+### 🎮 Eventos
+- ✔ Eventos a decorrer
+- ✔ Prémios e distribuição de XP
+- ✔ Desafios entre crews
+- ✔ Histórico
+
+### 🔔 Avisos
+- ✔ Respostas, mensagens e avaliações, com contagem por ler na barra
+- ✔ Atualiza-se enquanto a pessoa lá está, e não só a quem carrega em F5
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Arquitetura
 
 - Monorepo (npm workspaces): `apps/api`, `apps/web`, `packages/database`
 - Node.js 24 + TypeScript
-- Fastify backend, serving the built interface from its own origin
-- React + Vite frontend
+- API em Fastify, a servir a interface construída a partir da sua própria origem
+- Frontend em React + Vite
 - PostgreSQL + Prisma 7
-- Stripe for payments
-- Discord and Google sign-in
+- Stripe para os pagamentos
+- Entrar com Discord e com Google
 
-Not there yet: Redis and a job queue. Everything runs inside the request
-that asked for it, which is enough at this size and will not stay enough.
+Ainda não há: Redis nem fila de trabalhos. Tudo corre dentro do pedido que
+o pediu, o que chega para este tamanho e não vai continuar a chegar.
 
 ---
 
-## 🔐 Security
+## 🔐 Segurança
 
-- JWT + Refresh Tokens
-- RBAC (Role-Based Access Control)
-- Soft delete + audit logs
-- Rate limiting
-- Input validation (Zod)
+- JWT com refresh token
+- Autorização por papéis e permissões (RBAC)
+- Soft delete e registo de auditoria
+- Limites de pedidos por rota
+- Validação do que entra (Zod)
 - Bloqueio temporário da conta após tentativas de login falhadas
+- Verificação anti-robô (Turnstile) nas portas de entrada
 
 ---
 
-## 🎨 UI/UX
+## 🎨 Desenho
 
-Screens: [`docs/media/tema/`](docs/media/tema/).
+Os ecrãs: [`docs/media/tema/`](docs/media/tema/).
 
-**A neon sign against the night sky.** The product is a community's
-paperwork — who joined, who turned up, how much was split and to whom —
-and that still reads as a record: structure comes from hairlines and
-type, not from stacked boxes. What changed is the hour. This lives in a
-tab next to a game played after dark, and it was the only white thing on
-the screen.
+**Um letreiro de néon contra o céu da noite.** O produto é o arquivo de uma
+comunidade — quem entrou, quem apareceu, quanto se dividiu e para quem — e
+continua a ler-se como registo: a estrutura vem de filetes e de hierarquia
+de letra, e não de caixas empilhadas. O que mudou foi a hora. Isto vive num
+separador ao lado de um jogo que se joga de noite, e era a única coisa
+branca no ecrã.
 
-- The logo's colours at full saturation, and the page is what's dark. On
-  `#0B0711` the magenta scores 6.04 contrast and the cyan 11.04 — they
-  pass on their own, and the light variants pass with room to spare. What
-  fails is light ink on top of a lit neon (2.96 and 1.62), so the type on
-  a neon fill is the colour of the page itself: the colour lights up, the
-  letters are the dark cut-out, which is how a sign works. Anything that
-  must be *read* in colour uses the light variants, computed to clear 4.5
-  against the lightest of the theme's three grounds.
-  `apps/web/tests/contraste.test.ts` keeps it that way, gradient stops
-  included.
-- There is no light theme and no `prefers-color-scheme`, by decision: a
-  second theme is a second palette, with twice the numbers to verify. The
-  browser is told once — `color-scheme: dark` in the sheet and in the
-  `<head>` — so the checkboxes, scrollbars and date pickers it draws
-  itself come out dark too, and there is no white flash before the
-  stylesheet lands. `apps/web/tests/controlos-nativos.test.ts` keeps the
-  page colour, the `<meta>` and the web manifest saying the same thing.
-- The logo gradient appears in exactly two places: a three-pixel rule
-  above the page, and the wordmark. A whole header painted magenta to
-  cyan is the page everyone makes.
-- Display type is Archivo at expanded width in heavy caps — wide and
-  solid. It imitates no Rockstar typeface and could not: this is an
-  independent platform. Body is IBM Plex Sans; money and XP stay in
-  JetBrains Mono, because columns of digits have to line up.
-- Mobile-first: the base rules serve the small screen and the media
-  queries only add as space appears.
-- Screens refresh when you ask them to — there is no live connection yet
+- As cores do logótipo à saturação máxima, e é a página que é escura. Sobre
+  `#0B0711` o magenta dá 6,04 de contraste e o ciano 11,04 — passam por si,
+  e as versões claras passam com folga larga. O que reprova é tinta clara
+  por cima de um néon aceso (2,96 e 1,62), e por isso a letra de um
+  preenchimento de néon é a cor da própria página: a cor acende, as letras
+  são o recorte escuro, que é como um letreiro funciona. O que precisa de
+  ser *lido* em cor usa as versões claras, calculadas para passarem 4,5
+  sobre o mais claro dos três fundos do tema. O
+  `apps/web/tests/contraste.test.ts` mantém isso assim, paragens do degradê
+  incluídas.
+- Não há tema claro nem `prefers-color-scheme`, por decisão: um segundo
+  tema é uma segunda paleta inteira, com o dobro dos números para
+  verificar. Ao browser diz-se uma vez — `color-scheme: dark` na folha e na
+  cabeça da página —, e assim as caixas de seleção, as barras de rolar e os
+  calendários que ele desenha saem escuros também, e não há clarão branco
+  antes de a folha chegar. O `apps/web/tests/controlos-nativos.test.ts`
+  obriga a cor da página, a `<meta>` e o manifesto a dizerem o mesmo.
+- O degradê do logótipo aparece em exatamente dois sítios: um filete de três
+  pixéis por cima da página, e o nome da marca. Um cabeçalho inteiro pintado
+  de magenta a ciano é a página que toda a gente faz.
+- A letra de display é o Archivo na largura expandida, em maiúsculas
+  pesadas — larga e sólida. Não imita nenhuma letra da Rockstar, e não
+  podia: isto é uma plataforma independente. O texto corrido é o IBM Plex
+  Sans; o dinheiro e o XP ficam no JetBrains Mono, porque colunas de
+  algarismos têm de alinhar.
+- Do telemóvel para fora: as regras base servem o ecrã pequeno e as media
+  queries só acrescentam à medida que há espaço.
+- Os ecrãs atualizam-se quando se pede — ainda não há ligação ao vivo
 
 ---
 
@@ -1407,7 +1417,7 @@ conformidade.
 
 ---
 
-## 📦 Current Status
+## 📦 Estado atual
 
 🚧 Em desenvolvimento, ainda sem ninguém a usar
 
@@ -1467,6 +1477,6 @@ uma decisão de produto antes de ser uma de engenharia
 
 ---
 
-## 📜 License
+## 📜 Licença
 
-Private / Commercial (to be defined)
+Privada / comercial (por definir)
