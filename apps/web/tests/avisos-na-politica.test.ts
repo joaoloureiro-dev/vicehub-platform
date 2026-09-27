@@ -46,6 +46,34 @@ const A_QUE_APONTA: Readonly<Record<string, string>> = {
     forum_reply: 'reply',
     market_review: 'review',
     market_review_reply: 'review',
+    /*
+     * Aponta para a resposta que foi marcada, e por isso abre o tópico
+     * dela — o mesmo alvo de `forum_reply`. O que a política teve de
+     * passar a dizer não foi o alvo: foi o **acontecimento**, porque
+     * "alguém marcou a tua resposta" não cabia em "escreveu, respondeu
+     * ou avaliou".
+     */
+    forum_accepted: 'reply',
+};
+
+/**
+ * E o que cada espécie **é**, como a política o diz.
+ *
+ * O alvo não chega. `forum_accepted` aponta para uma resposta, tal como
+ * `forum_reply`, por isso a linha continuava a falar de "reply" e o
+ * teste passava — enquanto o acontecimento novo, alguém marcar a tua
+ * resposta como a que resolveu, não estava declarado em lado nenhum. Um
+ * mutante que desfizesse a frase sobrevivia.
+ *
+ * Aqui é o verbo: o que aconteceu, e não onde. É essa a parte que uma
+ * pessoa lê para saber o que a plataforma regista sobre ela.
+ */
+const O_QUE_ACONTECEU: Readonly<Record<string, string>> = {
+    market_message: 'wrote to you',
+    forum_reply: 'replied to you',
+    market_review: 'reviewed you',
+    market_review_reply: 'reviewed you',
+    forum_accepted: 'solved',
 };
 
 const linhaDoInventario = (): string => {
@@ -88,6 +116,27 @@ describe('os avisos na política de privacidade', () => {
                 linha,
                 `a linha não fala do que ${especie} aponta`,
             ).toContain(nome as string);
+        }
+    });
+
+    /**
+     * E diz o que aconteceu, e não só onde.
+     *
+     * "Alguém escreveu, respondeu ou avaliou" não cobre "alguém marcou
+     * a tua resposta como a que resolveu" — é um acontecimento novo, e
+     * uma política que só nomeasse o alvo deixava-o por declarar.
+     */
+    it('e a linha diz o que aconteceu em cada espécie', () => {
+        const linha = linhaDoInventario().toLowerCase();
+
+        for (const especie of especiesDaFonte()) {
+            const frase = O_QUE_ACONTECEU[especie];
+
+            expect(frase, `falta o acontecimento de ${especie}`).toBeDefined();
+            expect(
+                linha,
+                `a linha não diz o que ${especie} é`,
+            ).toContain(frase as string);
         }
     });
 

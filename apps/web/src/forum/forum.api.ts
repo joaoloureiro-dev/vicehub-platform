@@ -14,6 +14,8 @@ export interface ForumTopicSummary {
     author: ForumAuthor | null;
     replyCount: number;
     isLocked: boolean;
+    /** Se quem perguntou já disse qual resposta resolveu. */
+    isAnswered: boolean;
     createdAt: string;
     lastActivityAt: string;
 }
@@ -32,6 +34,13 @@ export interface ForumTopic {
     author: ForumAuthor | null;
     isLocked: boolean;
     createdAt: string;
+    /**
+     * Quem perguntou. É a quem o botão de marcar aparece — e a mais
+     * ninguém, nem a quem modera.
+     */
+    askedById: string | null;
+    /** A resposta que resolveu, se já houver. Vem sempre em primeiro. */
+    acceptedReplyId: string | null;
     replies: ForumReply[];
 }
 
@@ -93,3 +102,20 @@ export const removeTopic = (topicId: string): Promise<void> =>
 
 export const removeReply = (replyId: string): Promise<void> =>
     api<void>(`/forum/replies/${replyId}`, { method: 'DELETE' });
+
+/**
+ * Dizer qual resposta resolveu a pergunta, e desdizê-lo.
+ *
+ * Dois verbos no mesmo caminho, como fechar um tópico: marcar e
+ * desmarcar são coisas diferentes, e repetir qualquer uma delas deixa
+ * tudo como estava.
+ */
+export const acceptReply = (replyId: string): Promise<void> =>
+    api<void>(`/forum/replies/${encodeURIComponent(replyId)}/accept`, {
+        method: 'POST',
+    });
+
+export const clearAcceptedReply = (replyId: string): Promise<void> =>
+    api<void>(`/forum/replies/${encodeURIComponent(replyId)}/accept`, {
+        method: 'DELETE',
+    });

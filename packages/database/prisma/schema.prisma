@@ -1449,6 +1449,20 @@ model ForumTopic {
   /// Quando um moderador fechou o tópico a respostas novas.
   locked_at DateTime?
 
+  /// A resposta que quem perguntou diz ter resolvido o problema.
+  ///
+  /// Fica **no tópico** e não na resposta, de propósito: é assim que "há
+  /// uma resposta aceite, e é uma só" passa a ser uma coisa que a base
+  /// garante em vez de uma coisa que o código tem de lembrar-se de
+  /// verificar. Marcar outra move o apontador; não há estado em que duas
+  /// estejam aceites ao mesmo tempo.
+  ///
+  /// Só quem perguntou marca. Um moderador que o fizesse estaria a pôr
+  /// palavras na boca de quem fez a pergunta — a resposta que serviu é
+  /// um facto de quem tinha o problema, e não uma decisão de quem vigia
+  /// o fórum.
+  accepted_reply_id String? @unique
+
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
@@ -1462,6 +1476,8 @@ model ForumTopic {
   author  User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
   replies ForumReply[]
   reports Report[]
+
+  acceptedReply ForumReply? @relation("RespostaAceite", fields: [accepted_reply_id], references: [id], onDelete: SetNull)
 
   @@index([created_at(sort: Desc)])
   @@index([authorId])
@@ -1493,6 +1509,9 @@ model ForumReply {
   author        User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
   reports       Report[]
   notifications Notification[]
+
+  /// O tópico que aponta para esta resposta, quando é a aceite.
+  aceiteEm ForumTopic? @relation("RespostaAceite")
 
   @@index([topicId, created_at])
   @@index([authorId])
@@ -2011,6 +2030,8 @@ enum NotificationKind {
   market_review
   /// Quem foi avaliado respondeu.
   market_review_reply
+  /// Quem perguntou marcou a tua resposta como a que resolveu.
+  forum_accepted
 }
 
 /// Um aviso: aconteceu qualquer coisa que te diz respeito.

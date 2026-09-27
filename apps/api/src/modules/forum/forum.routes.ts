@@ -193,6 +193,31 @@ const forumRoutes: FastifyPluginAsync<ForumRoutesOptions> = async (
         },
         controller.removeReply.bind(controller),
     );
+
+    /**
+     * Dizer qual resposta resolveu, e desdizê-lo.
+     *
+     * `forum:post` e não `forum:moderate`: quem marca é quem perguntou,
+     * e essa é uma regra sobre **este** tópico — o serviço é que a
+     * verifica, porque a porta não sabe de que tópico se trata.
+     */
+    fastify.post<{ Params: ReplyIdParamDto }>(
+        '/replies/:replyId/accept',
+        {
+            preHandler: [fastify.authenticate, fastify.authorize('forum:post')],
+            schema: { params: replyIdParamSchema },
+        },
+        controller.acceptReply.bind(controller),
+    );
+
+    fastify.delete<{ Params: ReplyIdParamDto }>(
+        '/replies/:replyId/accept',
+        {
+            preHandler: [fastify.authenticate, fastify.authorize('forum:post')],
+            schema: { params: replyIdParamSchema },
+        },
+        controller.clearAcceptedReply.bind(controller),
+    );
 };
 
 export default forumRoutes;

@@ -22,6 +22,7 @@ const ESTADO: Record<string, number> = {
     REPLY_NOT_FOUND: 404,
     TOPIC_LOCKED: 409,
     NOT_YOURS: 403,
+    NOT_THE_ASKER: 403,
 };
 
 export class ForumController {
@@ -268,6 +269,52 @@ export class ForumController {
                 user.id,
                 this.podeModerar(request),
             );
+
+            reply.code(204).send();
+        } catch (erro: unknown) {
+            this.responder(erro, reply);
+        }
+    }
+
+    /**
+     * Marca e desmarca a resposta que resolveu.
+     *
+     * Dois verbos no mesmo caminho, como o fechar de um tópico: marcar e
+     * desmarcar são coisas diferentes, e repetir qualquer uma delas não
+     * muda nada — o que interessa é em que estado fica.
+     *
+     * Só `forum:post` à porta, e não `forum:moderate`: quem decide é
+     * quem perguntou, e isso o serviço é que verifica, porque é uma
+     * regra sobre **este** tópico e não sobre o fórum.
+     */
+    async acceptReply(
+        request: FastifyRequest<{ Params: ReplyIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.mudarAceite(request, reply, true);
+    }
+
+    async clearAcceptedReply(
+        request: FastifyRequest<{ Params: ReplyIdParamDto }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        await this.mudarAceite(request, reply, false);
+    }
+
+    private async mudarAceite(
+        request: FastifyRequest<{ Params: ReplyIdParamDto }>,
+        reply: FastifyReply,
+        aceitar: boolean,
+    ): Promise<void> {
+        const { user } = requireAuthContext(request);
+
+        try {
+            await (aceitar
+                ? this.forumService.acceptReply(request.params.replyId, user.id)
+                : this.forumService.clearAcceptedReply(
+                    request.params.replyId,
+                    user.id,
+                ));
 
             reply.code(204).send();
         } catch (erro: unknown) {

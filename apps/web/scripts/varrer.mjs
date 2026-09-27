@@ -214,9 +214,21 @@ const semear = async (base) => {
         },
     });
 
-    await api(`/forum/topics/${topico.id}/replies`, {
+    const respostaBoa = await api(`/forum/topics/${topico.id}/replies`, {
         method: 'POST', headers: aut(outra.accessToken),
         body: { body: 'Confirmas as presenças e divides por participação.' },
+    });
+
+    /*
+     * E uma delas marcada como a que resolveu.
+     *
+     * Sem isto, a varredura nunca via o filete da resposta aceite nem a
+     * marca na lista de perguntas — elementos que só existem quando
+     * alguém marcou, e que por isso nunca seriam medidos em largura
+     * nenhuma.
+     */
+    await api(`/forum/replies/${respostaBoa.id}/accept`, {
+        method: 'POST', headers: aut(eu.accessToken),
     });
 
     /* Uma denúncia por decidir, para a fila de quem modera não estar vazia. */

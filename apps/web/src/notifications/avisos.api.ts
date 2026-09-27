@@ -10,7 +10,8 @@ export type EspecieDeAviso =
     | 'market_message'
     | 'forum_reply'
     | 'market_review'
-    | 'market_review_reply';
+    | 'market_review_reply'
+    | 'forum_accepted';
 
 export interface AutorDoAviso {
     id: string;
@@ -53,6 +54,8 @@ const ONDE_SE_ABRE: Readonly<Record<EspecieDeAviso, (id: string) => string>> = {
     /** A avaliação vive no perfil de quem a recebeu, e a resposta com ela. */
     market_review: (nome) => `/u/${nome}`,
     market_review_reply: (nome) => `/u/${nome}`,
+    /** Abre o tópico, como a resposta: é lá que está a marca. */
+    forum_accepted: (id) => `/forum/${id}`,
 };
 
 export const enderecoDoAviso = (aviso: Aviso): string =>

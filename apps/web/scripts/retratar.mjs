@@ -343,13 +343,31 @@ const semear = async () => {
 
         primeiro ??= topico;
 
+        let primeiraResposta = null;
+
         for (const [respondeu, texto] of [
             ['marlowe', 'Confirm who turned up and split by participation. It settles every argument we used to have.'],
             ['delacroix', 'Half for the leader only works until the leader needs four people who will say yes.'],
         ]) {
-            await api(`/forum/topics/${topico.id}/replies`, {
+            const resposta = await api(`/forum/topics/${topico.id}/replies`, {
                 method: 'POST', headers: aut(contas.get(respondeu).accessToken),
                 body: { body: texto },
+            });
+
+            primeiraResposta ??= resposta;
+        }
+
+        /*
+         * O primeiro tópico fica resolvido e os outros não.
+         *
+         * Um fórum onde está tudo resolvido mostra tanto como um onde
+         * não está nada: o que se quer ver nas capturas é a diferença
+         * entre as perguntas que alguém respondeu e as que estão à
+         * espera de quem saiba.
+         */
+        if (topico.id === primeiro.id && primeiraResposta !== null) {
+            await api(`/forum/replies/${primeiraResposta.id}/accept`, {
+                method: 'POST', headers: aut(contas.get(quem).accessToken),
             });
         }
     }

@@ -69,6 +69,7 @@ export class ForumRepository {
                 title: true,
                 body: true,
                 locked_at: true,
+                accepted_reply_id: true,
                 created_at: true,
                 updated_at: true,
                 author: AUTOR,
@@ -99,6 +100,7 @@ export class ForumRepository {
                 body: true,
                 authorId: true,
                 locked_at: true,
+                accepted_reply_id: true,
                 created_at: true,
                 author: AUTOR,
                 replies: {
@@ -182,6 +184,88 @@ export class ForumRepository {
         });
     }
 
+    /** A resposta, com o tópico a que pertence e quem o abriu. */
+    findReplyWithTopic(replyId: string) {
+        return this.database.forumReply.findFirst({
+            where: { id: replyId, is_deleted: false },
+            select: {
+                id: true,
+                authorId: true,
+                topicId: true,
+                topic: {
+                    select: {
+                        id: true,
+                        authorId: true,
+                        is_deleted: true,
+                        accepted_reply_id: true,
+                    },
+                },
+            },
+        });
+    }
+
+    /**
+     * Marca uma resposta como a que resolveu, e avisa quem a escreveu.
+     *
+     * O apontador está no tópico, por isso marcar outra desmarca a
+     * anterior sem ninguém ter de o fazer: não há um instante em que
+     * duas estejam aceites.
+     *
+     * O aviso nasce na mesma transação, como todos os outros. Quem
+     * aceita a sua própria resposta não se avisa a si mesmo, e uma
+     * resposta de uma conta que já saiu não avisa ninguém.
+     */
+    acceptReply(input: { topicId: string; replyId: string; actorId: string }) {
+        return this.database.$transaction(async (tx) => {
+            await tx.forumTopic.update({
+                where: { id: input.topicId },
+                data: {
+                    accepted_reply_id: input.replyId,
+                    updated_by: input.actorId,
+                    version: { increment: 1 },
+                },
+                select: { id: true },
+            });
+
+            const resposta = await tx.forumReply.findFirstOrThrow({
+                where: { id: input.replyId },
+                select: { authorId: true },
+            });
+
+            if (
+                resposta.authorId !== null
+                && resposta.authorId !== input.actorId
+            ) {
+                await NotificationRepository.criar(tx, {
+                    userId: resposta.authorId,
+                    kind: 'forum_accepted',
+                    actorId: input.actorId,
+                    replyId: input.replyId,
+                });
+            }
+        });
+    }
+
+    /**
+     * Desmarca.
+     *
+     * Sem aviso nenhum: dizer a alguém que a resposta dele deixou de ser
+     * a escolhida é uma má notícia que ninguém pediu para receber, e
+     * quem perguntou tem o direito de mudar de ideias sem que isso seja
+     * um acontecimento.
+     */
+    clearAcceptedReply(topicId: string, actorId: string) {
+        return this.database.forumTopic.update({
+            where: { id: topicId },
+            data: {
+                accepted_reply_id: null,
+                updated_by: actorId,
+                version: { increment: 1 },
+            },
+            select: { id: true },
+        });
+    }
+
     /**
      * Retira um tópico.
      *
@@ -253,6 +337,20 @@ export class ForumRepository {
             });
 
             await this.fecharDenuncias(tx, { kind: 'reply', id: replyId }, actorId);
+
+            /*
+             * E deixa de ser a resposta aceite, se era.
+             *
+             * O `ON DELETE SET NULL` da base só trata do apagar a sério,
+             * e aqui o apagar é brando: a linha fica, com `is_deleted`.
+             * Sem isto, o tópico continuava a apontar para uma resposta
+             * retirada — e o ecrã mostrava uma marca de "resolvido" por
+             * cima de um buraco.
+             */
+            await tx.forumTopic.updateMany({
+                where: { accepted_reply_id: replyId },
+                data: { accepted_reply_id: null, updated_by: actorId },
+            });
 
             return resposta;
         });

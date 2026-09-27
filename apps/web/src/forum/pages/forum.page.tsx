@@ -222,6 +222,17 @@ export const ForumPage = () => {
                                         {topico.author?.username
                                             ?? t.forum.contaApagada}
                                     </span>
+                                    {/*
+                                      Distingue as perguntas que alguém
+                                      resolveu das que estão à espera de
+                                      quem saiba — que é a razão de uma
+                                      lista de perguntas se ler.
+                                    */}
+                                    {topico.isAnswered ? (
+                                        <span className="pill resolvida">
+                                            {t.forum.resolvida}
+                                        </span>
+                                    ) : null}
                                     <span className="topico-respostas">
                                         {topico.replyCount}
                                     </span>

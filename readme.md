@@ -62,7 +62,9 @@ da base de dados até um ecrã; `🚧` está a meio; `○` ainda não tem códig
   lá está continuar a servir quem chega de uma pesquisa
 - ✔ Denunciar, e uma fila que quem modera trabalha do mais antigo para o
   mais recente
-- ○ Categorias e resposta aceite
+- ✔ Resposta aceite — quem perguntou diz qual resolveu, ela passa a vir
+  em primeiro lugar, e quem a escreveu fica a saber
+- ○ Categorias
 
 ### 📰 O que se passa no jogo
 - ✔ Um bloco de notícias na página de entrada, alimentado por RSS ou Atom
@@ -833,6 +835,24 @@ Se viesse no corpo, uma chave podia reportar pelo servidor de outra
 pessoa.
 
 ### O fórum
+
+**A resposta aceite é de quem perguntou, e só.** Nem de quem modera: a
+resposta que serviu é um facto de quem tinha o problema, e um moderador
+a decidi-lo estaria a dizer por ele o que o resolveu. Um tópico fechado
+continua a poder ser marcado — fechar impede respostas novas, e dizer
+qual delas serviu é exatamente o que se quer fazer a seguir.
+
+O apontador está **no tópico** e não na resposta, e isso é a diferença
+entre uma regra que a base garante e uma que o código tem de lembrar-se
+de verificar: marcar outra move o apontador, e não há estado em que duas
+estejam aceites. O que a base não garante é o caso do apagar brando —
+retirar a resposta aceite limpa a marca, senão o ecrã punha "resolvido"
+por cima de um buraco —, e isso está no código com a razão ao lado.
+
+| Rota | Quem pode |
+|---|---|
+| `POST /api/v1/forum/replies/:replyId/accept` | quem fez a pergunta |
+| `DELETE /api/v1/forum/replies/:replyId/accept` | quem fez a pergunta |
 
 **Procurar é `contains`, e não um índice de texto.** É o mesmo mecanismo
 do diretório de crews e do de servidores — uma plataforma com três
