@@ -37,6 +37,22 @@ const envSchema = z.object({
 
     DATABASE_URL: z.string().min(1),
 
+    /**
+     * Por onde correm as migrações, quando não é por onde corre a API.
+     *
+     * Um Postgres gerido dá dois endereços: um através de um pool de
+     * ligações, que é o que a API usa, e um directo. As migrações
+     * precisam do directo — correm num *advisory lock* e em sessões
+     * longas, e um pool em modo de transação não garante nem uma coisa
+     * nem outra.
+     *
+     * A API não a lê: quem a lê é o `prisma.config.ts`. Fica declarada
+     * aqui na mesma, pela mesma razão que o `NEWS_FEED_URL` — é uma
+     * variável da plataforma, e o `.env.example` é a lista de tudo o
+     * que ela precisa.
+     */
+    DIRECT_DATABASE_URL: z.string().min(1).optional(),
+
     JWT_ACCESS_SECRET: z.string().min(64),
     JWT_REFRESH_SECRET: z.string().min(64),
 
