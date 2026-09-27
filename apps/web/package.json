@@ -10,7 +10,8 @@
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "varrer": "node scripts/varrer.mjs"
+    "varrer": "node scripts/varrer.mjs",
+    "retratar": "node scripts/retratar.mjs"
   },
   "engines": {
     "node": ">=24.0.0",

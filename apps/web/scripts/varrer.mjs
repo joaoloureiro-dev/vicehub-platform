@@ -63,6 +63,10 @@ const abrirPlaywright = async () => {
 /**
  * Os ecrãs, e o que é preciso ter na base de dados para cada um.
  *
+ * Exportada porque tem dois leitores: esta varredura, que os mede, e o
+ * `retratar.mjs`, que os fotografa. Uma segunda lista era a garantia de
+ * que um ecrã novo entrava numa e não na outra.
+ *
  * Escritos à mão, como os endereços dos alvos de denúncia: um ecrã novo
  * sem entrada aqui é um ecrã que ninguém volta a olhar, e há um teste
  * que falha quando as rotas da aplicação e esta lista deixam de bater
@@ -121,16 +125,7 @@ export const DE_FORA = {
 
 const PASSWORD = 'Sup3rS3cret!Pass';
 
-/**
- * Põe na base o que os ecrãs precisam de ter, e devolve os endereços.
- *
- * Exportado porque não serve só esta varredura: um programa que tire
- * fotografias aos ecrãs precisa exactamente do mesmo estado, e a
- * alternativa era ter estas cento e tantas linhas escritas duas vezes —
- * com a segunda a ficar para trás na primeira vez que um ecrã passasse a
- * precisar de outra coisa.
- */
-export const semear = async (base) => {
+const semear = async (base) => {
     const marca = Date.now().toString().slice(-7);
 
     const api = async (caminho, opcoes = {}) => {
@@ -242,10 +237,6 @@ export const semear = async (base) => {
         marca,
         email: `vr${marca}@vicehub.test`,
         username: `vr${marca}`,
-        /* Vai na semente, e não numa constante exportada: quem semeia
-         * precisa de entrar com a conta que acabou de criar, e a senha é
-         * parte de a ter criado. */
-        password: PASSWORD,
         crewId: crew.id,
         serverId: servidor.id,
         eventoId: evento.id,
