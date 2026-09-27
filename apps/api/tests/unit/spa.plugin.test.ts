@@ -38,6 +38,8 @@ beforeAll(async () => {
 
 afterEach(() => {
     delete process.env['WEB_DIST_PATH'];
+    delete process.env['TURNSTILE_SITE_KEY'];
+    delete process.env['TURNSTILE_SECRET_KEY'];
     vi.resetModules();
 });
 
@@ -45,13 +47,22 @@ afterEach(() => {
  * O plugin lê a configuração ao ser carregado, por isso cada cenário
  * volta a importar os módulos com o ambiente que quer exercitar.
  */
-const app = async (raiz?: string) => {
+const app = async (raiz?: string, comCaptcha = false) => {
     vi.resetModules();
 
     if (raiz === undefined) {
         delete process.env['WEB_DIST_PATH'];
     } else {
         process.env['WEB_DIST_PATH'] = raiz;
+    }
+
+    /* As duas chaves andam juntas: uma só e o arranque recusa. */
+    if (comCaptcha) {
+        process.env['TURNSTILE_SITE_KEY'] = '0x0000000000000000000000';
+        process.env['TURNSTILE_SECRET_KEY'] = '0x00000000000000000000000000000000';
+    } else {
+        delete process.env['TURNSTILE_SITE_KEY'];
+        delete process.env['TURNSTILE_SECRET_KEY'];
     }
 
     const [{ default: spaPlugin }, { default: securityPlugin }] =
@@ -319,6 +330,76 @@ describe('a política de conteúdo', () => {
          */
         expect(politica).not.toContain("'unsafe-inline'");
         expect(politica).not.toContain("'unsafe-eval'");
+
+        await servidor.close();
+    });
+
+    /**
+     * **O ViceHub não aloja imagens: guarda o endereço que lhe deram.**
+     * É o que a política de privacidade diz a quem a lê, e é o que um
+     * avatar, uma capa de crew e a fotografia de um anúncio são —
+     * endereços escritos por pessoas, sem lista que os cubra.
+     *
+     * Estava em `'self' data:`, o que bloqueava todas essas imagens num
+     * deploy a sério. Em desenvolvimento a política é a mesma; o que
+     * faltava era alguém pôr um endereço de fora e reparar.
+     */
+    it('deixa ver imagens de onde quer que a pessoa as tenha posto', async () => {
+        const servidor = await app(dist);
+
+        const politica = politicaDe(
+            await servidor.inject({ method: 'GET', url: '/' }),
+        );
+
+        expect(politica).toMatch(/img-src[^;]*https:/u);
+
+        /**
+         * Mas não em `http:`: conteúdo misto numa página cifrada é
+         * bloqueado na mesma pelo browser, e faz desaparecer o cadeado.
+         */
+        expect(politica).not.toMatch(/img-src[^;]*http:[^/]/u);
+
+        await servidor.close();
+    });
+
+    /**
+     * O CAPTCHA é um script de terceiros e entra na política **só
+     * quando está configurado**. Faltava, e o efeito só aparecia em
+     * produção com ele ligado: o browser bloqueava o `api.js`, o widget
+     * nunca desenhava, e ninguém entrava nem se registava.
+     */
+    it('deixa carregar o CAPTCHA quando ele está configurado', async () => {
+        const servidor = await app(dist, true);
+
+        const politica = politicaDe(
+            await servidor.inject({ method: 'GET', url: '/' }),
+        );
+
+        expect(politica).toMatch(
+            /script-src[^;]*https:\/\/challenges\.cloudflare\.com/u,
+        );
+
+        /** E a moldura onde o desafio acontece. */
+        expect(politica).toMatch(
+            /frame-src[^;]*https:\/\/challenges\.cloudflare\.com/u,
+        );
+
+        await servidor.close();
+    });
+
+    /**
+     * E sem ele configurado não entra nada de fora — que é o que
+     * mantém verdadeira a promessa da página de privacidade em
+     * qualquer instalação que não o ligue.
+     */
+    it('e não o deixa entrar quando não está', async () => {
+        const servidor = await app(dist);
+
+        const politica = politicaDe(
+            await servidor.inject({ method: 'GET', url: '/' }),
+        );
+
+        expect(politica).not.toContain('challenges.cloudflare.com');
 
         await servidor.close();
     });

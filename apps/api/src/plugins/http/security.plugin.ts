@@ -28,9 +28,30 @@ const politicaDeConteudo = (): Record<string, string[]> => {
         };
     }
 
+    /**
+     * O CAPTCHA é um script de terceiros, e só entra na política quando
+     * está configurado.
+     *
+     * Sem as chaves do Turnstile não há widget nenhum, e a política
+     * continua a recusar scripts de fora — que é o que mantém
+     * verdadeira a promessa da página de privacidade em qualquer
+     * instalação que não o ligue. Com elas, tem de entrar em dois
+     * sítios: o `script-src` carrega o `api.js`, e o `frame-src` deixa
+     * abrir a moldura onde o desafio acontece.
+     *
+     * Estava a faltar, e o efeito só aparecia em produção com o CAPTCHA
+     * ligado: o browser bloqueava o script, o widget nunca desenhava, e
+     * ninguém conseguia entrar nem registar-se. Nenhum teste podia dar
+     * por isso enquanto a política não distinguisse os dois casos.
+     */
+    const CAPTCHA = 'https://challenges.cloudflare.com';
+
+    const comCaptcha = env.TURNSTILE_SITE_KEY !== undefined;
+
     return {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: comCaptcha ? ["'self'", CAPTCHA] : ["'self'"],
+        ...(comCaptcha ? { frameSrc: [CAPTCHA] } : {}),
 
         /**
          * O tipo de letra vem do Google Fonts: a folha de estilo dele, e
@@ -39,8 +60,24 @@ const politicaDeConteudo = (): Record<string, string[]> => {
         styleSrc: ["'self'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
 
-        /** Os avatares e as capas ainda são `data:` gerados no cliente. */
-        imgSrc: ["'self'", 'data:'],
+        /**
+         * As imagens vêm de qualquer sítio, e é assim que o produto
+         * está desenhado: **o ViceHub não aloja imagens — guarda o
+         * endereço que lhe deram**, e é isso que a política de
+         * privacidade diz a quem a lê. Um avatar, uma capa de crew, a
+         * fotografia de um anúncio: todos são endereços escritos por
+         * pessoas, e não há lista que os cubra.
+         *
+         * Estava em `'self' data:`, o que bloqueava todas essas imagens
+         * num deploy a sério. Só se via em produção: em desenvolvimento
+         * a política é a mesma, mas ninguém tinha posto um endereço de
+         * fora para reparar.
+         *
+         * `https:` e não `*`: um endereço em `http:` numa página
+         * cifrada é conteúdo misto, que o browser bloqueia de qualquer
+         * maneira e que faria o cadeado desaparecer.
+         */
+        imgSrc: ["'self'", 'data:', 'https:'],
 
         /** A API é a própria origem — é esse o objetivo de tudo isto. */
         connectSrc: ["'self'"],
