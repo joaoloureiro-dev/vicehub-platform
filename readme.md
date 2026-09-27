@@ -1333,34 +1333,61 @@ conformidade.
 
 ## 📦 Current Status
 
-🚧 Em desenvolvimento, ainda sem ninguém a usar  
+🚧 Em desenvolvimento, ainda sem ninguém a usar
+
+### O que está feito
+
 ✔ Base de dados, autenticação e autorização: sessões validadas na base de
 dados, refresh token com rotação e deteção de reutilização, cookie HttpOnly,
 terminar todas as sessões e permissões por papel  
 ✔ Recuperação de password e confirmação de email  
 ✔ Perfis, crews, servidores, eventos e tesouraria, com ecrã para cada um  
 ✔ Entrar com Discord e com Google  
-✔ Levar os dados embora e apagar a conta, com o saldo a perder-se  
+✔ Levar os dados embora e apagar a conta, com o saldo a perder-se — a
+exportação leva tudo o que a plataforma tem, anúncios e avisos incluídos  
 ✔ Cobrança pelo Stripe: checkout, webhooks, portal para cancelar o plano e
 entitlements que o servidor calcula sozinho  
 ✔ Interface em quatro idiomas, com o inglês por omissão, sem misturar dois
 no mesmo ecrã  
 ✔ Fórum com moderação inteira: retirar, fechar a conversa, denunciar, e uma
 fila por onde as denúncias chegam a alguém  
+✔ **Mercado de cada servidor**: catálogo com categorias, anúncio com imagem e
+preço em moeda de jogo, conversa privada entre quem compra e quem vende,
+avaliação depois da venda e a nota do vendedor ao lado do nome  
+✔ **Uma fila de moderação só** para as cinco espécies de coisa que se
+denunciam, com o historial do que já foi decidido sobre cada pessoa — a contar
+publicações decididas, e não denúncias recebidas  
+✔ **Avisos**: a plataforma diz a quem lhe falaram, com a contagem a acertar-se
+sozinha enquanto a pessoa navega  
+✔ **Histórico de actividade dos servidores**, hora a hora, com a média dos
+sete dias e a tira do dia no perfil de cada um  
 ✔ Confirmação anti-robô à entrada — no login, no registo e no pedido de
 recuperação — e desligada por omissão, sem script de terceiros nenhum  
 ✔ Caminho de produção verificado: a API serve a interface na sua própria
 origem, tem sonda de arranque separada da de prontidão, e recusa arrancar com
 a configuração que só faz mal em produção  
+✔ Uma varredura que abre o produto inteiro num browser — trinta ecrãs, quatro
+idiomas, duas larguras — e mede o que os testes não podem medir: `npm run
+varrer --workspace @vicehub/web`
 
-Falta para abrir ao público:
+### O que falta para abrir ao público
 
-🔑 Configurar o Stripe — os quatro preços e o portal do cliente — e o domínio,
-o SMTP e o deploy  
-⚖️ Identificação legal do operador, para o aviso de rascunho sair dos termos  
-🛒 O marketplace, que não tem código nenhum  
-📊 Histórico dos servidores: o heartbeat sobrescreve o anterior, por isso não
-há por onde ordenar um leaderboard nem desenhar uma evolução  
+🚀 **O deploy.** Isto nunca correu fora de uma máquina de desenvolvimento. Não
+há imagem, não há máquina, não há cópias de segurança. Os passos e as
+armadilhas estão escritos em [Pôr em produção](#pôr-em-produção); fazê-los é
+que não  
+🔑 **As chaves e o domínio**: os quatro preços do Stripe e o portal do cliente,
+o SMTP, o Turnstile, as credenciais do Discord e da Google. Nenhuma delas pode
+passar por uma conversa — vão do painel de quem as emite para o `.env` do
+servidor e mais lado nenhum, porque este repositório é público  
+🔑 **`npm run db:seed` na base de dados do deploy.** Sem ele o registo responde
+500, e as duas permissões do mercado não existem  
+⚖️ **A identificação legal de quem opera** — `apps/web/src/legal/operator.ts`
+está vazio nos sete campos, e enquanto estiver as páginas de termos e de
+privacidade dizem, em cima e com todas as letras, que não são definitivas  
+💶 **A metade do mercado com dinheiro a sério**, que continua sem código
+nenhum e de propósito: o que está feito move moeda de jogo, e a outra metade é
+uma decisão de produto antes de ser uma de engenharia
 
 ---
 
