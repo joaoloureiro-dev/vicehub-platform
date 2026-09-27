@@ -20,7 +20,7 @@ import { env } from '../../config/env.js';
  * também não o leva — é por isso que nenhum componente escreve no
  * atributo `style`.
  */
-const politicaDeConteudo = (): Record<string, string[]> => {
+export const politicaDeConteudo = (): Record<string, string[]> => {
     if (env.WEB_DIST_PATH === undefined) {
         return {
             defaultSrc: ["'none'"],

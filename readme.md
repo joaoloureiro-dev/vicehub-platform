@@ -1196,6 +1196,66 @@ npm start                        # node apps/api/dist/server.js
 base de jogador é atribuído a quem se regista, e não pode ser atribuído se não
 existir. É o primeiro erro que aparece, e não se lê como configuração em falta.
 
+#### Neon, Railway e Vercel
+
+A repartição escolhida: a base de dados no **Neon**, a API no **Railway**, a
+interface no **Vercel**. O repositório traz a configuração dos dois últimos —
+`railway.json` e `vercel.json` — e o que falta é o que não pode estar aqui: as
+chaves, e os domínios.
+
+**Os domínios não são um detalhe.** O refresh token vive num cookie
+`SameSite=strict`: ele segue num pedido de `vicehub.com` para
+`api.vicehub.com`, porque é o mesmo site registável, e **não segue** de
+`vicehub.vercel.app` para `vicehub.up.railway.app`, porque não é. Com os nomes
+por omissão dos dois serviços, o login funciona, o refresh devolve 401 e a
+sessão morre a cada F5 — sem nada no ecrã a explicar porquê. Os domínios
+próprios não são acabamento: são o que faz a sessão existir.
+
+A ordem, uma vez:
+
+1. **Neon.** Criar o projeto e guardar os dois endereços que ele dá — o do pool
+   de ligações e o directo. `DATABASE_URL` leva o do pool, que é o que uma API
+   deve usar; `DIRECT_DATABASE_URL` leva o directo, que é por onde as migrações
+   têm de correr. As migrações correm num *advisory lock* e em sessões longas, e
+   um pool em modo de transação não garante nem uma coisa nem outra: a migração
+   ou falha, ou fica pendurada, e é sempre a meio de um deploy.
+
+2. **Railway**, apontado a este repositório. O `railway.json` já diz o resto:
+   compila, corre `db:migrate:deploy` antes de trocar de versão, arranca, e a
+   sonda de prontidão é `/api/v1/health/ready`. As variáveis a preencher no
+   painel são as do `.env.example` — e **`WEB_DIST_PATH` fica por definir**: aqui
+   quem serve a interface é o Vercel.
+
+3. **`npm run db:seed`, uma vez, contra a base nova.** Sem ele o registo responde
+   500: o cargo base de jogador é atribuído a quem se regista e não pode ser
+   atribuído se não existir. É o primeiro erro que aparece e não se lê como
+   configuração em falta.
+
+4. **Vercel**, apontado ao mesmo repositório, com a raiz do projeto na raiz do
+   repositório — o `vercel.json` já traz o comando de compilação, a pasta de
+   saída e a reescrita que faz um F5 em `/crews/alguma-coisa` devolver a página
+   em vez de 404.
+
+5. **Os domínios**, e as duas linhas que têm de os nomear: `connect-src` no
+   `vercel.json`, para o browser poder falar com a API, e `CORS_ALLOWED_ORIGINS`
+   no Railway, para a API aceitar o browser. Um teste (`mesma-politica.test.ts`)
+   compara as duas políticas de conteúdo directiva a directiva — a que a API
+   serve e a que o Vercel serve — e falha quando divergem em tudo o resto.
+
+6. **O Stripe**, por fim: os quatro preços, o portal do cliente, e o webhook a
+   apontar para `https://api.vicehub.com/api/v1/billing/webhook`. O segredo do
+   webhook vai para o Railway e para lado nenhum mais.
+
+**A política de conteúdo passa a estar em dois sítios.** Servida pela API, sai
+do `helmet`; servida pelo Vercel, é uma linha de configuração, porque um
+serviço de estáticos não corre código. As duas têm de dizer o mesmo, e o teste
+acima é o que garante que continuam a dizer. A diferença legítima é uma só: o
+`connect-src`, que na API é `'self'` e no Vercel tem de nomear o domínio dela.
+
+**As notícias correm à parte.** `npm run news:fetch` num cron — do Railway ou
+do GitHub — e não dentro da API: a página de entrada não deve ficar de pé ou no
+chão conforme o dia que o site de outra pessoa esteja a ter.
+
 #### A aplicação e a API têm de estar no mesmo domínio
 
 Não é preferência de arrumação. O refresh token vive num cookie
@@ -1242,8 +1302,10 @@ domínio a sério na mesma, porque é ele que aparece nos pedidos com `Origin`.
 
 **Sem `SMTP_URL` os emails ficam no log.** Em desenvolvimento serve; em
 produção, um link de recuperação escrito no log é um link ao alcance de quem lê
-logs, e ninguém recebe nada. A API não recusa arrancar por causa disto — avisa —
-porque há um deploy legítimo sem email: o primeiro, antes de haver domínio.
+logs, e ninguém recebe nada. Com `NODE_ENV=production` **a API recusa arrancar
+sem ela**, pela mesma razão que recusa as outras duas: um aviso no arranque
+perde-se entre as outras linhas, e quando se der por ela já há contas
+dependentes de emails que nunca saíram.
 
 #### O encerramento avisa antes de fechar a porta
 
