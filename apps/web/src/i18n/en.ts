@@ -891,6 +891,11 @@ export const en = (p: Tools) => ({
     },
 
     forum: {
+        procurar: 'Search the forum',
+        procurarLabel: 'Search the forum',
+        semResultados: 'Nothing here matches that. Try a different word, or ask it yourself.',
+        limparProcura: 'Clear the search',
+        aProcurarPor: (p: string) => `Questions matching “${p}”`,
 
         titulo: 'Forum',
 

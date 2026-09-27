@@ -855,6 +855,11 @@ export const fr = (p: Tools): Messages => ({
     },
 
     forum: {
+        procurar: 'Chercher dans le forum',
+        procurarLabel: 'Chercher dans le forum',
+        semResultados: 'Rien ici ne correspond. Essaie un autre mot, ou pose la question toi-même.',
+        limparProcura: 'Effacer la recherche',
+        aProcurarPor: (p: string) => `Questions contenant « ${p} »`,
 
         titulo: 'Forum',
 

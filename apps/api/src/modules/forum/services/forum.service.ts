@@ -31,10 +31,13 @@ export interface PaginaDeTopicos {
 export class ForumService {
     constructor(private readonly forumRepository: ForumRepository) { }
 
-    async listTopics(pagina: number): Promise<PaginaDeTopicos> {
+    async listTopics(
+        pagina: number,
+        procura?: string,
+    ): Promise<PaginaDeTopicos> {
         const [linhas, total] = await Promise.all([
-            this.forumRepository.listTopics(pagina),
-            this.forumRepository.countTopics(),
+            this.forumRepository.listTopics(pagina, procura),
+            this.forumRepository.countTopics(procura),
         ]);
 
         return {

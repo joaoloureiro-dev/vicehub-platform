@@ -53,13 +53,16 @@ da base de dados até um ecrã; `🚧` está a meio; `○` ainda não tem códig
 
 ### 💬 Fórum
 - ✔ Perguntar e responder — ler não precisa de conta
+- ✔ Procurar, em título e corpo, com o termo no endereço para se poder
+  partilhar — a lista vazia de uma procura diz que não encontrou, e não
+  que o fórum está vazio
 - ✔ Apagar o que se escreveu; quem modera pode apagar qualquer coisa
 - ✔ O texto sai com a conta de quem o escreveu, e a conversa fica de pé
 - ✔ Fechar uma pergunta a novas respostas — a ferramenta branda, para o que
   lá está continuar a servir quem chega de uma pesquisa
 - ✔ Denunciar, e uma fila que quem modera trabalha do mais antigo para o
   mais recente
-- ○ Categorias, pesquisa, resposta aceite
+- ○ Categorias e resposta aceite
 
 ### 📰 O que se passa no jogo
 - ✔ Um bloco de notícias na página de entrada, alimentado por RSS ou Atom
@@ -830,6 +833,18 @@ Se viesse no corpo, uma chave podia reportar pelo servidor de outra
 pessoa.
 
 ### O fórum
+
+**Procurar é `contains`, e não um índice de texto.** É o mesmo mecanismo
+do diretório de crews e do de servidores — uma plataforma com três
+caixas de procura não deve ter três maneiras de procurar —, e a esta
+escala faz o que é preciso: quem escreve "corrida" encontra "corridas",
+que um índice sem radicalizador não encontrava.
+
+O que não faz, e é para saber antes de fazer falta: não ordena por
+relevância nenhuma, e casa no meio das palavras, por isso "arte" também
+aparece em "cartas". No dia em que o fórum tiver milhares de tópicos,
+isto passa a ser um índice a sério — com a língua de cada tópico
+guardada ao lado dele, para o radicalizador saber o que está a ler.
 
 | Rota (prefixo `/api/v1/forum`) | Quem pode |
 |---|---|

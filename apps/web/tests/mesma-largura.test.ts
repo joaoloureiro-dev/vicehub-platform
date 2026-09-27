@@ -50,6 +50,14 @@ const LISTAS = [
     'src/market/pages/conversas.page.tsx',
     'src/market/pages/conversa.page.tsx',
     'src/forum/pages/topic.page.tsx',
+    /*
+     * O índice do fórum entrou tarde, e entrou porque se foi medir: era
+     * uma lista de 623 pixéis no meio de um painel de 900, com o
+     * cabeçalho a 440 e a caixa de procura a 382 — quatro larguras na
+     * mesma página, todas centradas em sítios diferentes. Nada
+     * transbordava, por isso a varredura não dava por ela.
+     */
+    'src/forum/pages/forum.page.tsx',
 ];
 
 describe('as páginas que são listas', () => {

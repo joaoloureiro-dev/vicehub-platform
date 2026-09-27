@@ -42,8 +42,17 @@ export interface PaginaDeTopicos {
     total: number;
 }
 
-export const listTopics = (page = 1): Promise<PaginaDeTopicos> =>
-    api<PaginaDeTopicos>(`/forum/topics?page=${page}`);
+export const listTopics = (
+    page = 1,
+    procura = '',
+): Promise<PaginaDeTopicos> => {
+    const termo = procura.trim();
+
+    return api<PaginaDeTopicos>(
+        `/forum/topics?page=${page}`
+        + (termo === '' ? '' : `&q=${encodeURIComponent(termo)}`),
+    );
+};
 
 export const getTopic = (topicId: string): Promise<ForumTopic> =>
     api<ForumTopic>(`/forum/topics/${topicId}`);

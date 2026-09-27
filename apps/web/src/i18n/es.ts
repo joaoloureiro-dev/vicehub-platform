@@ -844,6 +844,11 @@ export const es = (p: Tools): Messages => ({
     },
 
     forum: {
+        procurar: 'Buscar en el foro',
+        procurarLabel: 'Buscar en el foro',
+        semResultados: 'Aquí no hay nada con eso. Prueba otra palabra, o pregúntalo tú.',
+        limparProcura: 'Limpiar la búsqueda',
+        aProcurarPor: (p: string) => `Preguntas con «${p}»`,
 
         titulo: 'Foro',
 

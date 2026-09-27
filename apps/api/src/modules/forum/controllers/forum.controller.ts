@@ -59,7 +59,10 @@ export class ForumController {
         request: FastifyRequest<{ Querystring: ListTopicsQueryDto }>,
         reply: FastifyReply,
     ): Promise<void> {
-        const pagina = await this.forumService.listTopics(request.query.page);
+        const pagina = await this.forumService.listTopics(
+            request.query.page,
+            request.query.q,
+        );
 
         reply.send({
             topics: pagina.topicos.map((topico) => ({
