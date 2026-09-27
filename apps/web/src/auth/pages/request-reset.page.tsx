@@ -7,7 +7,7 @@ import { Alert } from '../components/alert.js';
 import { Captcha } from '../components/captcha.js';
 import { Field } from '../components/field.js';
 import { requestPasswordReset } from '../auth.api.js';
-import { useT } from '../../i18n/i18n.js';
+import { useIdioma, useT } from '../../i18n/i18n.js';
 
 /**
  * Pedir o link de recuperação.
@@ -22,6 +22,8 @@ import { useT } from '../../i18n/i18n.js';
  */
 export const RequestResetPage = () => {
     const t = useT();
+    /* O email sai na língua do ecrã que o pediu. */
+    const { idioma } = useIdioma();
     const [email, setEmail] = useState('');
     const [enviado, setEnviado] = useState(false);
     const [aEnviar, setAEnviar] = useState(false);
@@ -43,7 +45,7 @@ export const RequestResetPage = () => {
         setAEnviar(true);
 
         try {
-            await requestPasswordReset(email, cartao ?? undefined);
+            await requestPasswordReset(email, idioma, cartao ?? undefined);
         } catch (falha) {
             /**
              * O CAPTCHA é a única falha que se mostra aqui.

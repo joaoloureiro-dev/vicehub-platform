@@ -6,10 +6,12 @@ import type {
     AuthenticatedUserDto,
     LoginDto,
     RegisterDto,
+    RequestEmailVerificationDto,
     RequestPasswordResetDto,
     ResetPasswordDto,
     VerifyEmailDto,
 } from '../dto/auth.dto.js';
+import { idiomaOuOmissao } from '../../mail/idiomas.js';
 import { AuthError } from '../errors/auth.errors.js';
 import { requireAuthContext } from '../http/auth-context.guard.js';
 import {
@@ -180,6 +182,7 @@ export class AuthController {
         await this.accountRecoveryService.requestPasswordReset(
             request.body.email,
             this.contextOf(request),
+            idiomaOuOmissao(request.body.locale),
         );
 
         reply.code(202).send({
@@ -219,7 +222,7 @@ export class AuthController {
      * POST /auth/email-verification
      */
     async requestEmailVerification(
-        request: FastifyRequest,
+        request: FastifyRequest<{ Body: RequestEmailVerificationDto }>,
         reply: FastifyReply,
     ): Promise<void> {
         const { user } = requireAuthContext(request);
@@ -227,6 +230,7 @@ export class AuthController {
         await this.accountRecoveryService.requestEmailVerification(
             user.id,
             this.contextOf(request),
+            idiomaOuOmissao(request.body?.locale),
         );
 
         reply.code(202).send({ message: 'Email de confirmação enviado.' });

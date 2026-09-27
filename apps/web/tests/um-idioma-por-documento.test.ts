@@ -87,38 +87,65 @@ const EM_PORTUGUES = [
     'docs/precos.md',
 ];
 
+/**
+ * E os que são ingleses, pela mesma razão ao contrário.
+ *
+ * `docs/press/README.md` explica o que ali está, e o que ali está é
+ * texto para publicar. O recurso do servidor de jogo é instalado por
+ * donos de servidores — gente de fora, que administra um produto em
+ * inglês —, e por isso o que leem e o que a consola lhes escreve são
+ * ingleses também. Os comentários do Lua continuam em português: são
+ * código, e não produto.
+ */
+const EM_INGLES = ['docs/press/README.md', 'resources/vicehub/readme.md'];
+
+/**
+ * As secções de um documento escritas no idioma errado.
+ *
+ * Um limiar, e não «zero do outro idioma»: uma secção portuguesa pode
+ * citar o nome de um ecrã ou uma frase do produto sem deixar de ser
+ * portuguesa. O que isto apanha é uma secção inteira escrita ao
+ * contrário.
+ *
+ * E apanha **prosa**, que é onde a coisa acontece: alguém senta-se a
+ * escrever um parágrafo e escreve-o no idioma em que estava a pensar.
+ * Uma lista de três palavras — «Amigos e grafo social» — não tem
+ * palavras de ligação nenhumas e é indistinguível da inglesa; para essas
+ * não há medida, e também não são elas que fazem um documento mudar de
+ * idioma a meio. Contra o readme como estava, isto acusava seis das
+ * secções.
+ */
+const noIdiomaErrado = (
+    texto: string,
+    esperado: 'pt' | 'en',
+): string[] =>
+    seccoes(texto)
+        .map(({ titulo, corpo }) => {
+            const limpo = prosa(corpo);
+            const pt = limpo.match(PORTUGUES)?.length ?? 0;
+            const en = limpo.match(INGLES)?.length ?? 0;
+
+            return { titulo, pt, en };
+        })
+        .filter(({ pt, en }) =>
+            pt + en >= 4 && (esperado === 'pt' ? en > pt : pt > en))
+        .map(({ titulo, pt, en }) => `${titulo} (pt=${pt}, en=${en})`);
+
 describe('cada documento num idioma só', () => {
+    it.each(EM_INGLES)('%s está todo em inglês', (ficheiro) => {
+        const texto = readFileSync(path.join(RAIZ, ficheiro), 'utf8');
+
+        expect(
+            noIdiomaErrado(texto, 'en'),
+            'estas secções estão em português num documento inglês',
+        ).toEqual([]);
+    });
+
     it.each(EM_PORTUGUES)('%s está todo em português', (ficheiro) => {
         const texto = readFileSync(path.join(RAIZ, ficheiro), 'utf8');
 
-        const emIngles = seccoes(texto)
-            .map(({ titulo, corpo }) => {
-                const limpo = prosa(corpo);
-                const pt = limpo.match(PORTUGUES)?.length ?? 0;
-                const en = limpo.match(INGLES)?.length ?? 0;
-
-                return { titulo, pt, en };
-            })
-            /*
-             * Um limiar, e não «zero inglês»: uma secção portuguesa pode
-             * citar o nome de um ecrã ou uma frase do produto sem deixar
-             * de ser portuguesa. O que isto apanha é uma secção inteira
-             * escrita no outro idioma.
-             *
-             * E apanha **prosa**, que é onde a coisa acontece: alguém
-             * senta-se a escrever um parágrafo e escreve-o no idioma em
-             * que estava a pensar. Uma lista de três palavras — «Amigos e
-             * grafo social» — não tem palavras de ligação nenhumas e é
-             * indistinguível da inglesa; para essas não há medida, e
-             * também não são elas que fazem um documento mudar de idioma
-             * a meio. Contra o readme como estava, isto acusava seis das
-             * secções.
-             */
-            .filter(({ pt, en }) => pt + en >= 4 && en > pt)
-            .map(({ titulo, pt, en }) => `${titulo} (pt=${pt}, en=${en})`);
-
         expect(
-            emIngles,
+            noIdiomaErrado(texto, 'pt'),
             'estas secções estão em inglês num documento português',
         ).toEqual([]);
     });

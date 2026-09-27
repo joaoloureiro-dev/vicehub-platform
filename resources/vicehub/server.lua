@@ -61,6 +61,15 @@ end
     minuto a minuto durante dias. Repetir o aviso só quando ele muda
     mantém o log legível sem esconder o problema.
 ]]
+--[[
+    As mensagens que saem daqui vão em inglês, e os comentários ficam em
+    português.
+
+    Não é incoerência: este ficheiro é instalado por donos de servidores,
+    que são gente de fora e administram um produto que fala inglês. O que
+    aparece na consola deles é produto. O que está à volta é código, e o
+    código deste repositório comenta-se em português.
+]]
 local function avisar(mensagem)
     if ultimoErro == mensagem then
         return
@@ -72,7 +81,7 @@ end
 
 local function acertou()
     if ultimoErro ~= nil then
-        print('[ViceHub] A reportar outra vez.')
+        print('[ViceHub] Reporting again.')
     end
 
     ultimoErro = nil
@@ -107,12 +116,12 @@ local function reportar(url, chave)
                 acertou()
             elseif estado == 401 then
                 falhou(
-                    'A chave foi recusada. Confirma o vicehub_key no server.cfg — se a revogaste, cria outra no ecrã do servidor.'
+                    'Key rejected. Check vicehub_key in server.cfg — if you revoked it, create another one on your server\'s page.'
                 )
             elseif estado == 0 then
-                falhou('Não foi possível falar com o ViceHub. A tentar mais tarde.')
+                falhou('Could not reach ViceHub. Trying again later.')
             else
-                falhou(('O ViceHub respondeu %d. A tentar mais tarde.'):format(estado))
+                falhou(('ViceHub answered %d. Trying again later.'):format(estado))
             end
         end,
         'POST',
@@ -141,7 +150,7 @@ local function apresentar(url, chave)
             local ok, corpo = pcall(json.decode, texto)
 
             if ok and corpo and corpo.name then
-                print(('[ViceHub] Ligado como "%s".'):format(corpo.name))
+                print(('[ViceHub] Connected as "%s".'):format(corpo.name))
             end
         end,
         'GET',
@@ -161,7 +170,7 @@ CreateThread(function()
     ]]
     if chave == nil then
         print(
-            '[ViceHub] Sem vicehub_key no server.cfg. Cria uma chave no ecrã do teu servidor no ViceHub e põe-na lá.'
+            '[ViceHub] No vicehub_key in server.cfg. Create a key on your server\'s page on ViceHub and put it there.'
         )
         return
     end

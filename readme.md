@@ -920,6 +920,18 @@ segue por email, guardado apenas em **resumo**, de uso único e com prazo
 — e diferem no que autorizam: um abre a conta, o outro só confirma que o
 endereço é mesmo daquela pessoa.
 
+**O email sai na língua de quem o recebe.** Os dois pedidos levam um
+campo `locale` — `en`, `pt`, `es` ou `fr` —, e o email é escrito nessa
+língua. O campo é opcional: um pedido sem ele sai em inglês, que é o
+idioma em que o produto abre, e não em português.
+
+A escolha de idioma não fica guardada na conta, e é decisão: ela é deste
+browser, porque quem usa o telemóvel em francês e o portátil em inglês
+tem razão nos dois. O que vai no pedido é a língua do ecrã que o fez.
+Esta é a única coisa que a API escreve diretamente a uma pessoa — tudo o
+resto passa por um ecrã, e há um teste na web que impede as mensagens da
+API de lá chegarem.
+
 **O pedido não diz quem tem conta.** Pedir a recuperação de um endereço
 que não existe responde exatamente como um que existe. Distinguir os dois
 casos daria a qualquer pessoa uma forma de listar quem está registado
