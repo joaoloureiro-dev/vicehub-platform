@@ -29,6 +29,14 @@
  *   1. a API a correr com a base de desenvolvimento
  *   2. `npm run sondar --workspace @vicehub/api`
  *
+ * **E a API que responde tem de ser a que se acabou de compilar.** Um
+ * servidor antigo agarrado à porta faz o novo morrer a arrancar sem
+ * dizer nada, e a sonda passa a medir a versão anterior: uma bateria de
+ * mutantes contra ela deu primeiro uma falha que não existia e depois
+ * quatro passagens que também não. Se os números não baterem certo com
+ * o que se mudou, a primeira coisa a confirmar é qual é o processo que
+ * está na porta.
+ *
  * **Com os travões levantados**, como a varredura: montar duas dúzias
  * de cenários são centenas de pedidos, e a API conta-os como contaria
  * os de uma pessoa. `RATE_LIMIT_MAX=100000 FORUM_RATE_LIMIT_MAX=10000`.
@@ -465,31 +473,92 @@ await sonda('escrever numa conversa de que não se faz parte', async () => ({
     opcoes: { method: 'POST', body: { body: 'Vendo-te eu mais barato.' } },
 }), [401, 403, 404]);
 
-/*
- * Os avisos são de cada um. Não há rota para os de outra pessoa — e é
- * isso que se confirma: a caixa de B tem o que é de B, e a de A o que é
- * de A, sem nada em comum.
+console.log('\n--- o que é meu só aparece na minha lista ---');
+
+/**
+ * As rotas que respondem 200 a toda a gente.
+ *
+ * Tudo o que está acima é uma porta: o intruso pede o que não é dele e
+ * tem de levar com 403. Estas não são portas — são listas do próprio, e
+ * respondem 200 a quem quer que pergunte. O que as guarda é uma
+ * condição lá dentro da consulta, e uma condição que desapareça não dá
+ * erro nenhum: dá a lista de outra pessoa, com o mesmo 200 de sempre.
+ *
+ * É a avaria que uma sonda de permissões não vê. Por isso estas
+ * comparam **o que chega**: o que é de A não pode aparecer na resposta
+ * que B recebe.
+ *
+ * E a lista de A tem de ter alguma coisa. Duas listas vazias também não
+ * se cruzam, e uma sonda que passa por estar tudo vazio é uma sonda que
+ * não prova nada — que é a mesma regra do dono que tem de conseguir.
  */
-{
-    const deA = await api('/notifications', { headers: aut(A.token) });
-    const deB = await api('/notifications', { headers: aut(B.token) });
+const soMeu = async (nome, caminho, extrair) => {
+    const deA = await api(caminho, { headers: aut(A.token) });
+    const deB = await api(caminho, { headers: aut(B.token) });
 
-    const idsDeA = new Set((deA.items ?? deA.notifications ?? []).map((n) => n.id));
-    const cruzados = (deB.items ?? deB.notifications ?? [])
-        .filter((n) => idsDeA.has(n.id));
+    const meus = extrair(deA);
+    const dele = new Set(extrair(deB));
 
-    const passa = cruzados.length === 0;
+    const cruzados = meus.filter((x) => dele.has(x));
+
+    const prova = meus.length > 0;
+    const passa = prova && cruzados.length === 0;
 
     resultados.push({
-        nome: 'a caixa de avisos não mistura pessoas',
-        intruso: 200, dono: 200, passa, recusado: passa, permitido: true,
+        nome, intruso: 200, dono: 200, passa,
+        recusado: cruzados.length === 0, permitido: prova,
     });
 
     console.log(
-        `${passa ? '  ok  ' : 'ABERTO'} intruso=200 dono=200`
-        + ' a caixa de avisos não mistura pessoas',
+        `${passa ? '  ok  ' : prova ? 'ABERTO' : '  ?   '}`
+        + ` intruso=200 dono=200 ${nome}`
+        + (prova ? '' : ' (a lista de A está vazia: não prova nada)'),
     );
+};
+
+/* Para a caixa do que espera resposta ter o que mostrar. */
+{
+    const crew = await crewDeA();
+
+    await api(`/crews/${crew}/join`, {
+        method: 'POST', headers: aut(B.token), body: {},
+    });
 }
+
+await soMeu('quem sou eu é quem pergunta', '/users/me', (r) => [r.email]);
+
+await soMeu(
+    'a caixa de avisos não mistura pessoas',
+    '/notifications',
+    (r) => (r.notifications ?? r.items ?? []).map((n) => n.id),
+);
+
+await soMeu(
+    'o que espera resposta é o que espera por mim',
+    '/users/me/pending',
+    (r) => (r.items ?? []).map((i) => i.communityId),
+);
+
+/*
+ * Aqui o que não pode cruzar-se não é a comunidade: é a **minha
+ * ligação a ela**. A mesma crew aparece na lista de quem a lidera e na
+ * de quem lhe pediu entrada, e é assim que tem de ser — o que nunca
+ * pode aparecer na lista de B é a ligação de A, com o cargo e o estado
+ * dela.
+ */
+const ligacao = (id) => (m) => `${m[id]}:${m.role ?? '—'}:${m.status}`;
+
+await soMeu(
+    'as minhas crews são as minhas, com o meu cargo',
+    '/crews/me/memberships',
+    (r) => (r.items ?? r ?? []).map(ligacao('crewId')),
+);
+
+await soMeu(
+    'os meus servidores são os meus, com o meu cargo',
+    '/servers/me/memberships',
+    (r) => (r.items ?? r ?? []).map(ligacao('serverId')),
+);
 
 console.log(
     `\n${resultados.length} sondas`
