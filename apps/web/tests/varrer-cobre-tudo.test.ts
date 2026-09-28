@@ -96,30 +96,53 @@ describe('a varredura', () => {
     /**
      * **Um ecrã na lista com o conteúdo vazio é meio ecrã medido.**
      *
-     * A varredura semeia o que precisa de ver. Enquanto não semeou uma
-     * filiação, três ecrãs eram medidos vazios: o quadro do servidor
-     * dizia que ainda não joga lá ninguém, a lista de crews do servidor
-     * não tinha linhas, e a página da crew não dizia onde ela joga. É o
-     * mesmo problema de um ecrã fora da lista — mede-se a moldura e
-     * nunca o quadro —, e custou dezoito pixels de alvo em seis listas
-     * que ninguém tinha medido.
+     * A varredura semeia o que precisa de ver. Enquanto não semeava uma
+     * filiação, três ecrãs eram medidos vazios — o quadro do servidor,
+     * a lista de crews e a linha que diz onde a crew joga —, e a queixa
+     * que isso escondia custou dezoito pixéis de alvo em seis listas.
+     * Enquanto não semeava um evento concluído, uma divisão e uma
+     * venda, eram mais nove: as duas tesourarias, as presenças, o xp, a
+     * reputação, a carteira, as avaliações e o estado «vendido».
      *
-     * Este teste guarda a sementeira que o descobriu: sem as duas
-     * pontas — o pedido e o aceite —, não há crews a jogar em servidor
-     * nenhum.
+     * É o mesmo problema de um ecrã fora da lista: mede-se a moldura e
+     * nunca o quadro. Por isso cada coisa que a sementeira faz está
+     * aqui, com o ecrã que ficaria vazio sem ela.
      */
-    it('semeia uma filiação, ou três ecrãs medem-se vazios', () => {
+    it.each([
+        ['a filiação da crew ao servidor', /\/crews\/\$\{[\w.]+\}\/affiliation/u],
+        ['o aceite do servidor', /\/affiliations\/\$\{[\w.]+\}\/accept/u],
+        ['a entrada na crew', /\/crews\/\$\{[\w.]+\}\/join/u],
+        ['a inscrição no evento', /\/signup/u],
+        ['a confirmação da presença', /\/participants\/\$\{[\w.]+\}\/confirm/u],
+        ['o evento a fechar', /status: 'completed'/u],
+        ['o movimento de tesouraria', /\/movements/u],
+        ['a divisão por participação', /basis: 'participation'/u],
+        ['a venda do anúncio', /outcome: 'sold'/u],
+        ['a avaliação de quem comprou', /\/reviews/u],
+    ])('semeia %s, ou um ecrã mede-se vazio', (_oQue, marca) => {
         const FONTE = readFileSync(
             path.resolve(import.meta.dirname, '../scripts/varrer.mjs'),
             'utf8',
         );
 
-        expect(FONTE, 'a sementeira não pede filiação nenhuma').toMatch(
-            /\/crews\/\$\{[\w.]+\}\/affiliation/u,
+        expect(FONTE).toMatch(marca);
+    });
+
+    /**
+     * E a fila de denúncias, que é o único ecrã que não se enche por
+     * HTTP: a permissão de moderar não se concede por rota nenhuma.
+     *
+     * A varredura corre o `admin:grant` por si. Sem isso, a fila fica
+     * por medir — e com ela os botões que só quem modera vê, espalhados
+     * por meia dúzia de ecrãs.
+     */
+    it('pede o cargo de moderação à base, para a fila não ficar vazia', () => {
+        const FONTE = readFileSync(
+            path.resolve(import.meta.dirname, '../scripts/varrer.mjs'),
+            'utf8',
         );
-        expect(FONTE, 'a sementeira pede e nunca aceita').toMatch(
-            /\/affiliations\/\$\{[\w.]+\}\/accept/u,
-        );
+
+        expect(FONTE).toMatch(/'admin:grant'/u);
     });
 
     /** Cada exclusão tem de dizer porquê: uma lista de rotas sem razão é um esquecimento. */
