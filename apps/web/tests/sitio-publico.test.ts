@@ -192,22 +192,26 @@ describe('o cartão de um link partilhado', () => {
     });
 
     /**
-     * E tem as medidas que diz ter. Um cartão declarado 1200×630 e
-     * entregue noutra medida é recortado por quem o mostra, e o
-     * recorte cai sempre no título.
+     * E tem as medidas que diz ter — as mesmas, e não a mesma
+     * proporção.
+     *
+     * A primeira versão deste teste comparava só a proporção, e a
+     * imagem estava a sair ao dobro: 2400×1260 declarados como
+     * 1200×630, e o teste passava a dizer que as medidas batiam certo.
+     * Um cartão declarado numa medida e entregue noutra é um cartão que
+     * quem o mostra volta a medir, e o recorte cai sempre no título.
      */
     it('e tem mesmo as medidas que declara', () => {
         const imagem = (conteudoDe('og:image') ?? '').replace('%ENDERECO%/', '');
         const bytes = readFileSync(join(RAIZ, 'public', imagem));
 
         /* O IHDR de um PNG: largura e altura, oito bytes a partir do 16. */
-        const largura = bytes.readUInt32BE(16);
-        const altura = bytes.readUInt32BE(20);
-
-        expect(largura / altura).toBeCloseTo(
-            Number(conteudoDe('og:image:width'))
-            / Number(conteudoDe('og:image:height')),
-            2,
-        );
+        expect({
+            largura: bytes.readUInt32BE(16),
+            altura: bytes.readUInt32BE(20),
+        }).toEqual({
+            largura: Number(conteudoDe('og:image:width')),
+            altura: Number(conteudoDe('og:image:height')),
+        });
     });
 });

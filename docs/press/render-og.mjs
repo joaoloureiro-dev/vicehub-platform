@@ -122,9 +122,18 @@ const browser = await chromium.launch({
 });
 
 try {
+    /*
+     * Exactamente 1200×630, e não o dobro.
+     *
+     * É a medida que o `og:image:width` declara, e quem mostra o cartão
+     * acredita no que está declarado: uma imagem com outra medida é uma
+     * imagem que o leitor tem de voltar a medir, e é assim que se
+     * ganham recortes. Mais pixéis também não servem para nada — o X
+     * mostra o cartão a uns seiscentos pontos, e o resto é peso.
+     */
     const pagina = await browser.newPage({
         viewport: { width: LARGURA, height: ALTURA },
-        deviceScaleFactor: 2,
+        deviceScaleFactor: 1,
     });
 
     await pagina.setContent(paginaSemRede, {
@@ -158,7 +167,7 @@ try {
 
     console.log(
         `${DESTINO.replace(`${RAIZ}/`, '')}`
-        + ` · ${LARGURA}×${ALTURA} em dobro · ${Math.round(tamanho / 1024)} kB`,
+        + ` · ${LARGURA}×${ALTURA} · ${Math.round(tamanho / 1024)} kB`,
     );
 
     /*
