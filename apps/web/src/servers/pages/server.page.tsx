@@ -186,6 +186,24 @@ export const ServerPage = () => {
             </p>
 
             {/*
+              E a porta do quadro, ao lado da do mercado.
+
+              Pública pela mesma razão: quem está a decidir para onde
+              levar a crew quer ver contra quem vai jogar. Uma
+              classificação fechada a quem não está lá dentro não serve
+              nem a quem está — ninguém entra para um quadro que não
+              chegou a ver.
+            */}
+            <p className="hint">
+                <Link
+                    className="ligacao-solta"
+                    to={`/servidores/${perfil.id}/quadro`}
+                >
+                    {t.quadro.verQuadro}
+                </Link>
+            </p>
+
+            {/*
               Os requisitos ficam imediatamente acima do formulário de
               candidatura, e não no cabeçalho junto à descrição: quem
               está a decidir se pede entrada tem de os ler no momento em

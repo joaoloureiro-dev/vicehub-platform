@@ -1170,6 +1170,22 @@ export const pt = (p: Tools): Messages => ({
         other: 'Outro',
     },
 
+    quadro: {
+        titulo: 'Classificação',
+        subtitulo: (servidor: string) =>
+            `As crews que jogam em ${servidor}, pela experiência que ganharam.`,
+        lugar: 'Lugar',
+        crew: 'Crew',
+        nivel: 'Nível',
+        xp: 'XP',
+        comoSeConta:
+            'Crews com a mesma experiência partilham o lugar, e a seguinte desce tantos lugares quantos o empate ocupa.',
+        aindaSemCrews: 'Ainda não joga aqui nenhuma crew.',
+        naoCarregou: 'Não foi possível carregar a classificação.',
+        voltarAoServidor: 'Voltar ao servidor',
+        verQuadro: 'Ver a classificação',
+    },
+
     categoriasDoForum: {
         general: 'Geral',
         crews: 'Crews',

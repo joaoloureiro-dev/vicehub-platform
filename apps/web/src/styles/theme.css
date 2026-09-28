@@ -1131,6 +1131,73 @@ button.link:hover {
     border-color: var(--edge-lit);
 }
 
+/* ---------- o quadro de um servidor ---------- */
+
+/*
+ * Uma tabela, e não cartões: é o que um quadro é — colunas que se
+ * comparam de cima a baixo. Em cartões, o lugar fica ao lado do nome e
+ * deixa de se ler como uma ordem.
+ */
+.quadro {
+    width: 100%;
+    margin-top: 16px;
+    border-collapse: collapse;
+    font-size: 15px;
+}
+
+.quadro th {
+    padding: 8px 12px 10px;
+    border-bottom: 1px solid var(--edge);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.quadro td {
+    padding: 12px;
+    border-bottom: 1px solid var(--edge);
+    color: var(--muted);
+}
+
+/*
+ * O lugar e o xp alinham pelos algarismos.
+ *
+ * Sem `tabular-nums`, uma coluna de números com larguras diferentes
+ * deixa de se ler como uma coluna — que é a única coisa que uma tabela
+ * tem para oferecer sobre uma lista.
+ */
+.quadro-lugar,
+.quadro-xp {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+}
+
+.quadro-lugar {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.quadro td a {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.quadro td a:hover {
+    color: var(--cyan-ink);
+}
+
+.quadro-etiqueta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+}
+
 .paginacao {
     display: flex;
     align-items: center;

@@ -78,6 +78,10 @@ const ServerPage = lazy(async () => ({
     default: (await import('./servers/pages/server.page.js')).ServerPage,
 }));
 
+const LeaderboardPage = lazy(async () => ({
+    default: (await import('./affiliations/pages/leaderboard.page.js')).LeaderboardPage,
+}));
+
 const EventPage = lazy(async () => ({
     default: (await import('./events/pages/event.page.js')).EventPage,
 }));
@@ -567,6 +571,16 @@ export const App = () => (
               o identificador de uma crew.
             */}
             <Route path="/crews/:crewId" element={<CrewPage />} />
+            {/*
+              O quadro de um servidor. Fora do bloco que exige sessão:
+              uma classificação que só quem lá está pode ver não serve
+              para nada — quem anda à procura de onde levar a crew quer
+              ver contra quem vai jogar.
+            */}
+            <Route
+                path="/servidores/:serverId/quadro"
+                element={<LeaderboardPage />}
+            />
             <Route path="/servidores/:serverId" element={<ServerPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />

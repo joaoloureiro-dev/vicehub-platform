@@ -1162,6 +1162,22 @@ export const es = (p: Tools): Messages => ({
         other: 'Otro',
     },
 
+    quadro: {
+        titulo: 'Clasificación',
+        subtitulo: (servidor: string) =>
+            `Las crews que juegan en ${servidor}, por la experiencia que han ganado.`,
+        lugar: 'Puesto',
+        crew: 'Crew',
+        nivel: 'Nivel',
+        xp: 'XP',
+        comoSeConta:
+            'Las crews con la misma experiencia comparten puesto, y la siguiente baja tantos puestos como ocupe el empate.',
+        aindaSemCrews: 'Aquí todavía no juega ninguna crew.',
+        naoCarregou: 'No se pudo cargar la clasificación.',
+        voltarAoServidor: 'Volver al servidor',
+        verQuadro: 'Ver la clasificación',
+    },
+
     categoriasDoForum: {
         general: 'General',
         crews: 'Crews',
