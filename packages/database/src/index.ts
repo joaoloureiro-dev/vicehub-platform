@@ -174,6 +174,7 @@ export {
 } from './heartbeat.js';
 
 export {
+    CREWS_POR_PAGINA_NO_QUADRO,
     NIVEL_MAXIMO,
     PRESENCAS_MINIMAS,
     PRESENCAS_QUE_CONTAM,

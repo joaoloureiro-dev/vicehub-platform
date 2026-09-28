@@ -202,6 +202,88 @@ export class AffiliationRepository {
         }));
     }
 
+    /**
+     * Quantas crews deste servidor estão à frente deste xp.
+     *
+     * Estritamente à frente: é assim que se conta um lugar, e é o que
+     * faz duas crews empatadas partilharem-no em vez de uma delas ser
+     * posta atrás por uma coisa que ninguém ganhou, como a data em que
+     * se filiou.
+     *
+     * Serve o quadro paginado: sabendo quantas estão à frente da
+     * primeira linha da página, as outras saem da ordem sem mais
+     * consultas.
+     */
+    countAheadOnServer(serverId: string, xp: bigint): Promise<number> {
+        return this.database.affiliation.count({
+            where: {
+                serverId,
+                status: MembershipStatus.active,
+                is_deleted: false,
+                crew: { is_deleted: false, xp: { gt: xp } },
+            },
+        });
+    }
+
+    /**
+     * O quadro de um servidor: as crews que lá jogam, do mais alto xp
+     * para o mais baixo.
+     *
+     * Só as filiações **ativas**. Um pedido por responder não é uma
+     * crew que joga ali, e pô-la no quadro dava a quem pediu um lugar
+     * que ainda ninguém lhe deu.
+     *
+     * O desempate é pelo id e não pela data: a ordem tem de ser total,
+     * ou duas crews com o mesmo xp trocam de página entre pedidos e
+     * aparecem duas vezes ou nenhuma. O id não decide o **lugar** —
+     * decide só por que ordem se escrevem duas linhas do mesmo lugar.
+     */
+    async listLeaderboardOfServer(input: {
+        serverId: string;
+        skip: number;
+        take: number;
+    }) {
+        const [linhas, total] = await this.database.$transaction([
+            this.database.affiliation.findMany({
+                where: {
+                    serverId: input.serverId,
+                    status: MembershipStatus.active,
+                    is_deleted: false,
+                    crew: { is_deleted: false },
+                },
+                orderBy: [
+                    { crew: { xp: 'desc' } },
+                    { crewId: 'asc' },
+                ],
+                skip: input.skip,
+                take: input.take,
+                /*
+                 * O nome, a etiqueta e o xp, e mais nada.
+                 *
+                 * Um quadro é uma tabela para ser lida de cima a
+                 * baixo: quantos membros tem, de que cor é e o que diz
+                 * de si são coisas do perfil, e quem as quiser está a
+                 * um clique. Trazê-las aqui era uma consulta por linha
+                 * para encher colunas que ninguém lê em pé.
+                 */
+                select: {
+                    crewId: true,
+                    crew: { select: { name: true, tag: true, xp: true } },
+                },
+            }),
+            this.database.affiliation.count({
+                where: {
+                    serverId: input.serverId,
+                    status: MembershipStatus.active,
+                    is_deleted: false,
+                    crew: { is_deleted: false },
+                },
+            }),
+        ]);
+
+        return { linhas, total };
+    }
+
     crewExists(crewId: string) {
         return this.database.crew.findFirst({
             where: { id: crewId, is_deleted: false },

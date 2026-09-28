@@ -92,6 +92,7 @@ export const ECRAS = [
     { nome: 'servidor', rota: (s) => `/servidores/${s.serverId}` },
     { nome: 'servidor-novo', rota: () => '/servidores/novo' },
     { nome: 'mercado', rota: (s) => `/servidores/${s.serverId}/mercado` },
+    { nome: 'quadro', rota: (s) => `/servidores/${s.serverId}/quadro`, sessao: false },
     { nome: 'anuncio', rota: (s) => `/mercado/${s.anuncioId}` },
     { nome: 'conversas', rota: () => '/mercado/conversas' },
     { nome: 'conversa', rota: (s) => `/mercado/conversas/${s.conversaId}` },

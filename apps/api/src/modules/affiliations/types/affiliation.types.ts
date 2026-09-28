@@ -25,6 +25,36 @@ export interface CrewAffiliation {
 }
 
 /**
+ * Uma linha do quadro de um servidor.
+ *
+ * O lugar vem calculado e não é o índice da linha: duas crews com o
+ * mesmo xp partilham-no, e a terceira fica em terceiro — que é como se
+ * lê uma classificação em qualquer sítio onde se leia uma.
+ */
+export interface LeaderboardEntry {
+    position: number;
+    crewId: string;
+    crewName: string;
+    crewTag: string;
+    level: number;
+    xp: bigint;
+}
+
+/**
+ * O quadro de um servidor, uma página de cada vez.
+ *
+ * `total` é o número de crews que lá jogam, e não o das que já ganharam
+ * alguma coisa: um quadro é a lista de quem está, com as que ainda não
+ * pontuaram no fim.
+ */
+export interface Leaderboard {
+    entries: LeaderboardEntry[];
+    page: number;
+    pages: number;
+    total: number;
+}
+
+/**
  * Quantas crews um servidor pode ter, e quantas já tem.
  *
  * `limit` a null é sem limite. `used` pode ser maior do que `limit`: o

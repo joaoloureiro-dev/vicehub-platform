@@ -35,6 +35,38 @@ export interface ServerAffiliation {
     respondedAt: string | null;
 }
 
+/**
+ * Uma linha do quadro de um servidor.
+ *
+ * O lugar vem calculado do servidor e não é o índice da linha: duas
+ * crews com o mesmo xp partilham-no, e a que vem a seguir cai para o
+ * lugar que a sua posição na ordem lhe dá.
+ *
+ * O xp vem em texto porque é `BigInt` do outro lado, e o JSON não tem
+ * inteiros de precisão arbitrária. Aqui só se mostra.
+ */
+export interface LeaderboardEntry {
+    position: number;
+    crewId: string;
+    crewName: string;
+    crewTag: string;
+    level: number;
+    xp: string;
+}
+
+export interface Leaderboard {
+    entries: LeaderboardEntry[];
+    page: number;
+    pages: number;
+    total: number;
+}
+
+export const getLeaderboard = (
+    serverId: string,
+    page = 1,
+): Promise<Leaderboard> =>
+    api<Leaderboard>(`/servers/${serverId}/leaderboard?page=${page}`);
+
 export const getCrewAffiliation = (crewId: string): Promise<CrewAffiliation> =>
     api<CrewAffiliation>(`/crews/${crewId}/affiliation`);
 

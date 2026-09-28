@@ -6,6 +6,7 @@ import { requireAuthContext } from '../../auth/http/auth-context.guard.js';
 import type {
     AffiliationParamDto,
     CrewIdParamDto,
+    LeaderboardQueryDto,
     RequestAffiliationDto,
     ServerIdParamDto,
 } from '../dto/affiliation.dto.js';
@@ -132,6 +133,38 @@ export class AffiliationController {
         reply: FastifyReply,
     ): Promise<void> {
         await this.responder(request.params.serverId, MembershipStatus.active, reply);
+    }
+
+    /**
+     * O quadro de um servidor.
+     *
+     * Público, como a lista das crews que lá jogam: uma classificação
+     * que só quem lá está pode ver não serve para nada. Quem procura um
+     * servidor para levar a crew quer ver contra quem vai jogar, e é
+     * isto que lho diz.
+     *
+     * O xp sai em texto, como no perfil de uma crew: é `BigInt` na base
+     * e o JSON não tem inteiros de precisão arbitrária.
+     */
+    async leaderboard(
+        request: FastifyRequest<{
+            Params: ServerIdParamDto;
+            Querystring: LeaderboardQueryDto;
+        }>,
+        reply: FastifyReply,
+    ): Promise<void> {
+        const quadro = await this.affiliationService.getLeaderboard(
+            request.params.serverId,
+            request.query.page,
+        );
+
+        reply.send({
+            ...quadro,
+            entries: quadro.entries.map((entrada) => ({
+                ...entrada,
+                xp: entrada.xp.toString(),
+            })),
+        });
     }
 
     /**

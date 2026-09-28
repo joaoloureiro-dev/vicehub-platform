@@ -1207,6 +1207,22 @@ export const en = (p: Tools) => ({
         other: 'Other',
     },
 
+    quadro: {
+        titulo: 'Standings',
+        subtitulo: (servidor: string) =>
+            `The crews playing on ${servidor}, by the experience they have earned.`,
+        lugar: 'Place',
+        crew: 'Crew',
+        nivel: 'Level',
+        xp: 'XP',
+        comoSeConta:
+            'Crews on the same experience share a place, and the next one drops by as many places as the tie takes up.',
+        aindaSemCrews: 'No crews play here yet.',
+        naoCarregou: 'The standings could not be loaded.',
+        voltarAoServidor: 'Back to the server',
+        verQuadro: 'See the standings',
+    },
+
     categoriasDoForum: {
         general: 'General',
         crews: 'Crews',

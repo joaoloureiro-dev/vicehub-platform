@@ -138,6 +138,16 @@ export const PRESENCAS_QUE_CONTAM = 20;
 export const XP_DE_QUEM_APARECEU = 25;
 
 /**
+ * Quantas crews por página no quadro de um servidor.
+ *
+ * Vinte e cinco, e não o servidor inteiro. O escalão sem limite não tem
+ * tecto nenhum de crews, e um quadro que mandasse todas de uma vez
+ * castigava o telemóvel de quem só queria ver quem está à frente — que
+ * é a primeira página e quase sempre a única que se lê.
+ */
+export const CREWS_POR_PAGINA_NO_QUADRO = 25;
+
+/**
  * O xp que um evento concluído dá à crew ou ao servidor que o marcou.
  *
  * Sai da presença confirmada, e não da inscrição: inscrever-se é dizer

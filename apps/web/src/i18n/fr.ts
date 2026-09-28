@@ -1173,6 +1173,22 @@ export const fr = (p: Tools): Messages => ({
         other: 'Autre',
     },
 
+    quadro: {
+        titulo: 'Classement',
+        subtitulo: (servidor: string) =>
+            `Les crews qui jouent sur ${servidor}, selon l'expérience qu'ils ont gagnée.`,
+        lugar: 'Place',
+        crew: 'Crew',
+        nivel: 'Niveau',
+        xp: 'XP',
+        comoSeConta:
+            "Les crews à égalité d'expérience partagent la place, et la suivante descend d'autant de places que l'égalité en occupe.",
+        aindaSemCrews: 'Aucun crew ne joue encore ici.',
+        naoCarregou: 'Le classement n\u2019a pas pu être chargé.',
+        voltarAoServidor: 'Retour au serveur',
+        verQuadro: 'Voir le classement',
+    },
+
     categoriasDoForum: {
         general: 'Général',
         crews: 'Crews',

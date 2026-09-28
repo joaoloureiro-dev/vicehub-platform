@@ -1,4 +1,9 @@
-import { MembershipStatus, crewAllowance } from '@vicehub/database';
+import {
+    CREWS_POR_PAGINA_NO_QUADRO,
+    MembershipStatus,
+    crewAllowance,
+    nivelDoXp,
+} from '@vicehub/database';
 
 import type { SubscriptionService } from '../../subscriptions/services/subscription.service.js';
 import { AffiliationError } from '../errors/affiliation.errors.js';
@@ -7,6 +12,7 @@ import type {
     AffiliationEntry,
     CrewAllowance,
     CrewAffiliation,
+    Leaderboard,
 } from '../types/affiliation.types.js';
 
 /**
@@ -185,6 +191,84 @@ export class AffiliationService {
         status: MembershipStatus,
     ): Promise<AffiliationEntry[]> {
         return this.affiliationRepository.listOfServer(serverId, status);
+    }
+
+    /**
+     * O quadro de um servidor: quem joga lá, do mais alto xp ao mais
+     * baixo.
+     *
+     * **É o que dá às crews uma razão para competir dentro de um
+     * servidor**, que é o que um servidor de roleplay quer de uma
+     * plataforma. O xp já existia e já subia com os eventos; o que não
+     * havia era o sítio onde ele quer dizer alguma coisa a alguém.
+     *
+     * O lugar conta-se como se conta um lugar: quantas estão
+     * estritamente à frente, mais um. Duas crews empatadas partilham-no
+     * — desempatá-las por uma coisa que ninguém ganhou, como a data em
+     * que se filiaram, seria inventar uma diferença.
+     *
+     * Por isso o lugar da primeira linha da página vem de uma contagem,
+     * e não do salto da paginação: numa página que começa a meio de um
+     * empate, o salto daria um lugar diferente à segunda metade do
+     * mesmo empate.
+     */
+    async getLeaderboard(
+        serverId: string,
+        pagina: number,
+    ): Promise<Leaderboard> {
+        const skip = (pagina - 1) * CREWS_POR_PAGINA_NO_QUADRO;
+
+        const { linhas, total } =
+            await this.affiliationRepository.listLeaderboardOfServer({
+                serverId,
+                skip,
+                take: CREWS_POR_PAGINA_NO_QUADRO,
+            });
+
+        const primeira = linhas[0];
+
+        /*
+         * Quantas estão à frente da primeira linha desta página. Numa
+         * página vazia não há a quem contar, e a resposta é a página
+         * vazia.
+         */
+        const aFrenteDaPrimeira = primeira === undefined
+            ? 0
+            : await this.affiliationRepository.countAheadOnServer(
+                serverId,
+                primeira.crew.xp,
+            );
+
+        let lugar = aFrenteDaPrimeira + 1;
+        let xpDoLugar = primeira?.crew.xp;
+
+        const entries = linhas.map((linha, indice) => {
+            /*
+             * O xp desceu: tudo o que veio antes está estritamente à
+             * frente, e o lugar é a posição na ordem total. Enquanto o
+             * xp for o mesmo, o lugar não mexe.
+             */
+            if (linha.crew.xp !== xpDoLugar) {
+                lugar = skip + indice + 1;
+                xpDoLugar = linha.crew.xp;
+            }
+
+            return {
+                position: lugar,
+                crewId: linha.crewId,
+                crewName: linha.crew.name,
+                crewTag: linha.crew.tag,
+                level: nivelDoXp(linha.crew.xp),
+                xp: linha.crew.xp,
+            };
+        });
+
+        return {
+            entries,
+            page: pagina,
+            pages: Math.max(1, Math.ceil(total / CREWS_POR_PAGINA_NO_QUADRO)),
+            total,
+        };
     }
 
     /**

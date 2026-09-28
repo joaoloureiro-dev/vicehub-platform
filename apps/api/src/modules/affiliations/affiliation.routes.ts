@@ -4,12 +4,14 @@ import type { AffiliationController } from './controllers/affiliation.controller
 import type {
     AffiliationParamDto,
     CrewIdParamDto,
+    LeaderboardQueryDto,
     RequestAffiliationDto,
     ServerIdParamDto,
 } from './dto/affiliation.dto.js';
 import {
     affiliationParamSchema,
     crewIdParamSchema,
+    leaderboardQuerySchema,
     requestAffiliationSchema,
     serverIdParamSchema,
 } from './schemas/affiliation.schemas.js';
@@ -103,6 +105,27 @@ const affiliationRoutes: FastifyPluginAsync<AffiliationRoutesOptions> = async (
      * que a pergunta se faz — e é aí que a resposta tem de estar à vista,
      * antes de alguém carregar em aceitar e levar com um 402.
      */
+    /**
+     * O quadro de um servidor: as crews que lá jogam, por xp.
+     *
+     * Sem sessão, como a lista das crews. Uma classificação que só quem
+     * lá está pode ver não serve de nada — quem anda à procura de um
+     * servidor para levar a crew quer ver contra quem vai jogar.
+     */
+    fastify.get<{
+        Params: ServerIdParamDto;
+        Querystring: LeaderboardQueryDto;
+    }>(
+        '/api/v1/servers/:serverId/leaderboard',
+        {
+            schema: {
+                params: serverIdParamSchema,
+                querystring: leaderboardQuerySchema,
+            },
+        },
+        controller.leaderboard.bind(controller),
+    );
+
     fastify.get<{ Params: ServerIdParamDto }>(
         '/api/v1/servers/:serverId/affiliations/allowance',
         {

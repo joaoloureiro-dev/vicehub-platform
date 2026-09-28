@@ -31,6 +31,14 @@ const createRepositoryMock = () => ({
     crewExists: vi.fn().mockResolvedValue({ id: 'crew-1' }),
     serverExists: vi.fn().mockResolvedValue({ id: 'server-1', name: 'Vice' }),
     countActiveOfServer: vi.fn().mockResolvedValue(0),
+    countAheadOnServer: vi.fn().mockResolvedValue(0),
+    listLeaderboardOfServer: vi.fn().mockResolvedValue({ linhas: [], total: 0 }),
+});
+
+/** Uma linha do quadro, como a consulta a devolve. */
+const linha = (crewId: string, xp: bigint) => ({
+    crewId,
+    crew: { name: `Crew ${crewId}`, tag: crewId.slice(0, 4).toUpperCase(), xp },
 });
 
 /**
@@ -68,6 +76,145 @@ describe('AffiliationService', () => {
             repository as never,
             subscriptions as never,
         );
+    });
+
+    /**
+     * **O lugar no quadro é o que este serviço existe para calcular.**
+     *
+     * A consulta traz as linhas por ordem; o lugar não é o índice
+     * delas. Duas crews com o mesmo xp partilham-no — desempatá-las
+     * por uma coisa que ninguém ganhou, como a data em que se
+     * filiaram, seria inventar uma diferença — e a que vem a seguir
+     * cai para o lugar que a sua posição na ordem lhe dá.
+     */
+    describe('o quadro de um servidor', () => {
+        it('conta o lugar como quantas estão à frente, mais uma', async () => {
+            repository.listLeaderboardOfServer.mockResolvedValue({
+                linhas: [linha('a', 900n), linha('b', 400n), linha('c', 100n)],
+                total: 3,
+            });
+
+            const quadro = await service.getLeaderboard('server-1', 1);
+
+            expect(quadro.entries.map((e) => e.position)).toEqual([1, 2, 3]);
+        });
+
+        it('e duas empatadas partilham-no', async () => {
+            repository.listLeaderboardOfServer.mockResolvedValue({
+                linhas: [linha('a', 900n), linha('b', 900n), linha('c', 100n)],
+                total: 3,
+            });
+
+            const quadro = await service.getLeaderboard('server-1', 1);
+
+            expect(quadro.entries.map((e) => e.position)).toEqual([1, 1, 3]);
+        });
+
+        /**
+         * Três empatadas em primeiro deixam a quarta em quarto, e não
+         * em segundo. É assim que se lê uma classificação em qualquer
+         * sítio onde se leia uma.
+         */
+        it('e o empate consome os lugares que ocupa', async () => {
+            repository.listLeaderboardOfServer.mockResolvedValue({
+                linhas: [
+                    linha('a', 900n),
+                    linha('b', 900n),
+                    linha('c', 900n),
+                    linha('d', 100n),
+                ],
+                total: 4,
+            });
+
+            const quadro = await service.getLeaderboard('server-1', 1);
+
+            expect(quadro.entries.map((e) => e.position)).toEqual([1, 1, 1, 4]);
+        });
+
+        /**
+         * **Uma página que começa a meio de um empate.**
+         *
+         * É o caso que o salto da paginação sozinho não sabe resolver:
+         * a segunda metade do empate está na página seguinte, e
+         * `skip + 1` dar-lhe-ia um lugar diferente do da primeira
+         * metade — o mesmo xp com dois lugares diferentes, por causa de
+         * onde calhou a quebra de página.
+         *
+         * Por isso o lugar da primeira linha da página vem de uma
+         * contagem de quantas estão à frente dela.
+         */
+        it('não parte um empate ao mudar de página', async () => {
+            repository.listLeaderboardOfServer.mockResolvedValue({
+                linhas: [linha('z', 900n), linha('w', 100n)],
+                total: 27,
+            });
+            /*
+             * Vinte e quatro à frente das 900, por isso as 900 ocupam o
+             * lugar 25. A página 2 começa na 26ª crew — a **segunda**
+             * das 900 —, e essa fica em 25 como a primeira, que está na
+             * página anterior. O salto sozinho dar-lhe-ia 26.
+             *
+             * A que vem a seguir cai para 27, e não para 26: o empate
+             * de duas consome os lugares 25 e 26.
+             */
+            repository.countAheadOnServer.mockResolvedValue(24);
+
+            const quadro = await service.getLeaderboard('server-1', 2);
+
+            expect(repository.countAheadOnServer).toHaveBeenCalledWith(
+                'server-1',
+                900n,
+            );
+            expect(quadro.entries.map((e) => e.position)).toEqual([25, 27]);
+        });
+
+        it('pede a página que lhe pedirem', async () => {
+            await service.getLeaderboard('server-1', 3);
+
+            expect(repository.listLeaderboardOfServer).toHaveBeenCalledWith({
+                serverId: 'server-1',
+                skip: 50,
+                take: 25,
+            });
+        });
+
+        /** Sem ninguém a quem contar, não se conta. */
+        it('não pergunta quem está à frente de uma página vazia', async () => {
+            const quadro = await service.getLeaderboard('server-1', 9);
+
+            expect(repository.countAheadOnServer).not.toHaveBeenCalled();
+            expect(quadro.entries).toEqual([]);
+            expect(quadro.pages).toBe(1);
+        });
+
+        it('diz o nível de cada crew, a partir do xp', async () => {
+            repository.listLeaderboardOfServer.mockResolvedValue({
+                /* 300 é a entrada do nível 3; 250 ainda é nível 2. */
+                linhas: [linha('a', 300n), linha('b', 250n), linha('c', 0n)],
+                total: 3,
+            });
+
+            const quadro = await service.getLeaderboard('server-1', 1);
+
+            expect(quadro.entries.map((e) => e.level)).toEqual([3, 2, 1]);
+        });
+
+        /**
+         * O total é o das crews que lá jogam, e não o das que já
+         * pontuaram: um quadro é a lista de quem está, com as que ainda
+         * não ganharam nada no fim.
+         */
+        it('conta as páginas pelo total', async () => {
+            repository.listLeaderboardOfServer.mockResolvedValue({
+                linhas: [linha('a', 10n)],
+                total: 51,
+            });
+
+            const quadro = await service.getLeaderboard('server-1', 1);
+
+            expect(quadro.total).toBe(51);
+            expect(quadro.pages).toBe(3);
+        });
     });
 
     describe('pedir', () => {
