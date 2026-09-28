@@ -2070,20 +2070,6 @@ button.link:hover {
     gap: 18px;
 }
 
-.landing-marca {
-    width: 72px;
-    height: 72px;
-    border-radius: 16px;
-    display: block;
-}
-
-@media (min-width: 640px) {
-    .landing-marca {
-        width: 88px;
-        height: 88px;
-    }
-}
-
 .landing h1 {
     margin: 0;
     font-family: var(--display);
@@ -2699,6 +2685,27 @@ button.link:hover {
     text-underline-offset: 3px;
 }
 
+/*
+ * O letreiro da entrada.
+ *
+ * Sangra até às margens do painel e leva a largura toda que houver: é
+ * uma imagem de um letreiro de néon, e um letreiro com margem branca à
+ * volta deixa de ser um letreiro.
+ *
+ * `aspect-ratio` com a proporção do ficheiro para o espaço ficar
+ * reservado antes de a imagem chegar — sem isso, o título saltava para
+ * baixo a meio do carregamento, que é a pior coisa que uma página de
+ * entrada pode fazer a quem já começou a ler.
+ */
+.landing-letreiro {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1600 / 640;
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+}
+
 /* ---------- a resposta que resolveu ---------- */
 
 /*
@@ -3293,75 +3300,6 @@ button.link:hover {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-size: 11px;
-}
-
-/* ─── Os planos, na própria página ─────────────────────────────────── */
-
-.landing-planos {
-    margin: 56px auto 0;
-    width: min(100%, 1100px);
-    padding: 0 var(--pad);
-    text-align: center;
-}
-
-.landing-planos > .hint {
-    margin: 8px auto 24px;
-}
-
-.planos {
-    display: grid;
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-@media (min-width: 720px) {
-    .planos {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-.planos article {
-    padding: 22px;
-    border: 1px solid var(--edge);
-    border-radius: 14px;
-    background: var(--surface);
-    text-align: left;
-}
-
-/*
-  O plano de servidor é o que sustenta o negócio, e é o único que leva
-  destaque. Dois destaques não são destaque nenhum.
-*/
-.planos article.destaque {
-    border-color: var(--edge-lit);
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--violet) 10%, var(--surface)),
-        var(--surface)
-    );
-}
-
-.planos h3 {
-    margin: 0;
-    font-size: 15px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-}
-
-.planos .preco {
-    margin: 6px 0 12px;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
-}
-
-.planos article p:last-child {
-    margin: 0;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.5;
 }
 
 /* ─── A candidatura ────────────────────────────────────────────────── */

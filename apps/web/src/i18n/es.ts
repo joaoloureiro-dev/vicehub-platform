@@ -20,6 +20,7 @@ export const es = (p: Tools): Messages => ({
     },
 
     nav: {
+        inicio: 'Inicio',
         avisos: 'Avisos',
         crews: 'Crews',
         servidores: 'Servidores',
@@ -50,17 +51,6 @@ export const es = (p: Tools): Messages => ({
         verTudo: 'Ver todos',
         jogadores: (n: number) =>
             p.plural(n, { one: '1 jugador', other: `${n} jugadores` }),
-        planosTitulo: 'Cuánto cuesta',
-        planosGratis:
-            'Jugar es gratis, y lo seguirá siendo: tu perfil, tu banner, postularte a crews, ser miembro, programar eventos, presentarte. Lo que se paga es mover el dinero.',
-        planoCrew: 'Crew',
-        planoCrewPreco: '4,99 \u20ac / mes',
-        planoCrewTexto:
-            'Una tesorería que cuadra: proponer, aprobar y repartir lo que gana la crew — todos cobran a la vez, o ninguno. Treinta días para probarlo.',
-        planoServidor: 'Servidor',
-        planoServidorPreco: 'desde 14,99 \u20ac / mes',
-        planoServidorTexto:
-            'Hasta 10 crews jugando en tu servidor, y una tesorería para pagarles. Más crews, plan mayor.',
         crewsTitulo: 'Crews y servidores',
         crewsTexto:
             'Reúne a tu gente con rangos que significan algo. Las solicitudes se responden, no se ignoran.',
@@ -73,7 +63,6 @@ export const es = (p: Tools): Messages => ({
         eventosTexto:
             'Hacéis el trabajo, se confirma quién estuvo, y se reparte por asistencia — con pesos, porque quien lidera un golpe suele llevarse más.',
 
-        verPremium: 'Qué te da el premium',
         honesto: 'Todavía al principio',
         honestoTexto:
             'ViceHub se está construyendo a la vista, empezando por GTA VI. Hay cosas listas y otras no, y la forma más rápida de cambiarlo es que nos digas qué falta.',

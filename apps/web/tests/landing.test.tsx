@@ -154,7 +154,7 @@ describe('a landing', () => {
         montarEcra(<LandingPage />);
 
         await waitFor(() => {
-            expect(screen.getByText(t.landing.planosTitulo)).toBeDefined();
+            expect(screen.getByText(t.landing.crewsTitulo)).toBeDefined();
         });
 
         expect(screen.queryByText('Adormecido')).toBeNull();
@@ -259,13 +259,29 @@ describe('a landing', () => {
      * preço fica sempre, porque é a pergunta que toda a gente faz antes
      * de criar conta.
      */
-    it('sem nada a acontecer, continua a dizer quanto custa', async () => {
+    /**
+     * Uma plataforma vazia continua a explicar-se.
+     *
+     * Os blocos que dependem de haver gente — eventos, quem recruta,
+     * servidores online — desaparecem quando não há nada, e é isso que
+     * se quer: uma lista vazia lê-se como avaria. O que não pode
+     * desaparecer com eles é a parte que diz o que isto é, porque é
+     * precisamente quem chega a uma plataforma vazia que mais precisa
+     * dela.
+     *
+     * O preço saiu daqui: estava escrito à mão nesta página enquanto o
+     * ecrã do plano o lê da API, e duas cópias de um preço é uma que
+     * fica desactualizada. Quem quer saber quanto custa vai a `/premium`,
+     * que agora está no menu.
+     */
+    it('sem nada a acontecer, continua a explicar o que isto é', async () => {
         vi.stubGlobal('fetch', servir([], []));
 
         montarEcra(<LandingPage />);
 
-        expect(await screen.findByText(t.landing.planosTitulo)).toBeDefined();
-        expect(screen.getByText(t.landing.planoServidorPreco)).toBeDefined();
+        expect(await screen.findByText(t.landing.crewsTitulo)).toBeDefined();
+        expect(screen.getByText(t.landing.tesourariaTitulo)).toBeDefined();
+        expect(screen.getByText(t.landing.criarConta)).toBeDefined();
         expect(screen.queryByText(t.landing.quemRecruta)).toBeNull();
         expect(screen.queryByText(t.landing.aAcontecer)).toBeNull();
     });

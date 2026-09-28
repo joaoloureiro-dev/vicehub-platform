@@ -74,12 +74,26 @@ export const LandingPage = () => {
     return (
         <div className="landing">
             <header className="landing-hero">
+                {/*
+                  O letreiro, e não o ícone de 88 pixéis que aqui estava.
+                  
+                  `alt` vazio de propósito: o nome da plataforma já está
+                  na barra de cima, e quem ouve o ecrã ouviria "ViceHub"
+                  duas vezes seguidas antes de chegar à frase que diz o
+                  que isto é. O que o letreiro faz é para os olhos.
+
+                  Duas larguras, e o browser escolhe: num telemóvel os
+                  1600px eram 121 KB para desenhar 390.
+                */}
                 <img
-                    className="landing-marca"
-                    src="/vicehub-logo.png"
+                    className="landing-letreiro"
+                    src="/vicehub-banner.jpg"
+                    srcSet="/vicehub-banner-pequeno.jpg 800w, /vicehub-banner.jpg 1600w"
+                    sizes="(min-width: 1040px) 960px, 100vw"
                     alt=""
-                    width={88}
-                    height={88}
+                    width={1600}
+                    height={640}
+                    fetchPriority="high"
                 />
                 <h1>{t.landing.titulo}</h1>
                 <p className="landing-sub">{t.landing.subtitulo}</p>
@@ -230,36 +244,6 @@ export const LandingPage = () => {
                     <h2>{t.landing.eventosTitulo}</h2>
                     <p>{t.landing.eventosTexto}</p>
                 </article>
-            </section>
-
-            {/*
-              O que o plano dá, na própria página.
-
-              Estava atrás de um link, e um link é a pior forma de
-              responder à pergunta que toda a gente faz antes de criar
-              conta. Quem tem de clicar para saber o que custa parte do
-              princípio de que custa muito.
-            */}
-            <section className="landing-planos">
-                <h2>{t.landing.planosTitulo}</h2>
-                <p className="hint">{t.landing.planosGratis}</p>
-
-                <div className="planos">
-                    <article>
-                        <h3>{t.landing.planoCrew}</h3>
-                        <p className="preco">{t.landing.planoCrewPreco}</p>
-                        <p>{t.landing.planoCrewTexto}</p>
-                    </article>
-                    <article className="destaque">
-                        <h3>{t.landing.planoServidor}</h3>
-                        <p className="preco">{t.landing.planoServidorPreco}</p>
-                        <p>{t.landing.planoServidorTexto}</p>
-                    </article>
-                </div>
-
-                <Link className="btn-secondary" to="/premium">
-                    {t.landing.verPremium}
-                </Link>
             </section>
 
             <aside className="landing-honesto">
