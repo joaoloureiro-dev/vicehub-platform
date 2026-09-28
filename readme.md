@@ -221,8 +221,9 @@ npm run db:seed
 ```
 
 O `db:seed` é obrigatório e não é opcional: sem ele o cargo base `player`
-não existe, e **o registo responde 500**. É idempotente, por isso pode
-correr-se sempre.
+não existe, e sem esse cargo ninguém consegue criar conta. **A API recusa
+arrancar** e diz qual é o comando — não deixa a plataforma de pé à espera do
+primeiro registo para falhar. É idempotente, por isso pode correr-se sempre.
 
 ### Verificação
 
@@ -236,11 +237,11 @@ Os testes usam duplos em memória em vez do Prisma, por isso correm em
 qualquer máquina sem preparação. O mesmo conjunto de comandos corre no CI,
 em `.github/workflows/ci.yml`.
 
-#### As duas que o CI não corre
+#### As quatro que o CI não corre
 
 Há coisas que nenhum teste apanha porque não têm onde acontecer: o `jsdom`
 não tem largura nem linha nem polegar, e um duplo em memória não recusa um
-pedido — responde ao que lhe mandam. As duas ferramentas abaixo precisam de
+pedido — responde ao que lhe mandam. As quatro ferramentas abaixo precisam de
 uma API de pé com base de dados atrás, e por isso correm-se à mão, antes de
 uma entrega ou depois de mexer no que elas medem.
 
@@ -248,9 +249,10 @@ uma entrega ou depois de mexer no que elas medem.
 # a API a correr com a base de desenvolvimento e os travões levantados:
 #   RATE_LIMIT_MAX=100000 FORUM_RATE_LIMIT_MAX=10000
 
-npm run varrer --workspace @vicehub/web   # o produto inteiro, num browser
-npm run sondar --workspace @vicehub/api   # o produto inteiro, como intruso
-npm run medir  --workspace @vicehub/api   # o que cada ecrã custa à base
+npm run varrer  --workspace @vicehub/web   # o produto inteiro, num browser
+npm run sondar  --workspace @vicehub/api   # o produto inteiro, como intruso
+npm run medir   --workspace @vicehub/api   # o que cada ecrã custa à base
+npm run ensaiar --workspace @vicehub/api   # uma instalação nova serve?
 ```
 
 A medição exige a extensão do Postgres, uma vez por base:
@@ -286,6 +288,20 @@ identificador da vítima no fim. Cada sonda corre duas vezes, e o dono **tem**
 de conseguir o que o intruso não consegue; sem isso, um caminho mal escrito
 passa por porta trancada. Sai com código 1 se encontrar uma porta aberta ou
 uma sonda que não prove nada.
+
+**O ensaio** é o único que se corre contra uma instalação **nova**, e responde
+a uma pergunta que as outras três não fazem: isto, acabado de instalar,
+funciona? As avarias de uma instalação nova são outras — o `db:seed` que
+faltou, uma migração que não correu, um domínio que faz o cookie do refresh
+não voltar — e nenhuma aparece numa máquina onde a base já tem meses de coisas
+lá dentro. Faz o que a primeira pessoa faria: conta, renovação da sessão pelo
+cookie, crew, servidor, tópico, anúncio, e os ecrãs todos que isso produz.
+Depois **desfaz o que fez** e apaga a própria conta, para poder correr contra
+uma plataforma já aberta sem lá deixar lixo — e confirma que a conta apagada
+deixou de entrar. `--ficar` deixa o que criou de pé, `--base=` aponta-o a
+outro sítio, e `--controlo` acrescenta um passo impossível e exige que o
+ensaio dê por ele. O que fica de fora é o que precisa de chaves, e ele di-lo
+no fim em vez de o deixar por dizer.
 
 ### Autorização por permissões
 
@@ -1455,9 +1471,19 @@ npm run db:seed                  # só na primeira vez
 npm start                        # node apps/api/dist/server.js
 ```
 
-**Sem o `db:seed` numa base de dados vazia, o registo responde 500.** O cargo
-base de jogador é atribuído a quem se regista, e não pode ser atribuído se não
-existir. É o primeiro erro que aparece, e não se lê como configuração em falta.
+**Sem o `db:seed` numa base de dados vazia, a API recusa arrancar.** O cargo
+base de jogador é atribuído a quem se regista e não pode ser atribuído se não
+existir, por isso a pergunta é feita ao arranque e não ao primeiro registo:
+
+```
+A base de dados não está pronta:
+
+  O cargo base "player" não existe na base de dados, e sem ele ninguém consegue criar conta.
+  Resolve com:  npm run db:seed
+```
+
+Num serviço que reinicia sozinho — o Railway, por exemplo — isto aparece como
+um processo que não fica de pé. A razão está na primeira linha do log.
 
 #### Neon, Railway e Vercel
 
@@ -1489,10 +1515,10 @@ A ordem, uma vez:
    painel são as do `.env.example` — e **`WEB_DIST_PATH` fica por definir**: aqui
    quem serve a interface é o Vercel.
 
-3. **`npm run db:seed`, uma vez, contra a base nova.** Sem ele o registo responde
-   500: o cargo base de jogador é atribuído a quem se regista e não pode ser
-   atribuído se não existir. É o primeiro erro que aparece e não se lê como
-   configuração em falta.
+3. **`npm run db:seed`, uma vez, contra a base nova.** Sem ele a API recusa
+   arrancar, e diz-o na primeira linha do log com o comando que resolve: o
+   cargo base de jogador é atribuído a quem se regista e não pode ser
+   atribuído se não existir.
 
 4. **Vercel**, apontado ao mesmo repositório, com a raiz do projeto na raiz do
    repositório — o `vercel.json` já traz o comando de compilação, a pasta de
@@ -1508,6 +1534,19 @@ A ordem, uma vez:
 6. **O Stripe**, por fim: os quatro preços, o portal do cliente, e o webhook a
    apontar para `https://api.vicehub.com/api/v1/billing/webhook`. O segredo do
    webhook vai para o Railway e para lado nenhum mais.
+
+7. **O ensaio, contra o que acabou de ficar de pé**, antes de dizer a alguém
+   que abriu:
+
+   ```bash
+   npm run ensaiar --workspace @vicehub/api -- --base=https://api.vicehub.com
+   ```
+
+   Cria uma conta, renova a sessão pelo cookie, funda uma crew e um servidor,
+   abre um tópico, põe um anúncio, vê os ecrãs que isso produz, e depois apaga
+   tudo o que criou e a própria conta. Um ensaio limpo diz que a instalação
+   serve; um 401 na renovação diz que os domínios não são o mesmo sítio
+   registável; e um 500 no registo diz que o `db:seed` não correu.
 
 **A política de conteúdo passa a estar em dois sítios.** Servida pela API, sai
 do `helmet`; servida pelo Vercel, é uma linha de configuração, porque um
@@ -1698,24 +1737,30 @@ faltava o sítio onde ele quer dizer alguma coisa a alguém
 com a parte no endereço e a procura a cruzar-se com ela  
 ✔ Página de preços que diz a escada toda, venha ou não a cobrança configurada:
 quanto custa é do catálogo e sabe-se sempre; saber cobrar é da instalação  
-✔ **Duas ferramentas que o CI não corre**, ambas com controlo: uma varredura
-que abre os trinta e um ecrãs num browser em quatro idiomas e duas larguras, e
-uma sonda que tenta, com a conta de outra pessoa, tudo o que um dono pode
-fazer — `npm run varrer --workspace @vicehub/web` e `npm run sondar
---workspace @vicehub/api`
+✔ **Quatro ferramentas que o CI não corre**, todas com controlo: uma varredura
+que abre os trinta e um ecrãs num browser em quatro idiomas e duas larguras,
+uma sonda que tenta com a conta de outra pessoa tudo o que um dono pode fazer,
+uma medição do que cada ecrã custa à base de dados, e um ensaio de instalação
+nova que se desfaz a si próprio — `varrer`, `sondar`, `medir` e `ensaiar`
 
 ### O que falta para abrir ao público
 
 🚀 **O deploy.** Isto nunca correu fora de uma máquina de desenvolvimento. Não
-há imagem, não há máquina, não há cópias de segurança. Os passos e as
-armadilhas estão escritos em [Pôr em produção](#pôr-em-produção); fazê-los é
-que não  
+há máquina, não há domínio, não há cópias de segurança. A sequência **está
+ensaiada**: contra uma base de dados vazia, com `NODE_ENV=production`, as
+migrações correm, o `db:seed` grava, a API arranca, e o `npm run ensaiar`
+passa do registo ao anúncio e volta atrás sem deixar nada — mais o `db:prune`,
+o `news:fetch` e o `admin:grant`, que são os comandos que correm sozinhos
+depois. O que o ensaio não prova é o Neon, o Railway, o Vercel e os domínios:
+esses só se provam com eles à frente. Os passos e as armadilhas estão escritos
+em [Pôr em produção](#pôr-em-produção)  
 🔑 **As chaves e o domínio**: os quatro preços do Stripe e o portal do cliente,
 o SMTP, o Turnstile, as credenciais do Discord e da Google. Nenhuma delas pode
 passar por uma conversa — vão do painel de quem as emite para o `.env` do
 servidor e mais lado nenhum, porque este repositório é público  
-🔑 **`npm run db:seed` na base de dados do deploy.** Sem ele o registo responde
-500, e as duas permissões do mercado não existem  
+🔑 **`npm run db:seed` na base de dados do deploy.** Sem ele a API recusa
+arrancar — não há cargo base para dar a quem se regista — e as duas permissões
+do mercado não existem  
 ⚖️ **A identificação legal de quem opera** — `apps/web/src/legal/operator.ts`
 está vazio nos sete campos, e enquanto estiver as páginas de termos e de
 privacidade dizem, em cima e com todas as letras, que não são definitivas  
