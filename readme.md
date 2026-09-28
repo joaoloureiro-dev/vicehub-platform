@@ -689,24 +689,37 @@ sou eu, o que está à espera de mim, e quantos avisos tenho por ler.
 
 Nenhum deles cresce com o uso — a caixa do que espera resposta crescia, duas
 consultas por comunidade gerida, e deixou de crescer. O que resta é chão
-fixo, e a maior parte dele é **a autenticação**: cada pedido revalida a
-sessão e reúne as permissões do zero, e o Prisma parte essa leitura aninhada
-em quatro instruções. Três pedidos por página dão doze a quinze consultas só
-para saber quem está do outro lado.
+fixo, e nenhum destes três exige uma permissão: a casca só precisa de saber
+quem está do outro lado, não se essa pessoa pode gerir alguma coisa.
 
-Há duas maneiras de o baixar, e nenhuma delas é minha para decidir:
+**Quem pede uma porta guardada é que pagava a mais.** Cada pedido a uma das
+oitenta e cinco rotas que exigem uma permissão reunia-as do zero, e o Prisma
+partia essa leitura aninhada — os cargos desta pessoa, e dentro de cada um as
+permissões dele — em quatro instruções.
 
-1. **Guardar em memória que permissões tem cada cargo.** O catálogo vive em
-   `rbac.ts` e as linhas da base são um espelho dele — só mudam com um
-   `db:seed`. Com esse mapa em memória, cada pedido lê os cargos desta pessoa
-   e mais nada: uma instrução em vez de quatro. O preço é uma cache no
-   caminho da autorização, que é o sítio onde um erro custa mais caro.
-2. **Nada.** Doze consultas por página numa base ao lado do processo são
-   irrelevantes; com a base do outro lado do Atlântico, são um décimo de
-   segundo antes de a página começar.
+São duas leituras com ritmos diferentes metidas numa só. Que cargos uma
+pessoa tem, e onde, muda a toda a hora. Que permissões dá cada cargo vive em
+`rbac.ts`, e as linhas da base são um espelho que o `db:seed` grava: muda com
+um deploy, e um deploy reinicia o processo. Separadas, a primeira é **uma**
+instrução por pedido, e a segunda lê-se uma vez e fica em memória:
 
-A decisão depende de números que ainda não existem — os do primeiro deploy.
-Fica medida, com a referência gravada, para ser tomada com eles à frente.
+| Pedido | Antes | Agora |
+|---|---|---|
+| `GET /treasury/crews/:crewId` | 10 | 7 |
+| `GET /events/crews/:crewId` | 7 | 4 |
+
+Três consultas menos em cada pedido que verifica uma permissão. O catálogo
+vale um minuto, para que mexer nas linhas com a aplicação de pé não espere
+por um reinício; volta a ler-se se lhe pedirem um cargo que não conhece, para
+que um cargo criado agora autorize já; e um identificador que uma leitura
+fresca também não encontra fica marcado como ausente, ou quem tivesse um
+cargo apagado punha a aplicação a reler o catálogo em cada pedido — o
+contrário do que a cache veio fazer.
+
+A cache está no caminho da autorização, que é onde um erro custa mais caro, e
+por isso o que a prova não são os testes de unidade: é a sonda a correr
+outra vez inteira, 24 portas em que o intruso continua a levar 403 e o dono
+continua a conseguir.
 
 E um caso à parte: `GET /notifications` custa quinze consultas **com a caixa
 vazia**. Não cresce com o número de avisos; é o Prisma a ir buscar cada
