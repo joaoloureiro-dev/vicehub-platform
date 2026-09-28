@@ -24,11 +24,11 @@ export class AuthContextService {
     constructor(private readonly authRepository: AuthRepository) { }
 
     async resolve(payload: AccessTokenPayload): Promise<AuthContext> {
-        const session = await this.authRepository.findActiveSessionWithUser(
+        const user = await this.authRepository.findUserOfActiveSession(
             payload.sessionId,
         );
 
-        if (!session) {
+        if (!user) {
             throw new AuthError(
                 'INVALID_ACCESS_TOKEN',
                 'A sessão associada a este token já não está ativa.',
@@ -38,17 +38,18 @@ export class AuthContextService {
         /**
          * Impede que um token emitido para outro utilizador
          * seja aceite com um sessionId que não lhe pertence.
+         *
+         * Quem vem da base é o dono da sessão que o token nomeia. Se
+         * não é quem o token diz ser, o token não é desta sessão.
          */
-        if (session.userId !== payload.sub) {
+        if (user.id !== payload.sub) {
             throw new AuthError(
                 'INVALID_ACCESS_TOKEN',
                 'O token não corresponde à sessão indicada.',
             );
         }
 
-        const user = session.user;
-
-        if (!user || user.is_deleted) {
+        if (user.is_deleted) {
             throw new AuthError(
                 'INVALID_ACCESS_TOKEN',
                 'O utilizador associado a este token já não está disponível.',
@@ -67,7 +68,11 @@ export class AuthContextService {
         }
 
         return {
-            sessionId: session.id,
+            /*
+             * O da sessão que se procurou, que é a que a base
+             * confirmou estar viva — não há aqui outra.
+             */
+            sessionId: payload.sessionId,
             user: {
                 id: user.id,
                 email: user.email,

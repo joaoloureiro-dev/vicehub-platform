@@ -9,7 +9,7 @@ import {
     asAuthRepository,
     asPasswordService,
     buildRefreshTokenRow,
-    buildSessionWithUser,
+    buildSessionOwner,
     buildUserRow,
     buildUserWithCredentials,
     createAuthRepositoryMock,
@@ -576,7 +576,7 @@ describe('AuthService', () => {
             repository.findRefreshTokenById.mockResolvedValue(
                 buildRefreshTokenRow({ tokenHash: secretHash }),
             );
-            repository.findActiveSessionWithUser.mockResolvedValue(null);
+            repository.findUserOfActiveSession.mockResolvedValue(null);
 
             await expectAuthError(service.refresh(validRefreshToken), 'INVALID_REFRESH_TOKEN');
         });
@@ -585,7 +585,7 @@ describe('AuthService', () => {
             repository.findRefreshTokenById.mockResolvedValue(
                 buildRefreshTokenRow({ tokenHash: secretHash }),
             );
-            repository.findActiveSessionWithUser.mockResolvedValue(buildSessionWithUser());
+            repository.findUserOfActiveSession.mockResolvedValue(buildSessionOwner());
 
             const result = await service.refresh(validRefreshToken);
 
