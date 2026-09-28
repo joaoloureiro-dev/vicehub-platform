@@ -745,6 +745,28 @@ em pré-visualização `relationJoins` no gerador, e isso muda o cliente gerado
 da plataforma inteira. Por um ecrã que se abre de vez em quando, e a dias de
 um primeiro deploy, não é uma troca que se faça sozinho.
 
+### O cartão de um link partilhado
+
+Um link do ViceHub colado no X ou no Discord aparece com imagem, título e
+descrição — ou aparecia como uma linha de texto cinzenta ao lado de quem tem
+cartão. É a primeira coisa que muita gente vai ver do produto, e a única que
+aparece antes de alguém decidir se carrega.
+
+A imagem é `apps/web/public/og-vicehub.png`, 1200×630, e não é desenhada: é a
+fotografia de `docs/press/og-card.html`, com as cores e as letras do produto.
+Para a mudar muda-se o HTML e corre-se `node docs/press/render-og.mjs`.
+
+**Não diz datas nem estados.** Quem mostra um cartão destes guarda-o durante
+semanas, e um "em desenvolvimento" passa a mentira no dia seguinte ao
+lançamento sem ninguém lhe tocar.
+
+Do mesmo sítio — `apps/web/src/lib/sitio-publico.ts` — saem também o
+`sitemap.xml` e o `robots.txt`, escritos ao compilar porque nomeiam o domínio.
+Um teste liga os três ao router: uma página pública nova está no mapa ou tem
+escrito porque não está, e uma página que exige sessão nunca lá pode estar —
+pô-la no mapa era mandar um motor de busca, e quem clicasse no resultado, para
+um ecrã que não é dele.
+
 ### O quadro de um servidor
 
 O xp de uma crew sobe com os eventos que ela conclui, e isso existia muito
@@ -1525,11 +1547,14 @@ A ordem, uma vez:
    saída e a reescrita que faz um F5 em `/crews/alguma-coisa` devolver a página
    em vez de 404.
 
-5. **Os domínios**, e as duas linhas que têm de os nomear: `connect-src` no
-   `vercel.json`, para o browser poder falar com a API, e `CORS_ALLOWED_ORIGINS`
-   no Railway, para a API aceitar o browser. Um teste (`mesma-politica.test.ts`)
-   compara as duas políticas de conteúdo directiva a directiva — a que a API
-   serve e a que o Vercel serve — e falha quando divergem em tudo o resto.
+5. **Os domínios**, e as três linhas que têm de os nomear: `connect-src` no
+   `vercel.json`, para o browser poder falar com a API; `CORS_ALLOWED_ORIGINS`
+   no Railway, para a API aceitar o browser; e `VITE_PUBLIC_URL` no Vercel,
+   para o cartão de um link partilhado e o mapa do sítio saírem com o domínio
+   certo — sem ela ficam com o que está no `sitio-publico.ts`. Um teste
+   (`mesma-politica.test.ts`) compara as duas políticas de conteúdo directiva a
+   directiva — a que a API serve e a que o Vercel serve — e falha quando
+   divergem em tudo o resto.
 
 6. **O Stripe**, por fim: os quatro preços, o portal do cliente, e o webhook a
    apontar para `https://api.vicehub.com/api/v1/billing/webhook`. O segredo do

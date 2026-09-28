@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ViceHub — link card</title>
+
+<!--
+  O cartão que aparece quando alguém partilha um link do ViceHub.
+
+  1200×630 — a medida que o X, o Discord, o WhatsApp e o Facebook
+  recortam menos. É a primeira coisa que muita gente vai ver do
+  produto, e a única que aparece antes de decidirem se carregam.
+
+  **Não diz datas nem estados.** Um cartão destes fica guardado nos
+  servidores de quem o mostra durante semanas, e um "em
+  desenvolvimento" ou um "MVP no fim de setembro" passa a mentira no
+  dia seguinte ao lançamento sem ninguém lhe tocar. O que aqui está é
+  o que o produto é, que não tem prazo.
+
+  As cores e as fontes são as do produto —
+  `apps/web/src/styles/theme.css` e `apps/web/index.html` —, e não
+  escolhas desta página: um cartão com outras cores é o cartão de
+  outra coisa.
+
+  Renderiza-se com `node docs/press/render-og.mjs`, que troca o link
+  do Google Fonts e o logótipo por versões embebidas antes de tirar a
+  fotografia. Aberto à mão num browser, mostra o mesmo.
+-->
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700..900&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<!-- FONTES -->
+
+<style>
+    :root {
+        --ground: #0B0711;
+        --ink: #F5F0FF;
+        --magenta: #E93CEF;
+        --violet: #A78BFA;
+        --cyan: #22D3EE;
+        --cyan-ink: #67E8F9;
+        --sans: 'IBM Plex Sans', system-ui, sans-serif;
+        --display: 'Archivo', 'IBM Plex Sans', system-ui, sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; }
+
+    body {
+        width: 1200px;
+        height: 630px;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        overflow: hidden;
+    }
+
+    /*
+      O brilho. Dois focos nas duas cores da marca, nos cantos opostos
+      — o mesmo movimento do selo, que vai de magenta a ciano.
+    */
+    .cartao {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding: 54px 64px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background:
+            radial-gradient(900px 520px at 4% -16%, rgba(233, 60, 239, 0.22), transparent 62%),
+            radial-gradient(760px 460px at 104% 118%, rgba(34, 211, 238, 0.18), transparent 60%);
+    }
+
+    /* A grelha por baixo, quase invisível: dá fundo sem dar ruído. */
+    .cartao::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(167, 139, 250, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(167, 139, 250, 0.05) 1px, transparent 1px);
+        background-size: 60px 60px;
+    }
+
+    .cartao > * { position: relative; }
+
+    .marca {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .selo {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, var(--magenta), var(--cyan));
+    }
+
+    .selo img {
+        width: 100%;
+        height: 100%;
+        border-radius: 16px;
+        display: block;
+    }
+
+    .nome {
+        font-family: var(--display);
+        font-weight: 800;
+        font-stretch: 125%;
+        font-size: 46px;
+        letter-spacing: -0.01em;
+    }
+
+    .nome span { color: var(--cyan); }
+
+    .sobrolho {
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: 19px;
+        letter-spacing: 0.22em;
+        color: var(--cyan-ink);
+        margin-top: 14px;
+    }
+
+    h1 {
+        font-family: var(--display);
+        font-weight: 800;
+        font-stretch: 125%;
+        font-size: 60px;
+        line-height: 1.06;
+        letter-spacing: -0.02em;
+        max-width: 19ch;
+    }
+
+    h1 em {
+        font-style: normal;
+        color: var(--magenta);
+    }
+
+    .promessa {
+        font-size: 23px;
+        line-height: 1.45;
+        color: rgba(245, 240, 255, 0.76);
+        max-width: 44ch;
+        margin-top: 20px;
+    }
+
+    .tres {
+        display: flex;
+        gap: 48px;
+        padding-top: 22px;
+        border-top: 1px solid rgba(167, 139, 250, 0.2);
+        font-size: 18px;
+        line-height: 1.4;
+        color: rgba(245, 240, 255, 0.66);
+    }
+
+    .tres b {
+        display: block;
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        color: var(--violet);
+        margin-bottom: 8px;
+    }
+</style>
+</head>
+<body>
+    <div class="cartao">
+        <header>
+            <div class="marca">
+                <div class="selo"><img src="../../apps/web/public/vicehub-logo.png" alt=""></div>
+                <div class="nome">Vice<span>Hub</span></div>
+            </div>
+            <div class="sobrolho">GTA VI · ROLEPLAY</div>
+        </header>
+
+        <div>
+            <h1>The platform your <em>crew</em> already needed</h1>
+            <p class="promessa">
+                Crews, servers, events, and a treasury that pays out by who
+                actually showed up.
+            </p>
+        </div>
+
+        <div class="tres">
+            <div><b>TREASURY</b>Payouts weighted by confirmed attendance</div>
+            <div><b>PLANS</b>A server's plan covers the crews that play on it</div>
+            <div><b>LIVE</b>Servers report themselves, minute by minute</div>
+        </div>
+    </div>
+</body>
+</html>
