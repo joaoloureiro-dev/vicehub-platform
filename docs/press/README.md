@@ -15,10 +15,27 @@ scripts alike. GitHub serves the raw file, so the file goes here.
 | `x-post-<date>.md` | The post text, long and short, ready to copy |
 | `x-card-<date>.png` | 1200×1500 (4:5), the tallest portrait X shows uncropped |
 | `ship-log-<date>.png` | The long version, with what each change was for |
+| `og-card.html` | The link card the product itself serves — not dated, see below |
+| `render-og.mjs` | Renders that card to `apps/web/public/og-vicehub.png` |
 | `*.html` | The source each image was rendered from |
 
-Everything is dated and nothing is overwritten. A ship log is a record of one
-week; the next one does not replace it.
+Everything here is dated and nothing is overwritten. A ship log is a record of
+one week; the next one does not replace it.
+
+**The link card is the exception, and deliberately so.** `og-card.html` is what
+someone sees when a ViceHub link is pasted into X, Discord or WhatsApp. Whoever
+shows that card keeps it cached for weeks, so it says nothing that expires — no
+dates, no "in development", no counts. It is the one image here that is
+overwritten rather than dated:
+
+```bash
+node docs/press/render-og.mjs
+```
+
+The fonts are fetched and embedded before rendering, because the browser that
+takes the picture has no network access to Google Fonts — and a page that does
+not get its fonts draws itself in another one without complaining. The script
+refuses to save if Archivo did not load.
 
 ## The images are generated, not drawn
 

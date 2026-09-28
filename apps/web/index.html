@@ -26,7 +26,42 @@
     -->
     <meta name="color-scheme" content="dark">
     <meta name="theme-color" content="#0B0711">
-    <meta name="description" content="ViceHub — a plataforma para crews, servidores e jogadores.">
+    <!--
+      A descrição está em inglês porque esta página está em inglês
+      (`lang="en"`) e porque é o que sai daqui para fora: o cartão de
+      um link partilhado e o resultado de uma pesquisa. A interface
+      traduz-se em quatro idiomas depois de carregar; isto é lido por
+      quem nunca a carregou.
+    -->
+    <meta name="description" content="Tooling for GTA VI roleplay communities: run your crew, move what it earns, and prove who actually turned up.">
+
+    <!--
+      O cartão que aparece quando alguém partilha um link.
+
+      É a primeira coisa que muita gente vê do produto — e, sem isto, um
+      link no X ou no Discord aparece como uma linha de texto cinzenta
+      ao lado de concorrentes com imagem. Os endereços têm de ser
+      absolutos, e o `%ENDERECO%` é substituído ao compilar a partir do
+      `src/lib/sitio-publico.ts` (ou de `VITE_PUBLIC_URL`).
+
+      A descrição é a mesma de cima, escrita uma vez e repetida aqui
+      porque cada leitor lê a sua: um teste obriga-as a ser iguais.
+    -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="ViceHub">
+    <meta property="og:locale" content="en">
+    <meta property="og:url" content="%ENDERECO%/">
+    <meta property="og:title" content="ViceHub — the platform your crew already needed">
+    <meta property="og:description" content="Tooling for GTA VI roleplay communities: run your crew, move what it earns, and prove who actually turned up.">
+    <meta property="og:image" content="%ENDERECO%/og-vicehub.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="ViceHub — crews, servers, events, and a treasury that pays out by who actually showed up.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ViceHub — the platform your crew already needed">
+    <meta name="twitter:description" content="Tooling for GTA VI roleplay communities: run your crew, move what it earns, and prove who actually turned up.">
+    <meta name="twitter:image" content="%ENDERECO%/og-vicehub.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

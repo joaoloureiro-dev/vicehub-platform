@@ -16,14 +16,22 @@ Uma imagem promocional com outras cores é uma imagem de outra coisa.
 
 | | |
 |---|---|
-| Fundo | `#08060F` |
+| Fundo | `#0B0711` |
 | Magenta | `#E93CEF` |
+| Violeta | `#A78BFA` |
 | Ciano | `#22D3EE` |
+| Laranja (o pôr do sol) | `#FF6B35` |
 | Verde (bom) | `#34D399` |
-| Títulos | Chakra Petch |
-| Texto | Inter |
+| Títulos | Archivo, 800, largura expandida |
+| Texto | IBM Plex Sans |
 | Números e código | JetBrains Mono |
 | Formato | 16:9, 1600×900 — a medida de imagem única do X |
+| Cartão de link | 1200×630 — o que o X, o Discord e o WhatsApp recortam menos |
+
+Estes valores são cópias: quem manda são o `theme.css` e o `index.html`
+da web. As peças feitas antes de 27 de setembro de 2026 têm o fundo e as
+letras antigos — `#08060F`, Chakra Petch, Inter —, e não se corrigem
+para trás: são o que foi publicado no dia em que foram publicadas.
 
 O selo é sempre o degradê magenta→ciano. O sobrolho diz **GTA VI ·
 roleplay**, nunca FiveM: o FiveM é o runtime da implementação de
