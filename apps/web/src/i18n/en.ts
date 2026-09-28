@@ -27,6 +27,7 @@ export const en = (p: Tools) => ({
     },
 
     nav: {
+        inicio: 'Home',
         avisos: 'Notifications',
         crews: 'Crews',
         servidores: 'Servers',
@@ -57,17 +58,6 @@ export const en = (p: Tools) => ({
         verTudo: 'See all',
         jogadores: (n: number) =>
             p.plural(n, { one: '1 player', other: `${n} players` }),
-        planosTitulo: 'What it costs',
-        planosGratis:
-            'Playing is free, and stays free: your profile, your banner, applying to crews, being a member, running events, turning up. What is paid is moving the money.',
-        planoCrew: 'Crew',
-        planoCrewPreco: '\u20ac4.99 / month',
-        planoCrewTexto:
-            'A treasury that adds up: propose, approve, and split what the crew earns — everyone paid at once, or nobody. Thirty days free to try it.',
-        planoServidor: 'Server',
-        planoServidorPreco: '\u20acfrom 14.99 / month',
-        planoServidorTexto:
-            'Up to 10 crews playing on your server, and a treasury to pay them from. More crews, a bigger plan.',
         crewsTitulo: 'Crews and servers',
         crewsTexto:
             'Bring your people together under ranks that mean something. Applications get answered, not ignored.',
@@ -80,7 +70,6 @@ export const en = (p: Tools) => ({
         eventosTexto:
             'Run the job, confirm who was there, and split the take by attendance — with weights, because whoever leads a heist usually takes more.',
 
-        verPremium: 'What premium gives you',
         honesto: 'Early days',
         honestoTexto:
             'ViceHub is being built in the open, starting with GTA VI. Some of it is finished, some of it is not, and the fastest way to change that is to tell us what is missing.',

@@ -15,6 +15,15 @@ import { useT } from '../i18n/i18n.js';
  * para elas seria um destino para um bloco.
  */
 const DESTINOS = [
+    /*
+     * A entrada é o primeiro destino, e faltava.
+     *
+     * O logótipo em cima leva lá, mas isso é uma convenção que se sabe
+     * ou não se sabe — e quem não a sabe fica sem caminho de volta à
+     * página que explica o que isto é. Um menu que lista tudo menos o
+     * sítio onde se chegou está a assumir que ninguém quer voltar.
+     */
+    { to: '/', chave: 'inicio' },
     { to: '/crews', chave: 'crews' },
     { to: '/recrutamento', chave: 'recrutamento' },
     { to: '/servidores', chave: 'servidores' },
@@ -40,7 +49,13 @@ export const Navegacao = () => {
     return (
         <nav className="navegacao" aria-label={t.nav.principal}>
             {DESTINOS.map((destino) => (
-                <NavLink key={destino.to} to={destino.to}>
+                /*
+                  `end` só na entrada: sem ele, `/` é prefixo de tudo e
+                  a entrada ficava marcada como activa em todas as
+                  páginas do sítio. Nos outros, o prefixo é o que se
+                  quer — `/crews/abc` continua a ser as crews.
+                */
+                <NavLink key={destino.to} to={destino.to} end={destino.to === '/'}>
                     {t.nav[destino.chave]}
                 </NavLink>
             ))}

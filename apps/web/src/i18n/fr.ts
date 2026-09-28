@@ -30,6 +30,7 @@ export const fr = (p: Tools): Messages => ({
     },
 
     nav: {
+        inicio: 'Accueil',
         avisos: 'Notifications',
         crews: 'Crews',
         servidores: 'Serveurs',
@@ -60,17 +61,6 @@ export const fr = (p: Tools): Messages => ({
         verTudo: 'Voir tout',
         jogadores: (n: number) =>
             p.plural(n, { one: '1 joueur', other: `${n} joueurs` }),
-        planosTitulo: 'Ce que \u00e7a co\u00fbte',
-        planosGratis:
-            'Jouer est gratuit, et le restera : ton profil, ta banni\u00e8re, postuler \u00e0 des crews, en \u00eatre membre, organiser des \u00e9v\u00e9nements, venir. Ce qui se paie, c\u2019est de d\u00e9placer l\u2019argent.',
-        planoCrew: 'Crew',
-        planoCrewPreco: '4,99 \u20ac / mois',
-        planoCrewTexto:
-            'Une tr\u00e9sorerie qui tombe juste : proposer, approuver et partager ce que la crew gagne \u2014 tout le monde pay\u00e9 en m\u00eame temps, ou personne. Trente jours pour essayer.',
-        planoServidor: 'Serveur',
-        planoServidorPreco: '\u00e0 partir de 14,99 \u20ac / mois',
-        planoServidorTexto:
-            "Jusqu'\u00e0 10 crews sur votre serveur, et une tr\u00e9sorerie pour les payer. Plus de crews, une offre plus grande.",
         crewsTitulo: 'Crews et serveurs',
         crewsTexto:
             'Rassemble les tiens avec des rangs qui veulent dire quelque chose. Les candidatures reçoivent une réponse, elles ne sont pas ignorées.',
@@ -83,7 +73,6 @@ export const fr = (p: Tools): Messages => ({
         eventosTexto:
             'Vous faites le travail, on confirme qui était là, et on partage selon la présence — avec des poids, parce que celui qui mène un braquage prend souvent plus.',
 
-        verPremium: 'Ce que donne le premium',
         honesto: 'Encore au début',
         honestoTexto:
             'ViceHub se construit à découvert, en commençant par GTA VI. Certaines choses sont prêtes, d’autres non, et le plus rapide pour changer ça est de nous dire ce qui manque.',

@@ -177,7 +177,14 @@ describe('o meu perfil', () => {
         });
 
         expect(screen.queryByText(t.perfil.premium)).toBeNull();
-        expect(screen.queryByText(t.landing.verPremium)).toBeNull();
+        /*
+         * E não há caminho nenhum para a caixa, por rótulo nenhum: o
+         * link que aqui se procurava pelo nome desapareceu com a
+         * secção de preços da entrada, e perguntar pelo endereço é uma
+         * pergunta melhor — o que interessa não é como se chama o
+         * botão, é se existe um.
+         */
+        expect(document.querySelector('a[href="/premium"]')).toBeNull();
     });
 
     it('e também não muda nada a quem tem plano', async () => {
