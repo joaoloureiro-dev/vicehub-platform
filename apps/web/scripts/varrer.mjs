@@ -26,7 +26,14 @@
  * dizer que quem semeia não é quem se está a proteger.
  *
  * Opções: `--largura=390` (ou 1280, ou as duas separadas por vírgula),
- * `--idiomas=en,pt,es,fr`, `--base=http://127.0.0.1:4011`, `--controlo`.
+ * `--idiomas=en,pt,es,fr`, `--base=http://127.0.0.1:4011`, `--controlo`,
+ * `--sem-moderacao`.
+ *
+ * **A fila de denúncias.** É o único ecrã que não se enche por HTTP: a
+ * permissão de moderar não se concede por rota nenhuma. A varredura
+ * corre o `admin:grant` por si, com o `DATABASE_URL` de quem a corre, e
+ * segue em frente se não conseguir. `--sem-moderacao` dispensa-o de
+ * propósito — para medir o produto como o vê quem não modera.
  *
  * **O controlo.** Uma varredura que não encontra nada e uma varredura
  * avariada dizem exactamente a mesma coisa. Com `--controlo`, o
@@ -36,6 +43,7 @@
  * testes.
  */
 
+import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 /**
@@ -125,6 +133,47 @@ export const DE_FORA = {
 };
 
 const PASSWORD = 'Sup3rS3cret!Pass';
+
+/**
+ * Dá o cargo de administrador a quem a varredura semeou.
+ *
+ * A fila de denúncias é o único ecrã que não se enche por HTTP: a
+ * permissão de moderar não se alcança por rota nenhuma, e não podia —
+ * a primeira conta a poder nomear moderadores seria a porta que o
+ * cargo existe para guardar. A porta é o acesso à base de dados, e
+ * quem corre a varredura já o tem: é com ele que a API está de pé.
+ *
+ * Por isso se corre o mesmo `admin:grant` que se correria à mão. E por
+ * isso **não pára nada quando falha**: quem não tiver o `DATABASE_URL`
+ * à mão continua a medir os outros trinta ecrãs, e fica a saber que a
+ * fila ficou de fora em vez de descobrir uma varredura que não arranca.
+ *
+ * O que isto muda nos outros ecrãs é de propósito: quem modera vê
+ * botões que mais ninguém vê — retirar, fechar, decidir —, e esses
+ * nunca tinham sido medidos em largura nenhuma.
+ */
+const darCargoDeModerador = (email) => {
+    const feito = spawnSync(
+        'npm',
+        [
+            'run', '--silent', 'admin:grant',
+            '--workspace', '@vicehub/database',
+            '--', email,
+        ],
+        { encoding: 'utf8', cwd: new URL('../../..', import.meta.url).pathname },
+    );
+
+    if (feito.status !== 0) {
+        const porque = (feito.stderr ?? '').trim().split('\n').at(-1)
+            ?? 'o comando não correu';
+
+        console.log(`sem cargo de moderação (${porque}): a fila fica por medir`);
+
+        return false;
+    }
+
+    return true;
+};
 
 export const semear = async (base) => {
     const marca = Date.now().toString().slice(-7);
@@ -358,6 +407,75 @@ export const semear = async (base) => {
             },
         });
     }
+
+    /*
+     * E a crew divide o que ganhou, por participação no evento.
+     *
+     * É o que a plataforma existe para fazer — «todos pagos de uma vez,
+     * ou ninguém» — e era o último ecrã por medir de ponta a ponta: a
+     * carteira de quem recebe dizia que ainda não lhe tinha chegado
+     * nada, em quatro idiomas e duas larguras.
+     *
+     * Por participação e não por partes iguais: os pesos saem das
+     * presenças confirmadas do evento que acabou de fechar, e é essa a
+     * divisão que tem duas linhas com números diferentes para comparar.
+     */
+    const divisao = await api(`/treasury/crews/${crew.id}/distributions`, {
+        method: 'POST', headers: aut(eu.accessToken),
+        body: {
+            total: '120000',
+            basis: 'participation',
+            eventId: evento.id,
+            description: 'Divisão do assalto, por quem apareceu.',
+        },
+    });
+
+    await api(
+        `/treasury/crews/${crew.id}/distributions/${divisao.id}/approve`,
+        { method: 'POST', headers: aut(eu.accessToken) },
+    ).catch(() => undefined);
+
+    /*
+     * Um segundo anúncio, que fica à venda.
+     *
+     * O primeiro vai ser vendido daqui a três linhas, e o mercado só
+     * mostra o que está aberto: sem este, fechar aquele esvaziava o
+     * diretório — trocava-se um ecrã cheio por outro vazio.
+     */
+    await api(`/market/servers/${servidor.id}/listings`, {
+        method: 'POST', headers: aut(outra.accessToken),
+        body: {
+            category: 'vehicle',
+            title: `Sultan RS de rua, pronta a correr ${marca}`,
+            body: 'Motor de série, jantes novas. Vejo-a à noite no porto.',
+            price: '180000',
+        },
+    });
+
+    /*
+     * O carro vende-se, e quem o comprou diz como correu.
+     *
+     * Enche três sítios que estavam vazios: as avaliações do perfil
+     * público, as do anúncio, e o estado «vendido» de um anúncio
+     * fechado — que é um desenho diferente do de um à venda.
+     */
+    await api(`/market/listings/${anuncio.id}/close`, {
+        method: 'POST', headers: aut(eu.accessToken),
+        body: { outcome: 'sold' },
+    });
+
+    const avaliacao = await api(`/market/listings/${anuncio.id}/reviews`, {
+        method: 'POST', headers: aut(outra.accessToken),
+        body: {
+            rating: 5,
+            body: 'Entregou à hora e no sítio combinado. Carro como estava no anúncio.',
+        },
+    });
+
+    await api(`/market/reviews/${avaliacao.id}/reply`, {
+        method: 'POST', headers: aut(eu.accessToken),
+        body: { body: 'Bom comprador. Contou o dinheiro e não regateou à porta.' },
+    }).catch(() => undefined);
 
     const topico = await api('/forum/topics', {
         method: 'POST', headers: aut(eu.accessToken),
@@ -643,6 +761,10 @@ const varrer = async () => {
 
     console.log(`a semear em ${base}…`);
     const semente = await semear(base);
+
+    if (!process.argv.includes('--sem-moderacao')) {
+        darCargoDeModerador(semente.email);
+    }
 
     const navegador = await chromium.launch({
         ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
