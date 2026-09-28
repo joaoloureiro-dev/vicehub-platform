@@ -37,7 +37,9 @@ da base de dados até um ecrã; `🚧` está a meio; `○` ainda não tem códig
 - ✔ Perfil de servidor
 - ✔ Rasto de atividade — batimentos e contagem de jogadores vindos do
   servidor de jogo
-- ○ Tabelas de classificação
+- ✔ Quadro de classificação — as crews que lá jogam, por xp, com quem está
+  empatado a partilhar o lugar e a seguinte a descer tantos lugares quantos o
+  empate ocupa
 - ✔ Integração com os eventos
 - ✔ Medida de movimento da comunidade — a contagem de jogadores é guardada
   hora a hora, e é por esse passado que o diretório ordena por onde há gente
@@ -64,7 +66,9 @@ da base de dados até um ecrã; `🚧` está a meio; `○` ainda não tem códig
   mais recente
 - ✔ Resposta aceite — quem perguntou diz qual resolveu, ela passa a vir
   em primeiro lugar, e quem a escreveu fica a saber
-- ○ Categorias
+- ✔ Cinco partes — geral, crews, servidores, roleplay e ajuda — com a parte no
+  endereço, para se poder mandar a alguém, e a procura a cruzar-se com ela em
+  vez de a apagar
 
 ### 📰 O que se passa no jogo
 - ✔ Um bloco de notícias na página de entrada, alimentado por RSS ou Atom
@@ -231,6 +235,39 @@ npm run test       # não precisa de base de dados
 Os testes usam duplos em memória em vez do Prisma, por isso correm em
 qualquer máquina sem preparação. O mesmo conjunto de comandos corre no CI,
 em `.github/workflows/ci.yml`.
+
+#### As duas que o CI não corre
+
+Há coisas que nenhum teste apanha porque não têm onde acontecer: o `jsdom`
+não tem largura nem linha nem polegar, e um duplo em memória não recusa um
+pedido — responde ao que lhe mandam. As duas ferramentas abaixo precisam de
+uma API de pé com base de dados atrás, e por isso correm-se à mão, antes de
+uma entrega ou depois de mexer no que elas medem.
+
+```bash
+# a API a correr com a base de desenvolvimento e os travões levantados:
+#   RATE_LIMIT_MAX=100000 FORUM_RATE_LIMIT_MAX=10000
+
+npm run varrer --workspace @vicehub/web   # o produto inteiro, num browser
+npm run sondar --workspace @vicehub/api   # o produto inteiro, como intruso
+```
+
+**A varredura** abre os trinta e um ecrãs em quatro idiomas e duas larguras e
+mede o que se vê: texto a sair do ecrã, linhas compridas de mais, rótulos
+partidos em dois, e o que se pode carregar com menos de vinte e quatro pixéis
+de altura. Semeia o produto até ao fim — um evento concluído, uma divisão por
+participação, uma venda avaliada — porque um ecrã medido vazio é uma moldura
+à volta de nada. Com `--controlo`, começa por esticar um rótulo e exigir que a
+medição dê por ele: uma varredura avariada e uma varredura limpa dizem
+exactamente a mesma coisa.
+
+**A sonda** monta duas pessoas e tenta, com a segunda, tudo o que a primeira
+pode fazer a si mesma — sobretudo pelo caminho errado, que é onde a
+autorização por âmbito se engana: o âmbito do intruso no caminho, o
+identificador da vítima no fim. Cada sonda corre duas vezes, e o dono **tem**
+de conseguir o que o intruso não consegue; sem isso, um caminho mal escrito
+passa por porta trancada. Sai com código 1 se encontrar uma porta aberta ou
+uma sonda que não prove nada.
 
 ### Autorização por permissões
 
@@ -613,6 +650,43 @@ teste (`tests/integration/route-scope.test.ts`) que percorre **todas** as
 rotas da aplicação e falha se alguma perder o seu âmbito na validação,
 incluindo as que ainda não foram escritas.
 
+Esse teste olha para as rotas por dentro. A sonda (`npm run sondar
+--workspace @vicehub/api`) faz a pergunta do outro lado: põe o âmbito do
+intruso no caminho e o identificador da vítima no fim, e exige uma recusa.
+As duas juntas cobrem a armadilha nos dois sentidos — o âmbito que se perde
+na validação, e o âmbito que passa mas não bate certo com o que vem a
+seguir.
+
+### O quadro de um servidor
+
+O xp de uma crew sobe com os eventos que ela conclui, e isso existia muito
+antes de haver onde o ver: uma crew via o seu número e o lugar dela entre
+todas as crews da plataforma. O quadro é o sítio onde o número quer dizer
+alguma coisa a alguém — as crews que jogam **naquele** servidor, do xp mais
+alto para o mais baixo.
+
+**O lugar conta-se como se conta um lugar**: quantas estão estritamente à
+frente, mais uma. Duas empatadas partilham-no, e a seguinte desce tantos
+lugares quantos o empate ocupa — 1, 1, 3, e não 1, 1, 2. Desempatá-las pela
+data em que se filiaram seria inventar uma diferença que ninguém ganhou.
+
+Daí uma coisa que parece um pormenor e não é: **o lugar da primeira linha de
+cada página vem de uma contagem, e não do salto da paginação**. Numa página
+que comece a meio de um empate, o salto daria à segunda metade um lugar
+diferente do da primeira — o mesmo xp com dois lugares, por causa de onde
+calhou a quebra.
+
+Só as filiações ativas. Um pedido por responder não é uma crew que joga ali,
+e pô-la no quadro dava-lhe um lugar que ainda ninguém lhe deu.
+
+| Rota | Quem pode |
+|---|---|
+| `GET /api/v1/servers/:serverId/leaderboard?page=` | qualquer pessoa |
+
+Público como a lista das crews de um servidor: quem anda à procura de onde
+levar a sua quer ver contra quem vai jogar, e um quadro fechado a quem não
+está lá dentro não serve nem a quem está.
+
 ### Entrar com Discord
 
 | Rota | O que faz |
@@ -866,9 +940,29 @@ aparece em "cartas". No dia em que o fórum tiver milhares de tópicos,
 isto passa a ser um índice a sério — com a língua de cada tópico
 guardada ao lado dele, para o radicalizador saber o que está a ler.
 
+**As cinco partes são uma lista fechada, e não uma tabela.** Geral, crews,
+servidores, roleplay e ajuda: o nome de cada uma aparece no idioma de quem lê,
+e uma tabela guardá-lo-ia numa língua só — que é o erro que a descrição dos
+planos já fez e que o ecrã de preços teve de contornar. Param nas cinco porque
+um fórum que abre com vinte categorias tem dezanove vazias e uma cheia, e quem
+chega com uma pergunta passa mais tempo a decidir onde a pôr do que a
+escrevê-la.
+
+A lista está escrita em três sítios — o tipo `ForumCategory` do Postgres, que
+é quem recusa mesmo; a constante que a API valida; e o browser, que desenha as
+abas e traduz os nomes. Não há como gerar uma a partir da outra, porque o tipo
+da base nasce numa migração escrita à mão, e por isso há um teste que compara
+o ficheiro do esquema com a lista, ordem incluída. A alternativa é descobrir a
+diferença quando um tópico novo é recusado com um erro que ninguém sabe ler.
+
+A parte vai **no endereço**, como a procura, e as duas cruzam-se: procurar de
+dentro de uma parte procura dentro dela, carregar numa parte não perde a
+palavra, e limpar a procura fica onde está. Uma parte escrita à mão que não
+exista dá o fórum todo, e não um ecrã de erro por causa de uma letra trocada.
+
 | Rota (prefixo `/api/v1/forum`) | Quem pode |
 |---|---|
-| `GET /topics` | qualquer pessoa |
+| `GET /topics?category=` | qualquer pessoa |
 | `GET /topics/:topicId` | qualquer pessoa |
 | `POST /topics` | `forum:post` |
 | `POST /topics/:topicId/replies` | `forum:post` |
@@ -1525,9 +1619,18 @@ recuperação — e desligada por omissão, sem script de terceiros nenhum
 ✔ Caminho de produção verificado: a API serve a interface na sua própria
 origem, tem sonda de arranque separada da de prontidão, e recusa arrancar com
 a configuração que só faz mal em produção  
-✔ Uma varredura que abre o produto inteiro num browser — trinta ecrãs, quatro
-idiomas, duas larguras — e mede o que os testes não podem medir: `npm run
-varrer --workspace @vicehub/web`
+✔ **Quadro de classificação de cada servidor**: as crews que lá jogam, por xp,
+com quem está empatado a partilhar o lugar — o xp já subia com os eventos, e
+faltava o sítio onde ele quer dizer alguma coisa a alguém  
+✔ **Cinco partes no fórum** — geral, crews, servidores, roleplay e ajuda —,
+com a parte no endereço e a procura a cruzar-se com ela  
+✔ Página de preços que diz a escada toda, venha ou não a cobrança configurada:
+quanto custa é do catálogo e sabe-se sempre; saber cobrar é da instalação  
+✔ **Duas ferramentas que o CI não corre**, ambas com controlo: uma varredura
+que abre os trinta e um ecrãs num browser em quatro idiomas e duas larguras, e
+uma sonda que tenta, com a conta de outra pessoa, tudo o que um dono pode
+fazer — `npm run varrer --workspace @vicehub/web` e `npm run sondar
+--workspace @vicehub/api`
 
 ### O que falta para abrir ao público
 
