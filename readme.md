@@ -1531,6 +1531,11 @@ emails.
 Nada disto foi automatizado de propósito: quem faz o deploy é uma pessoa, uma
 vez, e o que interessa é que as armadilhas estejam identificadas.
 
+A sequência, para se seguir de uma ponta à outra com um telemóvel na mão, está
+em [`docs/deploy/dia-do-deploy.html`](docs/deploy/dia-do-deploy.html): a ordem,
+os comandos, e o que prova que cada passo correu bem. As razões ficam aqui —
+uma segunda cópia delas acabaria por dizer o contrário da primeira.
+
 ```bash
 npm ci
 npm run build                    # database, api e web
