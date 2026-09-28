@@ -1,0 +1,525 @@
+<title>Dia do deploy</title>
+
+<!--
+  A sequência do primeiro deploy do ViceHub, para se seguir de uma
+  ponta à outra com um telemóvel na mão.
+
+  Não repete o porquê de cada passo: isso está no readme, em "Pôr em
+  produção", e uma segunda cópia das razões acabaria por dizer o
+  contrário da primeira. O que está aqui é a ordem, os comandos, e o
+  que prova que cada passo correu bem.
+
+  As cores e as letras são as do produto (apps/web/src/styles/theme.css
+  e apps/web/index.html). É de propósito uma peça escura só: o produto
+  é escuro, e isto é uma peça do produto.
+
+  Os visados ficam guardados no browser de quem abre a página — e em
+  mais lado nenhum.
+-->
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700..900&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+    :root {
+        color-scheme: dark;
+
+        --ground: #0B0711;
+        --surface: #130C1C;
+        --surface-alta: #1B1226;
+        --ink: #F5F0FF;
+        --ink-fraco: rgba(245, 240, 255, 0.68);
+        --ink-tenue: rgba(245, 240, 255, 0.44);
+        --magenta: #E93CEF;
+        --magenta-ink: #F472F6;
+        --violet: #A78BFA;
+        --cyan: #22D3EE;
+        --cyan-ink: #67E8F9;
+        --sunset: #FF6B35;
+        --sunset-ink: #FFA07A;
+        --verde: #34D399;
+        --risco: rgba(167, 139, 250, 0.22);
+
+        --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --display: 'Archivo', 'IBM Plex Sans', system-ui, sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        padding-block: 40px 72px;
+        padding-inline: 20px;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    .folha {
+        max-width: 720px;
+        margin-inline: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+    }
+
+    header {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .sobrolho {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        color: var(--cyan-ink);
+    }
+
+    h1 {
+        margin: 0;
+        font-family: var(--display);
+        font-weight: 800;
+        font-stretch: 125%;
+        font-size: clamp(34px, 8vw, 46px);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        text-wrap: balance;
+    }
+
+    header p {
+        margin: 0;
+        color: var(--ink-fraco);
+        max-width: 60ch;
+    }
+
+    .aviso {
+        display: flex;
+        gap: 12px;
+        padding: 14px 16px;
+        border-left: 3px solid var(--sunset);
+        background: rgba(255, 107, 53, 0.09);
+        color: var(--sunset-ink);
+        font-size: 15px;
+    }
+
+    .aviso b { color: var(--ink); }
+
+    ol.passos {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        counter-reset: passo;
+    }
+
+    li.passo {
+        counter-increment: passo;
+        background: var(--surface);
+        border: 1px solid var(--risco);
+        border-radius: 14px;
+        padding: 18px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 14px;
+        align-items: start;
+    }
+
+    li.passo.feito { border-color: rgba(52, 211, 153, 0.4); }
+
+    .visto {
+        grid-row: 1 / span 3;
+        width: 26px;
+        height: 26px;
+        margin: 2px 0 0;
+        accent-color: var(--cyan);
+        flex: none;
+    }
+
+    .passo h2 {
+        margin: 0;
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 19px;
+        letter-spacing: -0.01em;
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+    }
+
+    .passo h2::before {
+        content: counter(passo);
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: 13px;
+        color: var(--magenta-ink);
+    }
+
+    .passo.feito h2 { color: var(--ink-tenue); text-decoration: line-through; }
+
+    .passo p { margin: 8px 0 0; color: var(--ink-fraco); grid-column: 2; }
+
+    .passo p.prova {
+        color: var(--verde);
+        font-size: 14px;
+    }
+
+    .passo p.prova::before {
+        content: 'prova  ';
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        color: var(--ink-tenue);
+    }
+
+    pre {
+        grid-column: 2;
+        margin: 12px 0 0;
+        padding: 12px 14px;
+        background: var(--surface-alta);
+        border: 1px solid var(--risco);
+        border-radius: 10px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.7;
+        color: var(--cyan-ink);
+    }
+
+    pre b { color: var(--magenta-ink); font-weight: 500; }
+    pre i { color: var(--ink-tenue); font-style: normal; }
+
+    code {
+        font-family: var(--mono);
+        font-size: 0.88em;
+        color: var(--cyan-ink);
+        overflow-wrap: anywhere;
+    }
+
+    h3 {
+        margin: 0 0 4px;
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 15px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--violet);
+    }
+
+    .bloco {
+        background: var(--surface);
+        border: 1px solid var(--risco);
+        border-radius: 14px;
+        padding: 18px;
+    }
+
+    .bloco p { margin: 8px 0 0; color: var(--ink-fraco); }
+    .bloco p:first-of-type { margin-top: 0; }
+
+    ul.campos {
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 15px;
+        color: var(--ink-fraco);
+    }
+
+    ul.campos li::before {
+        content: '—  ';
+        color: var(--ink-tenue);
+    }
+
+    footer {
+        border-top: 1px solid var(--risco);
+        padding-top: 18px;
+        color: var(--ink-tenue);
+        font-size: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    a { color: var(--cyan-ink); }
+    a:hover { text-decoration-thickness: 2px; }
+
+    .andamento {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--ink-tenue);
+    }
+
+    .andamento b { color: var(--cyan-ink); font-weight: 500; }
+
+    @media (prefers-reduced-motion: no-preference) {
+        li.passo { transition: border-color 160ms ease; }
+    }
+</style>
+
+<div class="folha">
+    <header>
+        <div class="sobrolho">VICEHUB · PRIMEIRO DEPLOY</div>
+        <h1>Dia do deploy</h1>
+        <p>
+            A ordem por que isto tem de acontecer, com o que prova que cada
+            passo correu bem. O porquê de cada coisa está no
+            <a href="https://github.com/joaoloureiro-dev/vicehub-platform#pôr-em-produção">readme, em <i>Pôr em produção</i></a> —
+            aqui está só a sequência.
+        </p>
+        <div class="andamento" id="andamento">0 de 10 feitos</div>
+    </header>
+
+    <div class="aviso">
+        <div>
+            <b>Nenhuma chave passa por uma conversa.</b>
+            As do Stripe, do SMTP, do Turnstile, da Google e do Discord vão do
+            painel de quem as emite para o painel do Railway, e mais lado
+            nenhum. O repositório é público.
+        </div>
+    </div>
+
+    <ol class="passos" id="passos">
+        <li class="passo" data-id="operador">
+            <input class="visto" type="checkbox" id="v-operador" aria-labelledby="t-operador">
+            <h2 id="t-operador">A identificação legal, antes de tudo</h2>
+            <p>
+                <code>apps/web/src/legal/operator.ts</code> tem sete campos
+                vazios, e enquanto estiverem vazios as páginas de termos e de
+                privacidade dizem, em cima e com todas as letras, que não são
+                definitivas. É código: entra num commit, não num painel.
+            </p>
+            <ul class="campos">
+                <li>a firma, como está registada (não é “ViceHub”)</li>
+                <li>a sede social, com país</li>
+                <li>o NIF ou número de registo comercial</li>
+                <li>o email para estes documentos e para dados</li>
+                <li>a lei aplicável e o foro</li>
+                <li>onde ficam os servidores</li>
+                <li>onde um consumidor reclama fora dos tribunais</li>
+            </ul>
+            <p class="prova">As duas páginas legais deixam de trazer o aviso em cima.</p>
+        </li>
+
+        <li class="passo" data-id="neon">
+            <input class="visto" type="checkbox" id="v-neon" aria-labelledby="t-neon">
+            <h2 id="t-neon">Neon: a base de dados, e os dois endereços</h2>
+            <p>
+                Criar o projeto e guardar os dois endereços que ele dá. O do
+                <b>pool</b> é o que a API usa; o <b>directo</b> é por onde as
+                migrações correm — num pool em modo de transação elas falham ou
+                ficam penduradas, e sempre a meio de um deploy.
+            </p>
+            <pre><b>DATABASE_URL</b>=<i>o do pool</i>
+<b>DIRECT_DATABASE_URL</b>=<i>o directo</i></pre>
+            <p class="prova">Os dois endereços copiados para onde ninguém mais lhes chega.</p>
+        </li>
+
+        <li class="passo" data-id="railway">
+            <input class="visto" type="checkbox" id="v-railway" aria-labelledby="t-railway">
+            <h2 id="t-railway">Railway: a API</h2>
+            <p>
+                Apontado a este repositório. O <code>railway.json</code> já diz
+                o resto: compila, corre <code>db:migrate:deploy</code> antes de
+                trocar de versão, arranca, e sonda <code>/api/v1/health/ready</code>.
+                As variáveis são as do <code>.env.example</code> — e o
+                <code>WEB_DIST_PATH</code> <b>fica por definir</b>, que aqui
+                quem serve a interface é o Vercel.
+            </p>
+            <pre>openssl rand -hex 48   <i># JWT_ACCESS_SECRET</i>
+openssl rand -hex 48   <i># JWT_REFRESH_SECRET (diferente)</i></pre>
+            <p>
+                Estas quatro, em produção, a API recusa arrancar sem elas:
+                <code>AUTH_COOKIE_SECURE=true</code>,
+                <code>APP_PUBLIC_URL=https://…</code>,
+                <code>SMTP_URL</code> e <code>MAIL_FROM</code>.
+            </p>
+            <p class="prova"><code>/api/v1/health/ready</code> responde 200.</p>
+        </li>
+
+        <li class="passo" data-id="seed">
+            <input class="visto" type="checkbox" id="v-seed" aria-labelledby="t-seed">
+            <h2 id="t-seed">O seed, uma vez, contra a base nova</h2>
+            <pre>npm run db:seed</pre>
+            <p>
+                Sem ele a API <b>recusa arrancar</b>, e diz-o na primeira linha
+                do log: não há cargo base para dar a quem se regista. Num
+                serviço que reinicia sozinho, isto aparece como um processo que
+                não fica de pé.
+            </p>
+            <p class="prova">21 permissões e 9 cargos garantidos.</p>
+        </li>
+
+        <li class="passo" data-id="vercel">
+            <input class="visto" type="checkbox" id="v-vercel" aria-labelledby="t-vercel">
+            <h2 id="t-vercel">Vercel: a interface</h2>
+            <p>
+                Mesmo repositório, raiz do projeto na raiz do repositório. O
+                <code>vercel.json</code> traz o comando, a pasta de saída e a
+                reescrita que faz um F5 em <code>/crews/alguma-coisa</code>
+                devolver a página em vez de 404.
+            </p>
+            <pre><b>VITE_PUBLIC_URL</b>=https://vicehub.com</pre>
+            <p>
+                Sem esta, o cartão de um link partilhado e o
+                <code>sitemap.xml</code> saem com o domínio que está escrito no
+                <code>sitio-publico.ts</code>.
+            </p>
+            <p class="prova">Um F5 numa página interna não dá 404.</p>
+        </li>
+
+        <li class="passo" data-id="dominios">
+            <input class="visto" type="checkbox" id="v-dominios" aria-labelledby="t-dominios">
+            <h2 id="t-dominios">Os domínios, e as três linhas que os nomeiam</h2>
+            <p>
+                <b>Não é acabamento: é o que faz a sessão existir.</b> O refresh
+                token vive num cookie <code>SameSite=strict</code>, que segue de
+                <code>vicehub.com</code> para <code>api.vicehub.com</code> — o
+                mesmo sítio registável — e <b>não segue</b> de
+                <code>…vercel.app</code> para <code>…railway.app</code>. Com os
+                nomes por omissão, o login funciona, o refresh devolve 401, e a
+                sessão morre a cada F5 sem nada no ecrã a explicar porquê.
+            </p>
+            <pre><b>connect-src</b>            <i>vercel.json</i>
+<b>CORS_ALLOWED_ORIGINS</b>   <i>Railway</i>
+<b>VITE_PUBLIC_URL</b>        <i>Vercel</i></pre>
+            <p class="prova">Entrar, fechar o separador, voltar: a sessão continua.</p>
+        </li>
+
+        <li class="passo" data-id="stripe">
+            <input class="visto" type="checkbox" id="v-stripe" aria-labelledby="t-stripe">
+            <h2 id="t-stripe">Stripe: os quatro preços, o portal, o webhook</h2>
+            <p>
+                Preços recorrentes mensais, um por plano. Um plano está à venda
+                se, e só se, tiver preço — dá para abrir só o da crew e deixar
+                os escalões de servidor fechados.
+            </p>
+            <pre>https://api.vicehub.com/api/v1/billing/webhook</pre>
+            <p>
+                O segredo do webhook vai para o Railway e para lado nenhum mais.
+            </p>
+            <p class="prova">A escada de preços mostra botões em vez de 503.</p>
+        </li>
+
+        <li class="passo" data-id="crons">
+            <input class="visto" type="checkbox" id="v-crons" aria-labelledby="t-crons">
+            <h2 id="t-crons">Os dois crons</h2>
+            <pre>npm run news:fetch   <i># à hora, se houver NEWS_FEED_URL</i>
+npm run db:prune     <i># uma vez por dia</i></pre>
+            <p>
+                A recolha de notícias corre fora da API de propósito: a página
+                de entrada não deve ficar de pé ou no chão conforme o dia que o
+                site de outra pessoa esteja a ter.
+            </p>
+            <p class="prova">O primeiro <code>db:prune</code> corre sem erro.</p>
+        </li>
+
+        <li class="passo" data-id="ensaio">
+            <input class="visto" type="checkbox" id="v-ensaio" aria-labelledby="t-ensaio">
+            <h2 id="t-ensaio">O ensaio, contra o que acabou de ficar de pé</h2>
+            <pre>npm run ensaiar --workspace @vicehub/api -- \
+  --base=https://api.vicehub.com</pre>
+            <p>
+                Cria conta, renova a sessão pelo cookie, funda uma crew e um
+                servidor, abre um tópico, põe um anúncio, vê os ecrãs que isso
+                produz — e depois apaga tudo o que criou, incluindo a própria
+                conta.
+            </p>
+            <p class="prova">
+                “ensaio limpo, e sem deixar nada para trás”. Um 401 na renovação
+                diz que os domínios não são o mesmo sítio; um 500 no registo diz
+                que o seed não correu.
+            </p>
+        </li>
+
+        <li class="passo" data-id="correio">
+            <input class="visto" type="checkbox" id="v-correio" aria-labelledby="t-correio">
+            <h2 id="t-correio">E o correio a sair</h2>
+            <p>
+                Pedir uma recuperação de palavra-passe para um email teu e
+                abrir o que chegar. O link tem de começar pelo
+                <code>APP_PUBLIC_URL</code> — se apontar para
+                <code>localhost</code>, quem o receber não vai a lado nenhum, e
+                o pedido parece ter corrido bem na mesma.
+            </p>
+            <p class="prova">O link abre a página de recuperar no domínio certo.</p>
+        </li>
+    </ol>
+
+    <div class="bloco">
+        <h3>Depois, e só depois</h3>
+        <p>
+            O post do lançamento está escrito e por publicar, em
+            <code>docs/press/x-post-lancamento.md</code>. Leva três avisos em
+            cima: o domínio é um marcador de posição, os números dos testes
+            envelhecem ao próximo merge, e o link vai sozinho numa linha —
+            uma imagem anexada substitui o cartão que o sítio serve por uma
+            fotografia que não leva link nenhum.
+        </p>
+    </div>
+
+    <footer>
+        <div>As quatro ferramentas que o CI não corre: <code>varrer</code>, <code>sondar</code>, <code>medir</code>, <code>ensaiar</code> — mais <code>correio</code>, que mostra o que sai pelo SMTP.</div>
+        <div>Os visados ficam no browser deste telemóvel, e em mais lado nenhum.</div>
+    </footer>
+</div>
+
+<script>
+    (() => {
+        const CHAVE = 'vicehub:dia-do-deploy';
+        const passos = [...document.querySelectorAll('.passo')];
+        const andamento = document.getElementById('andamento');
+
+        const ler = () => {
+            try {
+                return JSON.parse(localStorage.getItem(CHAVE) ?? '{}');
+            } catch {
+                return {};
+            }
+        };
+
+        const guardar = (estado) => {
+            try {
+                localStorage.setItem(CHAVE, JSON.stringify(estado));
+            } catch {
+                /* Sem sítio para guardar, a página serve na mesma. */
+            }
+        };
+
+        const contar = () => {
+            const feitos = passos.filter((p) => p.classList.contains('feito')).length;
+
+            andamento.innerHTML = feitos === passos.length
+                ? '<b>tudo feito.</b> falta só carregar no botão de publicar'
+                : `<b>${feitos}</b> de ${passos.length} feitos`;
+        };
+
+        const estado = ler();
+
+        for (const passo of passos) {
+            const caixa = passo.querySelector('.visto');
+            const id = passo.dataset.id;
+
+            caixa.checked = estado[id] === true;
+            passo.classList.toggle('feito', caixa.checked);
+
+            caixa.addEventListener('change', () => {
+                passo.classList.toggle('feito', caixa.checked);
+
+                const agora = ler();
+
+                agora[id] = caixa.checked;
+                guardar(agora);
+                contar();
+            });
+        }
+
+        contar();
+    })();
+</script>
