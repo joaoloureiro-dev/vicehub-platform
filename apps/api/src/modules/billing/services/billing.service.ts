@@ -69,6 +69,22 @@ export interface PurchasablePlan {
      * sem dizer porquê.
      */
     maxCrews?: number | null;
+    /**
+     * Se **esta instalação** sabe cobrar este plano.
+     *
+     * O preço de um plano é uma decisão de produto e está no catálogo;
+     * saber cobrá-lo depende de haver um preço do Stripe configurado, o
+     * que é uma decisão de instalação. São duas coisas, e juntá-las
+     * fazia a lista de preços desaparecer inteira enquanto a cobrança
+     * não estivesse montada — uma página de preços vazia, que é a
+     * pergunta que toda a gente faz antes de criar conta.
+     *
+     * A promessa que isto protege continua de pé, e fica mais visível:
+     * antes, um escalão sem preço configurado sumia-se, e quem lesse a
+     * lista não ficava a saber que existia. Agora aparece com o preço e
+     * a dizer que ainda não abriu — que é o que é verdade.
+     */
+    sellable: boolean;
 }
 
 /**
@@ -178,22 +194,18 @@ export class BillingService {
                 }
 
                 /**
-                 * E os que **esta instalação** não sabe cobrar.
+                 * Os que não se compram de todo ficam de fora — o
+                 * vitalício é um gesto, e não um escalão.
                  *
-                 * Um plano vende-se aqui se, e só se, tiver um preço do
-                 * Stripe configurado. Anunciar um escalão sem preço era
-                 * prometer uma coisa e cobrar outra — o pior erro que
-                 * uma lista de preços pode ter —, e é por isso que a
-                 * condição é a existência do preço e não uma marca no
-                 * catálogo: o catálogo não sabe o que está configurado.
-                 *
-                 * Também deixa de fora os que não se compram de todo,
-                 * porque esses nunca têm preço.
+                 * Os que se compram entram sempre, mesmo que esta
+                 * instalação ainda não os saiba cobrar: o preço é do
+                 * catálogo e não do Stripe, e uma lista de preços vazia
+                 * até alguém configurar a cobrança não responde à
+                 * pergunta que toda a gente faz antes de criar conta.
+                 * Quem não pode ser cobrado vai marcado, e o ecrã
+                 * mostra o preço sem oferecer o botão.
                  */
-                if (
-                    plano.ownerKind === undefined ||
-                    this.priceIds[key] === undefined
-                ) {
+                if (plano.ownerKind === undefined) {
                     return [];
                 }
 
@@ -204,6 +216,14 @@ export class BillingService {
                         currency: plano.currency,
                         intervalMonths: plano.intervalMonths,
                         ownerKind: plano.ownerKind,
+                        /*
+                         * A existência do preço do Stripe, e não uma
+                         * marca no catálogo: o catálogo não sabe o que
+                         * está configurado nesta instalação.
+                         */
+                        sellable:
+                            this.stripe !== null
+                            && this.priceIds[key] !== undefined,
                         ...(plano.maxCrews === undefined
                             ? {}
                             : { maxCrews: plano.maxCrews }),

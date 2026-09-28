@@ -185,13 +185,22 @@ export const PremiumPage = () => {
      * mostrar quanto custa — que é o que quem ainda não tem conta
      * veio cá ver.
      *
-     * A API já só devolve o que esta instalação sabe cobrar: um escalão
-     * sem preço configurado no Stripe não chega aqui, e por isso não há
-     * maneira de este ecrã oferecer um botão que a compra recusa.
+     * A **lista de preços** é a escada toda, venha ou não configurada
+     * a cobrança: quanto custa é uma decisão de produto e sabe-se
+     * sempre, e uma página de preços vazia enquanto ninguém montou o
+     * Stripe não responde à pergunta que toda a gente faz antes de
+     * criar conta.
+     *
+     * O que se pode **comprar** é outra coisa, e está mais abaixo: só
+     * entram os escalões que esta instalação sabe cobrar, para não
+     * haver botão nenhum que a compra recusa.
      */
     const paraVenda = (catalogo.data?.plans ?? []).filter(
         (linha) => !paraComunidade || linha.ownerKind === paraComunidade.kind,
     );
+
+    /** Destes, os que esta instalação sabe mesmo cobrar. */
+    const compraveis = paraVenda.filter((linha) => linha.sellable);
 
     /**
      * O escalão escolhido, ou o primeiro — que é o mais barato, pela
@@ -199,7 +208,7 @@ export const PremiumPage = () => {
      * pessoa a favor de quem vende.
      */
     const escolhido =
-        paraVenda.find((linha) => linha.key === escalao) ?? paraVenda[0];
+        compraveis.find((linha) => linha.key === escalao) ?? compraveis[0];
 
     const meu = paraComunidade
         ? {
@@ -236,7 +245,16 @@ export const PremiumPage = () => {
     const podeEscolher =
         Boolean(paraComunidade) &&
         meu?.isPremium !== true &&
-        meu?.isLifetime !== true;
+        meu?.isLifetime !== true &&
+        /*
+         * E há mesmo alguma coisa a comprar.
+         *
+         * Sem isto, uma instalação sem cobrança montada mostrava uma
+         * escolha entre escalões e um botão que responde 503 — que é
+         * pior do que não mostrar escolha nenhuma, porque só se
+         * descobre depois de alguém decidir pagar.
+         */
+        compraveis.length > 0;
 
     /**
      * As frases do titular, escolhidas de uma vez.
@@ -403,11 +421,21 @@ export const PremiumPage = () => {
                         </li>
                     ))}
                 </ul>
-            ) : paraVenda.length > 1 ? (
+            ) : compraveis.length > 1 ? (
                 <fieldset className="escaloes">
                     <legend>{t.premium.escolheEscalao}</legend>
 
-                    {paraVenda.map((linha) => (
+                    {/*
+                      A escolha é sobre o que se pode comprar, e não
+                      sobre a escada toda: um escalão que esta
+                      instalação não sabe cobrar não pode ficar
+                      escolhido — o `escolhido` cai no mais barato dos
+                      compráveis —, e um botão de rádio que não fica
+                      marcado quando se carrega nele lê-se como avaria.
+                      Quanto custa diz-se na lista de preços; aqui
+                      decide-se o que se leva.
+                    */}
+                    {compraveis.map((linha) => (
                         <label
                             className={
                                 linha.key === escolhido?.key
@@ -460,11 +488,37 @@ export const PremiumPage = () => {
             ) : null}
 
             {/*
+              E diz-se que ainda não abriu, em vez de a lista sumir.
+
+              Antes, um escalão que esta instalação não soubesse cobrar
+              não aparecia de todo, e quem lesse a página não ficava a
+              saber que existia. Aparece com o preço, e isto explica por
+              que é que não há botão.
+
+              Só na lista pública. Com comunidade no caminho, quem diz o
+              mesmo é o aviso lá abaixo, no lugar do botão — que é onde
+              se olha à procura dele. As duas frases juntas seriam a
+              mesma frase duas vezes no mesmo ecrã.
+            */}
+            {!paraComunidade && paraVenda.length > 0 && compraveis.length === 0 ? (
+                <p className="hint">{t.premium.aindaNaoAbriu}</p>
+            ) : null}
+
+            {/*
               O que o plano dá muda com o titular. Dizer "personaliza o
               teu perfil" a quem está a comprar para uma crew, e "pode
               ser comprado para uma crew, e não só para ti" na própria
               página da crew, era falar do produto errado à pessoa certa.
             */}
+            {/*
+              E leva título. Sem ele, três frases sobre o que o plano
+              dá apareciam logo a seguir aos preços sem nada a dizer o
+              que eram: lia-se como mais letra miúda da lista, e a
+              pergunta a que respondem — o que é que ganho com isto —
+              ficava sem se ver que tinha resposta.
+            */}
+            <h2 className="premium-oque">{t.premium.oQueDaTitulo}</h2>
+
             <ul className="premium-lista">
                 <li>
                     {paraComunidade
@@ -477,7 +531,7 @@ export const PremiumPage = () => {
                   a escolha à vista, cada linha já o diz, e repeti-lo
                   logo abaixo era dizer duas vezes a mesma coisa.
                 */}
-                {paraVenda.length === 1 && escolhido?.maxCrews !== undefined ? (
+                {compraveis.length === 1 && escolhido?.maxCrews !== undefined ? (
                     <li>{crewsDoEscalao(escolhido)}</li>
                 ) : null}
                 <li>{t.premium.oQueDaApoio}</li>

@@ -21,6 +21,7 @@ const PLANO_CREW = {
     currency: 'EUR',
     intervalMonths: 1,
     ownerKind: 'crew' as const,
+    sellable: true,
 };
 
 /**
@@ -34,6 +35,7 @@ const ESCALOES = [
         currency: 'EUR',
         intervalMonths: 1,
         ownerKind: 'server' as const,
+        sellable: true,
         maxCrews: 10,
     },
     {
@@ -42,6 +44,7 @@ const ESCALOES = [
         currency: 'EUR',
         intervalMonths: 1,
         ownerKind: 'server' as const,
+        sellable: true,
         maxCrews: 50,
     },
     {
@@ -50,6 +53,7 @@ const ESCALOES = [
         currency: 'EUR',
         intervalMonths: 1,
         ownerKind: 'server' as const,
+        sellable: true,
         maxCrews: null,
     },
 ];
@@ -279,6 +283,24 @@ describe('o ecrã do premium', () => {
     });
 
     /**
+     * E diz o que se leva por esse dinheiro.
+     *
+     * A lista do que o plano dá esteve aqui sem título nenhum: três
+     * frases logo a seguir aos preços, que se liam como mais letra
+     * miúda da escada. A pergunta a que respondem — o que é que ganho
+     * com isto — é metade do que se vem cá ver.
+     */
+    it('e diz o que o premium dá, com título', async () => {
+        vi.stubGlobal('fetch', servidor({}));
+
+        montar();
+
+        expect(await screen.findByText(t.premium.oQueDaTitulo)).toBeTruthy();
+        expect(screen.getByText(t.premium.oQueDaPersonalizacao)).toBeTruthy();
+        expect(screen.getByText(t.premium.oQueDaApoio)).toBeTruthy();
+    });
+
+    /**
      * O nome do escalão no idioma de quem o lê.
      *
      * Esteve escrito no catálogo de dados, em português, e saía de lá
@@ -321,6 +343,7 @@ describe('o ecrã do premium', () => {
                             currency: 'EUR',
                             intervalMonths: 1,
                             ownerKind: 'server' as const,
+                            sellable: true,
                             maxCrews: 200,
                         },
                     ],
@@ -427,6 +450,153 @@ describe('o ecrã do premium', () => {
 
             expect(await screen.findByText(t.premium.aindaNaoAbriu)).toBeTruthy();
             expect(screen.queryByText(t.premium.criarConta)).toBeNull();
+        });
+    });
+
+    /**
+     * **A lista de preços não depende de a cobrança estar montada.**
+     *
+     * Este é o caso de hoje: nenhum preço do Stripe configurado. A API
+     * devolvia a escada vazia, e a página de preços do ViceHub não
+     * dizia preço nenhum — a pergunta que toda a gente faz antes de
+     * criar conta ficava sem resposta no ecrã feito para a responder.
+     *
+     * Agora a escada vem toda, cada escalão marcado com o que esta
+     * instalação sabe cobrar. O que desaparece é o botão, e não o
+     * preço.
+     */
+    describe('quando nenhum escalão se pode cobrar ainda', () => {
+        const FECHADO = {
+            available: false,
+            plans: [PLANO_CREW, ...ESCALOES].map((linha) => ({
+                ...linha,
+                sellable: false,
+            })),
+        };
+
+        it('diz a escada de preços toda na mesma', async () => {
+            vi.stubGlobal('fetch', servidor({ catalogo: FECHADO }));
+
+            montar();
+
+            expect(await screen.findByText('\u20ac4.99')).toBeTruthy();
+            expect(screen.getByText('\u20ac14.99')).toBeTruthy();
+            expect(screen.getByText('\u20ac19.99')).toBeTruthy();
+            expect(screen.getByText('\u20ac99.99')).toBeTruthy();
+        });
+
+        it('e explica por que é que não há botão', async () => {
+            vi.stubGlobal('fetch', servidor({ catalogo: FECHADO }));
+
+            montar();
+
+            expect(await screen.findByText(t.premium.aindaNaoAbriu)).toBeTruthy();
+        });
+
+        /**
+         * Com comunidade no caminho, quem o diz é o aviso no lugar do
+         * botão — que é onde se olha à procura dele. Os dois juntos
+         * seriam a mesma frase duas vezes no mesmo ecrã, e um ecrã que
+         * se repete lê-se como avariado.
+         */
+        it('e di-lo uma vez só, e não duas', async () => {
+            vi.stubGlobal('fetch', servidor({ catalogo: FECHADO }));
+
+            montar('/premium?crew=crew-1');
+
+            await screen.findByText(t.premium.aindaNaoAbriu);
+
+            expect(screen.getAllByText(t.premium.aindaNaoAbriu)).toHaveLength(1);
+        });
+
+        /**
+         * E um servidor continua a ver os seus três escalões. Sem isto,
+         * o ecrã oferecia-lhe a escolha entre escalões que a compra
+         * recusa — ou, pior, não lhe mostrava preço nenhum, porque não
+         * havia escalão escolhido para mostrar.
+         */
+        it('mostra ao servidor os escalões dele, sem escolha a fazer', async () => {
+            vi.stubGlobal('fetch', servidor({ catalogo: FECHADO }));
+
+            montar('/premium?servidor=server-1');
+
+            expect(await screen.findByText('\u20ac14.99')).toBeTruthy();
+            expect(screen.getByText('\u20ac19.99')).toBeTruthy();
+            expect(screen.getByText('\u20ac99.99')).toBeTruthy();
+            expect(screen.queryByText(t.premium.escolheEscalao)).toBeNull();
+            expect(screen.queryByText(t.premium.comprar)).toBeNull();
+        });
+    });
+
+    /**
+     * **E quando esta instalação só sabe cobrar parte da escada.**
+     *
+     * Acontece a quem configurou um preço e ainda não os outros, e é o
+     * estado por onde a cobrança do ViceHub vai passar quando abrir. O
+     * que não pode acontecer é oferecer-se a escolha de um escalão que
+     * a compra recusa: `escolhido` só pode ser um dos compráveis, por
+     * isso um botão de rádio num escalão sem preço nunca ficava
+     * marcado — e um botão que não obedece a quem carrega nele lê-se
+     * como avaria.
+     */
+    describe('quando só parte da escada se pode cobrar', () => {
+        const escaloes = (vendaveis: readonly string[]) => ({
+            available: true,
+            plans: [PLANO_CREW, ...ESCALOES].map((linha) => ({
+                ...linha,
+                sellable: vendaveis.includes(linha.key),
+            })),
+        });
+
+        it('não dá escolha nenhuma quando só um escalão se cobra', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ catalogo: escaloes(['server_base']) }),
+            );
+
+            montar('/premium?servidor=server-1');
+
+            expect(await screen.findByText('\u20ac14.99')).toBeTruthy();
+            expect(screen.queryByText(t.premium.escolheEscalao)).toBeNull();
+            expect(screen.getByText(t.premium.comprar)).toBeTruthy();
+        });
+
+        /**
+         * E diz o que esse escalão dá. Sem escolha à vista, ninguém
+         * mais o diz: um preço sozinho não explica quantos lugares
+         * compra.
+         */
+        it('e diz os lugares desse escalão, uma vez só', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({ catalogo: escaloes(['server_base']) }),
+            );
+
+            montar('/premium?servidor=server-1');
+
+            await screen.findByText('\u20ac14.99');
+
+            expect(screen.getAllByText(t.premium.ateCrews(10))).toHaveLength(1);
+        });
+
+        /**
+         * Com dois cobráveis há escolha a fazer — entre esses dois, e
+         * não entre os três.
+         */
+        it('escolhe-se entre os cobráveis, e não entre todos', async () => {
+            vi.stubGlobal(
+                'fetch',
+                servidor({
+                    catalogo: escaloes(['server_base', 'server_plus']),
+                }),
+            );
+
+            montar('/premium?servidor=server-1');
+
+            expect(await screen.findByText(t.premium.escolheEscalao)).toBeTruthy();
+            expect(screen.getByText('\u20ac14.99')).toBeTruthy();
+            expect(screen.getByText('\u20ac19.99')).toBeTruthy();
+            expect(screen.queryByText('\u20ac99.99')).toBeNull();
         });
     });
 

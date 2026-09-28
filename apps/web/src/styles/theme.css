@@ -2512,6 +2512,21 @@ button.link:hover {
     outline-offset: 2px;
 }
 
+/*
+ * O título do que o plano dá.
+ *
+ * Mesma medida do resto da página: é um rótulo para a lista que vem a
+ * seguir, e não um segundo cabeçalho a competir com o de cima.
+ */
+.premium-oque {
+    margin: 0;
+    font-family: var(--display);
+    font-stretch: 125%;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+}
+
 .premium-lista {
     display: flex;
     flex-direction: column;

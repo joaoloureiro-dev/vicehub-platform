@@ -1025,6 +1025,7 @@ export const pt = (p: Tools): Messages => ({
         planoEDeComunidade:
             'Aqui não há nada para comprares para a tua conta. O plano é de uma crew ou de um servidor — abre a que geres e compra-o lá.',
         asMinhasComunidades: 'As minhas comunidades',
+        oQueDaTitulo: 'O que o premium dá',
         oQueDaPersonalizacao:
             'Uma tesouraria que bate certo: uma crew propõe, aprova e divide o que ganha — todos pagos ao mesmo tempo, ou nenhum.',
         oQueDaCrew:
