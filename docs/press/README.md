@@ -15,6 +15,7 @@ scripts alike. GitHub serves the raw file, so the file goes here.
 | `x-post-<date>.md` | The post text, long and short, ready to copy |
 | `x-card-<date>.png` | 1200×1500 (4:5), the tallest portrait X shows uncropped |
 | `ship-log-<date>.png` | The long version, with what each change was for |
+| `x-post-lancamento.md` | The post for the day it goes live — written ahead, not published |
 | `og-card.html` | The link card the product itself serves — not dated, see below |
 | `render-og.mjs` | Renders that card to `apps/web/public/og-vicehub.png` |
 | `*.html` | The source each image was rendered from |

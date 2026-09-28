@@ -91,6 +91,28 @@ Setembro de 2026, terceiro post. Continua o segundo.
   banner de quem joga não se vendem; o que se vende é gerir uma
   comunidade, e a personalização de crews e servidores continua paga.
 
+Setembro de 2026, quarto post — **escrito e ainda não publicado**. É o do
+dia em que o sítio responder no endereço dele
+([`docs/press/x-post-lancamento.md`](../press/x-post-lancamento.md)), e
+continua o terceiro: aquele acabava com "o que falta não é código — uma
+base de dados, uma máquina, um domínio e as chaves do pagamento", e este
+começa por dizer que essa lista está vazia.
+
+- Está no ar. É a primeira afirmação nova, e a única que não pode ser
+  feita antes de ser verdade.
+- O fórum tem cinco secções, procura-se, e quem perguntou marca a
+  resposta que resolveu. Lê-se sem conta nenhuma.
+- Cada servidor tem um quadro das crews que lá jogam, ordenado pelo xp
+  que ganharam nos eventos que concluíram. Empates partilham o lugar.
+- O preço vê-se antes do botão de comprar.
+- A interface está em quatro idiomas: inglês, português, espanhol e
+  francês.
+- Um link partilhado passa a aparecer com cartão: imagem, título e
+  descrição.
+
+E o que **não** se diz lá, de propósito: nada sobre o dinheiro a sério no
+mercado, que continua sem código nenhum.
+
 **Correção ao segundo post:** eu tinha dito que as aprovações da
 tesouraria não ficavam auditadas. Ficam — quem decidiu, quanto, em que
 sentido e quem tinha pedido. A conclusão errada veio de uma procura que
