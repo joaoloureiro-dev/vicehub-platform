@@ -701,10 +701,13 @@ sou eu, o que está à espera de mim, e quantos avisos tenho por ler.
 |---|---|
 | `GET /users/me` | 4 |
 | `GET /notifications/unread` | 2 |
-| `GET /users/me/pending` | 9 sem comunidades, 21 com |
+| `GET /users/me/pending` | 9 sem comunidades, 18 com |
 
 Nenhum deles cresce com o uso — a caixa do que espera resposta crescia, duas
-consultas por comunidade gerida, e deixou de crescer. O que resta é chão
+consultas por comunidade gerida, e deixou de crescer. E deixou também de ler
+duas e três vezes as mesmas comunidades: as quatro contagens pediam cada uma o
+nome das suas, e agora contar e nomear são duas coisas — um nome por espécie,
+lido uma vez. O que resta é chão
 fixo, e nenhum destes três exige uma permissão: a casca só precisa de saber
 quem está do outro lado, não se essa pessoa pode gerir alguma coisa.
 

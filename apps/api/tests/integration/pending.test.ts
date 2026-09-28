@@ -432,6 +432,49 @@ describe('o que está à espera de mim', () => {
             );
         });
 
+        /**
+         * **E as crews que esperam para jogar no servidor.**
+         *
+         * É a terceira espécie desta caixa e não tinha teste nenhum: a
+         * contagem e o nome estavam cobertos por tabela, mas a espécie
+         * não — um pedido de filiação anunciado como pedido de entrada
+         * mandava quem o fosse resolver à página errada do servidor, e
+         * nada se queixava.
+         */
+        it('conta a crew que espera para jogar no servidor, como filiação', async () => {
+            const outra = await app.inject({
+                method: 'POST',
+                url: '/api/v1/crews',
+                headers: auth(candidato),
+                payload: { name: `Quer jogar ${marca}`, tag: tagAoAcaso() },
+            });
+
+            expect(outra.statusCode, outra.body).toBe(201);
+
+            /* Quem pede é a crew, pelo caminho dela. */
+            const pedido = await app.inject({
+                method: 'POST',
+                url: `/api/v1/crews/${outra.json().id as string}/affiliation`,
+                headers: auth(candidato),
+                payload: { serverId },
+            });
+
+            expect(pedido.statusCode, pedido.body).toBe(201);
+
+            const filiacoes = dosTipos(
+                await pendentes(lider),
+                'affiliation_request',
+            );
+
+            expect(filiacoes).toHaveLength(1);
+            expect(filiacoes[0]).toMatchObject({
+                communityKind: 'server',
+                communityId: serverId,
+                communityName: `Servidor ${marca}`,
+                count: 1,
+            });
+        });
+
         it('soma tudo no total', async () => {
             const dados = await pendentes(lider);
 
