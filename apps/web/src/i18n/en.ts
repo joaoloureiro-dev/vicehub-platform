@@ -1063,6 +1063,7 @@ export const en = (p: Tools) => ({
         planoEDeComunidade:
             'There is nothing here to buy for your own account. The plan belongs to a crew or a server — open the one you run and buy it there.',
         asMinhasComunidades: 'My communities',
+        oQueDaTitulo: 'What premium gives you',
         oQueDaPersonalizacao:
             'A treasury that adds up: a crew proposes, approves and splits what it earns — everyone paid at once, or nobody.',
         oQueDaCrew:

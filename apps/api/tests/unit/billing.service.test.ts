@@ -263,16 +263,52 @@ describe('BillingService', () => {
         });
 
         /**
-         * **Um plano vende-se se, e só se, esta instalação tiver preço
-         * para ele.**
+         * **Quanto custa e se se pode pagar agora são duas perguntas.**
          *
-         * É o que impede uma lista de preços de anunciar um escalão que
-         * a cobrança não sabe cobrar — prometer um preço e cobrar outro
-         * é o pior erro que uma lista de preços pode ter. Era assim que
-         * os três escalões de servidor estiveram anunciados sem que
-         * houvesse forma de os pagar.
+         * O preço está no catálogo e sabe-se sempre; saber cobrá-lo
+         * depende de haver preço do Stripe configurado nesta
+         * instalação. Juntar as duas fazia a lista de preços
+         * desaparecer inteira enquanto a cobrança não estivesse
+         * montada — e é essa a pergunta que se faz antes de criar
+         * conta.
+         *
+         * A promessa que a separação protege é a mesma, e fica mais
+         * visível: o escalão aparece com o preço e marcado como ainda
+         * não cobrável, em vez de sumir sem que ninguém saiba que
+         * existe.
          */
-        it('não anuncia um escalão sem preço configurado', () => {
+        it('anuncia a escada toda mesmo sem preços configurados', () => {
+            const semPrecos = new BillingService(
+                repository as unknown as BillingRepository,
+                gateway as unknown as StripeGateway,
+                autorizacao as unknown as AuthorizationService,
+                {},
+            );
+
+            expect(
+                semPrecos.listPurchasablePlans().plans.map((plano) => plano.key),
+            ).toEqual(['premium', 'server_base', 'server_plus', 'server_unlimited']);
+        });
+
+        it('e nenhum deles se vende', () => {
+            const semPrecos = new BillingService(
+                repository as unknown as BillingRepository,
+                gateway as unknown as StripeGateway,
+                autorizacao as unknown as AuthorizationService,
+                {},
+            );
+
+            for (const plano of semPrecos.listPurchasablePlans().plans) {
+                expect(plano.sellable).toBe(false);
+            }
+        });
+
+        /**
+         * E a marca é por plano, e não pela instalação toda: quem
+         * configurou o preço da crew e não os do servidor vende um e
+         * anuncia os outros.
+         */
+        it('marca cada plano com o que esta instalação sabe cobrar', () => {
             const sóCrew = new BillingService(
                 repository as unknown as BillingRepository,
                 gateway as unknown as StripeGateway,
@@ -281,24 +317,41 @@ describe('BillingService', () => {
             );
 
             expect(
-                sóCrew.listPurchasablePlans().plans.map((plano) => plano.key),
-            ).toEqual(['premium']);
+                sóCrew
+                    .listPurchasablePlans()
+                    .plans.map((plano) => [plano.key, plano.sellable]),
+            ).toEqual([
+                ['premium', true],
+                ['server_base', false],
+                ['server_plus', false],
+                ['server_unlimited', false],
+            ]);
         });
 
         /**
-         * Chaves sem preço nenhum são recusadas ao arrancar, por isso
-         * este caso não chega a acontecer em produção. Continua a ser
-         * a resposta certa: uma lista vazia, e não um escalão a mais.
+         * Sem Stripe não se cobra nada, tenha ou não preço configurado:
+         * o preço é o nome de uma coisa do lado de lá, e sem ligação ao
+         * lado de lá não há checkout para abrir.
          */
-        it('não anuncia nada quando não há preço nenhum', () => {
-            const semPrecos = new BillingService(
+        it('não vende nada quando não há Stripe, mesmo com preços', () => {
+            const semStripe = new BillingService(
                 repository as unknown as BillingRepository,
-                gateway as unknown as StripeGateway,
-                autorizacao as unknown as AuthorizationService,
-                {},
+                null,
+                createAuthorizationMock() as unknown as AuthorizationService,
+                PRECOS,
             );
 
-            expect(semPrecos.listPurchasablePlans().plans).toEqual([]);
+            const catalogo = semStripe.listPurchasablePlans();
+
+            expect(catalogo.plans.length).toBeGreaterThan(0);
+            expect(catalogo.plans.every((plano) => plano.sellable)).toBe(false);
+            expect(catalogo.plans.some((plano) => plano.sellable)).toBe(false);
+        });
+
+        it('e vende-os todos quando há Stripe e preços', () => {
+            for (const plano of service.listPurchasablePlans().plans) {
+                expect(plano.sellable).toBe(true);
+            }
         });
     });
 

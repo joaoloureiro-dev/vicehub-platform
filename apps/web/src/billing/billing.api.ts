@@ -22,6 +22,16 @@ export interface PurchasablePlan {
      * o da crew.
      */
     maxCrews?: number | null;
+    /**
+     * Se esta instalação sabe cobrar este plano.
+     *
+     * O preço vem do catálogo e é sempre conhecido; saber cobrá-lo
+     * depende de haver um preço do Stripe configurado. São duas coisas,
+     * e é por isso que um escalão aparece com preço e sem botão
+     * enquanto a cobrança não estiver montada — em vez de não aparecer
+     * de todo, que é o que a página de preços fazia.
+     */
+    sellable: boolean;
 }
 
 export interface PlanCatalogue {
