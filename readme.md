@@ -253,6 +253,7 @@ npm run varrer  --workspace @vicehub/web   # o produto inteiro, num browser
 npm run sondar  --workspace @vicehub/api   # o produto inteiro, como intruso
 npm run medir   --workspace @vicehub/api   # o que cada ecrã custa à base
 npm run ensaiar --workspace @vicehub/api   # uma instalação nova serve?
+npm run correio --workspace @vicehub/api   # o que sai mesmo pelo SMTP
 ```
 
 A medição exige a extensão do Postgres, uma vez por base:
@@ -1657,6 +1658,27 @@ para a API e tudo o resto para o `apps/web/dist`, **com o `index.html` a
 responder por tudo o que não é ficheiro**. Sem essa regra, um F5 em
 `/crews/alguma-coisa` dá 404: esse endereço só existe dentro do router do
 browser. Nesse caso, deixa-se o `WEB_DIST_PATH` por definir.
+
+#### Ver o correio antes de o mandar
+
+A plataforma manda dois emails, e os dois são a única maneira de voltar a
+entrar numa conta: confirmar o email e recuperar a palavra-passe. Um SMTP mal
+configurado não dá erro a ninguém — o pedido responde 202, e só se descobre
+quando alguém perde a palavra-passe e não a consegue recuperar.
+
+```bash
+npm run correio --workspace @vicehub/api      # uma caixa que só mostra
+```
+
+É um servidor SMTP de mentira: fala o que é preciso para receber a mensagem e,
+em vez de a enviar, escreve quem manda, para quem, o assunto e **os links**.
+Aponta-se a API a ele com `SMTP_URL=smtp://utilizador:senha@127.0.0.1:1025`,
+pede-se uma recuperação de palavra-passe, e vê-se o que sairia.
+
+O que se procura é o endereço dos links: têm de começar pelo `APP_PUBLIC_URL`.
+Um link para `localhost` aparece marcado — é o erro que a caixa existe para
+apanhar, porque manda toda a gente para a máquina de quem fez o deploy e o
+pedido parece ter corrido bem.
 
 #### A configuração que a API recusa em produção
 
