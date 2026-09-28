@@ -1350,7 +1350,9 @@ button.link:hover {
  * crews de um servidor, pedidos por responder, presenças num evento e
  * as minhas comunidades. Uma regra, e não seis.
  */
-.pessoas .nome a {
+.pessoas .nome a,
+.lugar a,
+.ganho-porque a {
     display: inline-block;
     max-width: 100%;
     padding-block: 4px;
@@ -1682,12 +1684,25 @@ button.link:hover {
     padding-bottom: env(safe-area-inset-bottom);
 }
 
+/*
+ * Cada item leva a largura de que precisa, e o que sobra divide-se.
+ *
+ * Com `flex: 1` eram quartos iguais, e num telemóvel de 390 cada quarto
+ * dá 94 pixéis: "Mine" cabe, "Les miennes" e "As minhas" não, e o
+ * rótulo partia-se em duas linhas dentro do botão — em dois dos quatro
+ * idiomas, e só ali. `auto` na base deixa o comprido ficar comprido e o
+ * curto devolver o que não usa; `nowrap` é o que transforma um rótulo
+ * que não cabe numa queixa visível em vez de numa quebra silenciosa.
+ */
 .barra-baixo a {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
     min-height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-inline: 6px;
     font-size: 13.5px;
     font-weight: 500;
     color: var(--faint);
@@ -3035,15 +3050,23 @@ a.pill.categoria:hover {
     font-variant-numeric: tabular-nums;
 }
 
+/*
+ * O sublinhado segue o texto, e não a caixa.
+ *
+ * Era um `border-bottom`, que assenta na margem da caixa: com o espaço
+ * que o link leva para se poder tocar, ficava quatro pixéis abaixo das
+ * letras, descolado delas. `text-decoration` desenha-se sobre o texto e
+ * não dá pelo espaço à volta.
+ */
 .lugar a {
     color: var(--muted);
     text-decoration: none;
-    border-bottom: 1px solid transparent;
 }
 
 .lugar a:hover {
     color: var(--cyan-ink);
-    border-bottom-color: currentColor;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 /* ---------- ordenar o diretório ---------- */

@@ -126,7 +126,7 @@ export const DE_FORA = {
 
 const PASSWORD = 'Sup3rS3cret!Pass';
 
-const semear = async (base) => {
+export const semear = async (base) => {
     const marca = Date.now().toString().slice(-7);
 
     const api = async (caminho, opcoes = {}) => {
@@ -156,6 +156,19 @@ const semear = async (base) => {
 
     const aut = (token) => ({ authorization: `Bearer ${token}` });
 
+    /*
+     * Uma etiqueta que não choca com a da corrida anterior.
+     *
+     * Era feita dos três últimos algarismos do relógio, e três
+     * algarismos repetem-se de segundo a segundo: bastava semear duas
+     * vezes no mesmo minuto para a segunda morrer com um 409 antes de
+     * medir ecrã nenhum. Ao acaso, em maiúsculas, dentro dos oito
+     * caracteres que a etiqueta admite.
+     */
+    const etiqueta = () =>
+        Array.from({ length: 6 }, () =>
+            'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
+
     const eu = await registar(`vr${marca}`);
     const outra = await registar(`vo${marca}`);
 
@@ -167,7 +180,7 @@ const semear = async (base) => {
 
     const crew = await api('/crews', {
         method: 'POST', headers: aut(eu.accessToken),
-        body: { name: `Os Corredores ${marca}`, tag: `V${marca.slice(-3)}` },
+        body: { name: `Os Corredores ${marca}`, tag: etiqueta() },
     });
 
     const servidor = await api('/servers', {
@@ -191,7 +204,7 @@ const semear = async (base) => {
      */
     const outraCrew = await api('/crews', {
         method: 'POST', headers: aut(outra.accessToken),
-        body: { name: `Os Náufragos do Porto ${marca}`, tag: `N${marca.slice(-3)}` },
+        body: { name: `Os Náufragos do Porto ${marca}`, tag: etiqueta() },
     });
 
     for (const [aQuem, token] of [
@@ -214,6 +227,24 @@ const semear = async (base) => {
             name: `Assalto ao banco central ${marca}`,
             startsAt: new Date(Date.now() + 86_400_000).toISOString(),
         },
+    });
+
+    /*
+     * A outra pessoa entra na crew.
+     *
+     * Duas coisas dependem disto. Um evento só dá xp com duas presenças
+     * confirmadas — é a regra que impede subir de nível sozinho —, e a
+     * lista de membros com uma linha só não mostra o que duas mostram:
+     * o cargo ao lado do nome, e a linha a quebrar quando o nome é
+     * comprido.
+     */
+    await api(`/crews/${crew.id}/join`, {
+        method: 'POST', headers: aut(outra.accessToken),
+        body: { message: 'Conduzo bem e apareço às horas. Jogo à noite.' },
+    });
+
+    await api(`/crews/${crew.id}/requests/${outra.user.id}/accept`, {
+        method: 'POST', headers: aut(eu.accessToken),
     });
 
     const anuncio = await api(`/market/servers/${servidor.id}/listings`, {
@@ -239,6 +270,94 @@ const semear = async (base) => {
         method: 'POST', headers: aut(eu.accessToken),
         body: { body: 'Às oito e meia, junto ao armazém azul.' },
     });
+
+    /*
+     * O evento acontece: as duas inscrevem-se, as duas são confirmadas,
+     * e ele fecha.
+     *
+     * É o que enche quatro ecrãs que a varredura media vazios — as
+     * presenças no evento, o xp da crew, a reputação de quem apareceu e
+     * o histórico do perfil —, e é o caminho por onde passa tudo o que
+     * a plataforma existe para provar: quem apareceu mesmo.
+     */
+    for (const token of [eu.accessToken, outra.accessToken]) {
+        await api(`/events/crews/${crew.id}/${evento.id}/signup`, {
+            method: 'POST', headers: aut(token),
+        });
+    }
+
+    for (const quem of [eu.user.id, outra.user.id]) {
+        await api(
+            `/events/crews/${crew.id}/${evento.id}/participants/${quem}/confirm`,
+            /*
+             * Com corpo, ainda que vazio: a rota da confirmação tem
+             * esquema de corpo, e um POST sem nada chega como `null`.
+             * O ecrã manda `{}` pela mesma razão.
+             */
+            { method: 'POST', headers: aut(eu.accessToken), body: {} },
+        );
+    }
+
+    await api(`/events/crews/${crew.id}/${evento.id}/status`, {
+        method: 'POST', headers: aut(eu.accessToken),
+        body: { status: 'completed' },
+    });
+
+    /*
+     * E outro por acontecer, para a lista ter os dois estados. Uma
+     * lista onde está tudo concluído mostra tanto como uma onde não
+     * está nada.
+     */
+    await api(`/events/crews/${crew.id}`, {
+        method: 'POST', headers: aut(eu.accessToken),
+        body: {
+            name: `Corrida na marginal ${marca}`,
+            startsAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+        },
+    });
+
+    /* Um do servidor, que tinha a agenda vazia. */
+    await api(`/events/servers/${servidor.id}`, {
+        method: 'POST', headers: aut(eu.accessToken),
+        body: {
+            name: `Noite de encontro no porto ${marca}`,
+            startsAt: new Date(Date.now() + 2 * 86_400_000).toISOString(),
+        },
+    });
+
+    /*
+     * E as duas tesourarias com movimentos.
+     *
+     * É o que a plataforma vende, e era o ecrã mais vazio de todos:
+     * «ainda não há movimentos» em quatro idiomas e duas larguras. Um
+     * aprovado e um por decidir, porque são duas linhas diferentes — a
+     * segunda leva os botões de quem decide.
+     */
+    for (const [onde, id] of [['crews', crew.id], ['servers', servidor.id]]) {
+        const entrada = await api(`/treasury/${onde}/${id}/movements`, {
+            method: 'POST', headers: aut(eu.accessToken),
+            body: {
+                amount: '250000',
+                direction: 'credit',
+                category: 'contribution',
+                description: 'Venda do Banshee, entregue no porto.',
+            },
+        });
+
+        await api(`/treasury/${onde}/${id}/movements/${entrada.id}/approve`, {
+            method: 'POST', headers: aut(eu.accessToken),
+        }).catch(() => undefined);
+
+        await api(`/treasury/${onde}/${id}/movements`, {
+            method: 'POST', headers: aut(eu.accessToken),
+            body: {
+                amount: '40000',
+                direction: 'debit',
+                category: 'server_costs',
+                description: 'Renda do armazém, este mês.',
+            },
+        });
+    }
 
     const topico = await api('/forum/topics', {
         method: 'POST', headers: aut(eu.accessToken),
@@ -325,9 +444,25 @@ const MEDICAO = () => {
      * retângulos. O que está fora do fluxo não conta: o texto que só se
      * ouve está posicionado em absoluto, noutro sítio do ecrã, e fazia
      * todos os botões parecerem ter duas linhas.
+     *
+     * **Topos próximos são a mesma linha.** Numa linha centrada por
+     * flexbox, um número dentro de uma pílula de 18 pixéis e o texto ao
+     * lado dele, de 14, não começam no mesmo pixel: ficam dois ou três
+     * afastados, e isso não é uma segunda linha. Arredondar o topo
+     * absoluto a um cesto — era o que isto fazia — punha-os no mesmo
+     * cesto ou em cestos diferentes **conforme a altura a que o
+     * elemento calhasse na página**: o mesmo item de menu acusado numa
+     * página e limpo na seguinte.
+     *
+     * Por isso se agrupa por distância e não por posição. Seis pixéis:
+     * mais do que o desencontro de uma linha centrada, e muito menos do
+     * que a altura de uma linha de texto, que é a distância a que
+     * ficam duas linhas a sério.
      */
+    const APERTO = 6;
+
     const quantasLinhas = (elemento) => {
-        const topos = new Set();
+        const topos = [];
 
         for (const no of elemento.childNodes) {
             if (no.nodeType === Node.ELEMENT_NODE) {
@@ -343,12 +478,24 @@ const MEDICAO = () => {
 
             for (const caixa of intervalo.getClientRects()) {
                 if (caixa.width > 0) {
-                    topos.add(Math.round(caixa.top / 4));
+                    topos.push(caixa.top);
                 }
             }
         }
 
-        return topos.size;
+        topos.sort((a, b) => a - b);
+
+        let linhas = 0;
+        let anterior = -Infinity;
+
+        for (const topo of topos) {
+            if (topo - anterior > APERTO) {
+                linhas += 1;
+                anterior = topo;
+            }
+        }
+
+        return linhas;
     };
 
     const medidor = document.createElement('canvas').getContext('2d');
