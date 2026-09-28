@@ -93,6 +93,35 @@ describe('a varredura', () => {
         expect(perdidos).toEqual([]);
     });
 
+    /**
+     * **Um ecrã na lista com o conteúdo vazio é meio ecrã medido.**
+     *
+     * A varredura semeia o que precisa de ver. Enquanto não semeou uma
+     * filiação, três ecrãs eram medidos vazios: o quadro do servidor
+     * dizia que ainda não joga lá ninguém, a lista de crews do servidor
+     * não tinha linhas, e a página da crew não dizia onde ela joga. É o
+     * mesmo problema de um ecrã fora da lista — mede-se a moldura e
+     * nunca o quadro —, e custou dezoito pixels de alvo em seis listas
+     * que ninguém tinha medido.
+     *
+     * Este teste guarda a sementeira que o descobriu: sem as duas
+     * pontas — o pedido e o aceite —, não há crews a jogar em servidor
+     * nenhum.
+     */
+    it('semeia uma filiação, ou três ecrãs medem-se vazios', () => {
+        const FONTE = readFileSync(
+            path.resolve(import.meta.dirname, '../scripts/varrer.mjs'),
+            'utf8',
+        );
+
+        expect(FONTE, 'a sementeira não pede filiação nenhuma').toMatch(
+            /\/crews\/\$\{[\w.]+\}\/affiliation/u,
+        );
+        expect(FONTE, 'a sementeira pede e nunca aceita').toMatch(
+            /\/affiliations\/\$\{[\w.]+\}\/accept/u,
+        );
+    });
+
     /** Cada exclusão tem de dizer porquê: uma lista de rotas sem razão é um esquecimento. */
     it('e cada exclusão diz porquê', () => {
         for (const [rota, razao] of Object.entries(
