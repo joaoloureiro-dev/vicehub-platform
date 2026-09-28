@@ -183,7 +183,17 @@ const servidorCheio =
 const topicos = await api('/forum/topics?page=1');
 const topico = topicos.topics?.[0]?.id;
 
+/**
+ * Os três pedidos que a casca faz em **todos** os ecrãs.
+ *
+ * Quem abre uma página paga isto antes de pagar o conteúdo dela: quem
+ * é, o que está à espera, e quantos avisos tem por ler. Medidos à parte
+ * porque são o chão de tudo o resto — uma consulta a mais aqui é uma
+ * consulta a mais em cada página do produto.
+ */
 const ECRAS = [
+    ['a casca: quem sou eu', '/users/me', true],
+    ['a casca: avisos por ler', '/notifications/unread', true],
     ['o diretório de crews', '/crews?page=1', false],
     ['o diretório de servidores', '/servers?page=1', false],
     ['quem está a recrutar', '/crews?page=1&recruiting=true', false],
