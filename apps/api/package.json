@@ -17,7 +17,8 @@
         "news:fetch": "tsx scripts/news-fetch.ts",
         "news:probe": "tsx scripts/news-probe.ts",
         "sondar": "node scripts/sondar.mjs",
-        "medir": "node scripts/medir.mjs"
+        "medir": "node scripts/medir.mjs",
+        "ensaiar": "node scripts/ensaiar.mjs"
     },
     "engines": {
         "node": ">=24.0.0",
