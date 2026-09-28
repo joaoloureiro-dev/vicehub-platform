@@ -18,7 +18,8 @@
         "news:probe": "tsx scripts/news-probe.ts",
         "sondar": "node scripts/sondar.mjs",
         "medir": "node scripts/medir.mjs",
-        "ensaiar": "node scripts/ensaiar.mjs"
+        "ensaiar": "node scripts/ensaiar.mjs",
+        "correio": "node scripts/caixa-de-correio.mjs"
     },
     "engines": {
         "node": ">=24.0.0",
