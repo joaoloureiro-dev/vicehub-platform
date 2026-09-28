@@ -97,4 +97,37 @@ describe('a sonda adversarial', () => {
     it('e sai com queixa quando alguma não prova nada', () => {
         expect(SONDA).toMatch(/process\.exitCode = 1/u);
     });
+
+    /**
+     * E compara o que chega, e não só o que é recusado.
+     *
+     * As listas do próprio — a caixa de avisos, o que espera resposta,
+     * as minhas comunidades — respondem 200 a toda a gente. O que as
+     * guarda é uma condição dentro da consulta, e uma condição que
+     * desapareça não dá erro nenhum: dá a lista de outra pessoa com o
+     * mesmo 200 de sempre. Uma sonda que só olhasse para códigos de
+     * estado passava por isso sem uma queixa.
+     */
+    it('e compara o que chega nas listas que respondem a toda a gente', () => {
+        expect(SONDA).toMatch(/const soMeu = /u);
+
+        for (const caminho of [
+            '/notifications',
+            '/users/me/pending',
+            '/crews/me/memberships',
+            '/servers/me/memberships',
+        ]) {
+            expect(SONDA).toContain(`'${caminho}'`);
+        }
+    });
+
+    /**
+     * E duas listas vazias não contam como prova: é a mesma regra do
+     * dono que tem de conseguir, aplicada a uma comparação em vez de a
+     * uma porta.
+     */
+    it('e exige que a lista do dono tenha alguma coisa', () => {
+        expect(SONDA).toMatch(/const prova = meus\.length > 0/u);
+        expect(SONDA).toMatch(/const passa = prova && cruzados\.length === 0/u);
+    });
 });

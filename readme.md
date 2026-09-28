@@ -289,6 +289,15 @@ de conseguir o que o intruso não consegue; sem isso, um caminho mal escrito
 passa por porta trancada. Sai com código 1 se encontrar uma porta aberta ou
 uma sonda que não prove nada.
 
+E, no fim, olha para o que chega em vez de olhar para o que é recusado. As
+listas do próprio — a caixa de avisos, o que espera resposta, as minhas crews
+e os meus servidores — **respondem 200 a toda a gente**: o que as guarda não é
+uma permissão, é uma condição dentro da consulta. Uma condição que desapareça
+não dá erro nenhum; dá a lista de outra pessoa com o mesmo 200 de sempre, e
+uma sonda que só lesse códigos de estado passava ao lado disso. Estas
+comparam as duas respostas e exigem que não tenham nada em comum — e que a de
+quem é dono não esteja vazia, porque duas listas vazias também não se cruzam.
+
 **O ensaio** é o único que se corre contra uma instalação **nova**, e responde
 a uma pergunta que as outras três não fazem: isto, acabado de instalar,
 funciona? As avarias de uma instalação nova são outras — o `db:seed` que
