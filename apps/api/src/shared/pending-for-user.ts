@@ -76,6 +76,18 @@ export interface PendingForUser {
 }
 
 /**
+ * O mesmo, antes de se lhe saber o nome.
+ *
+ * Quem conta não vai à procura do nome da comunidade, e é por isso que
+ * o nome de cada crew e de cada servidor se lê **uma vez** por pedido:
+ * as quatro contagens pediam-nos cada uma por si, e as mesmas crews e
+ * os mesmos servidores vinham da base duas e três vezes no mesmo
+ * pedido. Contar e nomear são duas coisas, e esta caixa é lida em todos
+ * os ecrãs.
+ */
+type Contagem = Omit<PendingItem, 'communityName'>;
+
+/**
  * Em que comunidades é que esta pessoa tem cada poder.
  *
  * Lido de uma vez para todas as comunidades, e não uma consulta por
@@ -207,7 +219,40 @@ export const buildPendingForUser = async (
         ),
     ];
 
+    /**
+     * Os nomes, lidos uma vez para todas as comunidades que podem
+     * aparecer nesta caixa.
+     *
+     * As quatro contagens pediam-nos cada uma por si, e as mesmas
+     * crews e os mesmos servidores chegavam da base duas e três vezes
+     * no mesmo pedido — que é lido em **todos** os ecrãs. Aqui é a
+     * união de tudo o que esta pessoa gere ou onde decide dinheiro:
+     * uma consulta por espécie, e as contagens só trazem números.
+     *
+     * A união é uma união de propósito, e hoje não acrescenta nada: os
+     * cargos que existem dão `treasury:approve` só a quem já gere
+     * membros, e `server:manage` só a quem já os gere também. Escrita
+     * como o primeiro termo apenas, ficava certa por coincidência do
+     * catálogo de cargos — e um cargo novo de tesouraria fazia
+     * desaparecer da caixa, sem nome e sem queixa, as decisões que ele
+     * concede.
+     */
+    const crewsPossiveis = [
+        ...crewsQueGere,
+        ...podeDecidirDinheiro.filter((c) => c.kind === 'crew').map((c) => c.id),
+    ];
+
+    const servidoresPossiveis = [
+        ...servidoresQueGere,
+        ...servidoresQueControla,
+        ...podeDecidirDinheiro
+            .filter((c) => c.kind === 'server')
+            .map((c) => c.id),
+    ];
+
     const [
+        nomesDeCrews,
+        nomesDeServidores,
         pedidosDeCrew,
         pedidosDeServidor,
         filiacoes,
@@ -215,6 +260,8 @@ export const buildPendingForUser = async (
         amizades,
         respostas,
     ] = await Promise.all([
+        nomesDas(database, 'crew', [...new Set(crewsPossiveis)]),
+        nomesDas(database, 'server', [...new Set(servidoresPossiveis)]),
         contarPorComunidade(database, 'crew', crewsQueGere),
         contarPorComunidade(database, 'server', servidoresQueGere),
         contarFiliacoes(database, servidoresQueControla),
@@ -237,12 +284,34 @@ export const buildPendingForUser = async (
 
     const decisoes = await contarDecisoes(database, comPlano);
 
+    /**
+     * E o nome de cada uma, num sítio só.
+     *
+     * Uma comunidade apagada fica sem nome e cai aqui — o cargo fica
+     * para trás quando ela desaparece, e contar pedidos de uma crew que
+     * já não existe mandava a pessoa para uma página que dá 404. A
+     * regra estava escrita três vezes, uma por contagem; está escrita
+     * uma.
+     */
+    const comNome = (contagem: Contagem): PendingItem[] => {
+        const nome =
+            contagem.communityKind === 'crew'
+                ? nomesDeCrews.get(contagem.communityId)
+                : nomesDeServidores.get(contagem.communityId);
+
+        return nome === undefined
+            ? []
+            : [{ ...contagem, communityName: nome }];
+    };
+
     const items = [
         ...pedidosDeCrew,
         ...pedidosDeServidor,
         ...filiacoes,
         ...decisoes,
-    ].filter((item) => item.count > 0);
+    ]
+        .filter((contagem) => contagem.count > 0)
+        .flatMap(comNome);
 
     return {
         items,
@@ -327,7 +396,7 @@ const contarPorComunidade = async (
     database: DatabaseClient,
     tipo: 'crew' | 'server',
     ids: string[],
-): Promise<PendingItem[]> => {
+): Promise<Contagem[]> => {
     if (ids.length === 0) {
         return [];
     }
@@ -344,18 +413,10 @@ const contarPorComunidade = async (
         _count: { _all: true },
     });
 
-    const nomes = await nomesDas(database, tipo, ids);
-
     return grupos.flatMap((grupo) => {
         const id = (grupo as unknown as Record<string, string | null>)[coluna];
-        const nome = id === null || id === undefined ? undefined : nomes.get(id);
 
-        /**
-         * Uma comunidade apagada não entra: o cargo fica para trás
-         * quando ela desaparece, e contar pedidos de uma crew que já não
-         * existe mandava a pessoa para uma página que dá 404.
-         */
-        return nome === undefined || id === null || id === undefined
+        return id === null || id === undefined
             ? []
             : [
                 {
@@ -365,7 +426,6 @@ const contarPorComunidade = async (
                             : ('server_join_request' as const),
                     communityKind: tipo,
                     communityId: id,
-                    communityName: nome,
                     count: grupo._count._all,
                 },
             ];
@@ -378,7 +438,7 @@ const contarPorComunidade = async (
 const contarFiliacoes = async (
     database: DatabaseClient,
     serverIds: string[],
-): Promise<PendingItem[]> => {
+): Promise<Contagem[]> => {
     if (serverIds.length === 0) {
         return [];
     }
@@ -393,23 +453,12 @@ const contarFiliacoes = async (
         _count: { _all: true },
     });
 
-    const nomes = await nomesDas(database, 'server', serverIds);
-
-    return grupos.flatMap((grupo) => {
-        const nome = nomes.get(grupo.serverId);
-
-        return nome === undefined
-            ? []
-            : [
-                {
-                    kind: 'affiliation_request' as const,
-                    communityKind: 'server' as const,
-                    communityId: grupo.serverId,
-                    communityName: nome,
-                    count: grupo._count._all,
-                },
-            ];
-    });
+    return grupos.map((grupo) => ({
+        kind: 'affiliation_request' as const,
+        communityKind: 'server' as const,
+        communityId: grupo.serverId,
+        count: grupo._count._all,
+    }));
 };
 
 /**
@@ -470,7 +519,7 @@ const comunidadesComPlano = async (
 const contarDecisoes = async (
     database: DatabaseClient,
     comunidades: { kind: 'crew' | 'server'; id: string }[],
-): Promise<PendingItem[]> => {
+): Promise<Contagem[]> => {
     if (comunidades.length === 0) {
         return [];
     }
@@ -560,40 +609,12 @@ const contarDecisoes = async (
         }
     }
 
-    const contagens = comunidades.map((comunidade) => ({
-        comunidade,
+    return comunidades.map((comunidade) => ({
+        kind: 'treasury_decision' as const,
+        communityKind: comunidade.kind,
+        communityId: comunidade.id,
         count: aEsperar.get(`${comunidade.kind}:${comunidade.id}`) ?? 0,
     }));
-
-    const nomesDeCrews = await nomesDas(
-        database,
-        'crew',
-        comunidades.filter((c) => c.kind === 'crew').map((c) => c.id),
-    );
-    const nomesDeServidores = await nomesDas(
-        database,
-        'server',
-        comunidades.filter((c) => c.kind === 'server').map((c) => c.id),
-    );
-
-    return contagens.flatMap(({ comunidade, count }) => {
-        const nome =
-            comunidade.kind === 'crew'
-                ? nomesDeCrews.get(comunidade.id)
-                : nomesDeServidores.get(comunidade.id);
-
-        return nome === undefined
-            ? []
-            : [
-                {
-                    kind: 'treasury_decision' as const,
-                    communityKind: comunidade.kind,
-                    communityId: comunidade.id,
-                    communityName: nome,
-                    count,
-                },
-            ];
-    });
 };
 
 /**
