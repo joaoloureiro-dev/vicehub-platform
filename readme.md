@@ -756,13 +756,30 @@ por isso o que a prova não são os testes de unidade: é a sonda a correr
 outra vez inteira, 24 portas em que o intruso continua a levar 403 e o dono
 continua a conseguir.
 
-E um caso à parte: `GET /notifications` custa catorze consultas **com a caixa
-vazia**. Não cresce com o número de avisos; é o Prisma a ir buscar cada
-relação à parte, haja ou não o que resolver. Encolhe-se numa linha —
-`relationLoadStrategy: 'join'` — mas essa linha exige ligar a funcionalidade
-em pré-visualização `relationJoins` no gerador, e isso muda o cliente gerado
-da plataforma inteira. Por um ecrã que se abre de vez em quando, e a dias de
-um primeiro deploy, não é uma troca que se faça sozinho.
+**E a caixa de avisos pagava tudo para não trazer nada.** `GET /notifications`
+custava catorze consultas **com a caixa vazia**: pedida de uma vez, com os
+alvos lá dentro, o Prisma vai buscar cada relação numa instrução própria — a
+mensagem, a conversa da mensagem, o anúncio da conversa, a resposta, o tópico
+da resposta, a avaliação e as três coisas dela. Dez instruções, houvesse ou
+não avisos.
+
+Lida em duas metades — a página primeiro, e depois só as espécies que lá estão
+— passou a custar o que traz:
+
+| A caixa | Antes | Agora |
+|---|---|---|
+| vazia | 14 | 4 |
+| com mensagens e respostas do fórum | 14 | 7 |
+| com as cinco espécies na mesma página | 14 | 14 |
+
+Nunca pior, e quase sempre melhor: o pior caso é o de antes, e só acontece
+quando uma página tem mesmo tudo.
+
+Havia uma segunda maneira de o fazer — `relationLoadStrategy: 'join'`, uma
+linha —, mas essa exige ligar a funcionalidade em pré-visualização
+`relationJoins` no gerador, e isso muda o cliente gerado da plataforma
+inteira. A dias de um primeiro deploy, ler em duas metades é a troca que não
+pede nada a ninguém.
 
 ### O cartão de um link partilhado
 

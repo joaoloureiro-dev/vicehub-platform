@@ -63,8 +63,28 @@ export class NotificationRepository {
         });
     }
 
-    list(userId: string, pagina: number) {
-        return this.database.notification.findMany({
+    /**
+     * Uma página de avisos, com o que cada um aponta.
+     *
+     * **Lida em duas metades, e é isso que a faz caber numa caixa
+     * vazia.** Pedida de uma vez — a linha com as relações lá dentro —,
+     * o Prisma vai buscar cada relação numa instrução própria: a
+     * mensagem, a conversa da mensagem, o anúncio da conversa, a
+     * resposta, o tópico da resposta, a avaliação e as três coisas
+     * dela. Dez instruções, **haja ou não avisos**: uma caixa vazia
+     * pagava as dez para não trazer nada.
+     *
+     * Assim é uma instrução para a página, e depois só as espécies que
+     * lá estão mesmo. Quem tem a caixa vazia paga uma; quem tem uma
+     * página só de respostas do fórum paga três; as dez só se pagam
+     * quando as cinco espécies aparecem todas na mesma página.
+     *
+     * O que sai daqui tem a forma de sempre — cada aviso com o seu
+     * alvo lá dentro —, para que quem o lê não tenha de saber nada
+     * disto.
+     */
+    async list(userId: string, pagina: number) {
+        const linhas = await this.database.notification.findMany({
             where: { userId },
             orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
             skip: (pagina - 1) * AVISOS_POR_PAGINA,
@@ -74,8 +94,50 @@ export class NotificationRepository {
                 kind: true,
                 read_at: true,
                 created_at: true,
-                actor: ACTOR,
-                message: {
+                actorId: true,
+                messageId: true,
+                replyId: true,
+                reviewId: true,
+            },
+        });
+
+        if (linhas.length === 0) {
+            return [];
+        }
+
+        /** Os identificadores de uma espécie, sem repetições nem nulos. */
+        const idsDe = (
+            campo: 'actorId' | 'messageId' | 'replyId' | 'reviewId',
+        ): string[] => [
+            ...new Set(
+                linhas
+                    .map((linha) => linha[campo])
+                    .filter((id): id is string => id !== null && id !== undefined),
+            ),
+        ];
+
+        const porId = <T extends { id: string }>(linhas_: T[]): Map<string, T> =>
+            new Map(linhas_.map((linha) => [linha.id, linha]));
+
+        const mensagensIds = idsDe('messageId');
+        const respostasIds = idsDe('replyId');
+        const avaliacoesIds = idsDe('reviewId');
+
+        const [actores, mensagens, respostas, avaliacoes] = await Promise.all([
+            this.database.user.findMany({
+                where: { id: { in: idsDe('actorId') } },
+                ...ACTOR,
+            }),
+
+            /*
+             * Cada espécie só vai à base se a página a tiver. É a
+             * diferença entre uma caixa vazia custar uma instrução ou
+             * custar dez.
+             */
+            mensagensIds.length === 0
+                ? []
+                : this.database.marketMessage.findMany({
+                    where: { id: { in: mensagensIds } },
                     select: {
                         id: true,
                         body: true,
@@ -84,12 +146,24 @@ export class NotificationRepository {
                             select: { listing: { select: { title: true } } },
                         },
                     },
-                },
-                reply: {
-                    select: { id: true, topicId: true, body: true,
-                        topic: { select: { title: true } } },
-                },
-                review: {
+                }),
+
+            respostasIds.length === 0
+                ? []
+                : this.database.forumReply.findMany({
+                    where: { id: { in: respostasIds } },
+                    select: {
+                        id: true,
+                        topicId: true,
+                        body: true,
+                        topic: { select: { title: true } },
+                    },
+                }),
+
+            avaliacoesIds.length === 0
+                ? []
+                : this.database.marketReview.findMany({
+                    where: { id: { in: avaliacoesIds } },
                     select: {
                         id: true,
                         rating: true,
@@ -99,9 +173,43 @@ export class NotificationRepository {
                         reviewer: { select: { username: true } },
                         listing: { select: { title: true } },
                     },
-                },
-            },
-        });
+                }),
+        ]);
+
+        const deActor = porId(actores);
+        const deMensagem = porId(mensagens);
+        const deResposta = porId(respostas);
+        const deAvaliacao = porId(avaliacoes);
+
+        /**
+         * E volta a ter a forma de sempre.
+         *
+         * A ordem é a da página — a das linhas —, e não a de nenhuma
+         * das leituras de espécie: uma caixa de avisos fora de ordem
+         * não é uma caixa de avisos.
+         */
+        return linhas.map((linha) => ({
+            id: linha.id,
+            kind: linha.kind,
+            read_at: linha.read_at,
+            created_at: linha.created_at,
+            actor:
+                linha.actorId === null
+                    ? null
+                    : deActor.get(linha.actorId) ?? null,
+            message:
+                linha.messageId === null
+                    ? null
+                    : deMensagem.get(linha.messageId) ?? null,
+            reply:
+                linha.replyId === null
+                    ? null
+                    : deResposta.get(linha.replyId) ?? null,
+            review:
+                linha.reviewId === null
+                    ? null
+                    : deAvaliacao.get(linha.reviewId) ?? null,
+        }));
     }
 
     count(userId: string) {
