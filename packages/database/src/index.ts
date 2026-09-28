@@ -90,6 +90,8 @@ export {
 export type { BaldeDeHora } from './server-activity.js';
 
 export {
+    CATEGORIAS_DO_FORUM,
+    CATEGORIA_POR_OMISSAO,
     CORPO_MAXIMO,
     CORPO_MINIMO,
     DENUNCIAS_POR_PAGINA,
@@ -101,6 +103,8 @@ export {
     normalizarTexto,
     temConteudo,
 } from './forum.js';
+
+export type { CategoriaDoForum } from './forum.js';
 
 export {
     ANUNCIOS_POR_PAGINA,

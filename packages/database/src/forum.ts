@@ -20,6 +20,45 @@ export const TITULO_MAXIMO = 140;
 export const CORPO_MINIMO = 12;
 export const CORPO_MAXIMO = 8_000;
 
+/**
+ * Em que parte do fórum vive uma pergunta.
+ *
+ * Cinco, e param aqui. Um fórum que abre com vinte categorias tem
+ * dezanove vazias e uma cheia — e quem chega com uma pergunta passa mais
+ * tempo a decidir onde a pôr do que a escrevê-la. Estas são as cinco
+ * conversas que esta plataforma tem: a geral, as crews, os servidores,
+ * o que se passa dentro do jogo, e o ViceHub em si quando não faz o que
+ * devia.
+ *
+ * Uma lista fechada e não uma tabela: o nome de cada uma aparece no
+ * idioma de quem lê, e uma tabela guardá-lo-ia numa língua só — que é
+ * precisamente o erro que a descrição dos planos já fez e que o ecrã de
+ * preços teve de contornar.
+ *
+ * A ordem é a de quem lê, e não o alfabeto: a geral primeiro, porque é
+ * onde a maioria das perguntas cai, e a ajuda no fim, porque é onde se
+ * vai de propósito.
+ */
+export const CATEGORIAS_DO_FORUM = [
+    'general',
+    'crews',
+    'servers',
+    'roleplay',
+    'support',
+] as const;
+
+export type CategoriaDoForum = (typeof CATEGORIAS_DO_FORUM)[number];
+
+/**
+ * Onde cai uma pergunta que não diz onde quer ficar.
+ *
+ * É a mesma omissão que a base de dados escreve na coluna. Duas
+ * omissões diferentes — uma no esquema e outra no código — eram duas
+ * respostas para a mesma pergunta, e a que ganhava dependia do caminho
+ * por onde o tópico entrasse.
+ */
+export const CATEGORIA_POR_OMISSAO: CategoriaDoForum = 'general';
+
 /** Quantos tópicos por página na lista. */
 export const TOPICOS_POR_PAGINA = 20;
 

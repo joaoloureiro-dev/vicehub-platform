@@ -36,6 +36,12 @@ const POR_INDICE = new Set([
     'cargos',
     'planos',
     'categorias',
+    /*
+     * `t.categoriasDoForum[nome]` percorre a lista das partes do fórum
+     * — uma vez para desenhar as abas, outra para nomear a de cada
+     * pergunta. Nenhuma das cinco é escrita à mão em lado nenhum.
+     */
+    'categoriasDoForum',
     'estadosMovimento',
     'estadosEvento',
     'participacao',

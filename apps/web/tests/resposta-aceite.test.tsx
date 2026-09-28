@@ -35,6 +35,7 @@ const topico = (aceite: string | null, perguntei: boolean) => ({
     title: 'Como divido os ganhos de um assalto?',
     body: 'Somos cinco e o líder quer levar mais.',
     author: { id: perguntei ? EU : 'u2', username: 'ana', avatarUrl: null },
+    category: 'crews',
     isLocked: false,
     createdAt: '2026-09-20T10:00:00.000Z',
     askedById: perguntei ? EU : 'u2',

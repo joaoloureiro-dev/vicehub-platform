@@ -1,5 +1,29 @@
 import { api } from '../lib/api.js';
 
+/**
+ * Em que parte do fórum vive uma pergunta.
+ *
+ * Escrita aqui e não importada do pacote da base de dados: o browser
+ * não carrega o Prisma, e esta lista é a que o ecrã percorre para
+ * desenhar as abas. É a terceira cópia da mesma lista — a do Postgres, a
+ * do servidor e esta —, e há um teste de cada lado a garantir que as
+ * três dizem o mesmo. A alternativa era o ecrã descobrir as categorias
+ * pela API, o que lhe dava a lista sem lhe dar a ordem nem o nome
+ * traduzido.
+ */
+export const CATEGORIAS = [
+    'general',
+    'crews',
+    'servers',
+    'roleplay',
+    'support',
+] as const;
+
+export type CategoriaDoForum = (typeof CATEGORIAS)[number];
+
+/** Onde cai uma pergunta que não diz onde quer ficar. */
+export const CATEGORIA_POR_OMISSAO: CategoriaDoForum = 'general';
+
 export interface ForumAuthor {
     id: string;
     username: string;
@@ -9,6 +33,8 @@ export interface ForumAuthor {
 export interface ForumTopicSummary {
     id: string;
     title: string;
+    /** Em que parte do fórum vive. */
+    category: CategoriaDoForum;
     /** Nulo quando o texto saiu com a conta de quem o escreveu. */
     excerpt: string | null;
     author: ForumAuthor | null;
@@ -31,6 +57,7 @@ export interface ForumTopic {
     id: string;
     title: string;
     body: string | null;
+    category: CategoriaDoForum;
     author: ForumAuthor | null;
     isLocked: boolean;
     createdAt: string;
@@ -54,12 +81,14 @@ export interface PaginaDeTopicos {
 export const listTopics = (
     page = 1,
     procura = '',
+    categoria?: CategoriaDoForum,
 ): Promise<PaginaDeTopicos> => {
     const termo = procura.trim();
 
     return api<PaginaDeTopicos>(
         `/forum/topics?page=${page}`
-        + (termo === '' ? '' : `&q=${encodeURIComponent(termo)}`),
+        + (termo === '' ? '' : `&q=${encodeURIComponent(termo)}`)
+        + (categoria === undefined ? '' : `&category=${categoria}`),
     );
 };
 
@@ -69,6 +98,7 @@ export const getTopic = (topicId: string): Promise<ForumTopic> =>
 export const createTopic = (input: {
     title: string;
     body: string;
+    category: CategoriaDoForum;
 }): Promise<{ id: string }> =>
     api<{ id: string }>('/forum/topics', { method: 'POST', body: input });
 

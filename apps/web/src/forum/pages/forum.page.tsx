@@ -5,7 +5,28 @@ import { Alert } from '../../auth/components/alert.js';
 import { useAsync } from '../../lib/use-async.js';
 import { useT } from '../../i18n/i18n.js';
 import { useAuth } from '../../auth/auth.context.js';
-import { createTopic, listTopics, podeModerar } from '../forum.api.js';
+import {
+    CATEGORIAS,
+    CATEGORIA_POR_OMISSAO,
+    createTopic,
+    listTopics,
+    podeModerar,
+    type CategoriaDoForum,
+} from '../forum.api.js';
+
+/**
+ * O que a barra de endereço diz ser a categoria, quando diz alguma
+ * coisa que existe.
+ *
+ * Um `?categoria=memes` escrito à mão não é erro nem lista vazia: é o
+ * fórum todo. A API recusaria a palavra com um 400, e um ecrã em branco
+ * com um aviso vermelho por causa de uma letra trocada num endereço é
+ * pior do que ignorar o que não se entende.
+ */
+const categoriaDoEndereco = (
+    valor: string | null,
+): CategoriaDoForum | undefined =>
+    CATEGORIAS.find((categoria) => categoria === valor);
 
 /**
  * O fórum: as perguntas, e a caixa para fazer uma.
@@ -24,6 +45,8 @@ export const ForumPage = () => {
 
     const [titulo, setTitulo] = useState('');
     const [corpo, setCorpo] = useState('');
+    const [categoriaNova, setCategoriaNova] =
+        useState<CategoriaDoForum>(CATEGORIA_POR_OMISSAO);
     const [aPublicar, setAPublicar] = useState(false);
     const [erro, setErro] = useState<string | null>(null);
 
@@ -39,10 +62,37 @@ export const ForumPage = () => {
     const [endereco, setEndereco] = useSearchParams();
     const procura = endereco.get('q') ?? '';
 
+    /**
+     * E a categoria também, pela mesma razão.
+     *
+     * Uma parte do fórum é uma coisa que se manda a alguém — «a tua
+     * pergunta é das crews, é aqui» —, e isso é um endereço. Guardá-la
+     * só no estado do ecrã fazia todas as categorias terem o mesmo
+     * endereço, e o botão de voltar saltava o fórum inteiro.
+     */
+    const categoria = categoriaDoEndereco(endereco.get('categoria'));
+
     /* O que está escrito na caixa, que só vira procura ao submeter. */
     const [termo, setTermo] = useState(procura);
 
-    const pagina = useAsync(() => listTopics(1, procura), [procura]);
+    const pagina = useAsync(
+        () => listTopics(1, procura, categoria),
+        [procura, categoria],
+    );
+
+    /**
+     * Ir para uma parte do fórum, ou para o fórum todo.
+     *
+     * A procura vai junto de propósito: quem procurou uma palavra e
+     * carrega numa categoria quer a palavra **dentro** dela, e não
+     * recomeçar do princípio.
+     */
+    const irPara = (destino: CategoriaDoForum | undefined) => {
+        setEndereco({
+            ...(procura === '' ? {} : { q: procura }),
+            ...(destino === undefined ? {} : { categoria: destino }),
+        });
+    };
 
     const procurar = (evento: FormEvent) => {
         evento.preventDefault();
@@ -54,12 +104,16 @@ export const ForumPage = () => {
          * vazio: `/forum?q=` e `/forum` são a mesma lista, e dois
          * endereços para a mesma página é um deles a sobrar.
          */
-        setEndereco(limpo === '' ? {} : { q: limpo });
+        setEndereco({
+            ...(limpo === '' ? {} : { q: limpo }),
+            ...(categoria === undefined ? {} : { categoria }),
+        });
     };
 
+    /** Limpa a procura e fica onde está: a categoria não é a procura. */
     const limpar = () => {
         setTermo('');
-        setEndereco({});
+        setEndereco(categoria === undefined ? {} : { categoria });
     };
 
     /**
@@ -83,7 +137,11 @@ export const ForumPage = () => {
         setAPublicar(true);
 
         try {
-            await createTopic({ title: titulo, body: corpo });
+            await createTopic({
+                title: titulo,
+                body: corpo,
+                category: categoriaNova,
+            });
 
             setTitulo('');
             setCorpo('');
@@ -122,6 +180,38 @@ export const ForumPage = () => {
                     </p>
                 ) : null}
             </header>
+
+            {/*
+              As partes do fórum, e não uma caixa de seleção.
+
+              Uma lista de cinco escolhe-se com o olho: cinco nomes à
+              vista dizem de que é que este fórum fala, e é essa a
+              segunda coisa que se quer saber ao chegar. Uma caixa
+              fechada dizia «Tudo» e escondia as cinco atrás de um
+              clique.
+            */}
+            <nav className="abas" aria-label={t.forum.partesDoForum}>
+                <button
+                    className={categoria === undefined ? 'aba activa' : 'aba'}
+                    type="button"
+                    aria-current={categoria === undefined}
+                    onClick={() => irPara(undefined)}
+                >
+                    {t.forum.todasAsCategorias}
+                </button>
+
+                {CATEGORIAS.map((nome) => (
+                    <button
+                        className={categoria === nome ? 'aba activa' : 'aba'}
+                        key={nome}
+                        type="button"
+                        aria-current={categoria === nome}
+                        onClick={() => irPara(nome)}
+                    >
+                        {t.categoriasDoForum[nome]}
+                    </button>
+                ))}
+            </nav>
 
             <form className="searchbar" onSubmit={procurar} role="search">
                 <input
@@ -166,6 +256,30 @@ export const ForumPage = () => {
                         />
                     </label>
 
+                    {/*
+                      Aqui uma caixa de seleção, e não abas: escolher
+                      onde publicar é um campo do formulário como o
+                      título, e cinco botões no meio de dois campos
+                      liam-se como cinco maneiras de submeter.
+                    */}
+                    <label className="field">
+                        <span>{t.forum.categoriaLabel}</span>
+                        <select
+                            value={categoriaNova}
+                            onChange={(e) => {
+                                setCategoriaNova(
+                                    e.target.value as CategoriaDoForum,
+                                );
+                            }}
+                        >
+                            {CATEGORIAS.map((nome) => (
+                                <option key={nome} value={nome}>
+                                    {t.categoriasDoForum[nome]}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+
                     <label className="field">
                         <span>{t.forum.corpoDaPergunta}</span>
                         <textarea
@@ -194,9 +308,11 @@ export const ForumPage = () => {
                       pessoa a achar que o fórum está vazio quando o que
                       está vazio é o resultado dela.
                     */}
-                    {procura === ''
-                        ? t.forum.aindaSemPerguntas
-                        : t.forum.semResultados}
+                    {procura !== ''
+                        ? t.forum.semResultados
+                        : categoria === undefined
+                          ? t.forum.aindaSemPerguntas
+                          : t.forum.semPerguntasNaCategoria}
                 </p>
             ) : (
                 <ul className="lista-topicos">
@@ -218,6 +334,19 @@ export const ForumPage = () => {
                                 )}
 
                                 <span className="topico-rodape">
+                                    {/*
+                                      Em que parte do fórum está, em
+                                      cada linha. Na lista de uma
+                                      categoria seria repetição; na
+                                      lista inteira é o que distingue
+                                      uma pergunta sobre servidores de
+                                      uma sobre crews antes de a abrir.
+                                    */}
+                                    {categoria === undefined ? (
+                                        <span className="pill categoria">
+                                            {t.categoriasDoForum[topico.category]}
+                                        </span>
+                                    ) : null}
                                     <span>
                                         {topico.author?.username
                                             ?? t.forum.contaApagada}

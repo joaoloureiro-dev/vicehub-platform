@@ -148,6 +148,19 @@ export const TopicPage = () => {
                 <h1>{dados.title}</h1>
                 <Texto corpo={dados.body} />
                 <p className="topico-rodape">
+                    {/*
+                      Em que parte do fórum esta pergunta vive.
+
+                      Ao pé de quem perguntou e de quando, e não por
+                      cima do título: é o mesmo sítio onde está na
+                      lista, e quem vem de lá encontra-a onde a deixou.
+                    */}
+                    <Link
+                        className="pill categoria"
+                        to={`/forum?categoria=${dados.category}`}
+                    >
+                        {t.categoriasDoForum[dados.category]}
+                    </Link>
                     <Quem autor={dados.author} />
                     <time dateTime={dados.createdAt}>
                         {new Date(dados.createdAt).toLocaleDateString()}
