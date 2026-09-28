@@ -550,6 +550,89 @@ describe('o que está à espera de mim', () => {
                 dosTipos(await pendentes(lider), 'treasury_decision'),
             ).toHaveLength(1);
         });
+
+        /**
+         * **Movimentos e divisões contam juntos.**
+         *
+         * Para quem tem de decidir são a mesma coisa: dinheiro parado à
+         * espera de um sim ou de um não. Somam-se numa contagem só, e
+         * uma que trouxesse apenas os movimentos daria o mesmo número
+         * de sempre com uma divisão por decidir ao lado.
+         */
+        it('soma as divisões aos movimentos, na mesma comunidade', async () => {
+            const carteira = await prisma.wallet.findFirstOrThrow({
+                where: { crewId, is_deleted: false },
+                select: { id: true },
+            });
+
+            await prisma.distribution.create({
+                data: {
+                    walletId: carteira.id,
+                    total: 900n,
+                    basis: 'equal',
+                    status: 'pending',
+                    created_by: null,
+                },
+            });
+
+            const daTesouraria = dosTipos(
+                await pendentes(lider),
+                'treasury_decision',
+            );
+
+            expect(daTesouraria).toHaveLength(1);
+            expect(daTesouraria[0]).toMatchObject({
+                communityId: crewId,
+                count: 2,
+            });
+        });
+
+        /**
+         * **E cada comunidade leva o seu número, e não o da outra.**
+         *
+         * As contagens saem agrupadas por carteira — três consultas
+         * para quantas comunidades forem, em vez de duas por cada — e é
+         * no agrupar que se troca uma linha pela outra. Com uma
+         * comunidade só, um agrupamento trocado dá na mesma o número
+         * certo.
+         */
+        it('e dá a cada comunidade o que está à espera nela', async () => {
+            const daCrew = await prisma.wallet.findFirstOrThrow({
+                where: { crewId, is_deleted: false },
+                select: { id: true },
+            });
+
+            const doServidor = await prisma.wallet.findFirstOrThrow({
+                where: { serverId, is_deleted: false },
+                select: { id: true },
+            });
+
+            await darPlano({ serverId }, 'server_base');
+
+            /* Três no servidor, contra os dois que a crew já tem. */
+            for (const _ of [1, 2, 3]) {
+                await prisma.transaction.create({
+                    data: {
+                        walletId: doServidor.id,
+                        amount: 100n,
+                        direction: 'debit',
+                        category: 'other',
+                        status: 'pending',
+                    },
+                });
+            }
+
+            const porComunidade = new Map(
+                dosTipos(await pendentes(lider), 'treasury_decision').map(
+                    (item: { communityId: string; count: number }) =>
+                        [item.communityId, item.count],
+                ),
+            );
+
+            expect(porComunidade.get(crewId)).toBe(2);
+            expect(porComunidade.get(serverId)).toBe(3);
+            expect(daCrew.id).not.toBe(doServidor.id);
+        });
     });
 
     describe('os pedidos de amizade', () => {

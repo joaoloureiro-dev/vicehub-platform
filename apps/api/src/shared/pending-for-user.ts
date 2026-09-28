@@ -475,31 +475,95 @@ const contarDecisoes = async (
         return [];
     }
 
-    const carteiraDe = (c: { kind: 'crew' | 'server'; id: string }) =>
-        c.kind === 'crew' ? { crewId: c.id } : { serverId: c.id };
-
-    const contagens = await Promise.all(
-        comunidades.map(async (comunidade) => {
-            const [movimentos, divisoes] = await Promise.all([
-                database.transaction.count({
-                    where: {
-                        wallet: carteiraDe(comunidade),
-                        status: TransactionStatus.pending,
-                        is_deleted: false,
+    /*
+     * Três consultas, e não duas por comunidade.
+     *
+     * Isto contava movimentos e divisões uma comunidade de cada vez, e
+     * é a mesma regra que o resto deste ficheiro já seguia e esta
+     * função não: quem gere oito comunidades pagava dezasseis idas à
+     * base para desenhar um número. E o número aparece **em todos os
+     * ecrãs** — a casca lê-o para o sino —, por isso o custo não era de
+     * uma página, era de cada página.
+     *
+     * Medido: dez consultas para quem não gere nada, mais duas e meia
+     * por comunidade. Com dezasseis comunidades eram cinquenta e uma,
+     * por cada carregamento.
+     *
+     * O caminho é pela carteira: uma consulta traz as carteiras das
+     * comunidades, e as outras duas agrupam por carteira o que está à
+     * espera. O preço deixa de depender de quantas comunidades se gere.
+     */
+    const carteiras = await database.wallet.findMany({
+        where: {
+            is_deleted: false,
+            OR: [
+                {
+                    crewId: {
+                        in: comunidades
+                            .filter((c) => c.kind === 'crew')
+                            .map((c) => c.id),
                     },
-                }),
-                database.distribution.count({
-                    where: {
-                        wallet: carteiraDe(comunidade),
-                        status: DistributionStatus.pending,
-                        is_deleted: false,
+                },
+                {
+                    serverId: {
+                        in: comunidades
+                            .filter((c) => c.kind === 'server')
+                            .map((c) => c.id),
                     },
-                }),
-            ]);
+                },
+            ],
+        },
+        select: { id: true, crewId: true, serverId: true },
+    });
 
-            return { comunidade, count: movimentos + divisoes };
-        }),
+    /** De que comunidade é cada carteira. */
+    const daCarteira = new Map(
+        carteiras.map((carteira) => [
+            carteira.id,
+            carteira.crewId !== null
+                ? `crew:${carteira.crewId}`
+                : `server:${carteira.serverId ?? ''}`,
+        ]),
     );
+
+    const ids = carteiras.map((carteira) => carteira.id);
+
+    const [movimentos, divisoes] = await Promise.all([
+        database.transaction.groupBy({
+            by: ['walletId'],
+            where: {
+                walletId: { in: ids },
+                status: TransactionStatus.pending,
+                is_deleted: false,
+            },
+            _count: { _all: true },
+        }),
+        database.distribution.groupBy({
+            by: ['walletId'],
+            where: {
+                walletId: { in: ids },
+                status: DistributionStatus.pending,
+                is_deleted: false,
+            },
+            _count: { _all: true },
+        }),
+    ]);
+
+    /** O que está à espera em cada comunidade, das duas espécies. */
+    const aEsperar = new Map<string, number>();
+
+    for (const grupo of [...movimentos, ...divisoes]) {
+        const chave = daCarteira.get(grupo.walletId);
+
+        if (chave !== undefined) {
+            aEsperar.set(chave, (aEsperar.get(chave) ?? 0) + grupo._count._all);
+        }
+    }
+
+    const contagens = comunidades.map((comunidade) => ({
+        comunidade,
+        count: aEsperar.get(`${comunidade.kind}:${comunidade.id}`) ?? 0,
+    }));
 
     const nomesDeCrews = await nomesDas(
         database,
