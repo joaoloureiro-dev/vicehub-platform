@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
-import { prisma } from '@vicehub/database';
+import { AVISOS_POR_PAGINA, prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
 
 /**
@@ -402,6 +402,109 @@ describe('os avisos', () => {
             expect(marcados.statusCode, marcados.body).toBe(204);
             expect(await porLer(ana)).toBe(0);
         });
+    });
+
+    /**
+     * **A caixa é minha, e só minha.**
+     *
+     * É a propriedade mais importante desta rota e não tinha teste: um
+     * mutante que apagasse o dono da condição — e passasse a devolver
+     * os avisos de toda a gente — passava por esta suite inteira sem
+     * uma queixa. O que se prova aqui não é que a minha caixa tem o que
+     * devia: é que **não tem o que é de outra pessoa**.
+     */
+    it('não mostra a ninguém os avisos de outra pessoa', async () => {
+        const listingId = await anunciar('Só para a ana');
+        const conversationId = await conversar(bruno, listingId);
+
+        await escrever(bruno, conversationId, 'Isto é só entre nós os dois.');
+
+        const daAna = await caixa(ana);
+        const daCarla = await caixa(carla);
+
+        /* O aviso existe, e está na caixa certa. */
+        expect(daAna.notifications.some((a) => a.openId === conversationId)).toBe(
+            true,
+        );
+
+        /* E não está em mais nenhuma. */
+        expect(
+            daCarla.notifications.some((a) => a.openId === conversationId),
+        ).toBe(false);
+
+        expect(
+            daCarla.notifications.every((a) => a.actor?.username !== bruno.nome)
+            || daCarla.total === 0,
+        ).toBe(true);
+    });
+
+    /**
+     * E cada aviso aponta para o seu, quando há mais do que um da
+     * mesma espécie.
+     *
+     * A página lê os alvos em lote e cruza-os por identificador. Com um
+     * aviso só, um cruzamento trocado não se nota — e passaria a
+     * mostrar, em cada linha, o excerto da conversa de outra.
+     */
+    it('e com duas mensagens, cada aviso leva a sua', async () => {
+        const primeiro = await anunciar('Duas conversas, uma');
+        const segundo = await anunciar('Duas conversas, duas');
+
+        const conversaA = await conversar(bruno, primeiro);
+        const conversaB = await conversar(carla, segundo);
+
+        await escrever(bruno, conversaA, 'Pergunta sobre o primeiro carro.');
+        await escrever(carla, conversaB, 'Pergunta sobre o segundo carro.');
+
+        const daAna = await caixa(ana);
+
+        const deA = daAna.notifications.find((a) => a.openId === conversaA);
+        const deB = daAna.notifications.find((a) => a.openId === conversaB);
+
+        expect(deA?.excerpt).toContain('primeiro carro');
+        expect(deB?.excerpt).toContain('segundo carro');
+        expect(deA?.actor?.username).toBe(bruno.nome);
+        expect(deB?.actor?.username).toBe(carla.nome);
+    });
+
+    /**
+     * E a caixa vem por páginas.
+     *
+     * Trinta por página, como está escrito no `AVISOS_POR_PAGINA`. Sem
+     * limite, quem tenha meses de avisos recebia-os todos num pedido; e
+     * uma segunda página que voltasse ao princípio era uma caixa onde
+     * não se chega ao fundo.
+     */
+    it('e vem por páginas, com a segunda a continuar a primeira', async () => {
+        const listingId = await anunciar('Muitas mensagens');
+        const conversationId = await conversar(bruno, listingId);
+
+        for (let i = 0; i < AVISOS_POR_PAGINA + 3; i += 1) {
+            await escrever(bruno, conversationId, `Mensagem número ${i}.`);
+        }
+
+        const primeira = await caixa(ana);
+
+        expect(primeira.notifications).toHaveLength(AVISOS_POR_PAGINA);
+
+        const resposta = await app.inject({
+            method: 'GET',
+            url: '/api/v1/notifications?page=2',
+            headers: auth(ana.token),
+        });
+
+        expect(resposta.statusCode, resposta.body).toBe(200);
+
+        const segunda = resposta.json() as Awaited<ReturnType<typeof caixa>>;
+
+        expect(segunda.notifications.length).toBeGreaterThan(0);
+
+        /* E não repete a primeira. */
+        const idsDaPrimeira = new Set(primeira.notifications.map((a) => a.id));
+
+        expect(
+            segunda.notifications.some((a) => idsDaPrimeira.has(a.id)),
+        ).toBe(false);
     });
 
     it('não deixa ver a caixa sem sessão', async () => {
