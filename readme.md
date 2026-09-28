@@ -250,6 +250,14 @@ uma entrega ou depois de mexer no que elas medem.
 
 npm run varrer --workspace @vicehub/web   # o produto inteiro, num browser
 npm run sondar --workspace @vicehub/api   # o produto inteiro, como intruso
+npm run medir  --workspace @vicehub/api   # o que cada ecrã custa à base
+```
+
+A medição exige a extensão do Postgres, uma vez por base:
+
+```
+shared_preload_libraries = 'pg_stat_statements'   # postgresql.conf, e reiniciar
+CREATE EXTENSION pg_stat_statements;
 ```
 
 **A varredura** abre os trinta e um ecrãs em quatro idiomas e duas larguras e
@@ -260,6 +268,16 @@ participação, uma venda avaliada — porque um ecrã medido vazio é uma moldu
 à volta de nada. Com `--controlo`, começa por esticar um rótulo e exigir que a
 medição dê por ele: uma varredura avariada e uma varredura limpa dizem
 exactamente a mesma coisa.
+
+**A medição** (`npm run medir --workspace @vicehub/api`) conta quantas
+consultas cada ecrã custa à base de dados, lidas ao próprio Postgres pelo
+`pg_stat_statements`. Não mede tempo: o tempo de uma máquina de
+desenvolvimento não diz nada sobre uma base gerida do outro lado do
+Atlântico, mas o **número de idas à base** é o mesmo aqui e lá, e é ele que
+decide se uma página abre depressa quando cada ida custa dez milissegundos em
+vez de meio. Compara com os números gravados em `medir-base.json` e queixa-se
+do que cresceu — um tecto fixo daria um aviso permanente, e um aviso
+permanente é um aviso que ninguém lê. `--gravar` reescreve a referência.
 
 **A sonda** monta duas pessoas e tenta, com a segunda, tudo o que a primeira
 pode fazer a si mesma — sobretudo pelo caminho errado, que é onde a
@@ -656,6 +674,47 @@ intruso no caminho e o identificador da vítima no fim, e exige uma recusa.
 As duas juntas cobrem a armadilha nos dois sentidos — o âmbito que se perde
 na validação, e o âmbito que passa mas não bate certo com o que vem a
 seguir.
+
+### O que custa uma página
+
+Medido com `npm run medir`, contra uma base de desenvolvimento. Antes do
+conteúdo de um ecrã, a casca faz três pedidos em **todas** as páginas: quem
+sou eu, o que está à espera de mim, e quantos avisos tenho por ler.
+
+| Pedido | Consultas |
+|---|---|
+| `GET /users/me` | 5 |
+| `GET /notifications/unread` | 3 |
+| `GET /users/me/pending` | 10 sem comunidades, 22 com |
+
+Nenhum deles cresce com o uso — a caixa do que espera resposta crescia, duas
+consultas por comunidade gerida, e deixou de crescer. O que resta é chão
+fixo, e a maior parte dele é **a autenticação**: cada pedido revalida a
+sessão e reúne as permissões do zero, e o Prisma parte essa leitura aninhada
+em quatro instruções. Três pedidos por página dão doze a quinze consultas só
+para saber quem está do outro lado.
+
+Há duas maneiras de o baixar, e nenhuma delas é minha para decidir:
+
+1. **Guardar em memória que permissões tem cada cargo.** O catálogo vive em
+   `rbac.ts` e as linhas da base são um espelho dele — só mudam com um
+   `db:seed`. Com esse mapa em memória, cada pedido lê os cargos desta pessoa
+   e mais nada: uma instrução em vez de quatro. O preço é uma cache no
+   caminho da autorização, que é o sítio onde um erro custa mais caro.
+2. **Nada.** Doze consultas por página numa base ao lado do processo são
+   irrelevantes; com a base do outro lado do Atlântico, são um décimo de
+   segundo antes de a página começar.
+
+A decisão depende de números que ainda não existem — os do primeiro deploy.
+Fica medida, com a referência gravada, para ser tomada com eles à frente.
+
+E um caso à parte: `GET /notifications` custa quinze consultas **com a caixa
+vazia**. Não cresce com o número de avisos; é o Prisma a ir buscar cada
+relação à parte, haja ou não o que resolver. Encolhe-se numa linha —
+`relationLoadStrategy: 'join'` — mas essa linha exige ligar a funcionalidade
+em pré-visualização `relationJoins` no gerador, e isso muda o cliente gerado
+da plataforma inteira. Por um ecrã que se abre de vez em quando, e a dias de
+um primeiro deploy, não é uma troca que se faça sozinho.
 
 ### O quadro de um servidor
 
