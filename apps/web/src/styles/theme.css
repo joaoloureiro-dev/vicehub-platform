@@ -2715,6 +2715,34 @@ button.link:hover {
  * bem, e com a palavra ao lado: quem não vê cores lê «Resolvida», que é
  * a informação toda.
  */
+/*
+ * Em que parte do fórum está a pergunta.
+ *
+ * Em ciano, e não no magenta por omissão das pilulas: na mesma linha
+ * está a marca verde de resolvida, e a magenta é a cor do que este
+ * produto usa para chamar a atenção. Uma categoria não chama atenção
+ * nenhuma — diz onde se está, como a aba acesa lá em cima, e é a mesma
+ * cor por isso mesmo.
+ */
+.pill.categoria {
+    color: var(--cyan-ink);
+    background: var(--cyan-wash);
+    border-color: var(--cyan-edge);
+}
+
+/*
+ * Dentro do tópico é uma ligação: leva de volta à parte do fórum de
+ * onde a pergunta veio. Sem isto herdava o sublinhado das ligações e
+ * lia-se como texto a mais em cima de uma pílula.
+ */
+a.pill.categoria {
+    text-decoration: none;
+}
+
+a.pill.categoria:hover {
+    border-color: var(--cyan-ink);
+}
+
 .pill.resolvida {
     background: var(--ok-wash);
     border-color: var(--ok-edge);

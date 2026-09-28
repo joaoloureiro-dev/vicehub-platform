@@ -1,3 +1,5 @@
+import type { CategoriaDoForum } from '@vicehub/database';
+
 /** Quem escreveu, como aparece a quem lê. */
 export interface ForumAuthor {
     id: string;
@@ -8,6 +10,8 @@ export interface ForumAuthor {
 export interface ForumTopicSummary {
     id: string;
     title: string;
+    /** Em que parte do fórum vive. */
+    category: CategoriaDoForum;
     /** Nulo quando o texto foi retirado com a conta de quem o escreveu. */
     excerpt: string | null;
     author: ForumAuthor | null;
@@ -30,6 +34,7 @@ export interface ForumTopicView {
     id: string;
     title: string;
     body: string | null;
+    category: CategoriaDoForum;
     author: ForumAuthor | null;
     isLocked: boolean;
     createdAt: Date;

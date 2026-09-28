@@ -845,6 +845,10 @@ export const es = (p: Tools): Messages => ({
         semResultados: 'Aquí no hay nada con eso. Prueba otra palabra, o pregúntalo tú.',
         limparProcura: 'Limpiar la búsqueda',
         aProcurarPor: (p: string) => `Preguntas con «${p}»`,
+        partesDoForum: 'Partes del foro',
+        categoriaLabel: '¿Dónde encaja esto?',
+        todasAsCategorias: 'Todo',
+        semPerguntasNaCategoria: 'Aquí todavía no hay nada. Sé el primero en preguntar en esta parte del foro.',
 
         titulo: 'Foro',
 
@@ -1156,6 +1160,14 @@ export const es = (p: Tools): Messages => ({
         service: 'Servicio',
         payout: 'Pago',
         other: 'Otro',
+    },
+
+    categoriasDoForum: {
+        general: 'General',
+        crews: 'Crews',
+        servers: 'Servidores',
+        roleplay: 'Rol',
+        support: 'Ayuda',
     },
 
     estadosMovimento: {

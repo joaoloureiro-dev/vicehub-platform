@@ -63,6 +63,7 @@ export class ForumController {
         const pagina = await this.forumService.listTopics(
             request.query.page,
             request.query.q,
+            request.query.category,
         );
 
         reply.send({

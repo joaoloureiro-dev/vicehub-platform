@@ -26,6 +26,7 @@ const json = (body: unknown): Response =>
 const pagina = (topicos: { id: string; title: string }[]) => ({
     topics: topicos.map((topico) => ({
         ...topico,
+        category: 'general',
         excerpt: 'um excerto',
         author: { id: 'a', username: 'kestrel', avatarUrl: null },
         replyCount: 0,

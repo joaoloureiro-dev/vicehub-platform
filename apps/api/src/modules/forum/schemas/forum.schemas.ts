@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import {
+    CATEGORIAS_DO_FORUM,
+    CATEGORIA_POR_OMISSAO,
     CORPO_MAXIMO,
     CORPO_MINIMO,
     NOTA_MAXIMA,
@@ -34,6 +36,20 @@ const texto = (minimo: number, maximo: number, oQue: string) =>
 export const createTopicSchema = z.object({
     title: texto(TITULO_MINIMO, TITULO_MAXIMO, 'O título'),
     body: texto(CORPO_MINIMO, CORPO_MAXIMO, 'A pergunta'),
+    /**
+     * Onde a pergunta vai viver.
+     *
+     * Com omissão e não obrigatória: um cliente que não saiba de
+     * categorias continua a poder perguntar, e a pergunta cai na
+     * conversa geral — que é melhor do que uma recusa por um campo que
+     * quem escreveu nunca viu.
+     *
+     * A omissão é a mesma da base de dados, vinda do mesmo sítio. Duas
+     * omissões escritas em dois lados são duas respostas à mesma
+     * pergunta, e qual delas ganha depende do caminho por onde o tópico
+     * entre.
+     */
+    category: z.enum(CATEGORIAS_DO_FORUM).default(CATEGORIA_POR_OMISSAO),
 });
 
 export const createReplySchema = z.object({
@@ -61,6 +77,14 @@ export const listTopicsQuerySchema = z.object({
      * procura mais comprida do que um título não é uma procura.
      */
     q: z.string().trim().min(1).max(48).optional(),
+    /**
+     * Em que parte do fórum procurar.
+     *
+     * Opcional, e sem omissão: sem ela a lista é o fórum todo, que é o
+     * que quem chega ao `/forum` quer ver. Uma omissão aqui escondia
+     * quatro quintos do fórum a quem nunca pediu para o filtrar.
+     */
+    category: z.enum(CATEGORIAS_DO_FORUM).optional(),
 });
 
 /**

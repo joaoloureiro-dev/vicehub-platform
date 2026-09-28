@@ -892,6 +892,10 @@ export const en = (p: Tools) => ({
         semResultados: 'Nothing here matches that. Try a different word, or ask it yourself.',
         limparProcura: 'Clear the search',
         aProcurarPor: (p: string) => `Questions matching “${p}”`,
+        partesDoForum: 'Parts of the forum',
+        categoriaLabel: 'Where does this belong?',
+        todasAsCategorias: 'All',
+        semPerguntasNaCategoria: 'Nothing here yet. Be the first to ask something in this part of the forum.',
 
         titulo: 'Forum',
 
@@ -1201,6 +1205,14 @@ export const en = (p: Tools) => ({
         service: 'Service',
         payout: 'Payout',
         other: 'Other',
+    },
+
+    categoriasDoForum: {
+        general: 'General',
+        crews: 'Crews',
+        servers: 'Servers',
+        roleplay: 'Roleplay',
+        support: 'Help',
     },
 
     estadosMovimento: {

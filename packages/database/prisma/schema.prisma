@@ -1438,6 +1438,20 @@ model Report {
   @@index([reviewId])
 }
 
+/// Em que parte do fórum vive uma pergunta.
+///
+/// Uma lista fechada e não uma tabela de categorias: o nome de cada uma
+/// aparece no idioma de quem lê, e uma tabela guardá-lo-ia numa língua
+/// só. A lista em código está em `CATEGORIAS_DO_FORUM`, e as duas têm
+/// de dizer o mesmo — é isso que um teste verifica.
+enum ForumCategory {
+  general
+  crews
+  servers
+  roleplay
+  support
+}
+
 model ForumTopic {
   id String @id @default(uuid())
 
@@ -1445,6 +1459,15 @@ model ForumTopic {
 
   title String
   body  String?
+
+  /// Onde esta pergunta vive.
+  ///
+  /// Com omissão, e não obrigatória: a coluna nasceu depois das
+  /// perguntas que já cá estavam, e todas elas são da conversa geral
+  /// até alguém dizer o contrário. É também a resposta certa a um
+  /// pedido que não diga nada — uma pergunta sem sítio é melhor do que
+  /// uma pergunta recusada.
+  category ForumCategory @default(general)
 
   /// Quando um moderador fechou o tópico a respostas novas.
   locked_at DateTime?
@@ -1481,6 +1504,8 @@ model ForumTopic {
 
   @@index([created_at(sort: Desc)])
   @@index([authorId])
+  /// A lista de uma categoria, pela mesma ordem da lista inteira.
+  @@index([category, updated_at(sort: Desc)])
 }
 
 /// Uma resposta a uma pergunta do fórum.

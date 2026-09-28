@@ -1,6 +1,7 @@
 import {
     RESPOSTAS_POR_PAGINA,
     TOPICOS_POR_PAGINA,
+    type CategoriaDoForum,
     type DatabaseClient,
 } from '@vicehub/database';
 
@@ -49,12 +50,30 @@ const filtroDeProcura = (procura: string | undefined) =>
             ],
         };
 
+/**
+ * Em que parte do fórum procurar, ou no fórum todo.
+ *
+ * Escrito uma vez e usado pela lista e pela contagem, pela mesma razão
+ * que o filtro da procura: uma lista e uma contagem com filtros
+ * diferentes dizem «página 1 de 9» por cima de três resultados.
+ */
+const filtroDeCategoria = (categoria: CategoriaDoForum | undefined) =>
+    categoria === undefined ? {} : { category: categoria };
+
 export class ForumRepository {
     constructor(private readonly database: DatabaseClient) { }
 
-    listTopics(pagina: number, procura?: string) {
+    listTopics(
+        pagina: number,
+        procura?: string,
+        categoria?: CategoriaDoForum,
+    ) {
         return this.database.forumTopic.findMany({
-            where: { is_deleted: false, ...filtroDeProcura(procura) },
+            where: {
+                is_deleted: false,
+                ...filtroDeProcura(procura),
+                ...filtroDeCategoria(categoria),
+            },
             /**
              * Pela última atividade, e não pela criação: um tópico com
              * uma resposta de agora interessa mais do que um aberto
@@ -68,6 +87,7 @@ export class ForumRepository {
                 id: true,
                 title: true,
                 body: true,
+                category: true,
                 locked_at: true,
                 accepted_reply_id: true,
                 created_at: true,
@@ -78,7 +98,7 @@ export class ForumRepository {
         });
     }
 
-    countTopics(procura?: string) {
+    countTopics(procura?: string, categoria?: CategoriaDoForum) {
         /*
          * Conta com o mesmo filtro da lista.
          *
@@ -87,7 +107,11 @@ export class ForumRepository {
          * carregasse na 2 via uma lista vazia sem perceber porquê.
          */
         return this.database.forumTopic.count({
-            where: { is_deleted: false, ...filtroDeProcura(procura) },
+            where: {
+                is_deleted: false,
+                ...filtroDeProcura(procura),
+                ...filtroDeCategoria(categoria),
+            },
         });
     }
 
@@ -98,6 +122,7 @@ export class ForumRepository {
                 id: true,
                 title: true,
                 body: true,
+                category: true,
                 authorId: true,
                 locked_at: true,
                 accepted_reply_id: true,
@@ -118,12 +143,18 @@ export class ForumRepository {
         });
     }
 
-    createTopic(input: { authorId: string; title: string; body: string }) {
+    createTopic(input: {
+        authorId: string;
+        title: string;
+        body: string;
+        category: CategoriaDoForum;
+    }) {
         return this.database.forumTopic.create({
             data: {
                 authorId: input.authorId,
                 title: input.title,
                 body: input.body,
+                category: input.category,
                 created_by: input.authorId,
             },
             select: { id: true },

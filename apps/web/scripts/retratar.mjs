@@ -323,22 +323,27 @@ const semear = async () => {
         }).catch(() => undefined);
     }
 
-    /* O fórum, com perguntas que alguém faria mesmo. */
+    /*
+     * O fórum, com perguntas que alguém faria mesmo — e em partes
+     * diferentes, para as capturas mostrarem as abas a servir para
+     * alguma coisa. Um fórum inteiro na conversa geral fotografava-se
+     * como um fórum sem categorias.
+     */
     const topicos = [
-        ['kestrel', 'How do you split the money from a heist?',
+        ['kestrel', 'crews', 'How do you split the money from a heist?',
             'There are five of us and the leader wants half. What do your crews do?'],
-        ['marlowe', 'Does anyone charge dues, or is that asking for trouble?',
+        ['marlowe', 'crews', 'Does anyone charge dues, or is that asking for trouble?',
             'We keep losing money on server costs and nobody wants to be the one to bring it up.'],
-        ['okonkwo', 'Best hours to find a full server in Europe?',
+        ['okonkwo', 'servers', 'Best hours to find a full server in Europe?',
             'Nine to midnight is packed. Anything before that and I am talking to myself.'],
     ];
 
     let primeiro = null;
 
-    for (const [quem, title, body] of topicos) {
+    for (const [quem, category, title, body] of topicos) {
         const topico = await api('/forum/topics', {
             method: 'POST', headers: aut(contas.get(quem).accessToken),
-            body: { title, body },
+            body: { title, body, category },
         });
 
         primeiro ??= topico;

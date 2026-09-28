@@ -32,6 +32,8 @@ const IGUAIS_DE_PROPOSITO: Readonly<Record<string, readonly string[]>> = {
         'pt:perfil.premium',
         'pt:premium.etiqueta',
         'pt:filiacao.crewsDoServidor',
+        'pt:categoriasDoForum.crews',
+        'pt:categoriasDoForum.roleplay',
         'es:nav.crews',
         'es:crews.titulo',
         'es:crews.minhasCrews',
@@ -40,6 +42,7 @@ const IGUAIS_DE_PROPOSITO: Readonly<Record<string, readonly string[]>> = {
         'es:perfil.premium',
         'es:premium.etiqueta',
         'es:filiacao.crewsDoServidor',
+        'es:categoriasDoForum.crews',
         'fr:nav.crews',
         'fr:crews.titulo',
         'fr:crews.minhasCrews',
@@ -49,6 +52,8 @@ const IGUAIS_DE_PROPOSITO: Readonly<Record<string, readonly string[]>> = {
         'fr:perfil.premium',
         'fr:premium.etiqueta',
         'fr:filiacao.crewsDoServidor',
+        'fr:categoriasDoForum.crews',
+        'fr:categoriasDoForum.roleplay',
     ],
 
     'a mesma palavra nos dois idiomas, e traduzi-la daria pior': [
@@ -66,6 +71,7 @@ const IGUAIS_DE_PROPOSITO: Readonly<Record<string, readonly string[]>> = {
         'es:perfil.avatar',
         'es:perfil.banner',
         'es:categorias.marketing',
+        'es:categoriasDoForum.general',
         'fr:nav.avisos',
         'fr:nav.forum',
         'fr:forum.titulo',

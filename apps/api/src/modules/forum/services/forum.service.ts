@@ -2,6 +2,7 @@ import {
     EXCERTO_MAXIMO,
     TOPICOS_POR_PAGINA,
     excertoDe,
+    type CategoriaDoForum,
 } from '@vicehub/database';
 
 import { ForumError } from '../errors/forum.errors.js';
@@ -34,16 +35,18 @@ export class ForumService {
     async listTopics(
         pagina: number,
         procura?: string,
+        categoria?: CategoriaDoForum,
     ): Promise<PaginaDeTopicos> {
         const [linhas, total] = await Promise.all([
-            this.forumRepository.listTopics(pagina, procura),
-            this.forumRepository.countTopics(procura),
+            this.forumRepository.listTopics(pagina, procura, categoria),
+            this.forumRepository.countTopics(procura, categoria),
         ]);
 
         return {
             topicos: linhas.map((linha) => ({
                 id: linha.id,
                 title: linha.title,
+                category: linha.category,
                 /**
                  * A lista mostra o princípio da pergunta, não a pergunta
                  * toda: um tópico com oito mil caracteres empurrava os
@@ -84,6 +87,7 @@ export class ForumService {
             id: topico.id,
             title: topico.title,
             body: topico.body,
+            category: topico.category,
             author: topico.author,
             isLocked: topico.locked_at !== null,
             createdAt: topico.created_at,
@@ -111,7 +115,7 @@ export class ForumService {
     }
 
     async createTopic(
-        input: { title: string; body: string },
+        input: { title: string; body: string; category: CategoriaDoForum },
         authorId: string,
     ): Promise<{ id: string }> {
         return this.forumRepository.createTopic({ ...input, authorId });
