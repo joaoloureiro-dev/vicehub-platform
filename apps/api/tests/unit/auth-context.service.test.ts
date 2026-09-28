@@ -5,8 +5,7 @@ import { AuthContextService } from '../../src/modules/auth/services/auth-context
 import type { AccessTokenPayload } from '../../src/modules/auth/types/auth.types.js';
 import {
     asAuthRepository,
-    buildSessionWithUser,
-    buildUserRow,
+    buildSessionOwner,
     createAuthRepositoryMock,
     type AuthRepositoryMock,
 } from '../helpers/auth.fixtures.js';
@@ -41,7 +40,7 @@ describe('AuthContextService', () => {
     };
 
     it('devolve o contexto quando a sessão e o utilizador são válidos', async () => {
-        repository.findActiveSessionWithUser.mockResolvedValue(buildSessionWithUser());
+        repository.findUserOfActiveSession.mockResolvedValue(buildSessionOwner());
 
         await expect(service.resolve(payload)).resolves.toEqual({
             sessionId: 'session-1',
@@ -55,31 +54,35 @@ describe('AuthContextService', () => {
     });
 
     it('rejeita quando a sessão já não está ativa', async () => {
-        repository.findActiveSessionWithUser.mockResolvedValue(null);
+        repository.findUserOfActiveSession.mockResolvedValue(null);
 
         await expectRejection();
     });
 
+    /**
+     * Quem a base devolve é o dono da sessão que o token nomeia. Se
+     * não é quem o token diz ser, o token foi emitido para outra
+     * pessoa e não pode valer aqui.
+     */
     it('rejeita quando a sessão pertence a outro utilizador', async () => {
-        repository.findActiveSessionWithUser.mockResolvedValue({
-            ...buildSessionWithUser(),
-            userId: 'outro-utilizador',
-        });
+        repository.findUserOfActiveSession.mockResolvedValue(
+            buildSessionOwner({ id: 'outro-utilizador' }),
+        );
 
         await expectRejection();
     });
 
     it('rejeita quando o utilizador foi eliminado', async () => {
-        repository.findActiveSessionWithUser.mockResolvedValue(
-            buildSessionWithUser({ user: buildUserRow({ is_deleted: true }) }),
+        repository.findUserOfActiveSession.mockResolvedValue(
+            buildSessionOwner({ is_deleted: true }),
         );
 
         await expectRejection();
     });
 
     it('rejeita quando a tokenVersion do token já não corresponde', async () => {
-        repository.findActiveSessionWithUser.mockResolvedValue(
-            buildSessionWithUser({ user: buildUserRow({ token_version: 2 }) }),
+        repository.findUserOfActiveSession.mockResolvedValue(
+            buildSessionOwner({ token_version: 2 }),
         );
 
         await expectRejection();

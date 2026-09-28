@@ -284,11 +284,11 @@ export class AuthService {
             );
         }
 
-        const session = await this.authRepository.findActiveSessionWithUser(
+        const dono = await this.authRepository.findUserOfActiveSession(
             storedToken.sessionId,
         );
 
-        if (!session || !session.user || session.user.is_deleted) {
+        if (!dono || dono.is_deleted) {
             throw new AuthError(
                 'INVALID_REFRESH_TOKEN',
                 'A sessão associada a este token já não está ativa.',
@@ -297,9 +297,9 @@ export class AuthService {
 
         await this.authRepository.markRefreshTokenAsUsed(storedToken.id, now);
 
-        await this.authRepository.touchSession(session.id, now);
+        await this.authRepository.touchSession(storedToken.sessionId, now);
 
-        const authResult = await this.issueTokens(session.id, session.user);
+        const authResult = await this.issueTokens(storedToken.sessionId, dono);
 
         const parsedNewToken = this.tokenService.parseRefreshToken(
             authResult.refreshToken,

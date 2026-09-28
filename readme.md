@@ -699,14 +699,29 @@ sou eu, o que está à espera de mim, e quantos avisos tenho por ler.
 
 | Pedido | Consultas |
 |---|---|
-| `GET /users/me` | 5 |
-| `GET /notifications/unread` | 3 |
-| `GET /users/me/pending` | 10 sem comunidades, 22 com |
+| `GET /users/me` | 4 |
+| `GET /notifications/unread` | 2 |
+| `GET /users/me/pending` | 9 sem comunidades, 21 com |
 
 Nenhum deles cresce com o uso — a caixa do que espera resposta crescia, duas
 consultas por comunidade gerida, e deixou de crescer. O que resta é chão
 fixo, e nenhum destes três exige uma permissão: a casca só precisa de saber
 quem está do outro lado, não se essa pessoa pode gerir alguma coisa.
+
+**Saber quem está do outro lado custava duas consultas, e passou a custar
+uma.** Cada pedido autenticado confirma na base que a sessão do token
+continua viva — sem isso, a autenticação acreditava numa assinatura e mais
+nada, e um logout global não desligava ninguém. Mas a pergunta estava feita
+ao contrário: pedia-se a sessão com o utilizador lá dentro, e o Prisma partia
+isso em duas instruções, a segunda já com a primeira em mãos.
+
+Feita do lado da pessoa, com a sessão na condição — ativa, não eliminada,
+dentro da validade —, é uma instrução só. E traz cinco campos em vez da linha
+inteira: o resumo da palavra-passe deixou de ser lido em cada pedido de cada
+pessoa, que é uma coisa que nunca teve razão nenhuma para acontecer.
+
+Uma consulta a menos **em todos os pedidos autenticados**, e a casca faz três
+por página: três por cada página que alguém com sessão abre.
 
 **Quem pede uma porta guardada é que pagava a mais.** Cada pedido a uma das
 oitenta e cinco rotas que exigem uma permissão reunia-as do zero, e o Prisma
@@ -721,10 +736,11 @@ instrução por pedido, e a segunda lê-se uma vez e fica em memória:
 
 | Pedido | Antes | Agora |
 |---|---|---|
-| `GET /treasury/crews/:crewId` | 10 | 7 |
-| `GET /events/crews/:crewId` | 7 | 4 |
+| `GET /treasury/crews/:crewId` | 10 | 6 |
+| `GET /events/crews/:crewId` | 7 | 3 |
 
-Três consultas menos em cada pedido que verifica uma permissão. O catálogo
+Três consultas menos em cada pedido que verifica uma permissão — mais a da
+sessão, que é a quarta na tabela acima. O catálogo
 vale um minuto, para que mexer nas linhas com a aplicação de pé não espere
 por um reinício; volta a ler-se se lhe pedirem um cargo que não conhece, para
 que um cargo criado agora autorize já; e um identificador que uma leitura
@@ -737,7 +753,7 @@ por isso o que a prova não são os testes de unidade: é a sonda a correr
 outra vez inteira, 24 portas em que o intruso continua a levar 403 e o dono
 continua a conseguir.
 
-E um caso à parte: `GET /notifications` custa quinze consultas **com a caixa
+E um caso à parte: `GET /notifications` custa catorze consultas **com a caixa
 vazia**. Não cresce com o número de avisos; é o Prisma a ir buscar cada
 relação à parte, haja ou não o que resolver. Encolhe-se numa linha —
 `relationLoadStrategy: 'join'` — mas essa linha exige ligar a funcionalidade

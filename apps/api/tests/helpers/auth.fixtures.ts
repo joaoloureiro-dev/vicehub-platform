@@ -32,7 +32,7 @@ export const createAuthRepositoryMock = () => ({
     clearFailedLoginAttempts: vi.fn(),
     createSession: vi.fn(),
     findActiveSession: vi.fn(),
-    findActiveSessionWithUser: vi.fn(),
+    findUserOfActiveSession: vi.fn(),
     touchSession: vi.fn(),
     createRefreshToken: vi.fn(),
     findRefreshTokenById: vi.fn(),
@@ -122,13 +122,26 @@ export const buildUserWithCredentials = (
 export const minutesFromNow = (minutes: number): Date =>
     new Date(Date.now() + minutes * 60_000);
 
-export const buildSessionWithUser = (
-    overrides: { sessionId?: string; user?: ReturnType<typeof buildUserRow> } = {},
-) => ({
-    id: overrides.sessionId ?? 'session-1',
-    userId: (overrides.user ?? buildUserRow()).id,
-    user: overrides.user ?? buildUserRow(),
-});
+/**
+ * O dono de uma sessão viva, tal como a autenticação o lê.
+ *
+ * Cinco campos, que são os que a consulta traz: quem faz o duplo
+ * devolver mais do que isso está a testar contra uma leitura que não
+ * existe.
+ */
+export const buildSessionOwner = (
+    overrides: Partial<ReturnType<typeof buildUserRow>> = {},
+) => {
+    const linha = buildUserRow(overrides);
+
+    return {
+        id: linha.id,
+        email: linha.email,
+        username: linha.username,
+        token_version: linha.token_version,
+        is_deleted: linha.is_deleted,
+    };
+};
 
 interface RefreshTokenRowOverrides {
     id?: string;

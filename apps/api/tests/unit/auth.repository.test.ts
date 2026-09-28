@@ -230,19 +230,51 @@ describe('AuthRepository', () => {
         });
     });
 
-    describe('findActiveSessionWithUser', () => {
+    describe('findUserOfActiveSession', () => {
+        /**
+         * A pergunta é feita do lado do utilizador — uma instrução em
+         * vez de duas —, mas as condições da sessão são as mesmas de
+         * sempre. Se alguma se perdesse na mudança de lado, um token
+         * de uma sessão revogada, apagada ou expirada voltava a
+         * passar.
+         */
+        const sessaoExigida = (): Record<string, unknown> => {
+            repository.findUserOfActiveSession('session-1');
+
+            const where = argsOf(database.user.findFirst)['where'] as {
+                authSessions: { some: Record<string, unknown> };
+            };
+
+            return where.authSessions.some;
+        };
+
         it('exige sessão ativa, não eliminada e ainda dentro da validade', () => {
-            repository.findActiveSessionWithUser('session-1');
+            const sessao = sessaoExigida();
 
-            const where = argsOf(database.authSession.findFirst)['where'] as Record<
-                string,
-                unknown
-            >;
+            expect(sessao['id']).toBe('session-1');
+            expect(sessao['status']).toBe('active');
+            expect(sessao['is_deleted']).toBe(false);
+            expect(sessao['expires_at']).toMatchObject({ gt: expect.any(Date) });
+        });
 
-            expect(where['id']).toBe('session-1');
-            expect(where['status']).toBe('active');
-            expect(where['is_deleted']).toBe(false);
-            expect(where['expires_at']).toMatchObject({ gt: expect.any(Date) });
+        /**
+         * E traz cinco campos, não a linha inteira.
+         *
+         * O `is_deleted` vem porque quem chama distingue uma conta
+         * apagada de uma sessão morta; o resumo da palavra-passe não
+         * vem porque nada nesta leitura precisa dele — e isto corre em
+         * cada pedido de cada pessoa.
+         */
+        it('e traz só o que a autenticação precisa, sem a palavra-passe', () => {
+            repository.findUserOfActiveSession('session-1');
+
+            expect(argsOf(database.user.findFirst)['select']).toEqual({
+                id: true,
+                email: true,
+                username: true,
+                token_version: true,
+                is_deleted: true,
+            });
         });
     });
 

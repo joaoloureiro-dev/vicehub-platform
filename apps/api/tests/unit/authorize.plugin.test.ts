@@ -17,20 +17,20 @@ import jwtPlugin from '../../src/plugins/auth/jwt.plugin.js';
  */
 describe('guard de permissões', () => {
     let app: FastifyInstance;
-    let sessionFindFirst: ReturnType<typeof vi.fn>;
+    let userFindFirst: ReturnType<typeof vi.fn>;
     let userRoleFindMany: ReturnType<typeof vi.fn>;
     let roleFindMany: ReturnType<typeof vi.fn>;
 
-    const activeSession = {
-        id: 'session-1',
-        userId: 'user-1',
-        user: {
-            id: 'user-1',
-            email: 'player@vicehub.com',
-            username: 'player',
-            token_version: 1,
-            is_deleted: false,
-        },
+    /**
+     * O que a base devolve à autenticação: o dono de uma sessão viva,
+     * em cinco campos.
+     */
+    const donoDaSessao = {
+        id: 'user-1',
+        email: 'player@vicehub.com',
+        username: 'player',
+        token_version: 1,
+        is_deleted: false,
     };
 
     /**
@@ -58,14 +58,14 @@ describe('guard de permissões', () => {
          */
         esquecerCatalogoDeCargos();
 
-        sessionFindFirst = vi.fn().mockResolvedValue(activeSession);
+        userFindFirst = vi.fn().mockResolvedValue(donoDaSessao);
         userRoleFindMany = vi.fn().mockResolvedValue([]);
         roleFindMany = vi.fn().mockResolvedValue([]);
 
         const prismaStub = fp(
             async (instance) => {
                 instance.decorate('prisma', {
-                    authSession: { findFirst: sessionFindFirst },
+                    user: { findFirst: userFindFirst },
                     userRole: { findMany: userRoleFindMany },
                     role: { findMany: roleFindMany },
                 } as never);

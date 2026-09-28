@@ -23,16 +23,17 @@ describe('middleware de autenticação', () => {
         tokenVersion: 1,
     };
 
-    const activeSession = {
-        id: 'session-1',
-        userId: 'user-1',
-        user: {
-            id: 'user-1',
-            email: 'player@vicehub.com',
-            username: 'player',
-            token_version: 1,
-            is_deleted: false,
-        },
+    /**
+     * O que a base devolve: o dono de uma sessão viva, em cinco
+     * campos. A pergunta é feita ao utilizador com a sessão na
+     * condição — uma instrução em vez de duas.
+     */
+    const donoDaSessao = {
+        id: 'user-1',
+        email: 'player@vicehub.com',
+        username: 'player',
+        token_version: 1,
+        is_deleted: false,
     };
 
     beforeEach(async () => {
@@ -41,7 +42,7 @@ describe('middleware de autenticação', () => {
         const prismaStub = fp(
             async (instance) => {
                 instance.decorate('prisma', {
-                    authSession: { findFirst },
+                    user: { findFirst },
                 } as never);
             },
             { name: 'prisma-plugin' },
@@ -79,7 +80,7 @@ describe('middleware de autenticação', () => {
         });
 
     it('preenche o contexto quando a sessão está ativa', async () => {
-        findFirst.mockResolvedValue(activeSession);
+        findFirst.mockResolvedValue(donoDaSessao);
 
         const response = await callProtected(app.jwt.sign(payload));
 
@@ -96,7 +97,7 @@ describe('middleware de autenticação', () => {
     });
 
     it('consulta mesmo a base de dados em cada pedido autenticado', async () => {
-        findFirst.mockResolvedValue(activeSession);
+        findFirst.mockResolvedValue(donoDaSessao);
 
         await callProtected(app.jwt.sign(payload));
 
@@ -117,10 +118,31 @@ describe('middleware de autenticação', () => {
     });
 
     it('recusa um token com tokenVersion desatualizada', async () => {
-        findFirst.mockResolvedValue({
-            ...activeSession,
-            user: { ...activeSession.user, token_version: 2 },
-        });
+        findFirst.mockResolvedValue({ ...donoDaSessao, token_version: 2 });
+
+        const response = await callProtected(app.jwt.sign(payload));
+
+        expect(response.statusCode).toBe(401);
+    });
+
+    /**
+     * E um token emitido para outra pessoa não passa com o
+     * identificador de uma sessão alheia. É a confusão que a leitura
+     * do lado do utilizador tinha de continuar a apanhar: quem a base
+     * devolve é o dono da sessão que o token nomeia, e tem de ser quem
+     * o token diz ser.
+     */
+    it('recusa um token cujo dono não é o da sessão', async () => {
+        findFirst.mockResolvedValue({ ...donoDaSessao, id: 'outra-pessoa' });
+
+        const response = await callProtected(app.jwt.sign(payload));
+
+        expect(response.statusCode).toBe(401);
+        expect(response.json().code).toBe('INVALID_ACCESS_TOKEN');
+    });
+
+    it('recusa quem foi apagado com a sessão ainda viva', async () => {
+        findFirst.mockResolvedValue({ ...donoDaSessao, is_deleted: true });
 
         const response = await callProtected(app.jwt.sign(payload));
 

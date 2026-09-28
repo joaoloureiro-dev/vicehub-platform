@@ -445,23 +445,49 @@ export class AuthRepository {
     }
 
     /**
-     * Procura uma sessão ativa com o utilizador associado.
+     * Quem é o dono de uma sessão que ainda está viva.
      *
-     * Usado pelo middleware de autenticação para confirmar que
-     * a sessão do access token continua válida na base de dados.
+     * Corre em **todos** os pedidos autenticados: é o que confirma que
+     * a sessão do access token continua válida na base de dados, e a
+     * casca faz três pedidos por página antes do conteúdo.
+     *
+     * Por isso a pergunta é feita à pessoa e não à sessão. Pedir a
+     * sessão com o utilizador lá dentro fazia o Prisma partir a
+     * leitura em duas instruções — uma para a sessão, outra para a
+     * pessoa — e a segunda era servida com a primeira já em mãos. Do
+     * lado do utilizador, com a sessão na condição, é uma instrução
+     * só, e a condição é a mesma: ativa, não eliminada, dentro da
+     * validade.
+     *
+     * E traz cinco campos em vez da linha inteira. `include` trazia
+     * tudo o que a tabela tem, o resumo da palavra-passe incluído, em
+     * cada pedido de cada pessoa — nada aqui precisa dele, e o que não
+     * se lê não se perde.
+     *
+     * O `is_deleted` vem em vez de ficar na condição de propósito:
+     * quem chama distingue "esta sessão já não vale" de "esta conta já
+     * não existe", e são duas respostas diferentes para quem as lê.
      */
-    findActiveSessionWithUser(sessionId: string) {
-        return this.database.authSession.findFirst({
+    findUserOfActiveSession(sessionId: string) {
+        return this.database.user.findFirst({
             where: {
-                id: sessionId,
-                status: AuthSessionStatus.active,
-                is_deleted: false,
-                expires_at: {
-                    gt: new Date(),
+                authSessions: {
+                    some: {
+                        id: sessionId,
+                        status: AuthSessionStatus.active,
+                        is_deleted: false,
+                        expires_at: {
+                            gt: new Date(),
+                        },
+                    },
                 },
             },
-            include: {
-                user: true,
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                token_version: true,
+                is_deleted: true,
             },
         });
     }

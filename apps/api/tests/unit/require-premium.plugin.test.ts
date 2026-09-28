@@ -14,16 +14,16 @@ describe('guard de subscrição', () => {
     let app: FastifyInstance;
     let subscriptionFindFirst: ReturnType<typeof vi.fn>;
 
-    const activeSession = {
-        id: 'session-1',
-        userId: 'user-1',
-        user: {
-            id: 'user-1',
-            email: 'player@vicehub.com',
-            username: 'player',
-            token_version: 1,
-            is_deleted: false,
-        },
+    /**
+     * O que a base devolve à autenticação: o dono de uma sessão viva,
+     * em cinco campos.
+     */
+    const donoDaSessao = {
+        id: 'user-1',
+        email: 'player@vicehub.com',
+        username: 'player',
+        token_version: 1,
+        is_deleted: false,
     };
 
     const periodEnd = new Date(Date.now() + 30 * 24 * 3_600_000);
@@ -41,7 +41,7 @@ describe('guard de subscrição', () => {
         const prismaStub = fp(
             async (instance) => {
                 instance.decorate('prisma', {
-                    authSession: { findFirst: vi.fn().mockResolvedValue(activeSession) },
+                    user: { findFirst: vi.fn().mockResolvedValue(donoDaSessao) },
                     subscription: { findFirst: subscriptionFindFirst, findMany: vi.fn() },
                 } as never);
             },
