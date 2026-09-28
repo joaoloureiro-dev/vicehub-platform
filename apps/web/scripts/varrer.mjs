@@ -175,6 +175,39 @@ const semear = async (base) => {
         body: { name: `Vice City Roleplay ${marca}`, region: 'EU' },
     });
 
+    /*
+     * Uma segunda crew, e as duas a jogar no servidor.
+     *
+     * Sem isto, três ecrãs eram medidos vazios: o quadro do servidor
+     * dizia que ainda não joga lá ninguém, a lista de crews do servidor
+     * não tinha linhas, e a página da crew não dizia onde ela joga.
+     * Um ecrã que está na lista mas cujo conteúdo nunca aparece é o
+     * mesmo problema de um ecrã que não está na lista — a varredura
+     * mede a moldura e nunca o quadro.
+     *
+     * Duas e não uma: o quadro empata-as no primeiro lugar, que é o
+     * caso que tem duas linhas a dizer «1» e é onde se vê se a coluna
+     * dos lugares está alinhada.
+     */
+    const outraCrew = await api('/crews', {
+        method: 'POST', headers: aut(outra.accessToken),
+        body: { name: `Os Náufragos do Porto ${marca}`, tag: `N${marca.slice(-3)}` },
+    });
+
+    for (const [aQuem, token] of [
+        [crew, eu.accessToken],
+        [outraCrew, outra.accessToken],
+    ]) {
+        await api(`/crews/${aQuem.id}/affiliation`, {
+            method: 'POST', headers: aut(token),
+            body: { serverId: servidor.id },
+        });
+
+        await api(`/servers/${servidor.id}/affiliations/${aQuem.id}/accept`, {
+            method: 'POST', headers: aut(eu.accessToken),
+        });
+    }
+
     const evento = await api(`/events/crews/${crew.id}`, {
         method: 'POST', headers: aut(eu.accessToken),
         body: {

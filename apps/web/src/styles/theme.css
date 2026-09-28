@@ -1337,6 +1337,25 @@ button.link:hover {
     overflow-wrap: anywhere;
 }
 
+/*
+ * O nome, quando é uma ligação.
+ *
+ * Em linha, a caixa de um link é só a altura do texto: dezoito pixels,
+ * menos de metade do que um polegar acerta. A linha da lista tem a
+ * altura certa — treze pixels de espaço acima e abaixo —, mas o espaço
+ * é do `li` e não do que se pode tocar, e tocar ao lado do nome não
+ * abre coisa nenhuma.
+ *
+ * Seis listas põem ligações aqui: membros de crews e de servidores,
+ * crews de um servidor, pedidos por responder, presenças num evento e
+ * as minhas comunidades. Uma regra, e não seis.
+ */
+.pessoas .nome a {
+    display: inline-block;
+    max-width: 100%;
+    padding-block: 4px;
+}
+
 .pessoas .cargo {
     font-family: var(--mono);
     font-size: 11.5px;
