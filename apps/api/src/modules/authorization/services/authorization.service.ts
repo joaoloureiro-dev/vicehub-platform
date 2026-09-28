@@ -41,19 +41,32 @@ export class AuthorizationService {
         userId: string,
         scope: AuthorizationScope = {},
     ): Promise<EffectivePermissions> {
-        const assignments =
-            await this.authorizationRepository.findGrantedPermissions(userId, scope);
+        const cargos = await this.authorizationRepository.findGrantedRoleIds(
+            userId,
+            scope,
+        );
+
+        const roleIds = cargos.map((cargo) => cargo.roleId);
+
+        /**
+         * O que cada cargo dá vem do catálogo, que não muda entre
+         * pedidos: quem manda nele é o `rbac.ts` e o `db:seed`. O que
+         * muda a toda a hora — que cargos esta pessoa tem, e onde — é o
+         * que se lê acima, numa instrução.
+         *
+         * Os identificadores vão no pedido para o catálogo poder
+         * recarregar-se se algum lhe for desconhecido. Um cargo criado
+         * depois de o processo arrancar não pode ficar sem permissões
+         * até alguém reiniciar.
+         */
+        const catalogo =
+            await this.authorizationRepository.permissionsByRole(roleIds);
 
         const permissions = new Set<string>();
 
-        for (const assignment of assignments) {
-            for (const rolePermission of assignment.role.rolePermissions) {
-                permissions.add(
-                    buildPermissionKey(
-                        rolePermission.permission.scope,
-                        rolePermission.permission.slug,
-                    ),
-                );
+        for (const roleId of roleIds) {
+            for (const chave of catalogo.get(roleId) ?? []) {
+                permissions.add(chave);
             }
         }
 

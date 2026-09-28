@@ -3,6 +3,7 @@ import fp from 'fastify-plugin';
 import { PermissionScope } from '@vicehub/database';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { esquecerCatalogoDeCargos } from '../../src/modules/authorization/repositories/authorization.repository.js';
 import authenticatePlugin from '../../src/plugins/auth/authenticate.plugin.js';
 import authorizePlugin from '../../src/plugins/auth/authorize.plugin.js';
 import errorHandlerPlugin from '../../src/plugins/http/error-handler.plugin.js';
@@ -18,6 +19,7 @@ describe('guard de permissões', () => {
     let app: FastifyInstance;
     let sessionFindFirst: ReturnType<typeof vi.fn>;
     let userRoleFindMany: ReturnType<typeof vi.fn>;
+    let roleFindMany: ReturnType<typeof vi.fn>;
 
     const activeSession = {
         id: 'session-1',
@@ -31,27 +33,41 @@ describe('guard de permissões', () => {
         },
     };
 
+    /**
+     * Dá um cargo ao utilizador, nas duas metades da leitura: a
+     * atribuição, que se lê em cada pedido, e o catálogo, que diz o que
+     * esse cargo concede.
+     */
     const grantRole = (...permissions: { scope: PermissionScope; slug: string }[]) => {
-        userRoleFindMany.mockResolvedValue([
+        userRoleFindMany.mockResolvedValue([{ roleId: 'cargo-1' }]);
+
+        roleFindMany.mockResolvedValue([
             {
-                role: {
-                    slug: 'cargo',
-                    scope: 'global',
-                    rolePermissions: permissions.map((permission) => ({ permission })),
-                },
+                id: 'cargo-1',
+                rolePermissions: permissions.map((permission) => ({ permission })),
             },
         ]);
     };
 
     beforeEach(async () => {
+        /*
+         * O catálogo vive fora da classe, para não ser lido por cada
+         * instância do repositório. Entre testes, esquece-se: sem isto,
+         * o primeiro cargo concedido aqui autorizava os testes
+         * seguintes.
+         */
+        esquecerCatalogoDeCargos();
+
         sessionFindFirst = vi.fn().mockResolvedValue(activeSession);
         userRoleFindMany = vi.fn().mockResolvedValue([]);
+        roleFindMany = vi.fn().mockResolvedValue([]);
 
         const prismaStub = fp(
             async (instance) => {
                 instance.decorate('prisma', {
                     authSession: { findFirst: sessionFindFirst },
                     userRole: { findMany: userRoleFindMany },
+                    role: { findMany: roleFindMany },
                 } as never);
             },
             { name: 'prisma-plugin' },
@@ -170,6 +186,24 @@ describe('guard de permissões', () => {
         await call('/duas-permissoes');
 
         expect(userRoleFindMany).toHaveBeenCalledOnce();
+    });
+
+    /**
+     * E o que cada cargo concede lê-se uma vez, não em cada pedido.
+     *
+     * É a razão de as duas leituras estarem separadas: a casca faz três
+     * pedidos autenticados por página, e o catálogo não muda entre
+     * eles.
+     */
+    it('e o catálogo dos cargos só uma vez para vários pedidos', async () => {
+        grantRole({ scope: PermissionScope.crew, slug: 'manage' });
+
+        await call('/crews/crew-1/gerir');
+        await call('/crews/crew-1/gerir');
+        await call('/crews/crew-1/gerir');
+
+        expect(userRoleFindMany).toHaveBeenCalledTimes(3);
+        expect(roleFindMany).toHaveBeenCalledOnce();
     });
 
     it('recusa uma rota que se esqueça do authenticate', async () => {

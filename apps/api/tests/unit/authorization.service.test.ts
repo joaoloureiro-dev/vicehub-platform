@@ -1,4 +1,4 @@
-import { PermissionScope } from '@vicehub/database';
+import { PermissionScope, buildPermissionKey } from '@vicehub/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthorizationError } from '../../src/modules/authorization/errors/authorization.errors.js';
@@ -6,26 +6,40 @@ import { AuthorizationService } from '../../src/modules/authorization/services/a
 import type { AuthorizationRepository } from '../../src/modules/authorization/repositories/authorization.repository.js';
 
 /**
- * Constrói o resultado do repositório: cargos, cada um com as suas
- * permissões, tal como saem da consulta.
+ * Constrói o que as duas leituras devolvem: os cargos desta pessoa, e o
+ * catálogo que diz o que cada um deles dá.
+ *
+ * Um argumento por cargo, com as permissões dele. Os identificadores são
+ * inventados aqui — o serviço só tem de os saber cruzar.
  */
-const grants = (...roles: { scope: PermissionScope; slug: string }[][]) =>
-    roles.map((permissions) => ({
-        role: {
-            slug: 'cargo',
-            scope: 'global',
-            rolePermissions: permissions.map((permission) => ({ permission })),
-        },
-    }));
+const grants = (...roles: { scope: PermissionScope; slug: string }[][]) => ({
+    cargos: roles.map((_, i) => ({ roleId: `cargo-${i}` })),
+    catalogo: new Map(
+        roles.map((permissions, i) => [
+            `cargo-${i}`,
+            new Set(
+                /* Pela mesma chave que o guard compara. */
+                permissions.map(({ scope, slug }) =>
+                    buildPermissionKey(scope, slug)),
+            ),
+        ]),
+    ),
+});
 
 const permission = (scope: PermissionScope, slug: string) => ({ scope, slug });
 
 describe('AuthorizationService', () => {
-    let repository: { findGrantedPermissions: ReturnType<typeof vi.fn> };
+    let repository: {
+        findGrantedRoleIds: ReturnType<typeof vi.fn>;
+        permissionsByRole: ReturnType<typeof vi.fn>;
+    };
     let service: AuthorizationService;
 
     beforeEach(() => {
-        repository = { findGrantedPermissions: vi.fn() };
+        repository = {
+            findGrantedRoleIds: vi.fn(),
+            permissionsByRole: vi.fn(),
+        };
         service = new AuthorizationService(
             repository as unknown as AuthorizationRepository,
         );
@@ -35,7 +49,8 @@ describe('AuthorizationService', () => {
         granted: ReturnType<typeof grants>,
         scope = {},
     ) => {
-        repository.findGrantedPermissions.mockResolvedValue(granted);
+        repository.findGrantedRoleIds.mockResolvedValue(granted.cargos);
+        repository.permissionsByRole.mockResolvedValue(granted.catalogo);
 
         return service.getEffectivePermissions('user-1', scope);
     };
@@ -67,15 +82,52 @@ describe('AuthorizationService', () => {
         });
 
         it('um utilizador sem cargos fica sem permissões', async () => {
-            const effective = await effectiveFor([]);
+            const effective = await effectiveFor(grants());
 
             expect(effective.permissions.size).toBe(0);
         });
 
         it('mantém o âmbito em que foram avaliadas', async () => {
-            const effective = await effectiveFor([], { crewId: 'crew-1' });
+            const effective = await effectiveFor(grants(), { crewId: 'crew-1' });
 
             expect(effective.scope).toEqual({ crewId: 'crew-1' });
+        });
+
+        /**
+         * As duas leituras cruzam-se por identificador, e o cruzamento
+         * é o que fecha a porta: um cargo atribuído que o catálogo não
+         * conhece — porque foi apagado — não concede nada.
+         */
+        it('um cargo que o catálogo não conhece não concede nada', async () => {
+            repository.findGrantedRoleIds.mockResolvedValue([
+                { roleId: 'cargo-apagado' },
+            ]);
+            repository.permissionsByRole.mockResolvedValue(
+                new Map([['cargo-0', new Set(['crew:manage'])]]),
+            );
+
+            const effective = await service.getEffectivePermissions('user-1', {});
+
+            expect(effective.permissions.size).toBe(0);
+        });
+
+        /**
+         * E o catálogo é pedido pelos cargos encontrados, não em
+         * branco: é assim que ele sabe se lhe estão a pedir um cargo
+         * que ainda não leu.
+         */
+        it('pede o catálogo pelos cargos que encontrou', async () => {
+            await effectiveFor(
+                grants(
+                    [permission(PermissionScope.crew, 'read')],
+                    [permission(PermissionScope.treasury, 'read')],
+                ),
+            );
+
+            expect(repository.permissionsByRole).toHaveBeenCalledWith([
+                'cargo-0',
+                'cargo-1',
+            ]);
         });
     });
 
@@ -130,7 +182,7 @@ describe('AuthorizationService', () => {
         });
 
         it('nada exigido é sempre autorizado', async () => {
-            const effective = await effectiveFor([]);
+            const effective = await effectiveFor(grants());
 
             expect(service.hasPermissions(effective, [])).toBe(true);
         });
@@ -166,7 +218,7 @@ describe('AuthorizationService', () => {
         });
 
         it('lança um erro de autorização com as permissões em falta', async () => {
-            const effective = await effectiveFor([]);
+            const effective = await effectiveFor(grants());
 
             try {
                 service.assertPermissions(effective, ['crew:manage']);
