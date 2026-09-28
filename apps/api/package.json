@@ -15,7 +15,8 @@
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
         "news:fetch": "tsx scripts/news-fetch.ts",
-        "news:probe": "tsx scripts/news-probe.ts"
+        "news:probe": "tsx scripts/news-probe.ts",
+        "sondar": "node scripts/sondar.mjs"
     },
     "engines": {
         "node": ">=24.0.0",
