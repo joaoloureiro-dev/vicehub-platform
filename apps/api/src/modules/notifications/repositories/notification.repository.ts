@@ -66,18 +66,21 @@ export class NotificationRepository {
     /**
      * Uma página de avisos, com o que cada um aponta.
      *
-     * **Lida em duas metades, e é isso que a faz caber numa caixa
-     * vazia.** Pedida de uma vez — a linha com as relações lá dentro —,
-     * o Prisma vai buscar cada relação numa instrução própria: a
-     * mensagem, a conversa da mensagem, o anúncio da conversa, a
-     * resposta, o tópico da resposta, a avaliação e as três coisas
-     * dela. Dez instruções, **haja ou não avisos**: uma caixa vazia
-     * pagava as dez para não trazer nada.
+     * **Cada tabela lida uma vez, e só as que a página precisa.**
      *
-     * Assim é uma instrução para a página, e depois só as espécies que
-     * lá estão mesmo. Quem tem a caixa vazia paga uma; quem tem uma
-     * página só de respostas do fórum paga três; as dez só se pagam
-     * quando as cinco espécies aparecem todas na mesma página.
+     * Pedida de uma vez — a linha com as relações lá dentro —, o Prisma
+     * vai buscar cada relação numa instrução própria, e vai buscar a
+     * mesma tabela tantas vezes quantas ela aparecer: os utilizadores
+     * três vezes (quem causou o aviso, quem foi avaliado, quem
+     * avaliou), os anúncios duas (o da conversa e o da avaliação).
+     * Catorze instruções para uma página, **e dez delas mesmo com a
+     * caixa vazia**.
+     *
+     * Aqui a página vem primeiro e as tabelas depois, cada uma uma vez
+     * só e nenhuma sem ter a quem servir. Uma caixa vazia custa uma
+     * instrução; uma página só de respostas do fórum custa três; as
+     * oito só se pagam quando lá estão as quatro famílias de alvo ao
+     * mesmo tempo.
      *
      * O que sai daqui tem a forma de sempre — cada aviso com o seu
      * alvo lá dentro —, para que quem o lê não tenha de saber nada
@@ -105,115 +108,220 @@ export class NotificationRepository {
             return [];
         }
 
-        /** Os identificadores de uma espécie, sem repetições nem nulos. */
-        const idsDe = (
-            campo: 'actorId' | 'messageId' | 'replyId' | 'reviewId',
+        /** Os identificadores de um campo, sem repetições nem nulos. */
+        const idsDe = <T>(
+            de: readonly T[],
+            campo: (linha: T) => string | null | undefined,
         ): string[] => [
             ...new Set(
-                linhas
-                    .map((linha) => linha[campo])
+                de
+                    .map(campo)
                     .filter((id): id is string => id !== null && id !== undefined),
             ),
         ];
 
-        const porId = <T extends { id: string }>(linhas_: T[]): Map<string, T> =>
-            new Map(linhas_.map((linha) => [linha.id, linha]));
+        const porId = <T extends { id: string }>(
+            lidas: readonly T[],
+        ): Map<string, T> => new Map(lidas.map((linha) => [linha.id, linha]));
 
-        const mensagensIds = idsDe('messageId');
-        const respostasIds = idsDe('replyId');
-        const avaliacoesIds = idsDe('reviewId');
+        /** Uma leitura que não se faz quando não há a quem servir. */
+        const seHouver = async <T>(
+            ids: readonly string[],
+            ler: (ids: readonly string[]) => Promise<T[]>,
+        ): Promise<T[]> => (ids.length === 0 ? [] : ler(ids));
 
-        const [actores, mensagens, respostas, avaliacoes] = await Promise.all([
-            this.database.user.findMany({
-                where: { id: { in: idsDe('actorId') } },
-                ...ACTOR,
-            }),
+        const [mensagens, respostas, avaliacoes] = await Promise.all([
+            seHouver(idsDe(linhas, (l) => l.messageId), (ids) =>
+                this.database.marketMessage.findMany({
+                    where: { id: { in: [...ids] } },
+                    select: { id: true, body: true, conversationId: true },
+                })),
+
+            seHouver(idsDe(linhas, (l) => l.replyId), (ids) =>
+                this.database.forumReply.findMany({
+                    where: { id: { in: [...ids] } },
+                    select: { id: true, topicId: true, body: true },
+                })),
 
             /*
-             * Cada espécie só vai à base se a página a tiver. É a
-             * diferença entre uma caixa vazia custar uma instrução ou
-             * custar dez.
+             * Sem o `rating` e sem quem avaliou: a caixa não mostra
+             * nem um nem outro. Eram duas colunas e **uma ida à tabela
+             * dos utilizadores** em cada página, para nada.
              */
-            mensagensIds.length === 0
-                ? []
-                : this.database.marketMessage.findMany({
-                    where: { id: { in: mensagensIds } },
+            seHouver(idsDe(linhas, (l) => l.reviewId), (ids) =>
+                this.database.marketReview.findMany({
+                    where: { id: { in: [...ids] } },
                     select: {
                         id: true,
-                        body: true,
-                        conversationId: true,
-                        conversation: {
-                            select: { listing: { select: { title: true } } },
-                        },
-                    },
-                }),
-
-            respostasIds.length === 0
-                ? []
-                : this.database.forumReply.findMany({
-                    where: { id: { in: respostasIds } },
-                    select: {
-                        id: true,
-                        topicId: true,
-                        body: true,
-                        topic: { select: { title: true } },
-                    },
-                }),
-
-            avaliacoesIds.length === 0
-                ? []
-                : this.database.marketReview.findMany({
-                    where: { id: { in: avaliacoesIds } },
-                    select: {
-                        id: true,
-                        rating: true,
                         body: true,
                         reply: true,
-                        subject: { select: { username: true } },
-                        reviewer: { select: { username: true } },
-                        listing: { select: { title: true } },
+                        listingId: true,
+                        subjectId: true,
                     },
-                }),
+                })),
         ]);
 
-        const deActor = porId(actores);
+        /*
+         * Quem causou o aviso e quem foi avaliado saem da mesma tabela,
+         * e por isso saem da mesma leitura.
+         */
+        const pessoasIds = [
+            ...new Set([
+                ...idsDe(linhas, (l) => l.actorId),
+                ...idsDe(avaliacoes, (a) => a.subjectId),
+            ]),
+        ];
+
+        const [conversas, topicos, pessoas] = await Promise.all([
+            seHouver(idsDe(mensagens, (m) => m.conversationId), (ids) =>
+                this.database.marketConversation.findMany({
+                    where: { id: { in: [...ids] } },
+                    select: { id: true, listingId: true },
+                })),
+
+            seHouver(idsDe(respostas, (r) => r.topicId), (ids) =>
+                this.database.forumTopic.findMany({
+                    where: { id: { in: [...ids] } },
+                    select: { id: true, title: true },
+                })),
+
+            seHouver(pessoasIds, (ids) =>
+                this.database.user.findMany({
+                    where: { id: { in: [...ids] } },
+                    ...ACTOR,
+                })),
+        ]);
+
+        /*
+         * E o anúncio da conversa e o da avaliação são o mesmo sítio:
+         * uma leitura para os dois.
+         */
+        const anuncios = await seHouver(
+            [
+                ...new Set([
+                    ...idsDe(conversas, (c) => c.listingId),
+                    ...idsDe(avaliacoes, (a) => a.listingId),
+                ]),
+            ],
+            (ids) =>
+                this.database.marketListing.findMany({
+                    where: { id: { in: [...ids] } },
+                    select: { id: true, title: true },
+                }),
+        );
+
+        const dePessoa = porId(pessoas);
         const deMensagem = porId(mensagens);
         const deResposta = porId(respostas);
         const deAvaliacao = porId(avaliacoes);
+        const deConversa = porId(conversas);
+        const deTopico = porId(topicos);
+        const deAnuncio = porId(anuncios);
+
+        /** O título de um anúncio, ou vazio se ele já não existir. */
+        const titulo = (listingId: string | null): string =>
+            (listingId === null ? undefined : deAnuncio.get(listingId)?.title)
+            ?? '';
 
         /**
          * E volta a ter a forma de sempre.
          *
          * A ordem é a da página — a das linhas —, e não a de nenhuma
-         * das leituras de espécie: uma caixa de avisos fora de ordem
-         * não é uma caixa de avisos.
+         * das leituras: uma caixa de avisos fora de ordem não é uma
+         * caixa de avisos.
          */
-        return linhas.map((linha) => ({
-            id: linha.id,
-            kind: linha.kind,
-            read_at: linha.read_at,
-            created_at: linha.created_at,
-            actor:
-                linha.actorId === null
-                    ? null
-                    : deActor.get(linha.actorId) ?? null,
-            message:
+        return linhas.map((linha) => {
+            const mensagem =
                 linha.messageId === null
                     ? null
-                    : deMensagem.get(linha.messageId) ?? null,
-            reply:
+                    : deMensagem.get(linha.messageId) ?? null;
+
+            const resposta =
                 linha.replyId === null
                     ? null
-                    : deResposta.get(linha.replyId) ?? null,
-            review:
+                    : deResposta.get(linha.replyId) ?? null;
+
+            const avaliacao =
                 linha.reviewId === null
                     ? null
-                    : deAvaliacao.get(linha.reviewId) ?? null,
-        }));
+                    : deAvaliacao.get(linha.reviewId) ?? null;
+
+            return {
+                id: linha.id,
+                kind: linha.kind,
+                read_at: linha.read_at,
+                created_at: linha.created_at,
+
+                actor:
+                    linha.actorId === null
+                        ? null
+                        : dePessoa.get(linha.actorId) ?? null,
+
+                message:
+                    mensagem === null
+                        ? null
+                        : {
+                            id: mensagem.id,
+                            body: mensagem.body,
+                            conversationId: mensagem.conversationId,
+                            conversation: {
+                                listing: {
+                                    title: titulo(
+                                        deConversa.get(mensagem.conversationId)
+                                            ?.listingId ?? null,
+                                    ),
+                                },
+                            },
+                        },
+
+                reply:
+                    resposta === null
+                        ? null
+                        : {
+                            id: resposta.id,
+                            topicId: resposta.topicId,
+                            body: resposta.body,
+                            topic: {
+                                title: deTopico.get(resposta.topicId)?.title ?? '',
+                            },
+                        },
+
+                review:
+                    avaliacao === null
+                        ? null
+                        : {
+                            id: avaliacao.id,
+                            body: avaliacao.body,
+                            reply: avaliacao.reply,
+                            subject:
+                                avaliacao.subjectId === null
+                                    ? null
+                                    : dePessoa.get(avaliacao.subjectId) ?? null,
+                            listing: { title: titulo(avaliacao.listingId) },
+                        },
+            };
+        });
     }
 
-    count(userId: string) {
-        return this.database.notification.count({ where: { userId } });
+    /**
+     * Quantos avisos há, e quantos por ler — numa consulta.
+     *
+     * Eram duas: uma contava tudo e outra contava os que estão por ler.
+     * Contar a coluna `read_at` conta as linhas em que ela não é nula —
+     * os lidos —, e os por ler são a diferença. Uma instrução em vez de
+     * duas, e as duas contagens a falar do mesmo instante: com duas
+     * leituras, um aviso que chegasse entre elas dava uma caixa com
+     * mais por ler do que avisos.
+     */
+    async contagens(userId: string): Promise<{ total: number; porLer: number }> {
+        const contagem = await this.database.notification.aggregate({
+            where: { userId },
+            _count: { _all: true, read_at: true },
+        });
+
+        const total = contagem._count._all;
+
+        return { total, porLer: total - contagem._count.read_at };
     }
 
     /** O que está por ler, que é o número que a barra mostra. */

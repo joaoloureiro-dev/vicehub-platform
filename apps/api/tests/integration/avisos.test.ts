@@ -164,6 +164,17 @@ describe('os avisos', () => {
         expect(aviso?.openId).toBe(conversationId);
         expect(aviso?.excerpt).toContain('A que horas');
         expect(aviso?.isRead).toBe(false);
+
+        /**
+         * E diz sobre o quê.
+         *
+         * O título do anúncio está a três tabelas de distância do
+         * aviso — a mensagem, a conversa, o anúncio — e é a única
+         * coisa na linha que diz à pessoa de que conversa se trata.
+         * Sem isto, a caixa podia devolver o título vazio em todas as
+         * mensagens e ninguém dava por isso.
+         */
+        expect(aviso?.about).toContain('Com mensagem');
     });
 
     /**
@@ -246,6 +257,8 @@ describe('os avisos', () => {
         expect(aviso?.kind).toBe('forum_reply');
         expect(aviso?.openId).toBe(topicId);
         expect(aviso?.about).toContain('Uma pergunta com resposta');
+        /* E leva o princípio da resposta, que é o que faz abrir. */
+        expect(aviso?.excerpt).toContain('Divides por participação');
     });
 
     it('não avisa quem responde à sua própria pergunta', async () => {
@@ -310,6 +323,8 @@ describe('os avisos', () => {
             /** Abre-se no perfil de quem a recebeu: é lá que ela vive. */
             expect(aviso?.openId).toBe(ana.nome);
             expect(aviso?.excerpt).toContain('à hora combinada');
+            /* E sobre que venda foi — que é outro anúncio, não o da conversa. */
+            expect(aviso?.about).toContain('Avaliada');
         });
 
         it('e a resposta avisa quem avaliou', async () => {
@@ -329,7 +344,79 @@ describe('os avisos', () => {
 
             expect(aviso?.kind).toBe('market_review_reply');
             expect(aviso?.excerpt).toContain('dez minutos');
+
+            /**
+             * E o anúncio da avaliação, que aqui é o único que há.
+             *
+             * Na caixa de quem avaliou não existe aviso nenhum da
+             * conversa deste anúncio — as mensagens foram dele para a
+             * outra pessoa. Se o título das avaliações viesse de
+             * carona no das conversas, funcionava em todo o lado
+             * menos aqui.
+             */
+            expect(aviso?.about).toContain('Com resposta');
         });
+    });
+
+    /**
+     * **E os dois números que vêm com a página.**
+     *
+     * `total` decide quantas páginas existem e `unread` é o número que
+     * a casca mostra na campainha — e nenhum dos dois tinha teste. Um
+     * mutante que trocasse os por ler pelos lidos, e outro que
+     * apagasse o dono da contagem e passasse a contar os avisos de
+     * toda a gente, atravessavam a suite inteira sem uma queixa.
+     *
+     * Contam-se numa pessoa acabada de registar, para os números
+     * serem os que aqui se escrevem e não o que sobrou dos testes
+     * anteriores.
+     */
+    it('e diz quantos são ao todo, e quantos faltam ler', async () => {
+        const diogo = await registar(`nd${marca}`);
+
+        const topico = await app.inject({
+            method: 'POST',
+            url: '/api/v1/forum/topics',
+            headers: auth(diogo.token),
+            payload: {
+                title: `Uma pergunta para contar ${marca}`,
+                body: 'O corpo da pergunta, com tamanho suficiente.',
+            },
+        });
+
+        expect(topico.statusCode, topico.body).toBe(201);
+
+        const topicId = topico.json().id as string;
+
+        for (const quem of [ana, bruno, carla]) {
+            const resposta = await app.inject({
+                method: 'POST',
+                url: `/api/v1/forum/topics/${topicId}/replies`,
+                headers: auth(quem.token),
+                payload: { body: `A resposta de ${quem.nome}, com tamanho.` },
+            });
+
+            expect(resposta.statusCode, resposta.body).toBe(201);
+        }
+
+        const antes = await caixa(diogo);
+
+        expect(antes.total).toBe(3);
+        expect(antes.unread).toBe(3);
+
+        const marcado = await app.inject({
+            method: 'POST',
+            url: `/api/v1/notifications/${antes.notifications[0]?.id}/read`,
+            headers: auth(diogo.token),
+        });
+
+        expect(marcado.statusCode, marcado.body).toBe(204);
+
+        const depois = await caixa(diogo);
+
+        /* Dar por lido não faz desaparecer: muda um número, não o outro. */
+        expect(depois.total).toBe(3);
+        expect(depois.unread).toBe(2);
     });
 
     describe('dar por lido', () => {
