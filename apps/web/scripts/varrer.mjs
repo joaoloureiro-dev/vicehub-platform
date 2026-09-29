@@ -27,7 +27,15 @@
  *
  * Opções: `--largura=390` (ou 1280, ou as duas separadas por vírgula),
  * `--idiomas=en,pt,es,fr`, `--base=http://127.0.0.1:4011`, `--controlo`,
- * `--sem-moderacao`.
+ * `--sem-moderacao`, `--vazio`.
+ *
+ * **`--vazio` é o primeiro dia.** O que isto mede é sempre um produto
+ * cheio, porque começa por o encher — e o produto está cheio em todos
+ * os dias menos naquele em que abre. Com `--vazio` cria-se só a conta e
+ * medem-se os ecrãs que não precisam de mais nada: as listas sem nada
+ * dentro, a caixa de avisos vazia, quem ainda não tem comunidade
+ * nenhuma. É o que a primeira pessoa a chegar vê, e é o estado que esta
+ * ferramenta nunca via.
  *
  * **A fila de denúncias.** É o único ecrã que não se enche por HTTP: a
  * permissão de moderar não se concede por rota nenhuma. A varredura
@@ -173,6 +181,44 @@ const darCargoDeModerador = (email) => {
     }
 
     return true;
+};
+
+/**
+ * A sementeira do primeiro dia: uma conta, e nada mais.
+ *
+ * O que a varredura mede é sempre um produto cheio — e o produto está
+ * cheio em todos os dias menos no primeiro. No dia em que abre, cada
+ * lista está vazia, a caixa de avisos não tem nada, e ninguém tem
+ * comunidade nenhuma; é o estado que a ferramenta nunca via porque
+ * começa sempre por o desfazer.
+ *
+ * Com `--vazio`, semeia-se só a conta e medem-se os ecrãs que não
+ * precisam de mais nada. É o que a primeira pessoa a chegar vê.
+ */
+export const semearSoAConta = async (base) => {
+    const marca = Date.now().toString().slice(-7);
+
+    const resposta = await fetch(`${base}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+            email: `vz${marca}@vicehub.test`,
+            username: `vz${marca}`,
+            password: PASSWORD,
+        }),
+    });
+
+    if (!resposta.ok) {
+        throw new Error(
+            `criar conta respondeu ${resposta.status}: ${await resposta.text()}`,
+        );
+    }
+
+    return {
+        marca,
+        email: `vz${marca}@vicehub.test`,
+        username: `vz${marca}`,
+    };
 };
 
 export const semear = async (base) => {
@@ -759,10 +805,21 @@ const varrer = async () => {
 
     const chromium = await abrirPlaywright();
 
-    console.log(`a semear em ${base}…`);
-    const semente = await semear(base);
+    /**
+     * `--vazio`: o produto como está no dia em que abre.
+     *
+     * Uma conta acabada de criar e mais nada. Só se medem os ecrãs que
+     * não precisam de uma crew, de um servidor ou de um anúncio para
+     * existir — que são, precisamente, os que a primeira pessoa a
+     * chegar vai ver.
+     */
+    const vazio = process.argv.includes('--vazio');
 
-    if (!process.argv.includes('--sem-moderacao')) {
+    console.log(vazio ? `a criar uma conta em ${base}…` : `a semear em ${base}…`);
+
+    const semente = vazio ? await semearSoAConta(base) : await semear(base);
+
+    if (!vazio && !process.argv.includes('--sem-moderacao')) {
         darCargoDeModerador(semente.email);
     }
 
@@ -888,7 +945,17 @@ const varrer = async () => {
             };
 
 
-            for (const ecra of ECRAS.filter((e) => e.sessao === false)) {
+            /*
+             * Com `--vazio`, só os ecrãs que existem sem nada na base:
+             * a rota deles não pede nada à sementeira, e é o próprio
+             * feitio da função que o diz — `() => '/crews'` não recebe
+             * argumento nenhum, `(s) => `/crews/${s.crewId}`` recebe.
+             */
+            const medidos = vazio
+                ? ECRAS.filter((e) => e.rota.length === 0)
+                : ECRAS;
+
+            for (const ecra of medidos.filter((e) => e.sessao === false)) {
                 queixasTotais += await olhar(ecra);
             }
 
@@ -898,7 +965,7 @@ const varrer = async () => {
             await pagina.click('button.primary');
             await pagina.waitForTimeout(1500);
 
-            for (const ecra of ECRAS.filter((e) => e.sessao !== false)) {
+            for (const ecra of medidos.filter((e) => e.sessao !== false)) {
                 queixasTotais += await olhar(ecra);
             }
 
@@ -908,9 +975,14 @@ const varrer = async () => {
 
     await navegador.close();
 
+    const quantos = vazio
+        ? ECRAS.filter((e) => e.rota.length === 0).length
+        : ECRAS.length;
+
     console.log(
         queixasTotais === 0
-            ? `nada a apontar em ${ECRAS.length} ecrãs, ${idiomas.length} idiomas e ${larguras.length} larguras`
+            ? `nada a apontar em ${quantos} ecrãs${vazio ? ' de uma instalação vazia' : ''}`
+            + `, ${idiomas.length} idiomas e ${larguras.length} larguras`
             : `${queixasTotais} coisas a apontar`,
     );
 

@@ -272,6 +272,13 @@ participação, uma venda avaliada — porque um ecrã medido vazio é uma moldu
 medição dê por ele: uma varredura avariada e uma varredura limpa dizem
 exactamente a mesma coisa.
 
+**E com `--vazio`, o primeiro dia.** O que ela mede é sempre um produto cheio,
+porque começa por o encher — e o produto está cheio em todos os dias menos
+naquele em que abre. Assim cria-se só a conta e medem-se os dezoito ecrãs que
+não precisam de mais nada: as listas sem nada dentro, a caixa de avisos vazia,
+quem ainda não tem comunidade nenhuma. É o que a primeira pessoa a chegar vê,
+e era o único estado que esta ferramenta nunca via.
+
 **A medição** (`npm run medir --workspace @vicehub/api`) conta quantas
 consultas cada ecrã custa à base de dados, lidas ao próprio Postgres pelo
 `pg_stat_statements`. Não mede tempo: o tempo de uma máquina de
