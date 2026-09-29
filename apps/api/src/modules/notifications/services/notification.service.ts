@@ -25,10 +25,9 @@ export class NotificationService {
     ) { }
 
     async list(userId: string, pagina: number): Promise<PaginaDeAvisos> {
-        const [linhas, total, porLer] = await Promise.all([
+        const [linhas, { total, porLer }] = await Promise.all([
             this.notificationRepository.list(userId, pagina),
-            this.notificationRepository.count(userId),
-            this.notificationRepository.countUnread(userId),
+            this.notificationRepository.contagens(userId),
         ]);
 
         return {
@@ -94,13 +93,19 @@ const doAlvo = (linha: {
         body: string | null;
         topic: { title: string };
     } | null;
+    /*
+     * Sem a nota e sem quem avaliou: a caixa mostra de quem é o aviso,
+     * sobre que anúncio, e o texto. A nota vive no perfil, que é onde o
+     * aviso abre; quem avaliou é quem causou o aviso, e esse já vem no
+     * `actor`. Estavam declarados aqui, nunca lidos, e cada um custava
+     * uma coluna — o `reviewer` custava uma ida inteira à tabela dos
+     * utilizadores, em cada página de avisos.
+     */
     review: {
         id: string;
-        rating: number;
         body: string | null;
         reply: string | null;
         subject: { username: string } | null;
-        reviewer: { username: string } | null;
         listing: { title: string };
     } | null;
 }): Pick<AvisoView, 'openId' | 'about' | 'excerpt'> => {
