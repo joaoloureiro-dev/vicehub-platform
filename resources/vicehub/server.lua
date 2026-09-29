@@ -9,7 +9,7 @@
     Configuração, no server.cfg:
 
         set vicehub_key "vh_<prefixo>_<segredo>"
-        set vicehub_url "https://vicehub.example/api/v1"   # opcional
+        set vicehub_url "https://api.a-tua-instalacao/api/v1"   # opcional
 
     A chave sai do ecrã do servidor no ViceHub, e aparece **uma vez**.
     Guarda-a no server.cfg e não em lado nenhum público: quem a tiver
@@ -33,7 +33,15 @@ local INTERVALO_MS = 60 * 1000
 local RECUO_INICIAL_MS = 5 * 1000
 local RECUO_MAXIMO_MS = 5 * 60 * 1000
 
-local URL_POR_OMISSAO = 'https://vicehub.gg/api/v1'
+--- Onde vive a plataforma, para quem não disser o contrário.
+--
+-- É o mesmo endereço que o `connect-src` do `vercel.json` nomeia, e há
+-- um teste que os obriga a bater certo: o readme deste recurso diz que
+-- por omissão aponta para a instalação pública, e um endereço errado
+-- aqui faz isso passar a mentira — quem instalar segue o readme, não
+-- recebe resposta nenhuma, e não tem como adivinhar que o que falta é
+-- uma linha que o readme diz ser opcional.
+local URL_POR_OMISSAO = 'https://api.vicehub.com/api/v1'
 
 --- Estado de quem está a falhar, para não repetir o mesmo aviso.
 local recuoAtual = 0

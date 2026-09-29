@@ -63,8 +63,13 @@ const main = async (): Promise<void> => {
              * Quem recebe o pedido tem direito a saber quem o faz, e a
              * poder bloquear-nos se não quiser. Um agregador que se
              * disfarça de browser está a contar com o contrário.
+             *
+             * O endereço sai do `APP_PUBLIC_URL` e não está escrito
+             * aqui: quem instalar isto noutro sítio identifica-se como
+             * ele próprio, e não como a instalação pública — que é
+             * quem levaria com a queixa de quem se sentisse sondado.
              */
-            'user-agent': 'ViceHub/1.0 (+https://vicehub.gg)',
+            'user-agent': `ViceHub/1.0 (+${env.APP_PUBLIC_URL})`,
             accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
         },
     });
