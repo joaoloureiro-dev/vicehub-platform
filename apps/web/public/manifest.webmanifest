@@ -1,7 +1,9 @@
 {
     "name": "ViceHub",
     "short_name": "ViceHub",
-    "description": "A plataforma para crews, servidores e jogadores.",
+    "description": "Tooling for GTA VI roleplay communities: run your crew, move what it earns, and prove who actually turned up.",
+    "lang": "en",
+    "dir": "ltr",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0B0711",
