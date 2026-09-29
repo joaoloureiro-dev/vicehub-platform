@@ -1,11 +1,12 @@
 import {
-    buildPermissionKey,
     DistributionStatus,
     entitlingSubscriptionFilter,
     MembershipStatus,
     TransactionStatus,
     type DatabaseClient,
 } from '@vicehub/database';
+
+import { permissoesPorCargo } from './catalogo-de-cargos.js';
 
 /**
  * Uma coisa que está à espera desta pessoa, e onde ela vive.
@@ -97,24 +98,41 @@ type Contagem = Omit<PendingItem, 'communityName'>;
 const ondePode = async (
     database: DatabaseClient,
     userId: string,
+    agora: Date,
 ): Promise<Map<string, Set<string>>> => {
+    /*
+     * Só as atribuições, e o que cada cargo dá vem do catálogo.
+     *
+     * Pedidas juntas — as permissões aninhadas dentro da atribuição —,
+     * o Prisma partia a leitura em quatro instruções: as atribuições,
+     * os cargos, as ligações e as permissões. **Quatro em cada pedido,
+     * e esta caixa é lida em todos os ecrãs**, porque a casca mostra o
+     * número. O catálogo já estava a ser guardado para o guard das
+     * rotas; faltava esta leitura passar a usá-lo.
+     */
     const cargos = await database.userRole.findMany({
-        where: { userId, is_deleted: false },
-        select: {
-            crewId: true,
-            serverId: true,
-            role: {
-                select: {
-                    rolePermissions: {
-                        where: { is_deleted: false },
-                        select: {
-                            permission: { select: { scope: true, slug: true } },
-                        },
-                    },
-                },
-            },
+        where: {
+            userId,
+            is_deleted: false,
+            /**
+             * E as que já passaram do prazo não contam.
+             *
+             * O guard das rotas sempre as ignorou; esta leitura não, e
+             * a diferença era uma caixa a oferecer trabalho que a API
+             * recusa — o mesmo erro que a condição do plano, mais
+             * abaixo, existe para não ter. Hoje nada grava prazo num
+             * cargo, e por isso ninguém deu por isto; no dia em que
+             * alguém der um cargo temporário, dava.
+             */
+            OR: [{ expires_at: null }, { expires_at: { gt: agora } }],
         },
+        select: { crewId: true, serverId: true, roleId: true },
     });
+
+    const doCargo = await permissoesPorCargo(
+        database,
+        cargos.map((cargo) => cargo.roleId),
+    );
 
     const poderes = new Map<string, Set<string>>();
 
@@ -137,21 +155,20 @@ const ondePode = async (
 
         const conjunto = poderes.get(chave) ?? new Set<string>();
 
-        for (const ligacao of cargo.role.rolePermissions) {
-            /**
-             * A chave é composta pelo mesmo auxiliar que o guard das
-             * rotas usa. Compô-la à mão aqui era ter duas maneiras de
-             * escrever a mesma permissão, e a segunda a divergir da
-             * primeira no dia em que o formato mudasse — o que se
-             * revelou já: o `slug` gravado é só a ação, e o recurso vem
-             * do `scope`.
-             */
-            conjunto.add(
-                buildPermissionKey(
-                    ligacao.permission.scope,
-                    ligacao.permission.slug,
-                ),
-            );
+        /*
+         * As chaves vêm compostas pelo catálogo, com o mesmo auxiliar
+         * que o guard das rotas usa. Compô-las aqui era ter duas
+         * maneiras de escrever a mesma permissão, e a segunda a divergir
+         * da primeira no dia em que o formato mudasse — o que se revelou
+         * já: o `slug` gravado é só a ação, e o recurso vem do `scope`.
+         *
+         * Um cargo que o catálogo não conheça — apagado — não dá
+         * poder nenhum, que é a regra que este ficheiro escrevia ao
+         * contrário: a leitura antiga não excluía cargos apagados e
+         * contava os pedidos de uma crew a quem já não manda nela.
+         */
+        for (const permissao of doCargo.get(cargo.roleId) ?? []) {
+            conjunto.add(permissao);
         }
 
         poderes.set(chave, conjunto);
@@ -179,21 +196,27 @@ export const buildPendingForUser = async (
     agora: Date = new Date(),
 ): Promise<PendingForUser> => {
     /**
-     * Quando esta pessoa foi ver as respostas pela última vez.
+     * Quando fui ver as respostas, e onde é que eu posso — ao mesmo
+     * tempo.
      *
-     * Lido antes de tudo o resto porque as contagens dependem dele. Uma
-     * conta que já não exista não tem nada por ver — e chegar aqui sem
-     * conta não devia acontecer, mas responder zero é melhor do que
+     * Estavam em série, uma à espera da outra, e não dependem uma da
+     * outra para nada: a data é a minha e os poderes são os meus. Numa
+     * caixa que a casca lê em todos os ecrãs, uma ida à base de dados
+     * esperada por nada é meia ida a mais em cada página.
+     *
+     * Uma conta que já não exista não tem nada por ver — e chegar aqui
+     * sem conta não devia acontecer, mas responder zero é melhor do que
      * rebentar uma caixa de entrada inteira por causa disso.
      */
-    const dono = await database.user.findFirst({
-        where: { id: userId, is_deleted: false },
-        select: { answers_seen_at: true },
-    });
+    const [dono, poderes] = await Promise.all([
+        database.user.findFirst({
+            where: { id: userId, is_deleted: false },
+            select: { answers_seen_at: true },
+        }),
+        ondePode(database, userId, agora),
+    ]);
 
     const visto = dono?.answers_seen_at ?? null;
-
-    const poderes = await ondePode(database, userId);
 
     const crewsQueGere = comEstePoder(poderes, 'crew', 'crew:manage_members');
     const servidoresQueGere = comEstePoder(
@@ -253,19 +276,31 @@ export const buildPendingForUser = async (
     const [
         nomesDeCrews,
         nomesDeServidores,
-        pedidosDeCrew,
-        pedidosDeServidor,
+        pedidos,
         filiacoes,
         comPlano,
+        carteiras,
         amizades,
         respostas,
     ] = await Promise.all([
         nomesDas(database, 'crew', [...new Set(crewsPossiveis)]),
         nomesDas(database, 'server', [...new Set(servidoresPossiveis)]),
-        contarPorComunidade(database, 'crew', crewsQueGere),
-        contarPorComunidade(database, 'server', servidoresQueGere),
+        contarPorComunidade(database, crewsQueGere, servidoresQueGere),
         contarFiliacoes(database, servidoresQueControla),
         comunidadesComPlano(database, podeDecidirDinheiro, agora),
+
+        /*
+         * As carteiras aqui, e não depois de se saber quais têm plano.
+         *
+         * Dependiam do plano só para encurtar a lista do `IN`, e por
+         * isso esperavam por ele: eram três idas à base em fila —
+         * planos, carteiras, e só então as contagens. Lidas de uma vez
+         * com tudo o resto, a fila fica em duas, e quem não tem plano
+         * não paga por isso nada: a carteira dele é lida, mas não
+         * chega às contagens.
+         */
+        carteirasDe(database, podeDecidirDinheiro),
+
         database.friendship.count({
             where: {
                 is_deleted: false,
@@ -282,7 +317,7 @@ export const buildPendingForUser = async (
         contarRespostas(database, userId, visto),
     ]);
 
-    const decisoes = await contarDecisoes(database, comPlano);
+    const decisoes = await contarDecisoes(database, comPlano, carteiras);
 
     /**
      * E o nome de cada uma, num sítio só.
@@ -305,8 +340,7 @@ export const buildPendingForUser = async (
     };
 
     const items = [
-        ...pedidosDeCrew,
-        ...pedidosDeServidor,
+        ...pedidos,
         ...filiacoes,
         ...decisoes,
     ]
@@ -366,24 +400,26 @@ const contarRespostas = async (
         responded_by: { not: userId },
     };
 
-    const [crews, servidores] = await Promise.all([
-        database.membership.count({
-            where: {
-                ...respondidasDepois,
-                crewId: { not: null },
-                crew: { is_deleted: false },
-            },
-        }),
-        database.membership.count({
-            where: {
-                ...respondidasDepois,
-                serverId: { not: null },
-                server: { is_deleted: false },
-            },
-        }),
-    ]);
-
-    return crews + servidores;
+    /*
+     * Uma contagem, e não uma por espécie de comunidade.
+     *
+     * Eram duas — as crews e os servidores —, somadas a seguir. A
+     * condição é a mesma nas duas e só muda a coluna que tem de estar
+     * preenchida, por isso cabem num `OR`: uma adesão tem crew ou tem
+     * servidor, nunca os dois, e o que se quer é a soma.
+     *
+     * Numa caixa lida em todos os ecrãs, meia consulta é meia consulta
+     * por página.
+     */
+    return database.membership.count({
+        where: {
+            ...respondidasDepois,
+            OR: [
+                { crewId: { not: null }, crew: { is_deleted: false } },
+                { serverId: { not: null }, server: { is_deleted: false } },
+            ],
+        },
+    });
 };
 
 /**
@@ -391,44 +427,59 @@ const contarRespostas = async (
  *
  * Uma consulta agrupada, e não uma por comunidade: quem gere cinco
  * crews não deve pagar cinco idas à base de dados para ver um número.
+ *
+ * **E uma para as duas espécies.** Eram duas consultas iguais, uma a
+ * agrupar por crew e outra por servidor. Agrupar pelas duas colunas de
+ * uma vez dá o mesmo: cada adesão tem uma delas preenchida e a outra
+ * nula, e é a preenchida que diz de que comunidade se trata.
  */
 const contarPorComunidade = async (
     database: DatabaseClient,
-    tipo: 'crew' | 'server',
-    ids: string[],
+    crewIds: string[],
+    serverIds: string[],
 ): Promise<Contagem[]> => {
-    if (ids.length === 0) {
+    if (crewIds.length === 0 && serverIds.length === 0) {
         return [];
     }
 
-    const coluna = tipo === 'crew' ? 'crewId' : 'serverId';
-
     const grupos = await database.membership.groupBy({
-        by: [coluna],
+        by: ['crewId', 'serverId'],
         where: {
-            [coluna]: { in: ids },
             status: MembershipStatus.pending,
             is_deleted: false,
+            OR: [
+                { crewId: { in: crewIds } },
+                { serverId: { in: serverIds } },
+            ],
         },
         _count: { _all: true },
     });
 
-    return grupos.flatMap((grupo) => {
-        const id = (grupo as unknown as Record<string, string | null>)[coluna];
-
-        return id === null || id === undefined
-            ? []
-            : [
+    return grupos.flatMap((grupo): Contagem[] => {
+        if (grupo.crewId !== null) {
+            return [
                 {
-                    kind:
-                        tipo === 'crew'
-                            ? ('crew_join_request' as const)
-                            : ('server_join_request' as const),
-                    communityKind: tipo,
-                    communityId: id,
+                    kind: 'crew_join_request' as const,
+                    communityKind: 'crew' as const,
+                    communityId: grupo.crewId,
                     count: grupo._count._all,
                 },
             ];
+        }
+
+        if (grupo.serverId !== null) {
+            return [
+                {
+                    kind: 'server_join_request' as const,
+                    communityKind: 'server' as const,
+                    communityId: grupo.serverId,
+                    count: grupo._count._all,
+                },
+            ];
+        }
+
+        /* Sem crew nem servidor não é de comunidade nenhuma. */
+        return [];
     });
 };
 
@@ -499,50 +550,27 @@ const comunidadesComPlano = async (
         select: { crewId: true, serverId: true },
     });
 
-    const cobertas = new Set(
-        planos.map((plano) =>
-            plano.crewId !== null
-                ? `crew:${plano.crewId}`
-                : `server:${plano.serverId ?? ''}`,
-        ),
-    );
+    const cobertas = new Set(planos.map(chaveDe));
 
     return comunidades.filter((c) => cobertas.has(`${c.kind}:${c.id}`));
 };
 
-/**
- * Quantas decisões de dinheiro estão à espera em cada comunidade.
- *
- * Movimentos e divisões contam juntos: para quem tem de decidir são a
- * mesma coisa — dinheiro parado à espera de um sim ou de um não.
- */
-const contarDecisoes = async (
+/** A comunidade de uma carteira, ou de um plano, como chave. */
+const chaveDe = (linha: { crewId: string | null; serverId: string | null }): string =>
+    linha.crewId !== null
+        ? `crew:${linha.crewId}`
+        : `server:${linha.serverId ?? ''}`;
+
+/** A carteira de cada comunidade onde esta pessoa decide dinheiro. */
+const carteirasDe = async (
     database: DatabaseClient,
     comunidades: { kind: 'crew' | 'server'; id: string }[],
-): Promise<Contagem[]> => {
+): Promise<{ id: string; crewId: string | null; serverId: string | null }[]> => {
     if (comunidades.length === 0) {
         return [];
     }
 
-    /*
-     * Três consultas, e não duas por comunidade.
-     *
-     * Isto contava movimentos e divisões uma comunidade de cada vez, e
-     * é a mesma regra que o resto deste ficheiro já seguia e esta
-     * função não: quem gere oito comunidades pagava dezasseis idas à
-     * base para desenhar um número. E o número aparece **em todos os
-     * ecrãs** — a casca lê-o para o sino —, por isso o custo não era de
-     * uma página, era de cada página.
-     *
-     * Medido: dez consultas para quem não gere nada, mais duas e meia
-     * por comunidade. Com dezasseis comunidades eram cinquenta e uma,
-     * por cada carregamento.
-     *
-     * O caminho é pela carteira: uma consulta traz as carteiras das
-     * comunidades, e as outras duas agrupam por carteira o que está à
-     * espera. O preço deixa de depender de quantas comunidades se gere.
-     */
-    const carteiras = await database.wallet.findMany({
+    return database.wallet.findMany({
         where: {
             is_deleted: false,
             OR: [
@@ -564,15 +592,53 @@ const contarDecisoes = async (
         },
         select: { id: true, crewId: true, serverId: true },
     });
+};
+
+/**
+ * Quantas decisões de dinheiro estão à espera em cada comunidade.
+ *
+ * Movimentos e divisões contam juntos: para quem tem de decidir são a
+ * mesma coisa — dinheiro parado à espera de um sim ou de um não.
+ *
+ * **Duas consultas, e não duas por comunidade.** Isto contava uma
+ * comunidade de cada vez, e é a mesma regra que o resto deste ficheiro
+ * já seguia e esta função não: quem gere oito comunidades pagava
+ * dezasseis idas à base para desenhar um número. E o número aparece
+ * **em todos os ecrãs** — a casca lê-o para o sino —, por isso o custo
+ * não era de uma página, era de cada página.
+ *
+ * Medido: dez consultas para quem não gere nada, mais duas e meia por
+ * comunidade. Com dezasseis comunidades eram cinquenta e uma, por cada
+ * carregamento.
+ *
+ * O caminho é pela carteira: as carteiras chegam lidas de fora, e as
+ * duas consultas agrupam por carteira o que está à espera. O preço
+ * deixa de depender de quantas comunidades se gere.
+ */
+const contarDecisoes = async (
+    database: DatabaseClient,
+    comunidades: { kind: 'crew' | 'server'; id: string }[],
+    todasAsCarteiras: { id: string; crewId: string | null; serverId: string | null }[],
+): Promise<Contagem[]> => {
+    if (comunidades.length === 0) {
+        return [];
+    }
+
+    /*
+     * Só as das comunidades que têm plano. As outras foram lidas — vêm
+     * todas na mesma consulta — mas não se contam, porque a tesouraria
+     * recusaria a decisão.
+     */
+    const comDireito = new Set(
+        comunidades.map((comunidade) => `${comunidade.kind}:${comunidade.id}`),
+    );
+
+    const carteiras = todasAsCarteiras.filter((carteira) =>
+        comDireito.has(chaveDe(carteira)));
 
     /** De que comunidade é cada carteira. */
     const daCarteira = new Map(
-        carteiras.map((carteira) => [
-            carteira.id,
-            carteira.crewId !== null
-                ? `crew:${carteira.crewId}`
-                : `server:${carteira.serverId ?? ''}`,
-        ]),
+        carteiras.map((carteira) => [carteira.id, chaveDe(carteira)]),
     );
 
     const ids = carteiras.map((carteira) => carteira.id);
