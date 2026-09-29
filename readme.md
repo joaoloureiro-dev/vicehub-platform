@@ -1848,11 +1848,19 @@ faltava o sítio onde ele quer dizer alguma coisa a alguém
 com a parte no endereço e a procura a cruzar-se com ela  
 ✔ Página de preços que diz a escada toda, venha ou não a cobrança configurada:
 quanto custa é do catálogo e sabe-se sempre; saber cobrar é da instalação  
-✔ **Quatro ferramentas que o CI não corre**, todas com controlo: uma varredura
-que abre os trinta e um ecrãs num browser em quatro idiomas e duas larguras,
-uma sonda que tenta com a conta de outra pessoa tudo o que um dono pode fazer,
-uma medição do que cada ecrã custa à base de dados, e um ensaio de instalação
-nova que se desfaz a si próprio — `varrer`, `sondar`, `medir` e `ensaiar`
+✔ **Cinco ferramentas que o CI não corre**, todas com controlo: uma varredura
+que abre os trinta e um ecrãs num browser em quatro idiomas e duas larguras —
+e, com `--vazio`, os dezoito que existem no dia em que a plataforma abre —,
+uma sonda que tenta com a conta de outra pessoa tudo o que um dono pode fazer
+**e compara o que chega nas listas de cada um**, uma medição do que cada ecrã
+custa à base de dados, um ensaio de instalação nova que se desfaz a si
+próprio, e uma caixa de correio de mentira que mostra o que sai mesmo pelo
+SMTP — `varrer`, `sondar`, `medir`, `ensaiar` e `correio`  
+✔ **O que cada página custa à base de dados, medido e gravado**: a casca de
+todas as páginas custa vinte e quatro consultas em vez de trinta, a caixa de
+avisos quatro em vez de catorze, e cada pedido que verifica uma permissão
+quatro a menos do que custava — com a referência gravada ao lado, para a
+próxima que crescer se queixar sozinha
 
 ### O que falta para abrir ao público
 
@@ -1862,7 +1870,8 @@ ensaiada**: contra uma base de dados vazia, com `NODE_ENV=production`, as
 migrações correm, o `db:seed` grava, a API arranca, e o `npm run ensaiar`
 passa do registo ao anúncio e volta atrás sem deixar nada — mais o `db:prune`,
 o `news:fetch` e o `admin:grant`, que são os comandos que correm sozinhos
-depois. O que o ensaio não prova é o Neon, o Railway, o Vercel e os domínios:
+depois, e os dois emails, que saíram mesmo por SMTP e com os links a apontar
+para o `APP_PUBLIC_URL`. O que o ensaio não prova é o Neon, o Railway, o Vercel e os domínios:
 esses só se provam com eles à frente. Os passos e as armadilhas estão escritos
 em [Pôr em produção](#pôr-em-produção)  
 🔑 **As chaves e o domínio**: os quatro preços do Stripe e o portal do cliente,
