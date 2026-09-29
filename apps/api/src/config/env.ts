@@ -90,6 +90,49 @@ const envSchema = z.object({
     RATE_LIMIT_WINDOW: z.string().min(1).default('1 minute'),
 
     /**
+     * Em quem se confia quando o pedido vem por um proxy.
+     *
+     * O limite de pedidos é por endereço, e o endereço de quem pede só
+     * se sabe pelo `X-Forwarded-For` quando há um proxy à frente —
+     * Railway, Fly, um balanceador, um nginx. Sem isto definido, todos
+     * os pedidos chegam com o endereço do proxy e **partilham o mesmo
+     * balde**: o limite deixa de ser de cada pessoa e passa a ser da
+     * plataforma inteira, e a primeira dúzia de visitas leva 429 sem
+     * que nada no log explique porquê.
+     *
+     * Confiar por omissão também não serve: com a API exposta
+     * directamente, qualquer pessoa escreve o `X-Forwarded-For` que
+     * quiser e passa a ter um balde novo por pedido — e o endereço que
+     * fica gravado nas sessões passa a ser o que ela escreveu.
+     *
+     * Por isso não há omissão em produção: ou se diz em quantos saltos
+     * se confia (`1` atrás de um proxy), ou se diz que não há proxy
+     * nenhum (`false`).
+     *
+     *     TRUST_PROXY=true                  um proxy à frente, e só ele chega cá
+     *     TRUST_PROXY=false                 exposta directamente
+     *     TRUST_PROXY=10.0.0.0/8,127.0.0.1  só estes endereços
+     *
+     * **Um número de saltos não serve, e é por isso que é recusado.**
+     * É o que se escreve no Express, e aqui o Fastify aceita-o e passa
+     * a não confiar em ninguém — "contar saltos não permite validar
+     * quem está do outro lado", diz o código dele, e falha fechado. O
+     * efeito seria o mesmo de não definir nada, sem ninguém dar por
+     * isso.
+     */
+    TRUST_PROXY: z
+        .string()
+        .min(1)
+        .refine((valor) => !/^\d+$/u.test(valor.trim()), {
+            message:
+                'TRUST_PROXY não aceita um número de saltos: o Fastify'
+                + ' recusa-os por não poderem validar quem está do outro lado,'
+                + ' e o efeito seria não confiar em ninguém. Usa true, false,'
+                + ' ou os endereços do proxy.',
+        })
+        .optional(),
+
+    /**
      * Limite das rotas de recuperação de conta.
      *
      * Muito mais apertado do que o global: pedir recuperações em massa é
@@ -355,6 +398,28 @@ if (!parsedEnvironment.success) {
 }
 
 /**
+ * O valor que o Fastify espera, a partir do que vem no ambiente.
+ *
+ * `true`/`false` são o que parecem; o resto é uma lista de endereços
+ * ou de blocos, que o Fastify já sabe ler separada por vírgulas. Um
+ * número não chega aqui — é recusado ao ler o ambiente, com a razão.
+ *
+ * Exportada para ser testada: é uma linha que decide se o limite de
+ * pedidos é de cada pessoa ou da plataforma inteira.
+ */
+export const confiarNoProxy = (
+    valor: string | undefined,
+): boolean | string => {
+    const limpo = valor?.trim() ?? '';
+
+    if (limpo === '' || limpo === 'false') {
+        return false;
+    }
+
+    return limpo === 'true' ? true : limpo;
+};
+
+/**
  * O que é aceitável em desenvolvimento e inaceitável em produção.
  *
  * Estas duas são perigosas precisamente por terem um valor por omissão
@@ -366,7 +431,11 @@ if (!parsedEnvironment.success) {
 export const problemasDeProducao = (
     valores: Pick<
         z.infer<typeof envSchema>,
-        'NODE_ENV' | 'AUTH_COOKIE_SECURE' | 'APP_PUBLIC_URL' | 'SMTP_URL'
+        | 'NODE_ENV'
+        | 'AUTH_COOKIE_SECURE'
+        | 'APP_PUBLIC_URL'
+        | 'SMTP_URL'
+        | 'TRUST_PROXY'
     >,
 ): string[] => {
     if (valores.NODE_ENV !== 'production') {
@@ -416,6 +485,30 @@ export const problemasDeProducao = (
     if (valores.SMTP_URL === undefined) {
         problemas.push(
             'SMTP_URL não está definida em produção: os emails de confirmação e de recuperação ficariam escritos no log em vez de serem enviados, e um link de recuperação no log é uma chave para entrar numa conta.',
+        );
+    }
+
+    /**
+     * E sem saber se há um proxy à frente, o limite de pedidos é uma
+     * armadilha nos dois sentidos.
+     *
+     * Atrás de um proxy sem confiar nele, todos os pedidos partilham o
+     * mesmo balde e a plataforma inteira leva 429 à primeira dúzia de
+     * visitas. Exposta directamente e a confiar, qualquer pessoa
+     * escreve o endereço que quiser e o limite deixa de a apanhar.
+     *
+     * As duas avarias são silenciosas, e as duas aparecem com gente lá
+     * dentro. Por isso a resposta é obrigatória, mesmo que seja "não há
+     * proxy nenhum".
+     */
+    if (valores.TRUST_PROXY === undefined) {
+        problemas.push(
+            'TRUST_PROXY não está definida em produção: atrás de um proxy'
+            + ' (Railway, Fly, um balanceador) todos os pedidos chegam com o'
+            + ' endereço dele e o limite de pedidos passa a ser da plataforma'
+            + ' inteira em vez de ser de cada pessoa. Põe TRUST_PROXY=true'
+            + ' atrás de um proxy que seja a única entrada, ou'
+            + ' TRUST_PROXY=false se a API estiver exposta directamente.',
         );
     }
 
