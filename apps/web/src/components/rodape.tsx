@@ -30,6 +30,21 @@ export const Rodape = () => {
     return (
         <footer className="rodape">
             <nav aria-label={t.legal.rodape}>
+                {/*
+                  O preço também vive aqui, e é a única coisa nesta
+                  barra que não é um documento.
+
+                  A planta do sítio é a navegação de cima, e esta não a
+                  repete — mas num telemóvel aquela rola de lado, e o
+                  preço é o último de seis: fica duas palavras fora do
+                  ecrã, atrás de um gesto. É a página que se procura
+                  **antes** de criar conta, e a que uma pessoa vai
+                  instintivamente procurar ao fundo, ao lado dos termos.
+
+                  Um destino em dois sítios é uma excepção, e esta é a
+                  razão dela.
+                */}
+                <Link to="/premium">{t.nav.premium}</Link>
                 <Link to="/termos">{t.legal.termos}</Link>
                 <Link to="/privacidade">{t.legal.privacidade}</Link>
             </nav>

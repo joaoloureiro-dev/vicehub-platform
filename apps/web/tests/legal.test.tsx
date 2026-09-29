@@ -371,6 +371,24 @@ describe('as páginas legais', () => {
             ).toBe('/privacidade');
         });
 
+        /**
+         * E ao preço, que é a única coisa desta barra que não é um
+         * documento.
+         *
+         * Num telemóvel a navegação de cima rola de lado e o preço é o
+         * último de seis destinos: fica fora do ecrã, atrás de um
+         * gesto. É a página que se procura antes de criar conta, e sem
+         * isto a única forma de lá chegar num telemóvel era arrastar
+         * uma barra que ninguém garante que se arrasta.
+         */
+        it('e ao preço, que num telemóvel não cabe na barra de cima', () => {
+            montarEcra(<Rodape />);
+
+            expect(
+                screen.getByText(t.nav.premium).getAttribute('href'),
+            ).toBe('/premium');
+        });
+
         it('avisa que não temos ligação a quem faz o jogo', () => {
             montarEcra(<Rodape />);
 
