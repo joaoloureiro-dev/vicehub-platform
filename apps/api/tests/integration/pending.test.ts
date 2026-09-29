@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { prisma } from '@vicehub/database';
 import { buildApp } from '../../src/app.js';
+import { esquecerCatalogoDeCargos } from '../../src/shared/catalogo-de-cargos.js';
 import { darPlano, tirarPlano } from '../helpers/plans.fixtures.js';
 import { tagAoAcaso } from '../helpers/crew-tags.js';
 
@@ -33,6 +34,8 @@ describe('o que está à espera de mim', () => {
 
     let crewId: string;
     let serverId: string;
+    /** O identificador de quem lidera, para chegar aos cargos dele. */
+    let liderId: string;
 
     const register = async (username: string): Promise<string> => {
         const resposta = await app.inject({
@@ -95,6 +98,15 @@ describe('o que está à espera de mim', () => {
         lider = await register(`lid${marca}`);
         membro = await register(`mem${marca}`);
         candidato = await register(`can${marca}`);
+
+        const perfilLider = await app.inject({
+            method: 'GET',
+            url: '/api/v1/users/me',
+            headers: auth(lider),
+        });
+
+        expect(perfilLider.statusCode, perfilLider.body).toBe(200);
+        liderId = perfilLider.json().id as string;
 
         const crew = await app.inject({
             method: 'POST',
@@ -524,6 +536,100 @@ describe('o que está à espera de mim', () => {
             const dados = await pendentes(candidato);
 
             expect(dados.total).toBe(0);
+        });
+
+        /**
+         * **Um cargo que já passou do prazo não conta.**
+         *
+         * O guard das rotas sempre ignorou as atribuições expiradas; a
+         * caixa não, e lia-as como se valessem. A diferença era uma
+         * caixa a oferecer trabalho que a API recusa — quem clicasse
+         * levava um 403 sem entender porquê, e o número do sino nunca
+         * baixava.
+         *
+         * Nada grava prazo num cargo hoje, e é por isso que ninguém
+         * deu por isto. O prazo mexe-se aqui na base directamente,
+         * porque é o único sítio de onde ele pode vir — e é
+         * precisamente o dia em que alguém der um cargo temporário que
+         * este teste existe para cobrir.
+         */
+        it('não conta os pedidos de uma crew onde o meu cargo já expirou', async () => {
+            const antes = await pendentes(lider);
+
+            expect(dosTipos(antes, 'crew_join_request')).toHaveLength(1);
+
+            /*
+             * O cargo **dele**, e não um qualquer desta crew: o membro
+             * também tem um lá dentro, e apagar o dele não lhe tira
+             * poder nenhum a quem lidera. A primeira versão deste teste
+             * escrevia `findFirst` sem o dono e falhou por isso.
+             */
+            const cargo = await prisma.userRole.findFirstOrThrow({
+                where: { userId: liderId, crewId, is_deleted: false },
+                select: { id: true },
+            });
+
+            await prisma.userRole.update({
+                where: { id: cargo.id },
+                data: { expires_at: new Date(Date.now() - 60_000) },
+            });
+
+            try {
+                const durante = await pendentes(lider);
+
+                expect(dosTipos(durante, 'crew_join_request')).toHaveLength(0);
+            } finally {
+                await prisma.userRole.update({
+                    where: { id: cargo.id },
+                    data: { expires_at: null },
+                });
+            }
+
+            /* E volta quando o prazo sai. */
+            const depois = await pendentes(lider);
+
+            expect(dosTipos(depois, 'crew_join_request')).toHaveLength(1);
+        });
+
+        /**
+         * **E um cargo apagado também não.**
+         *
+         * Apagar um cargo não apaga as atribuições dele: quem o tinha
+         * continua a trazer o identificador. O catálogo de cargos
+         * exclui os apagados, e é de lá que os poderes vêm — aqui
+         * prova-se que vêm mesmo de lá, e não de uma segunda leitura
+         * com a sua própria ideia do que conta.
+         */
+        it('nem os de uma crew onde o meu cargo foi apagado', async () => {
+            const cargo = await prisma.userRole.findFirstOrThrow({
+                where: { userId: liderId, crewId, is_deleted: false },
+                select: { roleId: true },
+            });
+
+            await prisma.role.update({
+                where: { id: cargo.roleId },
+                data: { is_deleted: true, deleted_at: new Date() },
+            });
+
+            /* O catálogo é guardado: sem isto, leria o de antes. */
+            esquecerCatalogoDeCargos();
+
+            try {
+                const durante = await pendentes(lider);
+
+                expect(dosTipos(durante, 'crew_join_request')).toHaveLength(0);
+            } finally {
+                await prisma.role.update({
+                    where: { id: cargo.roleId },
+                    data: { is_deleted: false, deleted_at: null },
+                });
+
+                esquecerCatalogoDeCargos();
+            }
+
+            const depois = await pendentes(lider);
+
+            expect(dosTipos(depois, 'crew_join_request')).toHaveLength(1);
         });
 
         it('exige conta', async () => {
