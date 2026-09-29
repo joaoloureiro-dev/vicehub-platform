@@ -74,10 +74,13 @@ export const confirmarCaptcha = async (
 
     /**
      * O endereço de quem pediu, quando se sabe. É opcional para o
-     * Cloudflare e ajuda-o a decidir — mas a API corre com `trustProxy`
-     * desligado, por isso atrás de um proxy isto é o endereço do proxy.
-     * Mandá-lo na mesma não estraga nada; confiar nele para outra coisa
-     * estragaria.
+     * Cloudflare e ajuda-o a decidir.
+     *
+     * Vale o que o `TRUST_PROXY` disser: com um proxy à frente e a
+     * confiança dada, é o endereço de quem pediu; sem ela, é o do
+     * proxy. Mandá-lo na mesma não estraga nada, e é o mesmo endereço
+     * que o limite de pedidos conta — se um estiver errado, os dois
+     * estão.
      */
     if (ip !== undefined) {
         corpo.set('remoteip', ip);

@@ -335,10 +335,15 @@
             <pre>openssl rand -hex 48   <i># JWT_ACCESS_SECRET</i>
 openssl rand -hex 48   <i># JWT_REFRESH_SECRET (diferente)</i></pre>
             <p>
-                Estas quatro, em produção, a API recusa arrancar sem elas:
+                Estas, em produção, a API recusa arrancar sem elas:
                 <code>AUTH_COOKIE_SECURE=true</code>,
                 <code>APP_PUBLIC_URL=https://…</code>,
-                <code>SMTP_URL</code> e <code>MAIL_FROM</code>.
+                <code>SMTP_URL</code>, <code>MAIL_FROM</code> — e
+                <code>TRUST_PROXY</code>, que no Railway é
+                <code>true</code>: sem ela, todos os pedidos chegam com o
+                endereço do proxy e o limite passa a ser da plataforma
+                inteira em vez de ser de cada pessoa. Um número de saltos
+                (<code>1</code>, como no Express) é recusado.
             </p>
             <p class="prova"><code>/api/v1/health/ready</code> responde 200.</p>
         </li>

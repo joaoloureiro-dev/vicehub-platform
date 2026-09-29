@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { problemasDeProducao } from '../../src/config/env.js';
+import { confiarNoProxy, problemasDeProducao } from '../../src/config/env.js';
 
 /**
  * As configurações que só fazem mal em produção.
@@ -16,6 +16,7 @@ const ambiente = (overrides: Record<string, unknown> = {}) =>
         AUTH_COOKIE_SECURE: true,
         APP_PUBLIC_URL: 'https://vicehub.com',
         SMTP_URL: 'smtp://user:pass@mail.vicehub.com:587',
+        TRUST_PROXY: 'true',
         ...overrides,
     }) as Parameters<typeof problemasDeProducao>[0];
 
@@ -71,6 +72,34 @@ describe('a configuração que não serve para produção', () => {
         expect(problemas[0]).toContain('SMTP_URL');
     });
 
+    /**
+     * **O limite de pedidos é por endereço, e quem sabe o endereço é o
+     * proxy.**
+     *
+     * Sem dizer se há um à frente, as duas respostas erradas são
+     * silenciosas: atrás de um proxy sem confiar nele, a plataforma
+     * inteira partilha um balde de cem pedidos por minuto e leva 429 à
+     * primeira dúzia de visitas; exposta directamente e a confiar,
+     * qualquer pessoa escreve o endereço que quiser e o limite deixa de
+     * a apanhar.
+     */
+    it('recusa produção sem dizer se há um proxy à frente', () => {
+        const problemas = problemasDeProducao(
+            ambiente({ TRUST_PROXY: undefined }),
+        );
+
+        expect(problemas).toHaveLength(1);
+        expect(problemas[0]).toContain('TRUST_PROXY');
+    });
+
+    it('e deixa passar tanto o sim como o não', () => {
+        for (const valor of ['true', 'false', '10.0.0.0/8']) {
+            expect(
+                problemasDeProducao(ambiente({ TRUST_PROXY: valor })),
+            ).toEqual([]);
+        }
+    });
+
     it('acusa todos de uma vez, e não só o primeiro', () => {
         expect(
             problemasDeProducao(
@@ -78,9 +107,10 @@ describe('a configuração que não serve para produção', () => {
                     AUTH_COOKIE_SECURE: false,
                     APP_PUBLIC_URL: 'http://localhost:5173',
                     SMTP_URL: undefined,
+                    TRUST_PROXY: undefined,
                 }),
             ),
-        ).toHaveLength(3);
+        ).toHaveLength(4);
     });
 
     /**
@@ -97,6 +127,7 @@ describe('a configuração que não serve para produção', () => {
                         AUTH_COOKIE_SECURE: false,
                         APP_PUBLIC_URL: 'http://localhost:5173',
                         SMTP_URL: undefined,
+                        TRUST_PROXY: undefined,
                     }),
                 ),
             ).toEqual([]);
@@ -110,6 +141,7 @@ describe('a configuração que não serve para produção', () => {
                         AUTH_COOKIE_SECURE: false,
                         APP_PUBLIC_URL: 'http://localhost:5173',
                         SMTP_URL: undefined,
+                        TRUST_PROXY: undefined,
                     }),
                 ),
             ).toEqual([]);
@@ -126,5 +158,53 @@ describe('a configuração que não serve para produção', () => {
                 ambiente({ APP_PUBLIC_URL: 'https://vicehub.com/localhost' }),
             ),
         ).toEqual([]);
+    });
+});
+
+/**
+ * De quem é o endereço que o limite de pedidos conta.
+ *
+ * O que sai daqui vai direito ao `trustProxy` do Fastify, e decide se o
+ * balde é de cada pessoa ou da plataforma inteira.
+ */
+describe('em quem se confia quando o pedido vem por um proxy', () => {
+    it('sem nada dito, não se confia em ninguém', () => {
+        expect(confiarNoProxy(undefined)).toBe(false);
+        expect(confiarNoProxy('')).toBe(false);
+        expect(confiarNoProxy('   ')).toBe(false);
+    });
+
+    it('e "false" é mesmo não', () => {
+        expect(confiarNoProxy('false')).toBe(false);
+    });
+
+    it('e "true" é mesmo sim', () => {
+        expect(confiarNoProxy('true')).toBe(true);
+        expect(confiarNoProxy('  true  ')).toBe(true);
+    });
+
+    /**
+     * O resto é uma lista de endereços ou de blocos, que o Fastify sabe
+     * ler separada por vírgulas. Passa tal e qual: quem a escreveu sabe
+     * o que lá pôs.
+     */
+    it('e uma lista de endereços passa tal e qual', () => {
+        expect(confiarNoProxy('10.0.0.0/8,127.0.0.1')).toBe(
+            '10.0.0.0/8,127.0.0.1',
+        );
+    });
+
+    /**
+     * **Um número de saltos nunca chega aqui.**
+     *
+     * É o que se escreve no Express, e o Fastify aceita-o e passa a não
+     * confiar em ninguém — "contar saltos não permite validar quem está
+     * do outro lado", diz o código dele. O efeito seria o mesmo de não
+     * definir nada, e sem ninguém dar por isso, por isso é recusado ao
+     * ler o ambiente e não aqui.
+     */
+    it('e um número não é uma maneira de dizer isto', () => {
+        expect(confiarNoProxy('1')).not.toBe(true);
+        expect(typeof confiarNoProxy('1')).not.toBe('number');
     });
 });

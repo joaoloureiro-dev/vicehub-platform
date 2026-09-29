@@ -6,7 +6,7 @@ import Fastify, {
 } from 'fastify';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 
-import { env } from './config/env.js';
+import { confiarNoProxy, env } from './config/env.js';
 
 import authModule from './modules/auth/auth.module.js';
 import activityModule from './modules/activity/activity.module.js';
@@ -75,10 +75,14 @@ const createFastifyOptions = (): ViceHubFastifyOptions => {
         logController: new LogController({ requestIdLogLabel: 'requestId' }),
 
         /**
-         * Desativa confiança automática em proxies.
-         * Será configurado explicitamente conforme o ambiente de deployment.
+         * Em quem se confia quando o pedido vem por um proxy.
+         *
+         * Decide de quem é o endereço que o limite de pedidos conta, e
+         * é por isso que em produção não tem omissão: atrás de um proxy
+         * sem confiar nele, todos os pedidos partilham um balde só e a
+         * plataforma inteira leva 429 à primeira dúzia de visitas.
          */
-        trustProxy: false,
+        trustProxy: confiarNoProxy(env.TRUST_PROXY),
 
         /**
          * Evita que pedidos excessivamente lentos mantenham ligações abertas.

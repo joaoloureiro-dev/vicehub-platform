@@ -1694,6 +1694,13 @@ funciona. Com `NODE_ENV=production`, a API **recusa arrancar** sem elas:
 | --- | --- |
 | `AUTH_COOKIE_SECURE="true"` | Sem isto o cookie da sessão não é marcado como `Secure` e viaja também em ligações não cifradas. |
 | `APP_PUBLIC_URL="https://…"` | É daqui que sai o endereço dos emails de recuperação. No valor por omissão, manda toda a gente para o `localhost` de quem fez o deploy — e o pedido parece ter corrido bem. |
+| `TRUST_PROXY="true"` ou `"false"` | Decide de quem é o endereço que o limite de pedidos conta. Atrás de um proxy sem confiar nele, **todos os pedidos partilham o mesmo balde** e a plataforma inteira leva 429 à primeira dúzia de visitas; exposta directamente e a confiar, qualquer pessoa escreve o endereço que quiser. Medido com um limite de cinco: sem confiança, sete visitas de sete endereços dão cinco 200 e dois 429; com ela, sete 200. |
+
+**Um número de saltos não serve.** `TRUST_PROXY=1` é o que se escreve no
+Express, e aqui é recusado ao arrancar: o Fastify aceita-o e passa a não
+confiar em ninguém — *"contar saltos não permite validar quem está do outro
+lado"*, diz o código dele, e falha fechado. O efeito seria o mesmo de não
+definir nada, sem ninguém dar por isso.
 
 O `CORS_ALLOWED_ORIGINS` continua obrigatório em qualquer ambiente. Servindo
 tudo na mesma origem, não há pedido entre origens para autorizar; fica lá o
