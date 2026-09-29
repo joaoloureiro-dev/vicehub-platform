@@ -192,6 +192,24 @@ describe('o cartão de um link partilhado', () => {
     });
 
     /**
+     * **E o instalador da app lê a mesma descrição.**
+     *
+     * O `manifest.webmanifest` é lido por outro programa — o que
+     * instala a app no telemóvel — e por isso ninguém lhe passa os
+     * olhos. Ficou meses com a descrição em português numa página que
+     * se declara em inglês, que é o texto que aparecia a quem
+     * instalasse, em qualquer idioma.
+     */
+    it('e o manifesto da app diz a mesma coisa que a página', () => {
+        const manifesto = JSON.parse(
+            readFileSync(join(RAIZ, 'public/manifest.webmanifest'), 'utf8'),
+        ) as { description: string; lang: string };
+
+        expect(manifesto.description).toBe(conteudoDe('description'));
+        expect(manifesto.lang).toBe('en');
+    });
+
+    /**
      * E tem as medidas que diz ter — as mesmas, e não a mesma
      * proporção.
      *
