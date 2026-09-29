@@ -555,7 +555,13 @@ const comunidadesComPlano = async (
     return comunidades.filter((c) => cobertas.has(`${c.kind}:${c.id}`));
 };
 
-/** A comunidade de uma carteira, ou de um plano, como chave. */
+/**
+ * A comunidade de uma carteira, ou de um plano, como chave.
+ *
+ * A ordem dos dois ramos não importa: uma carteira tem crew ou tem
+ * servidor, nunca os dois. Experimentou-se trocá-los e a suite não deu
+ * por isso — e é essa a razão, não uma falta de teste.
+ */
 const chaveDe = (linha: { crewId: string | null; serverId: string | null }): string =>
     linha.crewId !== null
         ? `crew:${linha.crewId}`
@@ -625,9 +631,16 @@ const contarDecisoes = async (
     }
 
     /*
-     * Só as das comunidades que têm plano. As outras foram lidas — vêm
-     * todas na mesma consulta — mas não se contam, porque a tesouraria
-     * recusaria a decisão.
+     * Só as das comunidades que têm plano — para encurtar o `IN` das
+     * duas consultas que vêm a seguir, e mais nada.
+     *
+     * **A regra do plano não se decide aqui.** Quem a garante é o
+     * `map` no fim, que devolve uma linha por comunidade de
+     * `comunidades` — e essas são só as que têm plano. Tirar este
+     * filtro dava exactamente o mesmo resultado, com consultas
+     * maiores; um mutante que o apagasse sobreviveu à suite, e
+     * sobreviveu com razão. Fica escrito para ninguém ler aqui uma
+     * defesa que não está aqui.
      */
     const comDireito = new Set(
         comunidades.map((comunidade) => `${comunidade.kind}:${comunidade.id}`),

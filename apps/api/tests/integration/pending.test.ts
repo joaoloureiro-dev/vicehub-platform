@@ -599,29 +599,71 @@ describe('o que está à espera de mim', () => {
          * exclui os apagados, e é de lá que os poderes vêm — aqui
          * prova-se que vêm mesmo de lá, e não de uma segunda leitura
          * com a sua própria ideia do que conta.
+         *
+         * **Num cargo só deste teste, e não no `crew_leader`.** As
+         * linhas de `Role` são partilhadas por toda a base de dados, e
+         * a suite corre um ficheiro de cada vez mas no mesmo processo:
+         * apagar o cargo de líder, mesmo por um instante, é apagá-lo
+         * para todos os outros ficheiros. A primeira versão deste teste
+         * fazia isso, passava sozinha e falhava na suite inteira.
          */
         it('nem os de uma crew onde o meu cargo foi apagado', async () => {
-            const cargo = await prisma.userRole.findFirstOrThrow({
+            const podeGerir = await prisma.permission.findFirstOrThrow({
+                where: { slug: 'manage_members', scope: 'crew' },
+                select: { id: true },
+            });
+
+            const proprio = await prisma.role.create({
+                data: {
+                    name: `Cargo de teste ${marca}`,
+                    slug: `teste_${marca}`,
+                    scope: 'crew',
+                    rolePermissions: {
+                        create: { permissionId: podeGerir.id },
+                    },
+                },
+                select: { id: true },
+            });
+
+            const atribuicao = await prisma.userRole.findFirstOrThrow({
                 where: { userId: liderId, crewId, is_deleted: false },
-                select: { roleId: true },
+                select: { id: true, roleId: true },
             });
 
-            await prisma.role.update({
-                where: { id: cargo.roleId },
-                data: { is_deleted: true, deleted_at: new Date() },
+            /* O líder passa a gerir a crew por este cargo, e só por ele. */
+            await prisma.userRole.update({
+                where: { id: atribuicao.id },
+                data: { roleId: proprio.id },
             });
 
-            /* O catálogo é guardado: sem isto, leria o de antes. */
             esquecerCatalogoDeCargos();
 
             try {
-                const durante = await pendentes(lider);
+                /* Primeiro: o cargo novo dá mesmo o poder. */
+                const comCargo = await pendentes(lider);
 
-                expect(dosTipos(durante, 'crew_join_request')).toHaveLength(0);
-            } finally {
+                expect(dosTipos(comCargo, 'crew_join_request')).toHaveLength(1);
+
                 await prisma.role.update({
-                    where: { id: cargo.roleId },
-                    data: { is_deleted: false, deleted_at: null },
+                    where: { id: proprio.id },
+                    data: { is_deleted: true, deleted_at: new Date() },
+                });
+
+                /* O catálogo é guardado: sem isto, leria o de antes. */
+                esquecerCatalogoDeCargos();
+
+                const semCargo = await pendentes(lider);
+
+                expect(dosTipos(semCargo, 'crew_join_request')).toHaveLength(0);
+            } finally {
+                await prisma.userRole.update({
+                    where: { id: atribuicao.id },
+                    data: { roleId: atribuicao.roleId },
+                });
+
+                await prisma.role.update({
+                    where: { id: proprio.id },
+                    data: { is_deleted: true, deleted_at: new Date() },
                 });
 
                 esquecerCatalogoDeCargos();
