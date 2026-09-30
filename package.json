@@ -5,8 +5,8 @@
     "description": "Ecossistema SaaS gaming para jogadores, crews, servidores, criadores e marketplace.",
     "license": "UNLICENSED",
     "engines": {
-        "node": ">=22.0.0",
-        "npm": ">=10.0.0"
+        "node": ">=24.0.0",
+        "npm": ">=11.0.0"
     },
     "workspaces": [
         "packages/*",
