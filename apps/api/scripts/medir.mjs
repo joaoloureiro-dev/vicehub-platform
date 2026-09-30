@@ -180,8 +180,49 @@ const servidores = await api('/servers?page=1');
 const servidorCheio =
     servidores.items?.[0]?.id ?? servidores.servers?.[0]?.id ?? servidor.id;
 
-const topicos = await api('/forum/topics?page=1');
-const topico = topicos.topics?.[0]?.id;
+/*
+ * E uma delas anuncia que recruta.
+ *
+ * O quadro de recrutamento é uma lista, e uma lista vazia custa menos
+ * do que uma lista com linhas: são quatro consultas de enriquecimento
+ * que não se fazem quando não há nada para enriquecer. Sem isto, numa
+ * base de dados onde ninguém recrute, o ecrã mede 6 em vez de 10 — e
+ * gravar esse 6 na referência desligava a guarda, porque uma subida
+ * real para 9 passava a caber na folga.
+ *
+ * Medido: 10 consultas com 4, com 8 e com 16 crews a recrutar. O preço
+ * não depende de quantas são; depende apenas de haver alguma.
+ */
+await api(`/crews/${minhasCrews[0].id}`, {
+    method: 'PATCH', headers: aut(token),
+    body: { isRecruiting: true },
+});
+
+/*
+ * E uma pergunta do fórum, com uma resposta — criada aqui e não
+ * procurada.
+ *
+ * Isto lia o primeiro tópico que já existisse, e num fórum vazio ficava
+ * `undefined`: o ecrã pedia `/forum/topics/undefined`, levava 400, e o
+ * `medir` saltava-o. Foi o que aconteceu na primeira medição contra uma
+ * base de dados acabada de criar — e é o mesmo erro que a varredura
+ * pagou caro, escrito duas linhas abaixo do comentário que o diz.
+ */
+const topicoNovo = await api('/forum/topics', {
+    method: 'POST', headers: aut(token),
+    body: {
+        title: `Uma pergunta para medir ${marca}`,
+        body: 'O corpo da pergunta, com tamanho suficiente para passar.',
+        category: 'general',
+    },
+});
+
+await api(`/forum/topics/${topicoNovo.id}/replies`, {
+    method: 'POST', headers: aut(token),
+    body: { body: 'Uma resposta, para o ecrã ter o que mostrar.' },
+});
+
+const topico = topicoNovo.id;
 
 /**
  * Os três pedidos que a casca faz em **todos** os ecrãs.
@@ -273,6 +314,32 @@ for (const [nome, caminho, comSessao] of ECRAS) {
 await sql.end();
 
 if (process.argv.includes('--gravar')) {
+    /*
+     * Gravar nunca apaga uma guarda.
+     *
+     * A referência é escrita a partir do que se mediu, e um ecrã que
+     * não respondeu não se mede — por isso desaparecia do ficheiro. Uma
+     * guarda a menos, sem uma palavra, e a corrida seguinte dizia
+     * "0 a crescer" sobre um ecrã que já ninguém estava a olhar.
+     *
+     * Aconteceu: o ecrã de uma pergunta do fórum deu 400 contra uma
+     * base de dados vazia. Agora é um erro, e diz quais são.
+     */
+    const perdidos = Object.keys(base).filter(
+        (nome) => !medidas.some((m) => m.nome === nome),
+    );
+
+    if (perdidos.length > 0) {
+        console.error(
+            `\nnão gravei: ${perdidos.length} ecrã(s) da referência não`
+            + ` responderam, e gravar apagava-os.\n`
+            + perdidos.map((nome) => `  · ${nome}`).join('\n')
+            + '\n\nArranja-os primeiro, ou tira-os da lista de propósito.',
+        );
+
+        process.exit(1);
+    }
+
     const gravado = Object.fromEntries(
         medidas.map((m) => [m.nome, Number(m.consultas.toFixed(1))]),
     );
