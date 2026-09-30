@@ -231,17 +231,30 @@ primeiro registo para falhar. É idempotente, por isso pode correr-se sempre.
 npm run build      # packages antes de apps, por ordem de dependência
 npm run typecheck
 npm run test       # não precisa de base de dados
+npm run test:lua   # o recurso do servidor de jogo; precisa de lua5.4
 ```
 
-Os testes usam duplos em memória em vez do Prisma, por isso correm em
-qualquer máquina sem preparação. O mesmo conjunto de comandos corre no CI,
-em `.github/workflows/ci.yml`.
+Os testes acima usam duplos em memória em vez do Prisma, por isso correm em
+qualquer máquina sem preparação.
 
-#### As quatro que o CI não corre
+E dois que precisam de uma base de dados a sério:
+
+```bash
+npm run db:drift          # o esquema bate com as migrações?
+npm run test:integration  # o mesmo produto, contra PostgreSQL
+```
+
+Os de integração existem porque há garantias que só a base pode dar: duas
+aprovações simultâneas do mesmo movimento, ou duas saídas que juntas
+excedem o saldo, não são verificáveis com duplos. **Estes seis comandos
+são o que o CI corre**, em `.github/workflows/ci.yml` — nem mais nem
+menos.
+
+#### As cinco que o CI não corre
 
 Há coisas que nenhum teste apanha porque não têm onde acontecer: o `jsdom`
 não tem largura nem linha nem polegar, e um duplo em memória não recusa um
-pedido — responde ao que lhe mandam. As quatro ferramentas abaixo precisam de
+pedido — responde ao que lhe mandam. As cinco ferramentas abaixo precisam de
 uma API de pé com base de dados atrás, e por isso correm-se à mão, antes de
 uma entrega ou depois de mexer no que elas medem.
 
@@ -718,7 +731,7 @@ sou eu, o que está à espera de mim, e quantos avisos tenho por ler.
 |---|---|
 | `GET /users/me` | 4 |
 | `GET /notifications/unread` | 2 |
-| `GET /users/me/pending` | 9 sem comunidades, 18 com |
+| `GET /users/me/pending` | 5 sem comunidades, 13 com |
 
 Nenhum deles cresce com o uso — a caixa do que espera resposta crescia, duas
 consultas por comunidade gerida, e deixou de crescer. E deixou também de ler
@@ -727,6 +740,21 @@ nome das suas, e agora contar e nomear são duas coisas — um nome por espécie
 lido uma vez. O que resta é chão
 fixo, e nenhum destes três exige uma permissão: a casca só precisa de saber
 quem está do outro lado, não se essa pessoa pode gerir alguma coisa.
+
+**E ela própria pedia o catálogo de cargos que já estava guardado.** Perguntar
+onde é que esta pessoa pode gerir membros pedia as atribuições com as
+permissões lá dentro, e o Prisma parte isso em quatro instruções: as
+atribuições, os cargos, as ligações e as permissões. Quatro em cada pedido, no
+ecrã que a casca lê em **todos** os outros — enquanto o catálogo que responde a
+três delas já vivia em memória para o guard das rotas, fora do alcance daqui.
+Mudou para `apps/api/src/shared/catalogo-de-cargos.ts`, que é onde uma coisa de
+que dois sítios precisam tem de estar. Com ele, e com duas contagens que
+passaram a uma, **dezoito consultas são treze — cinco sem comunidade nenhuma**.
+
+Vieram duas correcções de borla, ambas da mesma família: era a mesma regra
+escrita duas vezes, e a segunda cópia estava errada. Um cargo fora do prazo e
+um cargo apagado continuavam a contar aqui, embora o guard das rotas sempre os
+tenha ignorado — uma caixa a oferecer trabalho que a API recusa.
 
 **Saber quem está do outro lado custava duas consultas, e passou a custar
 uma.** Cada pedido autenticado confirma na base que a sessão do token
@@ -780,23 +808,38 @@ mensagem, a conversa da mensagem, o anúncio da conversa, a resposta, o tópico
 da resposta, a avaliação e as três coisas dela. Dez instruções, houvesse ou
 não avisos.
 
-Lida em duas metades — a página primeiro, e depois só as espécies que lá estão
-— passou a custar o que traz:
+Lê-se agora **cada tabela uma vez**: a página primeiro, e depois só as tabelas
+a que os avisos dessa página apontam, cada uma numa instrução e nenhuma sem ter
+a quem servir. É diferente de ler por espécie, e a diferença está onde a mesma
+tabela aparecia em dois sítios: os utilizadores eram lidos três vezes (quem
+causou o aviso, quem foi avaliado, quem avaliou) e os anúncios duas (o da
+conversa e o da avaliação).
 
-| A caixa | Antes | Agora |
-|---|---|---|
-| vazia | 14 | 4 |
-| com mensagens e respostas do fórum | 14 | 7 |
-| com as cinco espécies na mesma página | 14 | 14 |
+| A caixa | Consultas |
+|---|---|
+| vazia | 3 |
+| com uma mensagem e uma resposta do fórum | 9 |
+| com as quatro famílias de alvo na mesma página | 10 |
 
-Nunca pior, e quase sempre melhor: o pior caso é o de antes, e só acontece
-quando uma página tem mesmo tudo.
+Medidas com a leitura da sessão incluída, que é o que um pedido custa mesmo. O
+pior caso era catorze e é dez; a caixa vazia era quatro e é três.
+
+**Nunca pior, e a razão é estrutural e não medida:** cada tabela uma vez é, no
+máximo, tantas instruções quantos caminhos havia — e os caminhos eram mais,
+porque três deles iam à mesma tabela. Somam-se as duas contagens que passaram a
+um `aggregate`, o que fecha também um buraco: em duas leituras, um aviso que
+chegasse entre elas dava uma caixa com mais por ler do que avisos.
+
+Pelo caminho apareceram um `rating` e um `reviewer` que o serviço declarava e
+nunca lia — a nota vive no perfil onde o aviso abre, e quem avaliou **é** quem
+causou o aviso, que já estava a ser lido. Era uma ida inteira à tabela dos
+utilizadores, em cada página de avisos, para nada.
 
 Havia uma segunda maneira de o fazer — `relationLoadStrategy: 'join'`, uma
 linha —, mas essa exige ligar a funcionalidade em pré-visualização
 `relationJoins` no gerador, e isso muda o cliente gerado da plataforma
-inteira. A dias de um primeiro deploy, ler em duas metades é a troca que não
-pede nada a ninguém.
+inteira. A dias de um primeiro deploy, ler cada tabela uma vez é a troca que
+não pede nada a ninguém.
 
 ### O cartão de um link partilhado
 
