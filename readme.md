@@ -213,9 +213,10 @@ acabado de fazer não existe, e como o `tsx` compila o código da API ao
 vivo, o erro que aparecia era um export em falta num ficheiro que ninguém
 tinha tocado.
 
-A primeira vez precisa ainda da base de dados preparada:
+A primeira vez precisa da base de dados preparada, **por esta ordem**:
 
 ```bash
+npm run db:generate       # o cliente do Prisma, que não é versionado
 npm run db:migrate:deploy
 npm run db:seed
 ```
@@ -224,6 +225,22 @@ O `db:seed` é obrigatório e não é opcional: sem ele o cargo base `player`
 não existe, e sem esse cargo ninguém consegue criar conta. **A API recusa
 arrancar** e diz qual é o comando — não deixa a plataforma de pé à espera do
 primeiro registo para falhar. É idempotente, por isso pode correr-se sempre.
+
+**Porque é que o `db:generate` está aqui e não só no `npm run dev`:** o
+cliente do Prisma é gerado a partir do esquema e não está no repositório, e
+é dele que saem os enums que o `rbac.ts` importa. Num clone acabado de
+fazer, correr o `db:seed` primeiro — que é a ordem natural, preparar a base
+antes de arrancar a aplicação — dava um erro que não dizia o que fazer:
+
+```
+SyntaxError: The requested module '@prisma/client' does not provide an
+export named 'PermissionScope'
+```
+
+O `npm run dev` gera-o sozinho, mas quem prepara a base antes de arrancar
+nunca chegava lá. Hoje os comandos que correm código nosso — `db:seed`,
+`db:prune` e os `admin:*` — geram-no eles próprios antes de correr, por isso
+a ordem acima é uma conveniência e já não uma armadilha.
 
 ### Verificação
 

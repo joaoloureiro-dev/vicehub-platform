@@ -26,11 +26,11 @@
         "db:migrate:deploy": "prisma migrate deploy",
         "db:migrate:status": "prisma migrate status",
         "db:studio": "prisma studio",
-        "db:seed": "tsx seed/index.ts",
-        "db:prune": "tsx scripts/prune.ts",
-        "admin:grant": "tsx scripts/admin.ts grant",
-        "admin:revoke": "tsx scripts/admin.ts revoke",
-        "admin:list": "tsx scripts/admin.ts list",
+        "db:seed": "prisma generate && tsx seed/index.ts",
+        "db:prune": "prisma generate && tsx scripts/prune.ts",
+        "admin:grant": "prisma generate && tsx scripts/admin.ts grant",
+        "admin:revoke": "prisma generate && tsx scripts/admin.ts revoke",
+        "admin:list": "prisma generate && tsx scripts/admin.ts list",
         "db:drift": "prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code"
     },
     "engines": {
